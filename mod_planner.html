@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<!-- FluxGK v5.2 - FIXED NAVIGATION -->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FluxGK · Training Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0A0A0A;--paper:#FAFAF7;--mute:#737373;--faint:#E5E5E5;--sur:#fff;--bdr:#E5E5E5;--ok:#16A34A;--cau:#D97706;--risk:#DC2626;--club-color:#0A0A0A}
+body{background:var(--paper);color:var(--ink);font-family:'Space Grotesk',sans-serif;min-height:100vh;font-size:15px;overflow-x:hidden}
+.nav{background:var(--club-color,var(--ink));padding:0 28px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:200;transition:background .3s}
+#syncDot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;transition:background .4s;margin-left:6px;cursor:default}
+.nlogo{position:relative;display:inline-flex;flex-direction:column;margin-right:36px}
+.nwm{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;letter-spacing:-.04em;color:#FAFAF7;line-height:1;position:relative}
+.nflow{position:absolute;bottom:-2px;left:0;width:100%;opacity:.22;pointer-events:none}
+.ntag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.5em;color:rgba(250,250,247,.3);text-transform:uppercase;margin-top:3px}
+.ntabs{display:flex;gap:2px;flex:1}
+.ntab{padding:7px 15px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(250,250,247,.4);transition:all .15s;border:none;background:none;white-space:nowrap}
+.ntab.active{background:rgba(250,250,247,.1);color:#FAFAF7}
+.ntab:hover:not(.active){color:rgba(250,250,247,.7)}
+.nver{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(250,250,247,.2);letter-spacing:.15em;margin-left:auto}
+.page{display:none!important;padding:28px 32px;max-width:1280px;margin:0 auto}
+.page.active{display:block!important}
+#page-post:not(.active),#page-library:not(.active),#page-settings:not(.active){display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;padding:0!important;margin:0!important;}
+.disp{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1.15}
+.mono{font-family:'JetBrains Mono',monospace}
+.lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:6px;padding:20px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.fi{background:var(--paper);border:1px solid var(--faint);border-radius:4px;padding:9px 12px;color:var(--ink);font-size:14px;font-family:'Space Grotesk',sans-serif;transition:border .15s;outline:none;width:100%}
+.fi:focus{border-color:var(--ink)}
+.fta{resize:vertical;min-height:72px}
+select.fi option{background:var(--paper)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.fspan{grid-column:1/-1}
+.btn{padding:9px 18px;border-radius:4px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ink);color:var(--paper)}
+.btn-p:hover{background:#222}
+.btn-o{background:transparent;border:1px solid var(--bdr);color:var(--ink)}
+.btn-o:hover{border-color:var(--ink)}
+.btn-sm{padding:5px 11px;font-size:9px}
+.btn-danger{background:transparent;border:1px solid var(--risk);color:var(--risk);font-size:9px;padding:5px 10px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:4px}
+.bdg{display:inline-block;padding:2px 7px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.b-n{background:var(--faint);color:var(--mute)}.b-ok{background:rgba(22,163,74,.1);color:var(--ok)}.b-ca{background:rgba(217,119,6,.1);color:var(--cau)}.b-dk{background:var(--ink);color:var(--paper)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btwn{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rule{border:none;border-top:1px solid var(--faint);margin:22px 0}
+/* SESSION HEADER */
+.sh{background:var(--ink);border-radius:6px;padding:26px 30px;margin-bottom:22px;position:relative;overflow:hidden;color:#FAFAF7}
+.sh .fi{background:rgba(250,250,247,.07);border-color:rgba(250,250,247,.12);color:#FAFAF7}
+.sh .fi:focus{border-color:rgba(250,250,247,.5)}
+.sh select.fi option{background:var(--ink)}
+.sh-flow{position:absolute;bottom:0;right:0;width:55%;opacity:.05;pointer-events:none}
+.sh-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;margin-top:22px}
+.sh-meta .fl{color:rgba(250,250,247,.35)}
+.sh-meta .fi{background:transparent;border:none;border-bottom:1px solid rgba(250,250,247,.15);border-radius:0;padding:5px 0;color:#FAFAF7;font-size:15px;font-weight:500}
+.sh-meta .fi:focus{border-bottom-color:rgba(250,250,247,.55)}
+.sh-meta select.fi option{background:var(--ink)}
+/* EXERCISES */
+.exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:15px;margin-top:18px}
+.exc{background:var(--sur);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;transition:border-color .15s}
+.exc:hover{border-color:var(--ink)}
+.exc-hdr{background:var(--paper);padding:11px 15px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--faint)}
+.exc-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-left:auto}
+.exc-body{padding:14px}
+.exc-thumb{height:145px;border-radius:4px;margin-bottom:12px;overflow:hidden;border:1px solid var(--faint);cursor:pointer;position:relative;transition:border-color .15s;background:#111418}
+.exc-thumb:hover{border-color:var(--ink)}
+.exc-thumb canvas{width:100%;height:100%;display:block}
+.exc-title{font-weight:600;font-size:14px;margin-bottom:5px}
+.exc-desc{font-size:12px;color:var(--mute);line-height:1.6;margin-bottom:10px}
+.exc-goal{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);border-top:1px solid var(--faint);padding-top:9px;letter-spacing:.03em}
+.empty{text-align:center;padding:52px 24px;border:1px dashed var(--faint);border-radius:6px;grid-column:1/-1}
+/* OVERLAY / WIZARD */
+.overlay{position:fixed;inset:0;background:rgba(10,10,10,.78);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.overlay.open{display:flex}
+.wizard{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:1160px;margin:auto;overflow:hidden}
+.wsteps{display:flex;border-bottom:1px solid var(--faint);background:var(--paper);padding:0 22px}
+.ws{padding:13px 18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px}
+.ws.active{color:var(--ink);border-bottom-color:var(--ink)}
+.ws.done{color:var(--ok)}
+.ws-n{width:18px;height:18px;border-radius:50%;background:var(--faint);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.ws.active .ws-n{background:var(--ink);color:#FAFAF7}
+.ws.done .ws-n{background:var(--ok);color:#FAFAF7}
+.spanel{display:none}
+.spanel.active{display:block}
+/* COURT STEP */
+.court-step{display:grid;grid-template-columns:1fr 224px;height:580px}
+.cwrap{position:relative;background:#0B0E14;overflow:hidden}
+#wizCanvas{display:block;width:100%;height:100%}
+/* ZOOM CONTROLS */
+.czoom{position:absolute;bottom:12px;left:12px;display:flex;flex-direction:column;gap:5px}
+.zrow{display:flex;gap:4px}
+.zbtn{height:28px;padding:0 8px;min-width:28px;background:rgba(10,10,10,.78);border:1px solid rgba(255,255,255,.18);border-radius:4px;color:rgba(255,255,255,.82);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'JetBrains Mono',monospace;letter-spacing:0;white-space:nowrap}
+.zbtn:hover{background:rgba(30,30,30,.95);border-color:rgba(255,255,255,.45)}
+.zbtn.zactive{background:rgba(250,250,247,.18);border-color:#FAFAF7;color:#FAFAF7}
+.chint{position:absolute;bottom:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.07em;text-align:right;line-height:1.75}
+/* COURT TOOLBAR */
+.ctbar{background:var(--ink);padding:10px 8px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.ct-sec{margin-bottom:2px}
+.ct-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(250,250,247,.3);margin-bottom:6px;padding:0 2px}
+.ct-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.ct-btn{background:rgba(250,250,247,.06);border:1px solid rgba(250,250,247,.1);border-radius:4px;padding:7px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.03em;color:rgba(250,250,247,.45);transition:all .15s;text-transform:uppercase;user-select:none}
+.ct-btn:hover{border-color:rgba(250,250,247,.45);color:rgba(250,250,247,.92);background:rgba(250,250,247,.1)}
+.ct-btn.active{border-color:#FAFAF7;background:rgba(250,250,247,.15);color:#FAFAF7}
+.ct-btn svg{width:20px;height:20px;flex-shrink:0}
+.ct-sep{border:none;border-top:1px solid rgba(250,250,247,.08);margin:4px 0}
+.ct-actions{padding:11px 15px;background:var(--paper);border-top:1px solid var(--faint);display:flex;justify-content:space-between;align-items:center}
+/* DETAILS STEP */
+.det-step{display:grid;grid-template-columns:400px 1fr;min-height:580px}
+.ds-diag{background:#0B0E14;position:relative;overflow:hidden}
+#prevCanvas{display:block;width:100%;height:100%}
+.ds-form{padding:22px;overflow-y:auto;max-height:640px}
+/* ITEM EDITOR PANEL */
+.item-editor{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(10,10,10,.9);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;display:none;z-index:10;min-width:260px;gap:8px;flex-wrap:wrap;align-items:center}
+.item-editor.show{display:flex}
+.ie-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-right:4px}
+.ie-color{width:22px;height:22px;border-radius:50%;cursor:pointer;border:1.5px solid rgba(255,255,255,.3)}
+.ie-range{width:70px;accent-color:#FAFAF7}
+.ie-btn{padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(220,38,38,.25);border:1px solid rgba(220,38,38,.5);color:#ff9090;border-radius:3px;cursor:pointer}
+/* POST */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:22px}
+.kpi{background:var(--sur);border:1px solid var(--bdr);border-radius:6px;padding:15px}
+.kpi-n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;letter-spacing:-.04em;line-height:1}
+.kpi-l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-top:4px}
+.stars{display:flex;gap:5px;margin-top:7px}
+.star{font-size:22px;cursor:pointer;color:var(--faint);transition:color .1s;line-height:1}
+.star.lit{color:var(--ink)}
+/* SETTINGS */
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.cdot{width:34px;height:34px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.cdot.active{border-color:var(--ink);transform:scale(1.12)}
+.cprev{text-align:center;padding:26px;background:var(--ink);border-radius:6px;margin-bottom:12px}
+.cp-ab{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:44px;letter-spacing:-.04em;line-height:1}
+.cp-nm{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(250,250,247,.4);margin-top:4px}
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:#FAFAF7;padding:10px 18px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;z-index:500;display:none;animation:fu .2s ease}
+@keyframes fu{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb14{margin-bottom:14px}.mb20{margin-bottom:20px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--faint);border-radius:10px}
+@media(max-width:900px){.court-step,.det-step,.set-grid,.g2{grid-template-columns:1fr}.ctbar{max-height:200px;overflow-x:auto}}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nlogo">
+    <div class="nwm">FluxGK<svg class="nflow" viewBox="0 0 110 8" fill="none"><path d="M0 4C12 0,22 8,36 4C50 0,60 8,74 4C88 0,98 8,110 4" stroke="#FAFAF7" stroke-width="1.4" fill="none"/></svg></div>
+    <div class="ntag">Data-Driven GK</div>
+  </div>
+  <div class="ntabs">
+    <button class="ntab active" onclick="showPage('session',this)">Session</button>
+    <button class="ntab" onclick="showPage('post',this)">Post-Training</button>
+    <button class="ntab" onclick="showPage('library',this)">Sessions Library</button>
+    <button class="ntab" onclick="showPage('settings',this)">Club Settings</button>
+  </div>
+  <div id="navBadge" style="margin-left:8px;display:flex;align-items:center"></div>
+  <div id="syncDot" title="Sync status"></div>
+  <div class="nver" style="margin-left:8px">V1.0 · 2026</div>
+</nav>
+
+<!-- SESSION -->
+
+<!-- Single app container - pages rendered by JS -->
+<div id="app"></div>
+
+<!-- EXERCISE MODAL -->
+<div id="wizModal" class="overlay">
+  <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:780px;margin:auto;overflow:hidden;position:relative">
+    <div style="background:var(--paper);padding:16px 22px;border-bottom:1px solid var(--faint);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.02em" id="wizTitle">Add Exercise</div>
+      <button onclick="closeWizard()" style="background:var(--faint);border:none;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:16px;color:var(--mute);display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:22px;overflow-y:auto;max-height:80vh">
+
+      <!-- IMAGE UPLOAD -->
+      <div style="margin-bottom:20px">
+        <div class="fl mb8">Exercise Diagram</div>
+        <div id="imgDropZone" onclick="document.getElementById('exImgInput').click()"
+          style="border:2px dashed var(--faint);border-radius:6px;padding:20px;text-align:center;cursor:pointer;transition:border-color .15s;position:relative;min-height:120px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:var(--paper)"
+          ondragover="event.preventDefault();this.style.borderColor='var(--ink)'"
+          ondragleave="this.style.borderColor='var(--faint)'"
+          ondrop="handleImgDrop(event)">
+          <div id="imgPreviewWrap" style="display:none;width:100%">
+            <img id="exImgPreview" style="max-width:100%;max-height:260px;border-radius:4px;display:block;margin:0 auto"/>
+            <button onclick="event.stopPropagation();clearExImg()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:4px;color:white;font-size:12px;padding:3px 8px;cursor:pointer">✕ Remove</button>
+          </div>
+          <div id="imgPlaceholder">
+            <div style="font-size:28px;opacity:.35">🖼</div>
+            <div style="font-size:13px;color:var(--mute)">Click or drag &amp; drop image</div>
+            <div style="font-size:11px;color:var(--mute);margin-top:2px">PNG, JPG, GIF — from TacticalPad or any source</div>
+          </div>
+        </div>
+        <input type="file" id="exImgInput" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+      </div>
+
+      <!-- FORM -->
+      <div class="fgrid mb14">
+        <div class="fg">
+          <div class="fl">Phase</div>
+          <select class="fi" id="exPhase">
+            <option>Warm Up</option><option>Main</option><option>Complementary</option><option>Cool Down</option>
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">Exercise Name</div>
+          <input class="fi" id="exName" placeholder="e.g. Goal Protection — Moving Shot">
+        </div>
+        <div class="fg">
+          <div class="fl">Duration (min)</div>
+          <input class="fi" type="number" id="exDur" value="8" min="1">
+        </div>
+        <div class="fg">
+          <div class="fl">Players</div>
+          <input class="fi" type="number" id="exPl" value="2" min="1">
+        </div>
+      </div>
+      <div class="fg mb12">
+        <div class="fl">Description / Dynamics</div>
+        <textarea class="fi fta" id="exDesc" placeholder="Describe the exercise flow — movements, decisions, sequences..."></textarea>
+      </div>
+      <div class="fg mb12">
+        <div class="fl">Goal / CLA Constraints</div>
+        <textarea class="fi fta" id="exGoal" placeholder="Primary goal and active CLA constraints (task / environment / organism)..."></textarea>
+      </div>
+      <div class="fg mb12">
+        <div class="fl">Variations / Progressions</div>
+        <input class="fi" id="exVar" placeholder="e.g. Add time pressure, reduce support distance...">
+      </div>
+      <div class="fg mb20">
+        <div class="fl">Equipment / Materials</div>
+        <input class="fi" id="exMat" placeholder="e.g. 4 balls, 2 cones, agility ladder...">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-p" onclick="confirmEx()">Save Exercise</button>
+        <button class="btn btn-o" onclick="closeWizard()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+// ── PAGES ────────────────────────────────────────────────────
+const PAGES = {
+  session: `<div class="sh">
+    <svg class="sh-flow" viewBox="0 0 500 70" fill="none"><path d="M0 35C50 10,80 60,140 35C200 10,230 60,290 35C350 10,380 60,440 35C470 22,490 42,500 35" stroke="#FAFAF7" stroke-width="1.8" fill="none"/></svg>
+    <div class="btwn mb14">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:rgba(250,250,247,.35);text-transform:uppercase;margin-bottom:5px" id="hdrClub">Club · Season 2025/26</div>
+        <div class="disp" style="color:#FAFAF7" id="hdrTitle">Training Session</div>
+      </div>
+      <div class="row">
+        <span class="bdg b-dk">Planning</span>
+        <button class="btn btn-o" onclick="exportCurrentSession()" style="background:rgba(250,250,247,.1);border-color:rgba(250,250,247,.3);color:#FAFAF7">↗ Export Session</button>
+        <button class="btn btn-p" style="background:#FAFAF7;color:#0A0A0A" onclick="saveCurrentSession()">Save Session</button>
+      </div>
+    </div>
+    <div class="sh-meta">
+      <div><div class="fl" style="color:rgba(250,250,247,.35)">Date</div><input class="fi" type="date" id="sDate"></div>
+      <div><div class="fl" style="color:rgba(250,250,247,.35)">Time</div><input class="fi" type="time" id="sTime"></div>
+      <div><div class="fl" style="color:rgba(250,250,247,.35)">Duration (min)</div><input class="fi" type="number" id="sDur" value="60"></div>
+      <div><div class="fl" style="color:rgba(250,250,247,.35)">Type</div>
+        <select class="fi" id="sType"><option>Individual GK Training</option><option>Group GK Training</option><option>Integrated Session</option><option>Pre-match Activation</option><option>Recovery Session</option></select>
+      </div>
+    </div>
+  </div>
+  <div class="card mb14">
+    <div class="lbl mb14">Session Details</div>
+    <div class="fgrid">
+      <div class="fg fspan"><div class="fl">Goalkeepers</div><input class="fi" id="sPlayers" placeholder="e.g. Player A, Player B, Player C"></div>
+      <div class="fg fspan"><div class="fl">General Objective</div><input class="fi" id="sObj" placeholder="e.g. Goal protection against shots on the move"></div>
+      <div class="fg fspan"><div class="fl">Methodology / CLA Focus</div><input class="fi" id="sMeth" placeholder="e.g. Task constraints: reduced space · Environment: opponent pressure"></div>
+    </div>
+  </div>
+  <hr class="rule">
+  <div class="btwn mb14">
+    <div><span class="disp" style="font-size:19px">Exercises</span><span class="mono" style="font-size:11px;color:var(--mute);margin-left:10px" id="exCount">0 planned</span></div>
+    <button class="btn btn-p" onclick="openWizard()">+ Add Exercise</button>
+  </div>
+  <div class="exgrid" id="exGrid">
+    <div class="empty"><div style="font-size:36px;opacity:.22;margin-bottom:12px">▭</div><div style="font-weight:600;margin-bottom:5px">No exercises yet</div><div style="font-size:13px;color:var(--mute)">Click "Add Exercise" to start building your session</div></div>
+  </div>`,
+  post: `<!-- Header with session link -->
+  <div id="postHeader" style="background:var(--ink);border-radius:6px;padding:20px 26px;margin-bottom:20px;color:#FAFAF7;position:relative;overflow:hidden">
+    <svg style="position:absolute;bottom:0;right:0;width:45%;opacity:.05;pointer-events:none" viewBox="0 0 500 70" fill="none"><path d="M0 35C50 10,80 60,140 35C200 10,230 60,290 35C350 10,380 60,440 35C470 22,490 42,500 35" stroke="#FAFAF7" stroke-width="1.8" fill="none"/></svg>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:rgba(250,250,247,.38);text-transform:uppercase;margin-bottom:5px" id="postHeaderDate">—</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.03em;color:#FAFAF7;margin-bottom:4px" id="postHeaderTitle">No active session</div>
+    <div style="font-size:13px;color:rgba(250,250,247,.55)" id="postHeaderSub">Open the Session tab to start planning</div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span id="postStatusBadge" style="display:none;padding:3px 10px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:rgba(22,163,74,.2);color:#4ade80">Active</span>
+      <button id="closeSessionBtn" onclick="closeSession()" class="btn" style="display:none;background:#FAFAF7;color:#0A0A0A;font-size:10px;padding:7px 16px">✓ Close &amp; Save Session</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-n" id="kpiEx">0</div><div class="kpi-l">Exercises</div></div>
+    <div class="kpi"><div class="kpi-n" id="kpiMin">0</div><div class="kpi-l">Minutes</div></div>
+    <div class="kpi"><div class="kpi-n" id="kpiGk">0</div><div class="kpi-l">Goalkeepers</div></div>
+    <div class="kpi"><div class="kpi-n" id="kpiRat" style="font-size:16px;letter-spacing:2px">—</div><div class="kpi-l">Rating</div></div>
+  </div>
+
+  <!-- Rating + objectives met -->
+  <div class="g2 mb14">
+    <div class="card">
+      <div class="lbl mb8">Session Rating</div>
+      <div class="stars" id="starRow">
+        <span class="star" onclick="setRating(1)">&#9733;</span>
+        <span class="star" onclick="setRating(2)">&#9733;</span>
+        <span class="star" onclick="setRating(3)">&#9733;</span>
+        <span class="star" onclick="setRating(4)">&#9733;</span>
+        <span class="star" onclick="setRating(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl mb8">Objectives Met</div>
+      <div class="row mt8">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="obj" value="full"> Fully met</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="obj" value="partial"> Partially</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="obj" value="no"> Not met</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observations -->
+  <div class="g2 mb14">
+    <div class="card"><div class="lbl mb8">Positive Observations</div><textarea class="fi fta" id="postPos" placeholder="What went well? Affordances perceived? Constraints effective?"></textarea></div>
+    <div class="card"><div class="lbl mb8">Areas for Improvement</div><textarea class="fi fta" id="postImp" placeholder="What needs adjustment? Constraints to manipulate?"></textarea></div>
+  </div>
+
+  <!-- CLA Analysis -->
+  <div class="card mb14">
+    <div class="lbl mb12">Ecological Dynamics · CLA Analysis</div>
+    <div class="g2">
+      <div class="fg"><div class="fl">Affordances Perceived</div><textarea class="fi fta" id="postAff" placeholder="What action possibilities did GKs perceive?"></textarea></div>
+      <div class="fg"><div class="fl">Constraint Effectiveness</div><textarea class="fi fta" id="postCon" placeholder="How did constraints shape behavior?"></textarea></div>
+      <div class="fg"><div class="fl">Emergent Solutions</div><textarea class="fi fta" id="postEme" placeholder="What movement solutions emerged?"></textarea></div>
+      <div class="fg"><div class="fl">Next Session Adjustments</div><textarea class="fi fta" id="postNxt" placeholder="What to add, remove or manipulate?"></textarea></div>
+    </div>
+  </div>
+
+  <!-- Individual GK notes -->
+  <div class="card mb14">
+    <div class="lbl mb12">Individual Goalkeeper Notes</div>
+    <div id="postPN"><div style="font-size:13px;color:var(--mute)">Add goalkeepers in Session tab first.</div></div>
+  </div>
+
+  <!-- Exercise comments -->
+  <div class="card mb14">
+    <div class="lbl mb12">Exercise Comments</div>
+    <div id="postExC"><div style="font-size:13px;color:var(--mute)">No exercises yet.</div></div>
+  </div>
+
+
+<!-- SESSIONS LIBRARY -->`,
+  library: `<div class="btwn mb20">
+    <div>
+      <div class="disp" style="font-size:20px">Sessions Library</div>
+      <div class="lbl mt8">All saved sessions · export single or multiple</div>
+    </div>
+    <div class="row">
+      <button class="btn btn-o" onclick="exportSelected()" id="exportSelBtn" style="display:none">Export Selected</button>
+      <button class="btn btn-p" onclick="exportAll()">Export All</button>
+    </div>
+  </div>
+  <!-- Firebase config banner -->
+  <div id="firebaseBanner" style="background:var(--paper);border:1px solid var(--faint);border-radius:6px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
+    <div style="font-size:22px;flex-shrink:0">🔥</div>
+    <div>
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px">Connect Firebase for cross-device sync</div>
+      <div style="font-size:13px;color:var(--mute);margin-bottom:10px">Sessions sync automatically across all your devices in real time.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span id="fbStatus" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);padding:6px 12px;background:var(--faint);border-radius:4px">Connecting...</span>
+        <button class="btn btn-o btn-sm" onclick="connectFirebase()" style="font-size:9px">Reconnect</button>
+      </div>
+    </div>
+  </div>
+  <div id="libraryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+    <div class="empty" style="grid-column:1/-1">
+      <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
+      <div style="font-weight:600;margin-bottom:5px">No saved sessions yet</div>
+      <div style="font-size:13px;color:var(--mute)">Close a session from the Post-Training tab to save it here</div>
+    </div>
+  </div>`,
+  settings: `<div class="disp" style="font-size:20px;margin-bottom:3px">Club Settings</div>
+  <div class="lbl mb20">Personalise for your current club</div>
+  <div class="set-grid">
+    <div>
+      <div class="card mb12">
+        <div class="lbl mb12">Club Identity</div>
+        <div class="fg mb12"><div class="fl">Club Name</div><input class="fi" id="clubName" placeholder="Your current club name" oninput="updatePreview()"></div>
+        <div class="fg mb12"><div class="fl">Abbreviation (2–3 letters)</div><input class="fi" id="clubAbbr" maxlength="3" placeholder="e.g. QSC" oninput="updatePreview()"></div>
+        <div class="fg mb12">
+          <div class="fl">Club Badge / Crest</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+            <div id="badgePreviewWrap" style="width:56px;height:56px;border-radius:10px;background:var(--faint);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+              <img id="badgePreviewImg" style="width:100%;height:100%;object-fit:contain;display:none"/>
+              <span id="badgePreviewText" style="font-size:22px;opacity:.3">🛡</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button class="btn btn-o btn-sm" onclick="document.getElementById('badgeFileInput').click()">Upload Badge</button>
+              <button class="btn btn-o btn-sm" id="badgeClearBtn" onclick="clearBadge()" style="display:none;color:var(--risk);border-color:var(--risk)">Remove</button>
+            </div>
+            <input type="file" id="badgeFileInput" accept="image/*" style="display:none" onchange="handleBadgeUpload(this)">
+          </div>
+        </div>
+        <div class="fg mb12"><div class="fl">Coach Name</div><input class="fi" id="coachName" placeholder="Your name"></div>
+        <div class="fg"><div class="fl">Country / League</div><input class="fi" id="clubLeague" placeholder="e.g. Kuwait — Premier League"></div>
+      </div>
+      <div class="card mb12">
+        <div class="lbl mb8">Club Color (goals &amp; accents)</div>
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:9px">
+          <div class="cdot active" style="background:#0A0A0A" data-c="#0A0A0A" onclick="pickColor(this)"></div>
+          <div class="cdot" style="background:#DC2626" data-c="#DC2626" onclick="pickColor(this)"></div>
+          <div class="cdot" style="background:#2563EB" data-c="#2563EB" onclick="pickColor(this)"></div>
+          <div class="cdot" style="background:#16A34A" data-c="#16A34A" onclick="pickColor(this)"></div>
+          <div class="cdot" style="background:#D97706" data-c="#D97706" onclick="pickColor(this)"></div>
+          <div class="cdot" style="background:#7C3AED" data-c="#7C3AED" onclick="pickColor(this)"></div>
+          <input type="color" value="#0A0A0A" style="width:34px;height:34px;border:none;cursor:pointer;border-radius:50%;padding:0" oninput="_clubColor=this.value;_applyClubColor(this.value);localStorage.setItem('fluxgk_color',this.value)">
+        </div>
+      </div>
+      <div class="card"><div class="lbl mb8">Default Goalkeepers</div><textarea class="fi fta" id="defGKs" placeholder="One name per line"></textarea></div>
+    </div>
+    <div>
+      <div class="card mb12"><div class="lbl mb12">Preview</div>
+        <div class="cprev"><div class="cp-ab" id="prevAbbr" style="color:#FAFAF7">—</div><div class="cp-nm" id="prevName">Your Club</div></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mute);text-align:center;letter-spacing:.1em">FluxGK · Training Planner</div>
+      </div>
+      <div class="card mb12"><div class="lbl mb8">Methodology Label</div><input class="fi" id="methLabel" value="Constraints-Led Approach (CLA) · Ecological Dynamics"></div>
+      <div class="card"><div class="lbl mb8">Season</div><input class="fi" id="seasonLabel" value="2025/26"></div>
+    </div>
+  </div>
+  <div class="mt20"><button class="btn btn-p" onclick="saveSettings()">Save Settings</button></div>`,
+};
+
+
+// ══════════════════════════════════════════════════════════════
+//  FLUXGK — Full app with session lifecycle + library + Firebase
+// ══════════════════════════════════════════════════════════════
+
+
+// ── STATE ─────────────────────────────────────────────────────
+let exercises   = [];
+let rating      = 0;
+let editIdx     = -1;
+let _currentImgData  = null;
+let _sessionFormState = {};
+let _editingSessionId = null; // id of session being re-edited
+let _editPostState = null;    // post-training state when re-editing
+let _clubBadge = null; // base64 badge image
+let _clubColor = '#0A0A0A'; // club primary color
+let _currentPage      = 'session';
+let _sessionOpen      = false;
+let savedSessions   = JSON.parse(localStorage.getItem('fluxgk_sessions') || '[]');
+let selectedSessions= new Set();
+let fbDatabase  = null;   // Firebase Realtime DB reference (null = local only)
+
+// ── FIREBASE CONFIG ───────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAnlt3tJfy1P-X14T_7ql8HE268hgj1Tnc",
+  authDomain: "fluxgkplanner.firebaseapp.com",
+  databaseURL: "https://fluxgkplanner-default-rtdb.firebaseio.com",
+  projectId: "fluxgkplanner",
+  storageBucket: "fluxgkplanner.firebasestorage.app",
+  messagingSenderId: "901921001311",
+  appId: "1:901921001311:web:0592d65b1f86e59d70b0ea"
+};
+
+// ── INIT ──────────────────────────────────────────────────────
+(function(){
+  console.log("FluxGK v5.2 loaded - navigation fix active");
+
+  // Auto-connect Firebase
+  // Render initial session page
+  const initApp = document.getElementById('app');
+  if(initApp) initApp.innerHTML = PAGES.session;
+  document.querySelectorAll('.ntab')[0].classList.add('active');
+  // Set date/time in the now-rendered form
+  const initDate = new Date();
+  const sd = document.getElementById('sDate');
+  const st = document.getElementById('sTime');
+  if(sd) sd.value = initDate.toISOString().split('T')[0];
+  if(st) st.value = initDate.toTimeString().slice(0,5);
+  // Save initial state so returning to session tab restores correctly
+  _saveSessionForm();
+  // Restore badge from localStorage
+  // Restore club color
+  const savedColor = localStorage.getItem('fluxgk_color');
+  if(savedColor){ _clubColor=savedColor; _applyClubColor(savedColor); }
+  const savedBadge = localStorage.getItem('fluxgk_badge');
+  if(savedBadge){ _clubBadge=savedBadge; _updateNavBadge(); }
+  // Restore club settings
+  const savedSettings = localStorage.getItem('fluxgk_settings');
+  if(savedSettings){
+    try{
+      const s = JSON.parse(savedSettings);
+      if(s.clubName){
+        _sessionFormState._hdrTitle  = s.clubName+' · Training Session';
+        _sessionFormState._hdrClub   = s.clubName+' · Season '+(s.seasonLabel||'');
+        _sessionFormState._clubName  = s.clubName;
+      }
+      if(s.coachName) _sessionFormState._coachName = s.coachName;
+      if(s.methLabel) {
+        // store so report can use it
+        _sessionFormState._methLabel = s.methLabel;
+      }
+    }catch(e){}
+  }
+  _loadFirebase(FIREBASE_CONFIG);
+})();
+
+// ── NAV ───────────────────────────────────────────────────────
+// Save session form values before leaving session page
+function _saveSessionForm(){
+  const ids=['sDate','sTime','sDur','sType','sPlayers','sObj','sMeth'];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) _sessionFormState[id]=el.value;
+  });
+  const ht=document.getElementById('hdrTitle');
+  const hc=document.getElementById('hdrClub');
+  if(ht) _sessionFormState._hdrTitle=ht.textContent;
+  if(hc) _sessionFormState._hdrClub=hc.textContent;
+}
+// Restore session form values after re-rendering session page
+function _restoreSessionForm(){
+  const ids=['sDate','sTime','sDur','sType','sPlayers','sObj','sMeth'];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && _sessionFormState[id]!==undefined) el.value=_sessionFormState[id];
+  });
+  renderExercises();
+  const ht=document.getElementById('hdrTitle');
+  const hc=document.getElementById('hdrClub');
+  if(ht && _sessionFormState._hdrTitle) ht.textContent=_sessionFormState._hdrTitle;
+  if(hc && _sessionFormState._hdrClub) hc.textContent=_sessionFormState._hdrClub;
+  if(ht && !_sessionFormState._hdrTitle) ht.textContent='Training Session';
+  // Apply club color to session header
+  if(_clubColor){
+    const sh=document.querySelector('.sh');
+    if(sh) sh.style.background=_clubColor;
+  }
+}
+
+function showPage(name, btn){
+  // Only save session form if currently on session page
+  if(_currentPage === 'session') _saveSessionForm();
+  _currentPage = name;
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.innerHTML = PAGES[name] || '';
+  // Restore session form after re-rendering
+  if(name==='session') _restoreSessionForm();
+  // Update nav
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // Run page-specific logic
+  if(name==='post')     refreshPost();
+  if(name==='library')  renderLibrary();
+  if(name==='settings') _loadBadgeState();
+}
+
+
+// ── IMAGE UPLOAD ──────────────────────────────────────────────
+function handleImgFile(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>setExImg(e.target.result);
+  reader.readAsDataURL(file);
+}
+function handleImgDrop(e){
+  e.preventDefault();
+  document.getElementById('imgDropZone').style.borderColor='var(--faint)';
+  const file=e.dataTransfer.files[0];
+  if(!file||!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=ev=>setExImg(ev.target.result);
+  reader.readAsDataURL(file);
+}
+function setExImg(dataUrl){
+  _currentImgData=dataUrl;
+  document.getElementById('exImgPreview').src=dataUrl;
+  document.getElementById('imgPreviewWrap').style.display='block';
+  document.getElementById('imgPlaceholder').style.display='none';
+}
+function clearExImg(){
+  _currentImgData=null;
+  document.getElementById('exImgPreview').src='';
+  document.getElementById('imgPreviewWrap').style.display='none';
+  document.getElementById('imgPlaceholder').style.display='flex';
+  document.getElementById('exImgInput').value='';
+}
+
+// ── WIZARD ────────────────────────────────────────────────────
+function openWizard(idx=-1){
+  editIdx=idx;
+  const ex=idx>=0?exercises[idx]:null;
+  document.getElementById('wizTitle').textContent=idx>=0?'Edit Exercise':'Add Exercise';
+  document.getElementById('exPhase').value   = ex?ex.phase:'Main';
+  document.getElementById('exName').value    = ex?ex.name:'';
+  document.getElementById('exDur').value     = ex?ex.duration:8;
+  document.getElementById('exPl').value      = ex?ex.players:2;
+  document.getElementById('exDesc').value    = ex?ex.desc:'';
+  document.getElementById('exGoal').value    = ex?ex.goal:'';
+  document.getElementById('exVar').value     = ex?ex.variations:'';
+  document.getElementById('exMat').value     = ex?ex.materials:'';
+  if(ex&&ex.img) setExImg(ex.img); else clearExImg();
+  document.getElementById('wizModal').classList.add('open');
+  // Mark session as open when first exercise is added
+  _sessionOpen=true;
+}
+function closeWizard(){
+  document.getElementById('wizModal').classList.remove('open');
+  _currentImgData=null;
+}
+function confirmEx(){
+  const name=document.getElementById('exName').value.trim()||'Untitled Exercise';
+  const ex={
+    id: editIdx>=0?exercises[editIdx].id:Date.now(),
+    phase:     document.getElementById('exPhase').value,
+    name,
+    duration:  parseInt(document.getElementById('exDur').value)||8,
+    players:   parseInt(document.getElementById('exPl').value)||2,
+    desc:      document.getElementById('exDesc').value.trim(),
+    goal:      document.getElementById('exGoal').value.trim(),
+    variations:document.getElementById('exVar').value.trim(),
+    materials: document.getElementById('exMat').value.trim(),
+    img:       _currentImgData||null,
+  };
+  if(editIdx>=0) exercises[editIdx]=ex; else exercises.push(ex);
+  renderExercises();
+  closeWizard();
+  toast(editIdx>=0?'Exercise updated':'Exercise added');
+}
+
+// ── EXERCISE CARDS ────────────────────────────────────────────
+function renderExercises(){
+  const grid=document.getElementById('exGrid');
+  document.getElementById('exCount').textContent=exercises.length+' planned';
+  if(!exercises.length){
+    grid.innerHTML=`<div class="empty">
+      <div style="font-size:36px;opacity:.22;margin-bottom:12px">▭</div>
+      <div style="font-weight:600;margin-bottom:5px">No exercises yet</div>
+      <div style="font-size:13px;color:var(--mute)">Click "Add Exercise" to start</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML=exercises.map((ex,i)=>{
+    const bc=ex.phase==='Warm Up'?'b-ca':ex.phase==='Cool Down'?'b-ok':'b-n';
+    const imgSection=ex.img
+      ?`<div style="margin-bottom:12px;border-radius:4px;overflow:hidden;border:1px solid var(--faint)">
+          <img src="${ex.img}" style="width:100%;display:block;max-height:200px;object-fit:cover"/>
+        </div>`
+      :`<div onclick="openWizard(${i})"
+          style="margin-bottom:12px;height:90px;border:1px dashed var(--faint);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mute);font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:var(--paper);transition:border-color .15s"
+          onmouseover="this.style.borderColor='var(--ink)'" onmouseout="this.style.borderColor='var(--faint)'">
+          + Add Diagram
+        </div>`;
+    return `<div class="exc">
+      <div class="exc-hdr">
+        <span class="bdg ${bc}">${ex.phase}</span>
+        <span class="mono" style="font-size:10px;color:var(--mute);margin-left:6px">${ex.duration}min · ${ex.players}p</span>
+        <span class="exc-num">#${String(i+1).padStart(2,'0')}</span>
+      </div>
+      <div class="exc-body">
+        ${imgSection}
+        <div class="exc-title">${ex.name}</div>
+        ${ex.desc?`<div class="exc-desc">${ex.desc}</div>`:''}
+        ${ex.variations?`<div style="font-size:12px;color:var(--mute);margin-bottom:8px;font-style:italic">↗ ${ex.variations}</div>`:''}
+        ${ex.materials?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);margin-bottom:8px">MAT: ${ex.materials}</div>`:''}
+        ${ex.goal?`<div class="exc-goal">→ ${ex.goal}</div>`:''}
+        <div class="row" style="margin-top:11px">
+          <button class="btn btn-o btn-sm" onclick="openWizard(${i})">Edit</button>
+          <button class="btn-danger" onclick="rmEx(${i})">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function rmEx(i){ exercises.splice(i,1); renderExercises(); }
+
+// ── POST TRAINING — always reflects current session ───────────
+function refreshPost(){
+  // If re-editing, restore post fields from _editPostState
+  if(_editPostState){
+    const ps = _editPostState;
+    const setV = (id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+    setV('postPos', ps.postPos); setV('postImp', ps.postImp);
+    setV('postAff', ps.postAff); setV('postCon', ps.postCon);
+    setV('postEme', ps.postEme); setV('postNxt', ps.postNxt);
+    if(ps.rating){ rating=ps.rating; setRating(ps.rating); }
+    if(ps.objMet){
+      const radio=document.querySelector(`input[name="obj"][value="${ps.objMet}"]`);
+      if(radio) radio.checked=true;
+    }
+    _editPostState = null; // only restore once
+  }
+  // Read from saved state since session form isn't in DOM on post page
+  const g = id => _sessionFormState[id] || '';
+  const date = g('sDate');
+  const time = g('sTime');
+  const dur  = g('sDur')||0;
+  const type = g('sType');
+  const obj  = g('sObj');
+  const gks  = g('sPlayers').split(',').map(s=>s.trim()).filter(Boolean);
+  const hasSession = exercises.length>0 || gks.length>0 || obj;
+
+  const postHeader = document.getElementById('postHeader');
+  if(!postHeader) return;
+
+  document.getElementById('postHeaderDate').textContent =
+    date ? new Date(date+'T'+(time||'00:00')).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+(time||'') : '—';
+  document.getElementById('postHeaderTitle').textContent =
+    _sessionFormState._hdrTitle || 'Training Session';
+  document.getElementById('postHeaderSub').textContent =
+    hasSession ? (type||'')+' · '+(obj||'') : 'Open the Session tab to start planning';
+
+  document.getElementById('closeSessionBtn').style.display = hasSession&&_sessionOpen?'inline-flex':'none';
+  document.getElementById('postStatusBadge').style.display = hasSession&&_sessionOpen?'inline-block':'none';
+
+  document.getElementById('kpiEx').textContent  = exercises.length;
+  document.getElementById('kpiMin').textContent  = dur;
+  document.getElementById('kpiGk').textContent   = gks.length;
+
+  document.getElementById('postPN').innerHTML = gks.length
+    ? gks.map(g2=>`<div style="margin-bottom:9px;padding:12px;background:var(--paper);border-radius:4px;border:1px solid var(--faint)"><div style="font-weight:600;font-size:13px;margin-bottom:7px">🧤 ${g2}</div><textarea class="fi fta" style="min-height:56px" placeholder="Performance notes for ${g2}..."></textarea></div>`).join('')
+    : '<div style="font-size:13px;color:var(--mute)">Add goalkeepers in the Session tab first.</div>';
+
+  document.getElementById('postExC').innerHTML = exercises.length
+    ? exercises.map((ex,i)=>`
+        <div style="margin-bottom:10px;padding:12px;background:var(--paper);border-radius:4px;border:1px solid var(--faint)">
+          <div class="row" style="margin-bottom:8px">
+            <span class="bdg b-n">#${String(i+1).padStart(2,'00')}</span>
+            <span style="font-size:13px;font-weight:600">${ex.name}</span>
+            <span class="bdg b-n" style="margin-left:auto">${ex.phase} · ${ex.duration}min</span>
+          </div>
+          ${ex.img?`<img src="${ex.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:4px;margin-bottom:8px;border:1px solid var(--faint)"/>`:''}
+          ${ex.goal?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);margin-bottom:8px;padding:7px 10px;background:rgba(0,0,0,.03);border-radius:3px">→ ${ex.goal}</div>`:''}
+          <textarea class="fi fta" style="min-height:56px" placeholder="Post-exercise observation..."></textarea>
+        </div>`).join('')
+    : '<div style="font-size:13px;color:var(--mute)">No exercises yet.</div>';
+}
+
+function setRating(n){
+  rating=n;
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('lit',i<n));
+  document.getElementById('kpiRat').textContent='★'.repeat(n)+'☆'.repeat(5-n);
+}
+
+// ── CLOSE SESSION ─────────────────────────────────────────────
+function closeSession(){
+  const objMet = document.querySelector('input[name="obj"]:checked')?.value || null;
+  const g = id => document.getElementById(id)?.value || _sessionFormState[id] || '';
+  const session = {
+    id:        Date.now(),
+    date:      g('sDate'),
+    time:      g('sTime'),
+    duration:  g('sDur'),
+    type:      g('sType'),
+    players:   g('sPlayers'),
+    objective: g('sObj'),
+    method:    g('sMeth'),
+    clubName:  _sessionFormState._hdrTitle || 'Training Session',
+    exercises: exercises.map(e=>({...e})),
+    rating,
+    objMet,
+    postPositive:   g('postPos'),
+    postImprovement:g('postImp'),
+    postAffordances:g('postAff'),
+    postConstraints:g('postCon'),
+    postEmergent:   g('postEme'),
+    postNext:       g('postNxt'),
+    closedAt: new Date().toISOString(),
+  };
+
+  // If re-editing an existing session, update it instead of creating new
+  if(_editingSessionId){
+    session.id = _editingSessionId;
+    const idx = savedSessions.findIndex(s=>s.id===_editingSessionId);
+    if(idx>=0) savedSessions[idx]=session;
+    else savedSessions.unshift(session);
+    _editingSessionId = null;
+  } else {
+    savedSessions.unshift(session);
+  }
+  localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
+
+  // Save to Firebase (source of truth)
+  if(fbDatabase){
+    dotY(); fbDatabase.ref('sessions/'+session.id).set(session)
+      .then(()=>{dotG();toast('Session saved & synced ☁️');})
+      .catch(e=>{dotR();toast('Saved locally');console.error(e);});
+  } else {
+    toast('Session saved locally — sync when connected');
+  }
+
+  // Reset session
+  _sessionOpen = false;
+  exercises = [];
+  rating = 0;
+  document.getElementById('postPos').value='';
+  document.getElementById('postImp').value='';
+  document.getElementById('postAff').value='';
+  document.getElementById('postCon').value='';
+  document.getElementById('postEme').value='';
+  document.getElementById('postNxt').value='';
+  document.querySelectorAll('input[name="obj"]').forEach(r=>r.checked=false);
+  renderExercises();
+  refreshPost();
+  renderLibrary();
+
+  // Switch to library
+  showPage('library', document.querySelectorAll('.ntab')[2]);
+}
+
+// ── SESSIONS LIBRARY ─────────────────────────────────────────
+function editSessionFromLibrary(id){
+  const s = savedSessions.find(s=>s.id==id);
+  if(!s){ toast('Session not found'); return; }
+
+  // Load session back into active state
+  exercises       = (s.exercises||[]).map(e=>({...e}));
+  rating          = s.rating||0;
+  _sessionOpen    = true;
+  _editingSessionId = id; // track which saved session we're editing
+
+  // Restore session form state
+  _sessionFormState['sDate']    = s.date||'';
+  _sessionFormState['sTime']    = s.time||'';
+  _sessionFormState['sDur']     = s.duration||'';
+  _sessionFormState['sType']    = s.type||'';
+  _sessionFormState['sPlayers'] = s.players||'';
+  _sessionFormState['sObj']     = s.objective||'';
+  _sessionFormState['sMeth']    = s.method||'';
+
+  // Restore post-training state
+  _editPostState = {
+    postPos: s.postPositive||'',
+    postImp: s.postImprovement||'',
+    postAff: s.postAffordances||'',
+    postCon: s.postConstraints||'',
+    postEme: s.postEmergent||'',
+    postNxt: s.postNext||'',
+    objMet:  s.objMet||null,
+    rating:  s.rating||0,
+  };
+
+  // Navigate to Session tab
+  showPage('session', document.querySelectorAll('.ntab')[0]);
+  toast('Session loaded for editing — close & save when done');
+}
+
+
+function saveEditedSession(id){
+  const idx = savedSessions.findIndex(s=>s.id==id);
+  if(idx<0){ toast('Session not found'); return; }
+  const s = savedSessions[idx];
+  s.date           = document.getElementById('es_date').value;
+  s.time           = document.getElementById('es_time').value;
+  s.duration       = document.getElementById('es_dur').value;
+  s.type           = document.getElementById('es_type').value;
+  s.players        = document.getElementById('es_players').value;
+  s.objective      = document.getElementById('es_obj').value;
+  s.method         = document.getElementById('es_meth').value;
+  s.rating         = parseInt(document.getElementById('es_rating').value)||0;
+  s.objMet         = document.getElementById('es_objmet').value||null;
+  s.postPositive   = document.getElementById('es_pos').value;
+  s.postImprovement= document.getElementById('es_imp').value;
+  s.postAffordances= document.getElementById('es_aff').value;
+  s.postConstraints= document.getElementById('es_con').value;
+  s.postEmergent   = document.getElementById('es_eme').value;
+  s.postNext       = document.getElementById('es_nxt').value;
+  savedSessions[idx] = s;
+  localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
+  if(fbDatabase){
+    dotY(); fbDatabase.ref('sessions/'+id).set(s)
+      .then(()=>{dotG();toast('Session updated & synced ☁️');})
+      .catch(e=>{dotR();toast('Updated locally');console.error(e);});
+  } else {
+    toast('Session updated locally');
+  }
+  document.getElementById('editSessionModal').remove();
+  renderLibrary();
+}
+
+function renderLibrary(){
+  const grid=document.getElementById('libraryGrid');
+  if(!grid) return; // page not injected yet
+  if(!savedSessions.length){
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
+      <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
+      <div style="font-weight:600;margin-bottom:5px">No saved sessions yet</div>
+      <div style="font-size:13px;color:var(--mute)">Close a session from the Post-Training tab to save it here</div>
+    </div>`;
+    document.getElementById('exportSelBtn').style.display='none';
+    return;
+  }
+  grid.innerHTML=savedSessions.map((s,i)=>{
+    const d=new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const stars='★'.repeat(s.rating||0)+'☆'.repeat(5-(s.rating||0));
+    const objColor=s.objMet==='full'?'var(--ok)':s.objMet==='partial'?'var(--cau)':'var(--risk)';
+    const objLabel=s.objMet==='full'?'Fully met':s.objMet==='partial'?'Partially':'Not met';
+    return `<div class="card" style="cursor:default">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">${d} · ${s.time||''}</div>
+          <div style="font-weight:600;font-size:15px;letter-spacing:-.02em">${s.objective||s.type||'Session'}</div>
+          <div style="font-size:12px;color:var(--mute);margin-top:2px">${s.type} · ${s.duration}min · ${s.players||'—'}</div>
+        </div>
+        <input type="checkbox" style="margin-top:3px;width:16px;height:16px;cursor:pointer;accent-color:var(--ink)"
+          onchange="toggleSelect(${s.id},this.checked)">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${stars}</span>
+        ${s.objMet?`<span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:${objColor}">${objLabel}</span>`:''}
+        <span class="bdg b-n">${s.exercises.length} exercises</span>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn btn-o btn-sm" onclick="editSessionFromLibrary(${s.id})">Edit</button>
+        <button class="btn btn-o btn-sm" onclick="exportSession(${s.id})">Export</button>
+        <button class="btn-danger" onclick="deleteSession(${s.id})" style="margin-left:auto">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('exportSelBtn').style.display=selectedSessions.size>0?'inline-flex':'none';
+}
+
+function toggleSelect(id,checked){
+  if(checked) selectedSessions.add(id); else selectedSessions.delete(id);
+  document.getElementById('exportSelBtn').style.display=selectedSessions.size>0?'inline-flex':'none';
+  document.getElementById('exportSelBtn').textContent=`Export Selected (${selectedSessions.size})`;
+}
+
+function deleteSession(id){
+  if(!confirm('Delete this session?')) return;
+  savedSessions=savedSessions.filter(s=>s.id!=id);
+  localStorage.setItem('fluxgk_sessions',JSON.stringify(savedSessions));
+  if(fbDatabase){dotY();fbDatabase.ref('sessions/'+id).remove().then(dotG).catch(dotR);}
+  selectedSessions.delete(id);
+  renderLibrary();
+  toast('Session deleted');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function buildReportHTML(sessions){
+  const P   = _clubColor || '#0A0A0A';   // primary colour — same var name as load report
+  // Read from in-memory state (populated by Firebase listener) with localStorage fallback
+  const _ssCached = JSON.parse(localStorage.getItem('fluxgk_settings')||'{}');
+  const coa = (_sessionFormState._coachName || _ssCached.coachName || '').trim();
+  const cn  = (_sessionFormState._clubName  || _ss.clubName  || 'FluxGK').trim();
+  const meth= (document.getElementById('methLabel')?.value || _sessionFormState._methLabel || 'Constraints-Led Approach · Ecological Dynamics').trim();
+  const logo= _clubBadge;
+  const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+
+  // ── helpers (same pattern as load report)
+  const todayStr = () => today;
+
+  // ── COVER — exact clone of load report cover ──────────────
+  let html = `<div class="rpt-cover">
+    <div class="cover-top">
+      ${logo
+        ? `<img class="cover-logo" src="${logo}" onerror="this.style.display='none'"/>`
+        : `<div class="cover-logo-ph">${(cn||'FluxGK').slice(0,4).toUpperCase()}</div>`}
+      <div class="cover-eyebrow">FluxGK</div>
+      <div class="cover-h1">Goalkeeper<br>Training Report</div>
+      <div class="cover-sub">${cn||'Futsal Goalkeeping Department'}</div>
+      <div class="cover-pills">
+        <div class="cover-pill"><strong>${sessions.length} session${sessions.length>1?'s':''}</strong>In report</div>
+        <div class="cover-pill"><strong>${todayStr()}</strong>Generated</div>
+        ${coa?`<div class="cover-pill"><strong>${coa}</strong>Goalkeeper Coach</div>`:''}
+      </div>
+    </div>
+    <div class="cover-foot">
+      <div class="cover-foot-item"><div class="lbl">Methodology</div><div class="val">${meth}</div></div>
+    </div>
+  </div>`;
+
+  // ── SESSION SECTIONS ──────────────────────────────────────
+  let secIdx = 1;
+
+  sessions.forEach((s, si) => {
+    const d = s.date ? new Date(s.date+'T12:00').toLocaleDateString('en-GB',
+      {weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase() : '';
+    const gkList = s.players ? s.players.split(',').map(p=>p.trim()).filter(Boolean) : [];
+    const gkCount = gkList.length;
+    const totalMin = s.duration || (s.exercises||[]).reduce((a,b)=>a+(b.duration||0),0);
+    const isPreview = s.isPreview;
+
+    // Section header — same .rpt-sec-hdr class, background = club colour
+    html += `<div class="rpt-player-sec">
+      <div class="rpt-sec-hdr" style="background:${P}">
+        <div class="eyebrow">Section ${secIdx++}${isPreview?' · Session Plan':''}</div>
+        <div class="title">${s.objective||'Goalkeeper Training'}</div>
+        <div class="sub">${s.type||'Individual GK Training'}${totalMin?' — '+totalMin+' min':''}${gkList.length?' — '+gkList.join(', '):''}</div>
+      </div>`;
+
+    // Period-style date block — same .period-hdr class
+    html += `<div class="period-hdr" style="border-color:${P}">
+      <div>
+        <div class="ph-lbl">${d.split('·')[0]?.trim()||d}</div>
+        <div class="ph-title">${s.date ? new Date(s.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : ''}</div>
+      </div>
+      ${s.time?`<div class="ph-range">${s.time}</div>`:''}
+    </div>`;
+
+    // KPI metrics — same .rpt-metrics/.rpt-m grid
+    const stars = s.rating ? '★'.repeat(s.rating)+'☆'.repeat(5-s.rating) : '—';
+    html += `<div class="rpt-metrics">
+      <div class="rpt-m"><div class="ml">Exercises</div><div class="mv">${(s.exercises||[]).length}</div></div>
+      <div class="rpt-m"><div class="ml">Minutes</div><div class="mv">${totalMin||0}</div></div>
+      <div class="rpt-m"><div class="ml">Goalkeepers</div><div class="mv">${gkCount}</div></div>
+      <div class="rpt-m"><div class="ml">Rating</div><div class="mv" style="font-size:12pt;color:${s.rating?P:'#ccc'}">${stars}</div></div>
+    </div>`;
+
+
+
+    // Exercise cards
+    (s.exercises||[]).forEach((ex,i)=>{
+      html += `<div class="no-break" style="margin-bottom:14pt;border:0.5pt solid #e0ddd8;border-radius:4pt;overflow:hidden;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+        <div style="display:flex;align-items:center;gap:8pt;padding:8pt 10pt;background:#f7f7f5;border-bottom:0.5pt solid #e0ddd8">
+          <span style="font-size:7.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2pt 7pt;background:${P};color:#fff">${ex.phase}</span>
+          <strong style="font-size:11pt;font-weight:700">${ex.name}</strong>
+          <span style="margin-left:auto;font-size:8pt;color:#737373">${ex.duration}min · ${ex.players}p</span>
+        </div>
+        ${ex.img?`<div style="background:#111;text-align:center"><img src="${ex.img}" style="max-width:100%;max-height:320pt;width:100%;height:auto;object-fit:contain;display:block"/></div>`:''}
+        <div style="padding:10pt 12pt">
+          ${ex.desc?`<p style="font-size:9pt;color:#333;line-height:1.65;margin-bottom:8pt">${ex.desc}</p>`:''}
+          ${ex.goal?`<div style="font-size:8.5pt;border-left:2.5pt solid ${P};padding:6pt 10pt;background:${P}11;margin-bottom:7pt;color:#111">→ ${ex.goal}</div>`:''}
+          ${ex.variations?`<p style="font-size:8.5pt;color:#666;font-style:italic;margin-bottom:5pt">↗ ${ex.variations}</p>`:''}
+          ${ex.materials?`<p style="font-size:8pt;color:#555;font-family:monospace">MAT: ${ex.materials}</p>`:''}
+        </div>
+      </div>`;
+    });
+
+    // Post-training analysis
+    const postItems = [
+      {label:'Positive Observations',    val:s.postPositive},
+      {label:'Areas for Improvement',    val:s.postImprovement},
+      {label:'Affordances Perceived',    val:s.postAffordances},
+      {label:'Constraint Effectiveness', val:s.postConstraints},
+      {label:'Emergent Solutions',       val:s.postEmergent},
+      {label:'Next Session Adjustments', val:s.postNext},
+    ].filter(p=>p&&p.val);
+
+    if(!isPreview && postItems.length){
+      html += `<div class="no-break" style="margin-top:14pt;margin-bottom:14pt">
+        <div class="rpt-sec-hdr" style="background:${P};padding:10pt 16pt 8pt">
+          <div class="eyebrow">Post-Training Analysis</div>
+        </div>
+        <div class="rpt-metrics" style="grid-template-columns:1fr 1fr">
+          ${postItems.map(p=>`<div class="rpt-m"><div class="ml">${p.label}</div><div style="font-size:8.5pt;color:#333;line-height:1.5;margin-top:3pt">${p.val}</div></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  // ── FULL DOCUMENT ─────────────────────────────────────────
+  return `<!DOCTYPE html><html><head>
+  <meta charset="UTF-8"/>
+  <title>FluxGK — Training Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--p:${P};--mt:#737373;--tx:#0A0A0A;--ht:#aaa;--bd2:#e0ddd8}
+    body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:#fff;color:#0A0A0A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @media screen{body{max-width:860px;margin:0 auto;padding-bottom:72px}}
+    @media print{
+      .no-print{display:none!important}
+      @page{margin:1.4cm 1.6cm;size:A4}
+      @page:first{margin:0}
+      .rpt-cover{page-break-after:always;min-height:100vh}
+      .rpt-player-sec{page-break-before:always}
+      .no-break{page-break-inside:avoid}
+      .rpt-sec-hdr{page-break-after:avoid}
+      .period-hdr{page-break-after:avoid}
+    }
+    /* ── Cover — exact clone from load report ── */
+    .rpt-cover{background:var(--p,#0A0A0A);color:#FAFAF7;display:flex;flex-direction:column;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+    .cover-top{padding:44pt 36pt 28pt;flex:1}
+    .cover-logo{width:52pt;height:52pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);object-fit:cover;display:block;margin-bottom:20pt}
+    .cover-logo-ph{width:52pt;height:52pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:20pt;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:20pt}
+    .cover-eyebrow{font-size:8.5pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-bottom:7pt}
+    .cover-h1{font-size:26pt;font-weight:700;line-height:1.15;margin-bottom:9pt}
+    .cover-sub{font-size:12pt;opacity:.8;margin-bottom:24pt}
+    .cover-pills{display:flex;gap:18pt;flex-wrap:wrap}
+    .cover-pill{font-size:9pt;opacity:.75}
+    .cover-pill strong{display:block;font-size:10.5pt;opacity:1;margin-bottom:1pt}
+    .cover-foot{background:rgba(0,0,0,.18);padding:14pt 36pt;display:flex;gap:28pt;flex-wrap:wrap}
+    .cover-foot-item .lbl{font-size:8pt;opacity:.65}
+    .cover-foot-item .val{font-size:9.5pt;font-weight:600}
+    /* ── Section headers ── */
+    .rpt-sec-hdr{background:#0A0A0A;color:#FAFAF7;padding:16pt 20pt 12pt;margin-bottom:14pt}
+    .rpt-sec-hdr .eyebrow{font-size:7.5pt;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:3pt}
+    .rpt-sec-hdr .title{font-size:17pt;font-weight:700}
+    .rpt-sec-hdr .sub{font-size:9.5pt;opacity:.8;margin-top:2pt}
+    /* ── Period header ── */
+    .period-hdr{display:flex;align-items:center;gap:10pt;padding:9pt 13pt;background:#f5f5f3;border-left:3pt solid var(--p);margin-bottom:9pt;border-radius:0 4pt 4pt 0}
+    .period-hdr .ph-lbl{font-size:7.5pt;color:var(--mt);text-transform:uppercase;letter-spacing:.07em}
+    .period-hdr .ph-title{font-size:11.5pt;font-weight:700;color:var(--tx)}
+    .period-hdr .ph-range{font-size:8.5pt;color:var(--mt);margin-left:auto}
+    /* ── Metrics grid ── */
+    .rpt-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7pt;margin-bottom:11pt}
+    .rpt-m{background:#f7f7f5;border:0.5pt solid #e0ddd8;border-radius:4pt;padding:8pt 9pt}
+    .rpt-m .ml{font-size:7pt;color:var(--mt);margin-bottom:2pt}
+    .rpt-m .mv{font-size:17pt;font-weight:700;color:var(--tx);line-height:1}
+    /* ── Table ── */
+    .rpt-table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:11pt}
+    .rpt-table thead tr{background:#0A0A0A;color:#FAFAF7}
+    .rpt-table thead th{padding:6pt 8pt;text-align:left;font-weight:600;font-size:7.5pt;letter-spacing:.04em}
+    .rpt-table tbody tr:nth-child(even){background:#f8f8f6}
+    .rpt-table tbody td{padding:5.5pt 8pt;border-bottom:0.5pt solid #ece9e4;color:var(--tx)}
+  </style>
+</head><body>
+  <div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0ddd8;padding:12px 32px;display:flex;gap:10px;align-items:center;z-index:99">
+    <button onclick="window.print()" style="padding:9px 22px;background:${P};color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:600">🖨 Print / Save as PDF</button>
+    <button onclick="window.close()" style="padding:9px 16px;background:#fff;border:1px solid #e0ddd8;border-radius:4px;cursor:pointer;font-size:13px;color:#737373">Close</button>
+    <span style="margin-left:auto;font-size:9px;color:#aaa;font-family:monospace">FluxGK · ${cn} · ${today}</span>
+  </div>
+  ${html}
+  <div style="padding:14pt 36pt;border-top:0.5pt solid #e0ddd8;display:flex;justify-content:space-between;font-size:8pt;color:#aaa;font-family:monospace">
+    <span>FluxGK · ${cn}</span>
+    <span>${meth}</span>
+  </div>
+</body></html>`;
+}
+
+
+function exportSession(id){
+  // Use == to handle string/number mismatch (Firebase stores keys as strings)
+  const s=savedSessions.find(s=>s.id==id);
+  if(!s){ toast('Session not found'); return; }
+  openReport([s]);
+}
+function exportSelected(){
+  const toExport=savedSessions.filter(s=>selectedSessions.has(s.id));
+  if(!toExport.length){ toast('Select at least one session'); return; }
+  openReport(toExport);
+}
+function exportAll(){
+  if(!savedSessions.length){ toast('No sessions saved yet'); return; }
+  openReport(savedSessions);
+}
+function openReport(sessions){
+  const html=buildReportHTML(sessions);
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+function previewSession(id){
+  exportSession(id); // same action for now
+}
+
+// ── FIREBASE ─────────────────────────────────────────────────
+// Internal: load Firebase SDKs then init with given config
+function _loadFirebase(cfg){
+  const status=document.getElementById('fbStatus');
+  if(status) status.textContent='Connecting...';
+  const scripts=[
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
+  ];
+  let loaded=0;
+  scripts.forEach(src=>{
+    // Skip if already loaded
+    if(document.querySelector(`script[src="${src}"]`)){loaded++;if(loaded===scripts.length)_initFirebase(cfg);return;}
+    const s=document.createElement('script');
+    s.src=src;
+    s.onload=()=>{ loaded++; if(loaded===scripts.length) _initFirebase(cfg); };
+    s.onerror=()=>{ if(status){status.textContent='SDK load failed';status.style.color='var(--risk)';} };
+    document.head.appendChild(s);
+  });
+}
+
+function _initFirebase(cfg){
+  const status=document.getElementById('fbStatus');
+  try{
+    if(!window.firebase){ setTimeout(()=>_initFirebase(cfg),200); return; }
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    fbDatabase=firebase.database();
+    if(status){ status.textContent='☁️ Connected'; status.style.color='var(--ok)'; }
+    _updateFirebaseBanner(true);
+
+    // ── SETTINGS listener — source of truth for ALL config ──────
+    fbDatabase.ref('settings').on('value', snap=>{
+      const data = snap.val();
+      if(!data) return;
+      // Apply every setting globally
+      if(data.clubName)   _sessionFormState._clubName   = data.clubName;
+      if(data.coachName)  _sessionFormState._coachName  = data.coachName;
+      if(data.methLabel)  _sessionFormState._methLabel  = data.methLabel;
+      if(data.seasonLabel)_sessionFormState._seasonLabel= data.seasonLabel;
+      if(data.clubAbbr)   _sessionFormState._clubAbbr   = data.clubAbbr;
+      if(data.clubColor){
+        _clubColor = data.clubColor;
+        _applyClubColor(data.clubColor);
+        localStorage.setItem('fluxgk_color', data.clubColor);
+      }
+      if(data.badge){
+        _clubBadge = data.badge;
+        _updateNavBadge();
+        localStorage.setItem('fluxgk_badge', data.badge);
+      }
+      // Cache locally for offline fallback
+      localStorage.setItem('fluxgk_settings', JSON.stringify(data));
+      // Update header display
+      if(data.clubName){
+        _sessionFormState._hdrTitle = data.clubName+' · Training Session';
+        _sessionFormState._hdrClub  = data.clubName+' · Season '+(data.seasonLabel||'');
+        const ht=document.getElementById('hdrTitle');
+        const hc=document.getElementById('hdrClub');
+        if(ht) ht.textContent=_sessionFormState._hdrTitle;
+        if(hc) hc.textContent=_sessionFormState._hdrClub;
+      }
+      // If settings page is open, refresh it
+      if(_currentPage==='settings') _loadBadgeState();
+    });
+
+    // ── SESSIONS listener — real-time sync ───────────────────────
+    fbDatabase.ref('sessions').on('value', snap=>{
+      const data = snap.val();
+      // Full replace from Firebase (Firebase is source of truth)
+      if(data){
+        savedSessions = Object.values(data).sort((a,b)=>b.id-a.id);
+      } else {
+        // No sessions in Firebase yet — push local ones up
+        const local = JSON.parse(localStorage.getItem('fluxgk_sessions')||'[]');
+        if(local.length){
+          local.forEach(s=>fbDatabase.ref('sessions/'+s.id).set(s));
+          savedSessions = local;
+        } else {
+          savedSessions = [];
+        }
+      }
+      localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
+      if(_currentPage==='library') renderLibrary();
+    });
+
+  } catch(e){
+    if(status){ status.textContent='Error: '+e.message; status.style.color='var(--risk)'; }
+    console.error('Firebase init error:',e);
+  }
+}
+
+function _updateFirebaseBanner(connected){
+  const banner=document.getElementById('firebaseBanner');
+  if(!banner) return;
+  if(connected){
+    banner.innerHTML=`<div style="font-size:18px">☁️</div>
+      <div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:3px">Firebase connected — <span style="color:var(--ok)">syncing across devices</span></div>
+        <div style="font-size:12px;color:var(--mute)">Project: fluxgkplanner · Real-time sync active · All sessions are saved to the cloud</div>
+      </div>`;
+  }
+}
+
+function connectFirebase(){
+  // Called from the manual connect button (fallback)
+  const raw=document.getElementById('fbConfigInput')?.value.trim();
+  let cfg=FIREBASE_CONFIG;
+  if(raw){ try{ cfg=JSON.parse(raw); }catch(e){ toast('Invalid JSON'); return; } }
+  _loadFirebase(cfg);
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function updatePreview(){
+  const name=document.getElementById('clubName')?.value||'Your Club';
+  const abbr=(document.getElementById('clubAbbr')?.value||'—').toUpperCase();
+  const season=document.getElementById('seasonLabel')?.value||'';
+  // Settings preview (always in DOM when on settings page)
+  const pa=document.getElementById('prevAbbr');
+  const pn=document.getElementById('prevName');
+  if(pa) pa.textContent=abbr;
+  if(pn) pn.textContent=name;
+  // Session header (only in DOM when on session page)
+  const ht=document.getElementById('hdrTitle');
+  const hc=document.getElementById('hdrClub');
+  if(ht) ht.textContent=name+' · Training Session';
+  if(hc) hc.textContent=(name||'Club')+' · Season '+season;
+  // Always update in-memory state
+  _sessionFormState._hdrTitle=name+' · Training Session';
+  _sessionFormState._hdrClub=(name||'Club')+' · Season '+season;
+  _sessionFormState._clubName=name;
+}
+function pickColor(el){
+  document.querySelectorAll('.cdot').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
+  _clubColor = el.dataset.c || el.value || '#0A0A0A';
+  _applyClubColor(_clubColor);
+  localStorage.setItem('fluxgk_color', _clubColor);
+  // Push colour to Firebase immediately
+  if(fbDatabase){dotY();fbDatabase.ref('settings/clubColor').set(_clubColor).then(dotG).catch(dotR);}
+}
+
+function _applyClubColor(color){
+  if(!color) return;
+  document.documentElement.style.setProperty('--club-color', color);
+  // Nav background
+  const nav = document.querySelector('.nav');
+  if(nav) nav.style.background = color;
+  // Primary buttons
+  document.querySelectorAll('.btn-p').forEach(b=>{b.style.background=color;b.style.color='#fff';});
+  // Session header
+  const sh = document.querySelector('.sh');
+  if(sh) sh.style.background = color;
+}
+function handleBadgeUpload(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _clubBadge = e.target.result;
+    // Show in settings preview
+    const img = document.getElementById('badgePreviewImg');
+    const txt = document.getElementById('badgePreviewText');
+    const prevImg = document.getElementById('prevBadgeImg');
+    const prevAbbr = document.getElementById('prevAbbr');
+    const btn = document.getElementById('badgeClearBtn');
+    if(img){ img.src=_clubBadge; img.style.display='block'; }
+    if(txt) txt.style.display='none';
+    if(prevImg){ prevImg.src=_clubBadge; prevImg.style.display='block'; }
+    if(prevAbbr) prevAbbr.style.display='none';
+    if(btn) btn.style.display='block';
+    // Update nav badge
+    _updateNavBadge();
+    localStorage.setItem('fluxgk_badge', _clubBadge);
+    // Also push to Firebase immediately (don't wait for Save Settings)
+    if(fbDatabase){dotY();fbDatabase.ref('settings/badge').set(_clubBadge).then(dotG).catch(dotR);}
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearBadge(){
+  _clubBadge = null;
+  localStorage.removeItem('fluxgk_badge');
+  const img = document.getElementById('badgePreviewImg');
+  const txt = document.getElementById('badgePreviewText');
+  const prevImg = document.getElementById('prevBadgeImg');
+  const prevAbbr = document.getElementById('prevAbbr');
+  const btn = document.getElementById('badgeClearBtn');
+  if(img){ img.src=''; img.style.display='none'; }
+  if(txt) txt.style.display='block';
+  if(prevImg){ prevImg.style.display='none'; }
+  if(prevAbbr) prevAbbr.style.display='block';
+  if(btn) btn.style.display='none';
+  document.getElementById('badgeFileInput').value='';
+  _updateNavBadge();
+}
+
+function _updateNavBadge(){
+  const navBadge = document.getElementById('navBadge');
+  if(!navBadge) return;
+  if(_clubBadge){
+    navBadge.innerHTML = `<img src="${_clubBadge}" style="width:32px;height:32px;object-fit:contain;border-radius:6px"/>`;
+  } else {
+    navBadge.innerHTML = '';
+  }
+}
+
+function _loadBadgeState(){
+  // Settings are stored in Firebase and cached in localStorage
+  // Priority: in-memory state > Firebase cache > localStorage
+  const _src = (()=>{
+    // Try in-memory first
+    if(_sessionFormState._clubName) return {
+      clubName:    _sessionFormState._clubName,
+      clubAbbr:    _sessionFormState._clubAbbr||'',
+      coachName:   _sessionFormState._coachName||'',
+      methLabel:   _sessionFormState._methLabel||'',
+      seasonLabel: _sessionFormState._seasonLabel||'',
+    };
+    // Fallback to localStorage
+    try{ return JSON.parse(localStorage.getItem('fluxgk_settings')||'{}'); }
+    catch(e){ return {}; }
+  })();
+
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!=='')el.value=v;};
+  setVal('clubName',    _src.clubName);
+  setVal('clubAbbr',    _src.clubAbbr);
+  setVal('coachName',   _src.coachName);
+  setVal('methLabel',   _src.methLabel);
+  setVal('seasonLabel', _src.seasonLabel);
+
+  // Update preview
+  const pa=document.getElementById('prevAbbr');
+  const pn=document.getElementById('prevName');
+  if(pa&&_src.clubAbbr) pa.textContent=_src.clubAbbr.toUpperCase();
+  else if(pa&&_src.clubName) pa.textContent=_src.clubName.slice(0,3).toUpperCase();
+  if(pn&&_src.clubName) pn.textContent=_src.clubName;
+
+  // Restore club color dots
+  if(_clubColor){
+    document.querySelectorAll('.cdot').forEach(d=>{
+      d.classList.toggle('active', d.dataset.c===_clubColor);
+    });
+    const colorInput=document.querySelector('input[type="color"]');
+    if(colorInput) colorInput.value=_clubColor;
+  }
+
+  // Restore badge UI
+  const saved = _clubBadge;
+  if(!saved) return;
+  const img = document.getElementById('badgePreviewImg');
+  const txt = document.getElementById('badgePreviewText');
+  const prevImg = document.getElementById('prevBadgeImg');
+  const prevAbbr = document.getElementById('prevAbbr');
+  const btn = document.getElementById('badgeClearBtn');
+  if(img){ img.src=saved; img.style.display='block'; }
+  if(txt) txt.style.display='none';
+  if(prevImg){ prevImg.src=saved; prevImg.style.display='block'; }
+  if(prevAbbr) prevAbbr.style.display='none';
+  if(btn) btn.style.display='block';
+}
+
+function saveCurrentSession(){
+  _saveSessionForm();
+  toast('Session saved locally');
+}
+
+function exportCurrentSession(){
+  // Export the current open session without closing it
+  _saveSessionForm();
+  const g = id => _sessionFormState[id] || '';
+  const session = {
+    id:        Date.now(),
+    date:      g('sDate'),
+    time:      g('sTime'),
+    duration:  g('sDur'),
+    type:      g('sType'),
+    players:   g('sPlayers'),
+    objective: g('sObj'),
+    method:    g('sMeth'),
+    clubName:  _sessionFormState._hdrTitle || 'Training Session',
+    exercises: exercises.map(e=>({...e})),
+    rating:    0,
+    objMet:    null,
+    postPositive:'', postImprovement:'', postAffordances:'',
+    postConstraints:'', postEmergent:'', postNext:'',
+    closedAt:  null,
+    isPreview: true,
+  };
+  openReport([session]);
+}
+
+function saveSettings(){
+  updatePreview();
+  const settings = {
+    clubName:    document.getElementById('clubName')?.value    ||'',
+    clubAbbr:    document.getElementById('clubAbbr')?.value    ||'',
+    coachName:   document.getElementById('coachName')?.value   ||'',
+    methLabel:   document.getElementById('methLabel')?.value   ||'',
+    seasonLabel: document.getElementById('seasonLabel')?.value ||'',
+    clubColor:   _clubColor  || '#0A0A0A',
+    badge:       _clubBadge  || null,
+  };
+  // Update in-memory state immediately
+  _sessionFormState._clubName   = settings.clubName;
+  _sessionFormState._coachName  = settings.coachName;
+  _sessionFormState._methLabel  = settings.methLabel;
+  _sessionFormState._clubAbbr   = settings.clubAbbr;
+  _sessionFormState._seasonLabel= settings.seasonLabel;
+  _sessionFormState._hdrTitle   = settings.clubName+' · Training Session';
+  _sessionFormState._hdrClub    = settings.clubName+' · Season '+(settings.seasonLabel||'');
+  // Save locally as fallback
+  localStorage.setItem('fluxgk_settings', JSON.stringify(settings));
+  if(settings.badge)     localStorage.setItem('fluxgk_badge',  settings.badge);
+  if(settings.clubColor) localStorage.setItem('fluxgk_color',  settings.clubColor);
+  // Save to Firebase — this triggers the real-time listener on ALL devices
+  if(fbDatabase){
+    dotY(); fbDatabase.ref('settings').set(settings)
+      .then(()=>{dotG();toast('Settings saved & synced ☁️');})
+      .catch(e=>{dotR();toast('Saved locally (Firebase error)');console.error(e);});
+  } else {
+    toast('Settings saved locally (Firebase not connected)');
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+// ── SYNC DOT (exact from load report) ────────────────────────
+function dotY(){const d=document.getElementById('syncDot');if(d)d.style.background='rgba(255,220,80,.95)';}
+function dotG(){const d=document.getElementById('syncDot');if(d){d.style.background='rgba(100,255,180,.95)';setTimeout(()=>{if(d)d.style.background='rgba(255,255,255,.25)';},1200);}}
+function dotR(){const d=document.getElementById('syncDot');if(d){d.style.background='rgba(255,90,70,.95)';setTimeout(()=>{if(d)d.style.background='rgba(255,255,255,.25)';},3000);}}
+
+function toast(msg){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.style.display='none',2800);
+}
+</script>
+</body>
+</html>
