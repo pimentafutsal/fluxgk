@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('fb-loading').style.display='flex';
   window.fbListen();
 });
+// Fallback: if DOMContentLoaded already fired (iframe context)
+if(document.readyState==='complete'||document.readyState==='interactive'){
+  if(!window._fbReady){
+    document.getElementById('fb-loading').style.display='flex';
+    window.fbListen();
+  }
+}
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
