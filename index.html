@@ -288,7 +288,7 @@ function loadStats(){
 }
 
 function openModule(key){
-  var names={xg:'XG SYSTEM',planner:'GK PLANNER',data:'DATA-DRIVEN'};
+  var names={xg:'XG SYSTEM',planner:'GK PLANNER',data:'DATA-DRIVEN',stats:'GK STATISTICS'};
   document.getElementById('mtnm').textContent=names[key]||key.toUpperCase();
   document.getElementById('mtbar').style.background=APP.profile.clubColor||'#0a0a0a';
   var fr=document.getElementById('mfrm');
