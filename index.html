@@ -64,7 +64,6 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .m-xg .mbar{background:#3B82F6}.m-xg .mico{background:rgba(59,130,246,.08)}.m-xg .mico svg{color:#3B82F6}
 .m-pl .mbar{background:#0a0a0a}.m-pl .mico{background:rgba(10,10,10,.07)}.m-pl .mico svg{color:#0a0a0a}
 .m-da .mbar{background:#16a34a}.m-da .mico{background:rgba(22,163,74,.08)}.m-da .mico svg{color:#16a34a}
-.m-stats .mbar{background:#8b5cf6}.m-stats .mico{background:rgba(139,92,246,.08)}.m-stats .mico svg{color:#8b5cf6}
 .srow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:26px}
 .scard{background:#fff;border:1px solid var(--faint);border-radius:8px;padding:13px 10px;text-align:center}
 .sval{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em;line-height:1;color:var(--ink)}
@@ -178,12 +177,6 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
           <div><div class="mname">Data-Driven</div><div class="mdesc">GK stats &middot; Workload<br>Performance reports</div></div>
           <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
         </div>
-        <div class="mcard m-stats" onclick="openModule('stats')">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div><div class="mname">GK Statistics</div><div class="mdesc">Match recording<br>Shot analysis &middot; Reports</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
       </div>
       <div class="slabel">Quick stats</div>
       <div class="srow">
@@ -246,7 +239,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 <script>
 var FBC={apiKey:"AIzaSyAJcwMEwbpUvf2mrY9ej1xz6e0Ma_z65yY",authDomain:"fluxgksystem.firebaseapp.com",projectId:"fluxgksystem",storageBucket:"fluxgksystem.firebasestorage.app",messagingSenderId:"663122789948",appId:"1:663122789948:web:f5a8f9b19fc33870df6539"};
 var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed8','#0e7490','#374151','#713f12'];
-var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html'};
+var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html'};
 var _auth,_db;
 var APP={uid:null,profile:{coachName:'',clubName:'',clubColor:'#0a0a0a',clubBadge:'',methodology:'Constraints-Led Approach'}};
 
@@ -288,7 +281,7 @@ function loadStats(){
 }
 
 function openModule(key){
-  var names={xg:'XG SYSTEM',planner:'GK PLANNER',data:'DATA-DRIVEN',stats:'GK STATISTICS'};
+  var names={xg:'XG SYSTEM',planner:'GK PLANNER',data:'DATA-DRIVEN'};
   document.getElementById('mtnm').textContent=names[key]||key.toUpperCase();
   document.getElementById('mtbar').style.background=APP.profile.clubColor||'#0a0a0a';
   var fr=document.getElementById('mfrm');
