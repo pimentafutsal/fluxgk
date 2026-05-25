@@ -430,7 +430,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
 <div class="content">
 
 <!-- CONTEXT BAR -->
-<div class="player-bar" id="ctxBar" style="display:none">
+<div class="player-bar" id="ctxBar" style="display:flex">
   <label><i class="ti ti-user"></i> Goalkeeper</label>
   <select id="playerSelect" onchange="switchPlayer()"><option value="">Select…</option></select>
   <button class="btn-add" style="background:var(--bg2);color:var(--mt);border:0.5px solid var(--bd2);font-size:12px" onclick="showSection('squad')"><i class="ti ti-users"></i> Squad</button>
@@ -1689,7 +1689,19 @@ window.showSection=function(id){
   document.getElementById("sec-"+id).classList.add("active");
   const nb=document.getElementById("nav-"+id);if(nb)nb.classList.add("active");
   const cb=document.getElementById("ctxBar");
-  if(cb)cb.style.display=(id==="squad"||id==="admin"||!ST.currentPlayer)?"none":"flex";
+  if(cb){
+    cb.style.display=(id==="squad"||id==="admin")?"none":"flex";
+    // Auto-select first player if none selected
+    if(!ST.currentPlayer){
+      const players=Object.values(ST.players);
+      if(players.length>0){
+        ST.currentPlayer=players[0].id;
+        const sel=document.getElementById("playerSelect");
+        if(sel)sel.value=ST.currentPlayer;
+        renderAll();
+      }
+    }
+  }
   if(id==="squad")renderSquad();
   if(id==="admin")loadUserList();
   if(id==="dash"){renderDashboard();renderTypeChart();}
@@ -1829,7 +1841,21 @@ function renderOpenPreSessions(){
   }
 }
 
-function renderAll(){renderPSelect();if(ST.currentPlayer)document.getElementById("playerSelect").value=ST.currentPlayer;renderTypeSelects();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
+function renderAll(){
+  renderPSelect();
+  // Auto-select first player if none selected and players exist
+  if(!ST.currentPlayer){
+    const players=Object.values(ST.players);
+    if(players.length>0){ST.currentPlayer=players[0].id;}
+  }
+  if(ST.currentPlayer){
+    document.getElementById("playerSelect").value=ST.currentPlayer;
+    // Show ctxBar if not on squad/admin
+    const cb=document.getElementById("ctxBar");
+    const activeSec=document.querySelector(".section.active");
+    const activeId=activeSec?activeSec.id.replace("sec-",""):"pre";
+    if(cb&&activeId!=="squad"&&activeId!=="admin") cb.style.display="flex";
+  }renderTypeSelects();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
 
 // ── STATUS/TOAST ──
 function showStatus(m,t){const e=document.getElementById("statusBar");e.textContent=m;e.className="status-bar show "+(t||"");}
