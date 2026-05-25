@@ -14,7 +14,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 #scr-loading{background:#0a0a0a;align-items:center;justify-content:center;display:flex;z-index:9999}
 #scr-login{background:#0a0a0a;align-items:center;justify-content:center;padding:24px;color:#fafaf7}
 #scr-hub{background:var(--paper);color:var(--ink)}
-#scr-module{background:var(--paper)}
+#scr-module{background:var(--paper);display:none;flex-direction:column}
 .ldots{display:flex;gap:6px;margin-top:18px}
 .ldot{width:5px;height:5px;border-radius:50%;background:#fafaf7;animation:lp 1.2s ease-in-out infinite}
 .ldot:nth-child(2){animation-delay:.2s}.ldot:nth-child(3){animation-delay:.4s}
@@ -64,6 +64,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .m-xg .mbar{background:#3B82F6}.m-xg .mico{background:rgba(59,130,246,.08)}.m-xg .mico svg{color:#3B82F6}
 .m-pl .mbar{background:#0a0a0a}.m-pl .mico{background:rgba(10,10,10,.07)}.m-pl .mico svg{color:#0a0a0a}
 .m-da .mbar{background:#16a34a}.m-da .mico{background:rgba(22,163,74,.08)}.m-da .mico svg{color:#16a34a}
+.m-stats .mbar{background:#8b5cf6}.m-stats .mico{background:rgba(139,92,246,.08)}.m-stats .mico svg{color:#8b5cf6}
 .srow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:26px}
 .scard{background:#fff;border:1px solid var(--faint);border-radius:8px;padding:13px 10px;text-align:center}
 .sval{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em;line-height:1;color:var(--ink)}
@@ -72,7 +73,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .mbck{height:29px;padding:0 10px;border:none;background:rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.85);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s}
 .mbck:hover{background:rgba(255,255,255,.2)}.mbck svg{width:11px;height:11px}
 .mtnm{font-size:11px;font-weight:600;color:rgba(255,255,255,.8);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
-.mfrm{flex:1;border:none;width:100%;display:block}
+.mfrm{flex:1;border:none;width:100%;height:100%;display:block;min-height:0}
 .ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}
 .ov.open{display:flex}
 .sht{background:var(--paper);border-radius:18px 18px 0 0;border:1px solid var(--faint);width:100%;max-width:500px;max-height:86vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
@@ -177,6 +178,12 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
           <div><div class="mname">Data-Driven</div><div class="mdesc">GK stats &middot; Workload<br>Performance reports</div></div>
           <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
         </div>
+        <div class="mcard m-stats" onclick="openModule('stats')">
+          <div class="mbar"></div>
+          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div><div class="mname">GK Statistics</div><div class="mdesc">Match recording<br>Shot analysis &middot; Reports</div></div>
+          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+        </div>
       </div>
       <div class="slabel">Quick stats</div>
       <div class="srow">
@@ -195,7 +202,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
     </button>
     <span class="mtnm" id="mtnm"></span>
   </div>
-  <iframe class="mfrm" id="mfrm" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals allow-top-navigation"></iframe>
+  <iframe class="mfrm" id="mfrm" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals" style="flex:1;width:100%;border:none;display:block"></iframe>
 </div>
 
 <div class="ov" id="ov-set" onclick="if(event.target===this)closeSettings()">
@@ -239,7 +246,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 <script>
 var FBC={apiKey:"AIzaSyAJcwMEwbpUvf2mrY9ej1xz6e0Ma_z65yY",authDomain:"fluxgksystem.firebaseapp.com",projectId:"fluxgksystem",storageBucket:"fluxgksystem.firebasestorage.app",messagingSenderId:"663122789948",appId:"1:663122789948:web:f5a8f9b19fc33870df6539"};
 var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed8','#0e7490','#374151','#713f12'];
-var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html'};
+var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html'};
 var _auth,_db;
 var APP={uid:null,profile:{coachName:'',clubName:'',clubColor:'#0a0a0a',clubBadge:'',methodology:'Constraints-Led Approach'}};
 

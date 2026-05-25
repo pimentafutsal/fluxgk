@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxGK — GK Statistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, remove, onValue, update }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",
+  authDomain: "fluxgk-statistics.firebaseapp.com",
+  databaseURL: "https://fluxgk-statistics-default-rtdb.firebaseio.com",
+  projectId: "fluxgk-statistics",
+  storageBucket: "fluxgk-statistics.firebasestorage.app",
+  messagingSenderId: "605696462663",
+  appId: "1:605696462663:web:1df401a86ba7f9e753c662"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getDatabase(fbApp);
+
+window._fbReady = false;
+window.fbSet    = (path, val)  => set(ref(db, path), val);
+window.fbRemove = (path)       => remove(ref(db, path));
+window.fbUpdate = (path, val)  => update(ref(db, path), val);
+window.fbGet    = (path)       => get(ref(db, path));
+
+window.fbListen = () => {
+  onValue(ref(db, 'fluxgk'), snapshot => {
+    const data = snapshot.val();
+    if (!data) { window._fbReady = true; bootUI(); return; }
+    if (data.settings) {
+      if (data.settings.clubs)    ST.clubs    = data.settings.clubs;
+      if (data.settings.comps)    ST.comps    = data.settings.comps;
+      if (data.settings.gks)      ST.gks      = data.settings.gks;
+      if (data.settings.accent)   { ST.accent = data.settings.accent; document.documentElement.style.setProperty('--accent', ST.accent); const inp=document.getElementById('set-accent'); if(inp) inp.value=ST.accent; const hex=document.getElementById('set-accent-hex'); if(hex) hex.textContent=ST.accent; }
+      if (data.settings.clubName) { ST.clubName = data.settings.clubName; document.getElementById('nav-club-name').textContent = ST.clubName; const inp=document.getElementById('set-club-name'); if(inp) inp.value=ST.clubName; }
+    }
+    if (data.games) {
+      ST.games = Object.values(data.games).map(g => ({
+        ...g,
+        shots: g.shots ? (Array.isArray(g.shots) ? g.shots : Object.values(g.shots)) : []
+      }));
+    } else {
+      ST.games = [];
+    }
+    if (!window._fbReady) { window._fbReady = true; bootUI(); }
+    else {
+      populateAllSelects();
+      const active = document.querySelector('.page.active');
+      if (active) {
+        const id = active.id.replace('page-','');
+        if (id === 'dashboard') renderDashboard();
+        if (id === 'history')   renderHistory();
+        if (id === 'reports')   { populateReportFilters(); buildReport(); }
+      }
+    }
+  });
+};
+
+// Connection state monitor
+const connRef = ref(db, '.info/connected');
+onValue(connRef, snap => {
+  const dot  = document.getElementById('fb-dot');
+  const txt  = document.getElementById('fb-status-text');
+  if (!dot || !txt) return;
+  if (snap.val() === true) {
+    dot.style.background = '#16a34a';
+    txt.textContent = 'live';
+    txt.style.color = '#16a34a';
+  } else {
+    dot.style.background = '#dc2626';
+    txt.textContent = 'offline';
+    txt.style.color = '#dc2626';
+  }
+});
+
+// Kick off after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fb-loading').style.display='flex';
+  window.fbListen();
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0a0a;--paper:#fafaf7;--carbon:#0d0d0d;--surface:#161616;
+  --surface2:#1a1a1a;--border:#222;--border2:#2a2a2a;--mute:#737373;
+  --accent:#e8ff00;--green:#16a34a;--red:#dc2626;--amber:#d97706;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--carbon);color:var(--paper);min-height:100vh;font-size:14px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#111;}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px;}
+#header{background:#0a0a0a;border-bottom:1px solid #1a1a1a;padding:0 24px;position:sticky;top:0;z-index:100;}
+#header-inner{max-width:1380px;margin:0 auto;display:flex;align-items:center;height:56px;}
+#main{max-width:1380px;margin:0 auto;padding:24px 20px;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:24px;}
+.logo-box{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.logo-box span{font-weight:700;font-size:12px;color:var(--ink);}
+.logo-name{font-weight:700;font-size:13px;letter-spacing:-.3px;}
+.logo-tag{font-size:8px;color:#444;letter-spacing:.15em;font-family:var(--mono);}
+.nav{display:flex;gap:1px;flex:1;}
+.nav-btn{padding:0 15px;height:56px;border:none;background:transparent;color:var(--mute);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.05em;text-transform:uppercase;}
+.nav-btn:hover{color:var(--paper);}
+.nav-btn.active{color:var(--paper);border-bottom-color:var(--accent);}
+.nav-club{margin-left:auto;font-size:10px;color:#444;font-family:var(--mono);}
+.page{display:none;}
+.page.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.card-title{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;margin-bottom:12px;}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;}
+.page-sub{color:var(--mute);font-size:12px;margin-bottom:20px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+.mb16{margin-bottom:16px;}
+.mb20{margin-bottom:20px;}
+.mb24{margin-bottom:24px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center;}
+.kpi-n{font-size:34px;font-weight:700;letter-spacing:-2px;line-height:1;color:var(--accent);}
+.kpi-l{font-size:9px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;margin-top:4px;}
+.btn{padding:9px 18px;border:none;border-radius:7px;font-family:var(--font);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px;}
+.btn-accent{background:var(--accent);color:var(--ink);}
+.btn-accent:hover{opacity:.9;}
+.btn-ghost{background:transparent;color:var(--mute);border:1px solid var(--border2);}
+.btn-ghost:hover{border-color:#444;color:var(--paper);}
+.btn-danger{background:#1e0808;color:var(--red);border:1px solid #3a1212;}
+.btn-danger:hover{background:#2a0f0f;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--mute);text-transform:uppercase;margin-bottom:5px;}
+select,input[type=text],input[type=date]{background:var(--surface2);border:1px solid var(--border2);color:var(--paper);padding:9px 12px;border-radius:7px;font-family:var(--font);font-size:13px;width:100%;outline:none;transition:border .15s;}
+select:focus,input:focus{border-color:#444;}
+input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radius:6px;}
+.mc-group{display:flex;flex-wrap:wrap;gap:6px;}
+.mc-btn{padding:7px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--mute);font-size:12px;font-family:var(--font);cursor:pointer;transition:all .15s;}
+.mc-btn:hover{border-color:#444;color:var(--paper);}
+.mc-btn.active{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:600;}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{padding:10px 16px;border:none;background:transparent;color:var(--mute);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.04em;}
+.tab:hover{color:var(--paper);}
+.tab.active{color:var(--paper);border-bottom-color:var(--accent);}
+.goal-bar{height:7px;background:#FFD700;border-radius:4px 4px 0 0;}
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 6px 6px;}
+.goal-zone{height:52px;border-radius:5px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--mute);font-family:var(--mono);font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;}
+.goal-zone:hover{border-color:#555;color:var(--paper);}
+.goal-zone.active{border-color:#FFD700;background:rgba(255,215,0,.18);color:#FFD700;}
+.court-wrap{width:140px;border-radius:7px;overflow:hidden;border:1px solid var(--border2);}
+.court-top{background:#1a3a5c;height:44px;display:flex;align-items:center;justify-content:center;}
+.court-circle{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);}
+.court-div{height:2px;background:rgba(255,255,255,.15);}
+.court-grid{background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;}
+.court-zone{border-radius:4px;border:1.5px solid var(--border2);background:rgba(255,255,255,.05);color:var(--mute);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.court-zone:hover{border-color:#4ade80;color:#4ade80;}
+.court-zone.active{border-color:#4ade80;background:rgba(74,222,128,.2);color:#4ade80;}
+.court-gkbox{background:#1e2a1e;height:22px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;}
+.court-gkrect{width:44px;height:12px;border:1px solid rgba(255,255,255,.2);border-radius:2px;}
+.shot-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.shot-item.goal{border-color:#3a1212;}
+.shot-item.save{border-color:#1a3a1a;}
+.shot-tag{font-size:9px;color:#555;background:#111;padding:2px 7px;border-radius:4px;font-family:var(--mono);}
+.game-row{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:16px 18px;transition:border .15s;}
+.game-row:hover{border-color:#333;}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;margin-bottom:5px;}
+.list-del{background:none;border:none;color:#444;cursor:pointer;font-size:15px;transition:color .15s;}
+.list-del:hover{color:var(--red);}
+.hm-cell{border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;font-family:var(--mono);}
+.badge-green{background:#0f2a0f;color:var(--green);}
+.badge-red{background:#2a0f0f;color:var(--red);}
+.badge-mute{background:#1a1a1a;color:var(--mute);}
+.badge-amber{background:#2a1a00;color:var(--amber);}
+.rtype-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px;}
+.rtype-btn{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:16px 12px;cursor:pointer;transition:all .15s;text-align:center;}
+.rtype-btn:hover{border-color:#444;}
+.rtype-btn.active{border-color:var(--accent);background:rgba(232,255,0,.05);}
+.rtype-icon{font-size:20px;margin-bottom:6px;}
+.rtype-name{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--mute);}
+.rtype-btn.active .rtype-name{color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="fb-loading" style="display:none;position:fixed;inset:0;background:#0d0d0d;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <svg viewBox="0 0 36 36" width="48" height="48"><rect width="36" height="36" rx="8" fill="#e8ff00"/><text x="18" y="25" text-anchor="middle" fill="#0a0a0a" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="14">GK</text></svg>
+  <div style="font-family:'Space Grotesk',sans-serif;color:#fafaf7;font-weight:600;font-size:15px;">Connecting to database…</div>
+  <div style="width:180px;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden;">
+    <div style="height:100%;background:#e8ff00;border-radius:2px;animation:fbload 1.4s ease-in-out infinite;" id="fb-bar"></div>
+  </div>
+  <style>@keyframes fbload{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}</style>
+</div>
+<div id="header">
+  <div id="header-inner">
+    <div class="logo">
+      <div class="logo-box"><span>GK</span></div>
+      <div><div class="logo-name">FluxGK</div><div class="logo-tag">DATA-DRIVEN GK</div></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="navToRecord()">Record Game</button>
+      <button class="nav-btn" onclick="showPage('history')">History</button>
+      <button class="nav-btn" onclick="showPage('reports')">Reports</button>
+      <button class="nav-btn" onclick="showPage('settings')">Settings</button>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+  <div id="fb-status" title="Firebase connection" style="display:flex;align-items:center;gap:5px;font-size:10px;color:#555;font-family:var(--mono);">
+    <div id="fb-dot" style="width:6px;height:6px;border-radius:50%;background:#555;transition:background .3s;"></div>
+    <span id="fb-status-text">connecting</span>
+  </div>
+  <div class="nav-club" id="nav-club-name">—</div>
+</div>
+  </div>
+</div>
+<div id="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;" class="mb20">
+    <div><div class="page-title">Dashboard</div><div class="page-sub">Goalkeeper performance overview</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <select id="dash-season" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option value="">All Seasons</option></select>
+      <select id="dash-gk" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option value="">All GKs</option></select>
+      <select id="dash-opp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option value="">All Opponents</option></select>
+      <select id="dash-comp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option value="">All Competitions</option></select>
+    </div>
+  </div>
+  <div class="g5 mb20">
+    <div class="kpi"><div class="kpi-n" id="kpi-games">0</div><div class="kpi-l">Games</div></div>
+    <div class="kpi"><div class="kpi-n" id="kpi-shots">0</div><div class="kpi-l">Total Shots</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--green)" id="kpi-saves">0</div><div class="kpi-l">Saves</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--red)" id="kpi-goals">0</div><div class="kpi-l">Goals Conceded</div></div>
+    <div class="kpi"><div class="kpi-n" id="kpi-savepct">—</div><div class="kpi-l">Save Rate</div></div>
+  </div>
+  <div class="g3 mb16">
+    <div class="card"><div class="card-title">Result Distribution</div><canvas id="ch-result" height="190"></canvas></div>
+    <div class="card"><div class="card-title">Game Moment</div><canvas id="ch-moment" height="190"></canvas></div>
+    <div class="card"><div class="card-title">Skill Type</div><canvas id="ch-skill" height="190"></canvas></div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="190"></canvas></div>
+    <div class="card"><div class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;"></div></div>
+    <div class="card"><div class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;display:flex;justify-content:center;"></div></div>
+  </div>
+</div>
+
+<!-- RECORD GAME -->
+<div id="page-record" class="page">
+  <div class="page-title">Record Game</div>
+  <div class="page-sub">Add shots one by one, then save the full game.</div>
+  <!-- Edit mode banner -->
+  <div id="rec-edit-banner" style="display:none;background:#1a1500;border:1px solid #3a3000;border-radius:8px;padding:10px 16px;margin-bottom:16px;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:16px;">✏️</span>
+      <div>
+        <div style="font-weight:600;font-size:13px;color:var(--amber);">Editing existing game</div>
+        <div style="font-size:11px;color:var(--mute);margin-top:1px;">Changes will overwrite the saved game when you save.</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="cancelEditGame()">✕ Cancel edit</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="rec-tab-meta" onclick="recTab('meta')">1. Game Info</button>
+    <button class="tab" id="rec-tab-shots" onclick="recTab('shots')">2. Shots (<span id="rec-shot-count">0</span>)</button>
+    <button class="tab" id="rec-tab-review" onclick="recTab('review')">3. Review &amp; Save</button>
+  </div>
+  <div id="rec-phase-meta">
+    <div class="card" style="max-width:620px;">
+      <div style="font-weight:700;font-size:15px;margin-bottom:18px;">Game Information</div>
+      <div class="g2 mb16">
+        <div><div class="label">Date *</div><input type="date" id="rec-date"></div>
+        <div><div class="label">Season *</div><input type="text" id="rec-season" placeholder="e.g. 2025-26"></div>
+        <div><div class="label">Opponent *</div><select id="rec-opp"><option value="">Select opponent…</option></select></div>
+        <div><div class="label">Competition</div><select id="rec-comp"><option value="">Select competition…</option></select></div>
+      </div>
+      <button class="btn btn-accent" onclick="recNextToShots()">Next: Record Shots →</button>
+    </div>
+  </div>
+  <div id="rec-phase-shots" style="display:none;">
+    <div class="g2" style="align-items:start;">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+          <div style="font-weight:700;font-size:15px;">Shot #<span id="shot-form-num">1</span></div>
+          <button class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
+        </div>
+        <div class="g2" style="gap:16px;">
+          <div>
+            <div class="label">Goalkeeper</div>
+            <select id="sf-gk" onchange="SF.gk=this.value;lastShotGk=this.value;"></select>
+          </div>
+          <div><div class="label">Minute</div><input type="text" id="sf-minute" placeholder="e.g. 14, 32+1"></div>
+          <div>
+            <div class="label">Game Moment</div>
+            <div class="mc-group" id="sf-moment-group">
+              <button class="mc-btn" onclick="mcSel(this,'moment','Leaving pressure')">Leaving pressure</button>
+              <button class="mc-btn" onclick="mcSel(this,'moment','Organized attack')">Organized attack</button>
+              <button class="mc-btn" onclick="mcSel(this,'moment','Transition')">Transition</button>
+              <button class="mc-btn" onclick="mcSel(this,'moment','Ball stop')">Ball stop</button>
+              <button class="mc-btn" onclick="mcSel(this,'moment','Special game')">Special game</button>
+            </div>
+          </div>
+          <div>
+            <div class="label">Skill Type</div>
+            <div class="mc-group" id="sf-skill-group">
+              <button class="mc-btn" onclick="mcSel(this,'skill','1vs1')">1vs1</button>
+              <button class="mc-btn" onclick="mcSel(this,'skill','Goal protection')">Goal protection</button>
+              <button class="mc-btn" onclick="mcSel(this,'skill','2nd post')">2nd post</button>
+            </div>
+          </div>
+          <div>
+            <div class="label">Result *</div>
+            <div class="mc-group" id="sf-result-group">
+              <button class="mc-btn" onclick="mcSel(this,'result','Save')">Save</button>
+              <button class="mc-btn" onclick="mcSel(this,'result','Blocked')">Blocked</button>
+              <button class="mc-btn" onclick="mcSel(this,'result','Out')">Out</button>
+              <button class="mc-btn" onclick="mcSel(this,'result','Goal conceded')">Goal conceded</button>
+              <button class="mc-btn" onclick="mcSel(this,'result','Post')">Post</button>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div class="label">Horizontal Distance</div>
+            <div class="mc-group" id="sf-hdist-group">
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','Before the halfway line')">Before halfway</button>
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','Before 10m')">Before 10m</button>
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','After 10m')">After 10m</button>
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','Area')">Area</button>
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','10m')">10m</button>
+              <button class="mc-btn" onclick="mcSel(this,'hDistance','Penalty')">Penalty</button>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom:10px;">Shot Location on Goal</div>
+            <div class="goal-bar"></div>
+            <div class="goal-grid">
+              <button class="goal-zone" onclick="selGoal(this,1)" title="Top Left"></button>
+              <button class="goal-zone" onclick="selGoal(this,2)" title="Top Right"></button>
+              <button class="goal-zone" onclick="selGoal(this,3)" title="Mid Left"></button>
+              <button class="goal-zone" onclick="selGoal(this,4)" title="Mid Right"></button>
+              <button class="goal-zone" onclick="selGoal(this,5)" title="Low Left"></button>
+              <button class="goal-zone" onclick="selGoal(this,6)" title="Low Right"></button>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom:10px;">Vertical Shot Position</div>
+            <div class="court-wrap">
+              <div class="court-top"><div class="court-circle"></div></div>
+              <div class="court-div"></div>
+              <div class="court-grid">
+                <button class="court-zone" onclick="selCourt(this,124)" title="Left corridor"></button>
+                <button class="court-zone" onclick="selCourt(this,152)" title="Center corridor"></button>
+                <button class="court-zone" onclick="selCourt(this,125)" title="Right corridor"></button>
+              </div>
+              <div class="court-gkbox"><div class="court-gkrect"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
+          <button class="btn btn-ghost" onclick="clearShotForm()">Clear</button>
+          <button class="btn btn-accent" onclick="saveShot()">Save Shot →</button>
+        </div>
+      </div>
+      <div>
+        <div class="label mb16">Saved Shots</div>
+        <div id="shots-list"><div style="color:var(--mute);font-size:13px;">No shots recorded yet.</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="rec-phase-review" style="display:none;">
+    <div class="card mb16">
+      <div style="font-weight:700;font-size:15px;margin-bottom:16px;">Game Summary</div>
+      <div class="g5 mb20" id="review-kpis"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="review-save-btn" class="btn btn-accent" onclick="saveGame()">✓ Save Game</button>
+      <button class="btn btn-ghost" onclick="recTab('shots')">← Back to Shots</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="page-history" class="page">
+  <div class="page-title">Game History</div>
+  <div class="page-sub">Browse, edit, and delete recorded games.</div>
+  <div class="card mb20">
+    <div class="g4">
+      <div><div class="label">Season</div><select id="hist-season" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div><div class="label">Opponent</div><select id="hist-opp" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div><div class="label">Goalkeeper</div><select id="hist-gk" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div><div class="label">Competition</div><select id="hist-comp" onchange="renderHistory()"><option value="">All</option></select></div>
+    </div>
+  </div>
+  <div id="history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+
+<!-- REPORTS -->
+<div id="page-reports" class="page">
+  <div class="page-title">Reports</div>
+  <div class="page-sub">Generate and export detailed analytical reports as PDF.</div>
+  <div class="rtype-grid">
+    <div class="rtype-btn active" onclick="selReportType(this,'game')"><div class="rtype-icon">🎮</div><div class="rtype-name">By Game</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'competition')"><div class="rtype-icon">🏆</div><div class="rtype-name">By Competition</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'opponent')"><div class="rtype-icon">🆚</div><div class="rtype-name">By Opponent</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'season')"><div class="rtype-icon">📅</div><div class="rtype-name">By Season</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'gk')"><div class="rtype-icon">🧤</div><div class="rtype-name">By Goalkeeper</div></div>
+  </div>
+  <div class="card mb20">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:130px;"><div class="label">Season</div><select id="rep-season" onchange="buildReport()"><option value="">All Seasons</option></select></div>
+      <div style="flex:1;min-width:130px;" id="rep-filter-game-wrap"><div class="label">Game</div><select id="rep-game" onchange="buildReport()"><option value="">All Games</option></select></div>
+      <div style="flex:1;min-width:130px;" id="rep-filter-opp-wrap"><div class="label">Opponent</div><select id="rep-opp" onchange="buildReport()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:130px;" id="rep-filter-comp-wrap"><div class="label">Competition</div><select id="rep-comp" onchange="buildReport()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:130px;" id="rep-filter-gk-wrap"><div class="label">Goalkeeper</div><select id="rep-gk" onchange="buildReport()"><option value="">All</option></select></div>
+      <button class="btn btn-accent" onclick="exportReport()" style="flex-shrink:0;margin-top:18px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+  <div id="report-content"></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="page-title">Settings</div>
+  <div class="page-sub">Configure your club identity and manage data lists.</div>
+  <div class="g2" style="gap:16px;">
+    <div class="card">
+      <div class="card-title">Club Identity</div>
+      <div style="margin-bottom:14px;"><div class="label">Club / Organization Name</div><input type="text" id="set-club-name" placeholder="My Club" oninput="saveSettings()"></div>
+      <div><div class="label">Accent Color</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:5px;">
+          <input type="color" id="set-accent" oninput="applyAccent(this.value)">
+          <span id="set-accent-hex" style="font-family:var(--mono);font-size:11px;color:var(--mute);">#e8ff00</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Opponents / Clubs</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-club-input" placeholder="Add club name…" onkeydown="if(event.key==='Enter')addItem('clubs','add-club-input','clubs-list')">
+        <button class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('clubs','add-club-input','clubs-list')">Add</button>
+      </div>
+      <div id="clubs-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Competitions</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-comp-input" placeholder="Add competition…" onkeydown="if(event.key==='Enter')addItem('comps','add-comp-input','comps-list')">
+        <button class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('comps','add-comp-input','comps-list')">Add</button>
+      </div>
+      <div id="comps-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Goalkeepers</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-gk-input" placeholder="Add goalkeeper name…" onkeydown="if(event.key==='Enter')addItem('gks','add-gk-input','gks-list')">
+        <button class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('gks','add-gk-input','gks-list')">Add</button>
+      </div>
+      <div id="gks-list"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+<script>
+// ═══ STATE ═══════════════════════════════════════════════════════
+const ST = {
+  clubs:['Al-Kuwait','Al-Arabi','Al-Salmiya','Al-Shabab','Al-Jahra'],
+  comps:['Kuwait Premier League','Kuwait Cup','Kuwait Super Cup'],
+  gks:['GK 1','GK 2','GK 3'],
+  games:[],
+  accent:'#e8ff00',
+  clubName:'My Club'
+};
+let CUR = newGame();
+let editingGameId = null; // null = new game, string id = editing existing game
+let SF = { minute:'', moment:null, skill:null, result:null, hDistance:null, goalZone:null, courtZone:null, gk:null };
+let lastShotGk = null; // persiste o GK entre finalizações
+let editShotIdx = null;
+const CHARTS = {};
+let reportType = 'game';
+
+function newGame(){
+  const y = new Date().getFullYear();
+  return {id:Date.now(),date:'',opponent:'',competition:'',gk:'',season:`${y}-${String(y+1).slice(2)}`,shots:[]};
+}
+
+// ═══ STORAGE ══════════════════════════════════════════════════════
+// ═══ FIREBASE PERSISTENCE ════════════════════════════════════════
+function persist(){
+  // Settings
+  window.fbSet('fluxgk/settings', {
+    clubs: ST.clubs,
+    comps: ST.comps,
+    gks:   ST.gks,
+    accent: ST.accent,
+    clubName: ST.clubName
+  }).catch(e=>console.error('FB settings write error:',e));
+}
+function persistGame(game){
+  // Write single game (used after save/update)
+  const g = {...game, shots: game.shots||[]};
+  window.fbSet('fluxgk/games/'+g.id, g).catch(e=>console.error('FB game write error:',e));
+}
+function deleteGameFB(id){
+  window.fbRemove('fluxgk/games/'+id).catch(e=>console.error('FB game delete error:',e));
+}
+function hydrate(){
+  // No-op: hydration is handled by fbListen real-time listener
+}
+
+// ═══ NAV ══════════════════════════════════════════════════════════
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const pages=['dashboard','record','history','reports','settings'];
+  const idx=pages.indexOf(name); if(idx>=0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(name==='dashboard') renderDashboard();
+  if(name==='history') renderHistory();
+  if(name==='reports'){populateReportFilters();buildReport();}
+  if(name==='record'){
+    populateRecordSelects();
+    // sync banner visibility
+    const banner=document.getElementById('rec-edit-banner');
+    if(banner) banner.style.display=editingGameId?'flex':'none';
+  }
+  if(name==='settings') renderSettings();
+}
+
+// ═══ SETTINGS ═════════════════════════════════════════════════════
+function saveSettings(){
+  ST.clubName=document.getElementById('set-club-name').value||'My Club';
+  document.getElementById('nav-club-name').textContent=ST.clubName;
+  persist();
+}
+function applyAccent(color){
+  ST.accent=color;
+  document.documentElement.style.setProperty('--accent',color);
+  document.getElementById('set-accent-hex').textContent=color;
+  persist();
+}
+function renderSettings(){
+  document.getElementById('set-club-name').value=ST.clubName;
+  document.getElementById('set-accent').value=ST.accent;
+  document.getElementById('set-accent-hex').textContent=ST.accent;
+  ['clubs','comps','gks'].forEach(k=>renderList(k));
+}
+function renderList(key){
+  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list'}[key];
+  const el=document.getElementById(listId); if(!el) return;
+  el.innerHTML='';
+  if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No items yet.</div>';return;}
+  ST[key].forEach((item,i)=>{
+    const d=document.createElement('div'); d.className='list-item';
+    d.innerHTML=`<span style="font-size:13px;">${item}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+    el.appendChild(d);
+  });
+}
+function addItem(key,inputId,listId){
+  const inp=document.getElementById(inputId);
+  const v=inp.value.trim(); if(!v||ST[key].includes(v)){inp.focus();return;}
+  ST[key].push(v); inp.value=''; persist(); renderList(key); populateAllSelects();
+}
+function removeItem(key,idx){
+  ST[key].splice(idx,1); persist(); renderList(key); populateAllSelects();
+}
+
+// ═══ SELECTS ══════════════════════════════════════════════════════
+function fillSelect(id,items,allLabel){
+  const el=document.getElementById(id); if(!el) return;
+  const cur=el.value;
+  el.innerHTML=allLabel?`<option value="">${allLabel}</option>`:'';
+  items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
+}
+function getSeasons(){return [...new Set(ST.games.map(g=>g.season))].sort().reverse();}
+function populateAllSelects(){
+  const seasons=getSeasons();
+  ['dash-season','hist-season','rep-season'].forEach(id=>fillSelect(id,seasons,'All Seasons'));
+  ['dash-gk','hist-gk','rep-gk'].forEach(id=>fillSelect(id,ST.gks,'All GKs'));
+  ['dash-opp','hist-opp','rep-opp'].forEach(id=>fillSelect(id,ST.clubs,'All Opponents'));
+  ['dash-comp','hist-comp','rep-comp'].forEach(id=>fillSelect(id,ST.comps,'All Competitions'));
+  populateRecordSelects();
+}
+function populateRecordSelects(){
+  ['rec-opp','rec-comp'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    const items={'rec-opp':ST.clubs,'rec-comp':ST.comps}[id];
+    const labels={'rec-opp':'Select opponent…','rec-comp':'Select competition…'};
+    el.innerHTML=`<option value="">${labels[id]}</option>`;
+    items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});
+  });
+  if(CUR.opponent) document.getElementById('rec-opp').value=CUR.opponent;
+  if(CUR.competition) document.getElementById('rec-comp').value=CUR.competition;
+  if(CUR.date) document.getElementById('rec-date').value=CUR.date;
+  if(CUR.season) document.getElementById('rec-season').value=CUR.season;
+  // populate sf-gk (per-shot GK selector)
+  populateShotGkSelect();
+}
+function populateShotGkSelect(selectedGk){
+  const el=document.getElementById('sf-gk'); if(!el) return;
+  const cur=selectedGk||lastShotGk||SF.gk||'';
+  el.innerHTML='<option value="">GK (optional)…</option>';
+  ST.gks.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
+  if(cur){ SF.gk=cur; }
+}
+function populateReportFilters(){
+  fillSelect('rep-season',getSeasons(),'All Seasons');
+  fillSelect('rep-opp',ST.clubs,'All Opponents');
+  fillSelect('rep-comp',ST.comps,'All Competitions');
+  fillSelect('rep-gk',ST.gks,'All GKs');
+  const gs=document.getElementById('rep-game'); if(!gs) return;
+  gs.innerHTML='<option value="">All Games</option>';
+  ST.games.forEach(g=>{
+    const o=document.createElement('option');
+    o.value=g.id; o.textContent=`${g.date} vs ${g.opponent||'?'} (${g.shots.length}sh)`;
+    gs.appendChild(o);
+  });
+}
+
+// ═══ MULTI-CHOICE ═════════════════════════════════════════════════
+function mcSel(btn,field,val){
+  const group=btn.closest('.mc-group');
+  group.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  SF[field]=val;
+}
+function selGoal(btn,zone){
+  document.querySelectorAll('.goal-zone').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); SF.goalZone=zone;
+}
+function selCourt(btn,zone){
+  document.querySelectorAll('.court-zone').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); SF.courtZone=zone;
+}
+
+// ═══ RECORD ═══════════════════════════════════════════════════════
+function recTab(t){
+  ['meta','shots','review'].forEach(n=>{
+    document.getElementById('rec-phase-'+n).style.display=n===t?'':'none';
+    const tab=document.getElementById('rec-tab-'+n); if(tab) tab.classList.toggle('active',n===t);
+  });
+  if(t==='review') buildReview();
+  // Show/hide edit context banner
+  const banner=document.getElementById('rec-edit-banner');
+  if(banner) banner.style.display=editingGameId?'':'none';
+}
+function cancelEditGame(){
+  if(!confirm('Discard changes and go back to History?')) return;
+  CUR=newGame(); editingGameId=null; lastShotGk=null;
+  clearShotForm(); recTab('meta');
+  populateRecordSelects();
+  showPage('history');
+}
+function navToRecord(){
+  // If currently editing, warn before discarding
+  if(editingGameId!==null&&CUR.shots.length>0){
+    if(!confirm('You are editing a saved game. Discard changes and start a new game?')) return;
+    CUR=newGame(); editingGameId=null; lastShotGk=null;
+    clearShotForm(); recTab('meta');
+  }
+  showPage('record');
+}
+function recNextToShots(){
+  CUR.date=document.getElementById('rec-date').value;
+  CUR.season=document.getElementById('rec-season').value;
+  CUR.opponent=document.getElementById('rec-opp').value;
+  CUR.competition=document.getElementById('rec-comp').value;
+  if(!CUR.date||!CUR.opponent){alert('Date and Opponent are required.');return;}
+  recTab('shots'); renderShotsList(); updateShotNum(); populateShotGkSelect();
+}
+function updateShotNum(){
+  document.getElementById('shot-form-num').textContent=editShotIdx!==null?editShotIdx+1:CUR.shots.length+1;
+  document.getElementById('rec-shot-count').textContent=CUR.shots.length;
+}
+function clearShotForm(){
+  document.getElementById('sf-minute').value='';
+  ['sf-moment-group','sf-skill-group','sf-result-group','sf-hdist-group'].forEach(id=>{
+    document.getElementById(id).querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));
+  });
+  document.querySelectorAll('.goal-zone').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.court-zone').forEach(b=>b.classList.remove('active'));
+  // preserve gk from last shot, reset everything else
+  const preservedGk = lastShotGk;
+  SF={minute:'',moment:null,skill:null,result:null,hDistance:null,goalZone:null,courtZone:null,gk:preservedGk};
+  editShotIdx=null; updateShotNum();
+  populateShotGkSelect(preservedGk);
+}
+function saveShot(){
+  if(!SF.result){alert('Please select a Result.');return;}
+  const gkVal=document.getElementById('sf-gk').value||SF.gk||null;
+  if(gkVal) lastShotGk=gkVal;
+  const shot={...SF, minute:document.getElementById('sf-minute').value, gk:gkVal};
+  if(editShotIdx!==null) CUR.shots[editShotIdx]=shot;
+  else CUR.shots.push(shot);
+  clearShotForm(); renderShotsList(); updateShotNum();
+}
+function renderShotsList(){
+  const el=document.getElementById('shots-list');
+  if(CUR.shots.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No shots recorded yet.</div>';return;}
+  el.innerHTML='';
+  CUR.shots.forEach((s,i)=>{
+    const isGoal=s.result==='Goal conceded',isSave=s.result==='Save';
+    const d=document.createElement('div');
+    d.className=`shot-item${isGoal?' goal':isSave?' save':''}`;
+    const tags=[s.gk,s.moment,s.skill,s.hDistance].filter(Boolean).map(t=>`<span class="shot-tag">${t}</span>`).join('');
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--mute);">#${i+1}</span>
+        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>
+        <span style="margin-left:8px;font-size:12px;color:${isGoal?'var(--red)':isSave?'var(--green)':'var(--mute)'};">${s.result||'—'}</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="editShot(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="delShot(${i})">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">${tags}</div>`;
+    el.appendChild(d);
+  });
+}
+function editShot(idx){
+  const s=CUR.shots[idx]; editShotIdx=idx;
+  document.getElementById('sf-minute').value=s.minute||'';
+  SF={...s};
+  const fieldMap={'moment':'sf-moment-group','skill':'sf-skill-group','result':'sf-result-group','hDistance':'sf-hdist-group'};
+  Object.entries(fieldMap).forEach(([key,gid])=>{
+    if(!s[key]) return;
+    document.getElementById(gid).querySelectorAll('.mc-btn').forEach(b=>{
+      b.classList.toggle('active',b.textContent.trim()===s[key].trim());
+    });
+  });
+  const gl={1:'',2:'',3:'',4:'',5:'',6:''};
+  document.querySelectorAll('.goal-zone').forEach((b,i)=>{b.classList.toggle('active',i+1===s.goalZone);});
+  document.querySelectorAll('.court-zone').forEach(b=>{b.classList.toggle('active',parseInt(b.getAttribute('onclick').match(/\d+/)?.[0]||'0')===s.courtZone);});
+  populateShotGkSelect(s.gk||lastShotGk||'');
+  updateShotNum();
+}
+function delShot(idx){
+  CUR.shots.splice(idx,1); renderShotsList(); updateShotNum();
+}
+function buildReview(){
+  const s=calcStats(CUR.shots);
+  const isEdit=editingGameId!==null;
+  document.getElementById('review-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-n">${s.total}</div><div class="kpi-l">Shots</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--green)">${s.saves}</div><div class="kpi-l">Saves</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--red)">${s.goals}</div><div class="kpi-l">Goals</div></div>
+    <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">Save Rate</div></div>
+    <div class="kpi"><div class="kpi-n">${s.out}</div><div class="kpi-l">Out</div></div>`;
+  const saveBtn=document.getElementById('review-save-btn');
+  if(saveBtn) saveBtn.textContent=isEdit?'✓ Update Game':'✓ Save Game';
+}
+function saveGame(){
+  if(!CUR.date||!CUR.opponent){alert('Date and Opponent required. Go back to Game Info.');return;}
+  if(editingGameId!==null){
+    const gameToSave={...CUR,id:editingGameId};
+    const idx=ST.games.findIndex(g=>g.id==editingGameId);
+    if(idx>=0) ST.games[idx]=gameToSave; else ST.games.push(gameToSave);
+    persistGame(gameToSave);
+    const shotCount=CUR.shots.length;
+    CUR=newGame(); editingGameId=null; lastShotGk=null; clearShotForm(); recTab('meta');
+    populateRecordSelects(); populateAllSelects();
+    alert('Game updated! '+shotCount+' shots saved.');
+  } else {
+    const gameToSave={...CUR,id:Date.now()};
+    ST.games.push(gameToSave);
+    persistGame(gameToSave);
+    const shotCount=gameToSave.shots.length;
+    CUR=newGame(); lastShotGk=null; clearShotForm(); recTab('meta');
+    populateRecordSelects(); populateAllSelects();
+    alert('Game saved! '+shotCount+' shots recorded.');
+  }
+}
+
+// ═══ HISTORY ══════════════════════════════════════════════════════
+function renderHistory(){
+  const filters={season:document.getElementById('hist-season').value,opp:document.getElementById('hist-opp').value,gk:document.getElementById('hist-gk').value,comp:document.getElementById('hist-comp').value};
+  const filtered=ST.games.filter(g=>{
+    if(filters.season&&g.season!==filters.season) return false;
+    if(filters.opp&&g.opponent!==filters.opp) return false;
+    if(filters.comp&&g.competition!==filters.comp) return false;
+    if(filters.gk&&!g.shots.some(s=>s.gk===filters.gk)) return false;
+    return true;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const el=document.getElementById('history-list');
+  if(filtered.length===0){el.innerHTML='<div style="color:var(--mute);padding:24px;">No games found.</div>';return;}
+  el.innerHTML='';
+  filtered.forEach(g=>{
+    const s=calcStats(g.shots);
+    const gkList=[...new Set(g.shots.map(sh=>sh.gk).filter(Boolean))].join(', ')||'—';
+    const d=document.createElement('div'); d.className='game-row';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;font-size:14px;">${g.opponent||'Unknown'} <span style="color:var(--mute);font-weight:400;font-size:12px;">— ${g.date||'—'}</span></div>
+        <div style="font-size:11px;color:var(--mute);margin-top:3px;">${g.competition||'—'} · GKs: ${gkList} · Season ${g.season} · ${g.shots.length} shots</div>
+        <div style="margin-top:8px;display:flex;gap:14px;">
+          <span style="font-size:12px;color:var(--green);">${s.saves} saves</span>
+          <span style="font-size:12px;color:var(--red);">${s.goals} goals</span>
+          <span style="font-size:12px;color:var(--mute);">${s.out} out · ${s.blocked} blocked</span>
+          <span class="badge ${s.savePct>=70?'badge-green':s.savePct>=50?'badge-amber':'badge-red'}">${s.savePct}% save rate</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="openGameInRecord('${g.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteGame('${g.id}')">Delete</button>
+      </div>
+    </div>`;
+    el.appendChild(d);
+  });
+}
+
+function renderHistoryShotsList(gameId){
+  const g=ST.games.find(g=>g.id==gameId); if(!g) return;
+  const el=document.getElementById('hist-shots-'+gameId); if(!el) return;
+  if(g.shots.length===0){el.innerHTML='<div style="color:var(--mute);font-size:12px;padding:8px 0;">No shots recorded.</div>';return;}
+  el.innerHTML='';
+  g.shots.forEach((s,i)=>{
+    const isGoal=s.result==='Goal conceded',isSave=s.result==='Save';
+    const tags=[s.gk,s.moment,s.skill,s.hDistance].filter(Boolean).map(t=>`<span class="shot-tag">${t}</span>`).join('');
+    const d=document.createElement('div');
+    d.className=`shot-item${isGoal?' goal':isSave?' save':''}`;
+    d.style.padding='10px 12px';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+      <div>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--mute);">#${i+1}</span>
+        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>
+        <span style="margin-left:8px;font-size:12px;color:${isGoal?'var(--red)':isSave?'var(--green)':'var(--mute)'};">${s.result||'—'}</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="histEditShot('${gameId}',${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" style="font-size:10px;" onclick="histDeleteShot('${gameId}',${i})">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">${tags}</div>`;
+    el.appendChild(d);
+  });
+}
+
+function histDeleteShot(gameId,idx){
+  if(!confirm('Delete this shot?')) return;
+  const g=ST.games.find(g=>g.id==gameId); if(!g) return;
+  g.shots.splice(idx,1);
+  persistGame(g);
+  renderHistoryShotsList(gameId);
+  renderHistory();
+}
+
+function histAddShot(gameId){
+  showHistShotForm(gameId,null);
+}
+function histEditShot(gameId,idx){
+  showHistShotForm(gameId,idx);
+}
+
+function showHistShotForm(gameId,idx){
+  const g=ST.games.find(g=>g.id==gameId); if(!g) return;
+  const formEl=document.getElementById('hist-shot-form-'+gameId); if(!formEl) return;
+  const s=idx!==null?g.shots[idx]:{};
+  const isEdit=idx!==null;
+  const title=isEdit?`Edit Shot #${idx+1}`:'New Shot';
+
+  function mcBtns(field,opts,cur){
+    return opts.map(o=>`<button class="mc-btn${cur===o?' active':''}" onclick="histMcSel(this,'${field}','${o}')">${o}</button>`).join('');
+  }
+  function gkOpts(cur){
+    return `<option value="">GK (optional)…</option>`+ST.gks.map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
+  }
+
+  const goalBtns=[1,2,3,4,5,6].map(z=>`<button class="goal-zone${s.goalZone===z?' active':''}" onclick="histSelGoal(this,${z},'${gameId}')"></button>`).join('');
+  const courtBtns=[124,152,125].map(z=>`<button class="court-zone${s.courtZone===z?' active':''}" onclick="histSelCourt(this,${z},'${gameId}')"></button>`).join('');
+
+  formEl.style.display='';
+  formEl.innerHTML=`
+    <div class="card" style="border-color:var(--accent);padding:16px;">
+      <div style="font-weight:700;font-size:14px;margin-bottom:14px;">${title}</div>
+      <div class="g2" style="gap:14px;">
+        <div>
+          <div class="label">Goalkeeper</div>
+          <select id="hf-gk-${gameId}" style="margin-bottom:0;">${gkOpts(s.gk||'')}</select>
+        </div>
+        <div>
+          <div class="label">Minute</div>
+          <input type="text" id="hf-min-${gameId}" value="${s.minute||''}" placeholder="e.g. 14">
+        </div>
+        <div>
+          <div class="label">Game Moment</div>
+          <div class="mc-group" id="hf-moment-${gameId}">${mcBtns('moment',['Leaving pressure','Organized attack','Transition','Ball stop','Special game'],s.moment)}</div>
+        </div>
+        <div>
+          <div class="label">Skill Type</div>
+          <div class="mc-group" id="hf-skill-${gameId}">${mcBtns('skill',['1vs1','Goal protection','2nd post'],s.skill)}</div>
+        </div>
+        <div>
+          <div class="label">Result *</div>
+          <div class="mc-group" id="hf-result-${gameId}">${mcBtns('result',['Save','Blocked','Out','Goal conceded','Post'],s.result)}</div>
+        </div>
+        <div>
+          <div class="label">Horizontal Distance</div>
+          <div class="mc-group" id="hf-hdist-${gameId}">${mcBtns('hDistance',['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'],s.hDistance)}</div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:8px;">Shot Location on Goal</div>
+          <div class="goal-bar"></div>
+          <div class="goal-grid" id="hf-goal-${gameId}">${goalBtns}</div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:8px;">Vertical Shot Position</div>
+          <div class="court-wrap">
+            <div class="court-top"><div class="court-circle"></div></div>
+            <div class="court-div"></div>
+            <div class="court-grid" id="hf-court-${gameId}">${courtBtns}</div>
+            <div class="court-gkbox"><div class="court-gkrect"></div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;">
+        <button class="btn btn-accent btn-sm" onclick="histSaveShot('${gameId}',${idx})">
+          ${isEdit?'Save Changes':'Add Shot'}
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('hist-shot-form-${gameId}').style.display='none'">Cancel</button>
+      </div>
+    </div>`;
+  // store temp state per game form
+  window['_hf_'+gameId]={moment:s.moment||null,skill:s.skill||null,result:s.result||null,hDistance:s.hDistance||null,goalZone:s.goalZone||null,courtZone:s.courtZone||null};
+}
+
+function histMcSel(btn,field,val){
+  const group=btn.closest('.mc-group');
+  group.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // find gameId from group id
+  const gid=group.id.split('-').pop();
+  if(window['_hf_'+gid]) window['_hf_'+gid][field]=val;
+}
+function histSelGoal(btn,zone,gameId){
+  btn.closest('.goal-grid').querySelectorAll('.goal-zone').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(window['_hf_'+gameId]) window['_hf_'+gameId].goalZone=zone;
+}
+function histSelCourt(btn,zone,gameId){
+  btn.closest('.court-grid').querySelectorAll('.court-zone').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(window['_hf_'+gameId]) window['_hf_'+gameId].courtZone=zone;
+}
+function histSaveShot(gameId,idx){
+  const g=ST.games.find(g=>g.id==gameId); if(!g) return;
+  const hf=window['_hf_'+gameId]||{};
+  const result=hf.result;
+  if(!result){alert('Please select a Result.');return;}
+  const shot={
+    minute:document.getElementById('hf-min-'+gameId).value,
+    gk:document.getElementById('hf-gk-'+gameId).value||null,
+    moment:hf.moment||null,
+    skill:hf.skill||null,
+    result:result,
+    hDistance:hf.hDistance||null,
+    goalZone:hf.goalZone||null,
+    courtZone:hf.courtZone||null,
+  };
+  if(idx!==null&&idx!==undefined) g.shots[idx]=shot;
+  else g.shots.push(shot);
+  persistGame(g);
+  document.getElementById('hist-shot-form-'+gameId).style.display='none';
+  renderHistoryShotsList(gameId);
+  renderHistory();
+}
+function toggleEditGame(id){
+  openGameInRecord(id);
+}
+function openGameInRecord(id){
+  const g=ST.games.find(g=>g.id==id); if(!g) return;
+  // Deep-copy game into CUR
+  CUR={...g, shots:g.shots.map(s=>({...s}))};
+  editingGameId=id;
+  lastShotGk=g.shots.length?g.shots[g.shots.length-1].gk||null:null;
+  // Navigate to Record page
+  showPage('record');
+  // Pre-fill meta fields (after selects are populated by showPage)
+  document.getElementById('rec-date').value=CUR.date||'';
+  document.getElementById('rec-season').value=CUR.season||'';
+  const oppEl=document.getElementById('rec-opp');
+  if(oppEl) oppEl.value=CUR.opponent||'';
+  const compEl=document.getElementById('rec-comp');
+  if(compEl) compEl.value=CUR.competition||'';
+  // Show banner
+  const banner=document.getElementById('rec-edit-banner');
+  if(banner) banner.style.display='flex';
+  // Go straight to shots tab
+  recTab('shots');
+  renderShotsList();
+  updateShotNum();
+  populateShotGkSelect(lastShotGk||'');
+}
+function saveEditGame(id){
+  const g=ST.games.find(g=>g.id==id); if(!g) return;
+  g.date=document.getElementById('eg-date-'+id).value;
+  g.season=document.getElementById('eg-season-'+id).value;
+  g.opponent=document.getElementById('eg-opp-'+id).value;
+  g.competition=document.getElementById('eg-comp-'+id).value;
+  persist(); renderHistory(); populateAllSelects();
+}
+function deleteGame(id){
+  if(!confirm('Delete this game and all its shots?')) return;
+  ST.games=ST.games.filter(g=>g.id!=id);
+  deleteGameFB(id);
+  renderHistory(); populateAllSelects();
+}
+
+// ═══ STATS HELPERS ════════════════════════════════════════════════
+function calcStats(shots){
+  const total=shots.length;
+  const saves=shots.filter(s=>s.result==='Save').length;
+  const goals=shots.filter(s=>s.result==='Goal conceded').length;
+  const blocked=shots.filter(s=>s.result==='Blocked').length;
+  const out=shots.filter(s=>s.result==='Out').length;
+  const post=shots.filter(s=>s.result==='Post').length;
+  const savePct=total?Math.round(saves/total*100):0;
+  return {total,saves,goals,blocked,out,post,savePct};
+}
+function countBy(arr,key){
+  return arr.reduce((acc,item)=>{const v=item[key]||'Unknown';acc[v]=(acc[v]||0)+1;return acc;},{});
+}
+function pctOf(n,t){return t?Math.round(n/t*100):0;}
+
+// ═══ CHARTS ═══════════════════════════════════════════════════════
+function acc(){return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e8ff00';}
+const RESULT_COLORS=['#16a34a','#737373','#444','#dc2626','#d97706'];
+const RESULT_ORDER=['Save','Out','Blocked','Goal conceded','Post'];
+const HDIST_ORDER=['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'];
+const MOMENT_ORDER=['Leaving pressure','Organized attack','Transition','Ball stop','Special game'];
+const SKILL_ORDER=['Goal protection','1vs1','2nd post'];
+
+function baseChartOpts(){
+  return {responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a1a',titleColor:'#fafaf7',bodyColor:'#737373',borderColor:'#333',borderWidth:1}}};
+}
+function mkChart(id,type,labels,data,colors,horiz){
+  const ctx=document.getElementById(id); if(!ctx) return;
+  if(CHARTS[id]) CHARTS[id].destroy();
+  const a=acc();
+  const bg=colors||labels.map((_,i)=>[a,'#555','#888','#333','#aaa','#1a1a1a'][i%6]);
+  const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
+  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}}};
+  else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
+  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#0d0d0d':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
+}
+function orderedChart(id,type,obj,order,colors,horiz){
+  const labels=order?order.filter(l=>obj[l]!=null):Object.keys(obj);
+  const data=labels.map(l=>obj[l]||0);
+  mkChart(id,type,labels,data,colors,horiz);
+}
+
+// ═══ HEATMAPS ═════════════════════════════════════════════════════
+function goalHeatmapHtml(shots,total){
+  const zones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
+  const counts=zones.map(z=>shots.filter(s=>s.goalZone===z.id).length);
+  const max=Math.max(1,...counts);
+  return `<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 6px 6px;">
+    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
+      return `<div class="hm-cell" style="height:50px;background:rgba(232,255,0,${(ins*.75+.05).toFixed(2)});">
+        <div style="font-weight:700;font-size:14px;color:${bright?'#0a0a0a':'#fafaf7'}">${c}</div>
+        <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
+      </div>`;}).join('')}
+    </div>`;
+}
+function courtHeatmapHtml(shots,total){
+  const zones=[{id:124},{id:152},{id:125}];
+  const counts=zones.map(z=>shots.filter(s=>s.courtZone===z.id).length);
+  const max=Math.max(1,...counts);
+  return `<div class="court-wrap">
+    <div class="court-top"><div class="court-circle"></div></div>
+    <div class="court-div"></div>
+    <div style="background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;">
+    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
+      return `<div class="hm-cell" style="border-radius:4px;background:rgba(74,222,128,${(ins*.8+.05).toFixed(2)});">
+        <div style="font-weight:700;font-size:12px;color:${bright?'#0a2a0a':'#fafaf7'}">${c}</div>
+        <div style="font-size:8px;color:${bright?'#1a5a1a':'#555'};font-family:var(--mono);">${z.id}<br>${p}%</div>
+      </div>`;}).join('')}
+    </div>
+    <div class="court-gkbox"><div class="court-gkrect"></div></div>
+  </div>`;
+}
+
+// ═══ DASHBOARD ════════════════════════════════════════════════════
+function renderDashboard(){
+  const f={season:document.getElementById('dash-season').value,gk:document.getElementById('dash-gk').value,opp:document.getElementById('dash-opp').value,comp:document.getElementById('dash-comp').value};
+  const games=ST.games.filter(g=>(!f.season||g.season===f.season)&&(!f.opp||g.opponent===f.opp)&&(!f.comp||g.competition===f.comp));
+  // filter shots by gk if selected
+  let shots=games.flatMap(g=>g.shots);
+  if(f.gk) shots=shots.filter(s=>s.gk===f.gk);
+  const s=calcStats(shots);
+  document.getElementById('kpi-games').textContent=games.length;
+  document.getElementById('kpi-shots').textContent=s.total;
+  document.getElementById('kpi-saves').textContent=s.saves;
+  document.getElementById('kpi-goals').textContent=s.goals;
+  document.getElementById('kpi-savepct').textContent=s.total?s.savePct+'%':'—';
+  orderedChart('ch-result','bar',countBy(shots,'result'),RESULT_ORDER,RESULT_COLORS,false);
+  orderedChart('ch-moment','bar',countBy(shots,'moment'),MOMENT_ORDER,null,false);
+  orderedChart('ch-skill','doughnut',countBy(shots,'skill'),SKILL_ORDER,null,false);
+  orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
+  document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total);
+  document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total);
+}
+
+// ═══ REPORTS ══════════════════════════════════════════════════════
+function selReportType(btn,type){
+  document.querySelectorAll('.rtype-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); reportType=type;
+  const showGame=type==='game',showOpp=['opponent','game'].includes(type),showComp=['competition','game'].includes(type),showGk=type==='gk';
+  document.getElementById('rep-filter-game-wrap').style.display=showGame?'':'none';
+  document.getElementById('rep-filter-opp-wrap').style.display=showOpp?'':'none';
+  document.getElementById('rep-filter-comp-wrap').style.display=showComp?'':'none';
+  document.getElementById('rep-filter-gk-wrap').style.display=showGk?'':'none';
+  buildReport();
+}
+function getReportGames(){
+  const season=document.getElementById('rep-season').value;
+  const gameId=document.getElementById('rep-game').value;
+  const opp=document.getElementById('rep-opp').value;
+  const comp=document.getElementById('rep-comp').value;
+  const gk=document.getElementById('rep-gk').value;
+  return ST.games.filter(g=>{
+    if(season&&g.season!==season) return false;
+    if(gameId&&g.id!=gameId) return false;
+    if(opp&&g.opponent!==opp) return false;
+    if(comp&&g.competition!==comp) return false;
+    if(gk&&!g.shots.some(s=>s.gk===gk)) return false;
+    return true;
+  });
+}
+function buildReport(){
+  const games=getReportGames();
+  const el=document.getElementById('report-content');
+  el.innerHTML='';
+  if(games.length===0){el.innerHTML='<div style="color:var(--mute);padding:24px;text-align:center;">No games match the selected filters.</div>';return;}
+  if(reportType==='game'){
+    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null)));
+  } else {
+    const key=reportType==='competition'?'competition':reportType==='opponent'?'opponent':reportType==='season'?'season':'gk';
+    const groups={};
+    games.forEach(g=>{const k=g[key]||'Unknown';if(!groups[k])groups[k]=[];groups[k].push(g);});
+    Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,gList])=>{
+      el.appendChild(makeReportBlock(k,`${gList.length} game${gList.length!==1?'s':''} · ${gList.flatMap(g=>g.shots).length} shots`,gList.flatMap(g=>g.shots),gList));
+    });
+  }
+}
+function makeReportBlock(title,subtitle,shots,games){
+  const s=calcStats(shots);
+  const uid='r'+Math.random().toString(36).slice(2,8);
+  const div=document.createElement('div'); div.className='card mb16';
+  div.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div>
+        <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${title}</div>
+        <div style="font-size:11px;color:var(--mute);margin-top:3px;">${subtitle}</div>
+      </div>
+      <span class="badge ${s.savePct>=70?'badge-green':s.savePct>=50?'badge-amber':'badge-red'}" style="font-size:11px;padding:5px 12px;">${s.savePct}% saves</span>
+    </div>
+    <div class="g6 mb20">
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.total}</div><div class="kpi-l">Shots</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--green);">${s.saves}</div><div class="kpi-l">Saves</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--red);">${s.goals}</div><div class="kpi-l">Goals</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.out}</div><div class="kpi-l">Out</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.post}</div><div class="kpi-l">Post</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div><div class="card-title">Results</div><canvas id="${uid}r" height="170"></canvas></div>
+      <div><div class="card-title">Game Moment</div><canvas id="${uid}m" height="170"></canvas></div>
+      <div><div class="card-title">Skill Type</div><canvas id="${uid}k" height="170"></canvas></div>
+      <div><div class="card-title">H. Distance</div><canvas id="${uid}d" height="170"></canvas></div>
+    </div>
+    <div class="g2">
+      <div><div class="card-title">Shot Location on Goal</div>${goalHeatmapHtml(shots,s.total)}</div>
+      <div><div class="card-title">Vertical Shot Position</div><div style="display:flex;justify-content:center;">${courtHeatmapHtml(shots,s.total)}</div></div>
+    </div>
+    ${games?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="card-title">Games</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${games.map(g=>`<span class="badge badge-mute">${g.date} vs ${g.opponent} (${g.shots.length})</span>`).join('')}
+      </div></div>`:''}`;
+  setTimeout(()=>{
+    const rc=countBy(shots,'result'),mc=countBy(shots,'moment'),kc=countBy(shots,'skill'),dc=countBy(shots,'hDistance');
+    orderedChart(uid+'r','bar',rc,RESULT_ORDER,RESULT_COLORS,false);
+    orderedChart(uid+'m','bar',mc,MOMENT_ORDER,null,false);
+    orderedChart(uid+'k','doughnut',kc,SKILL_ORDER,null,false);
+    orderedChart(uid+'d','bar',dc,HDIST_ORDER,null,true);
+  },60);
+  return div;
+}
+
+// ═══ EXPORT PDF ═══════════════════════════════════════════════════
+function exportReport(){
+  const games=getReportGames();
+  if(games.length===0){alert('No data to export. Adjust filters first.');return;}
+  const shots=games.flatMap(g=>g.shots);
+  const s=calcStats(shots);
+  const a=ST.accent;
+  const title={game:'By Game',competition:'By Competition',opponent:'By Opponent',season:'By Season',gk:'By Goalkeeper'}[reportType]||'Report';
+
+  function bar(label,count,total,color){
+    const p=pctOf(count,total);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+      <div style="width:140px;font-size:11px;color:#666;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</div>
+      <div style="flex:1;height:16px;background:#f0f0f0;border-radius:3px;overflow:hidden;">
+        <div style="width:${p}%;height:100%;background:${color||'#333'};border-radius:3px;min-width:${count>0?4:0}px;"></div>
+      </div>
+      <div style="width:36px;font-size:11px;font-weight:600;color:#111;text-align:right;">${count}</div>
+      <div style="width:32px;font-size:10px;color:#999;">${p}%</div>
+    </div>`;
+  }
+
+  const RC=countBy(shots,'result'),MC=countBy(shots,'moment'),KC=countBy(shots,'skill'),DC=countBy(shots,'hDistance');
+  const resultsHtml=RESULT_ORDER.map((k,i)=>RC[k]?bar(k,RC[k],s.total,[...RESULT_COLORS][i]):bar(k,0,s.total,RESULT_COLORS[i])).join('');
+  const momentHtml=MOMENT_ORDER.map(k=>bar(k,MC[k]||0,s.total,a)).join('');
+  const skillHtml=SKILL_ORDER.map(k=>bar(k,KC[k]||0,s.total,a)).join('');
+  const hdistHtml=HDIST_ORDER.map(k=>bar(k,DC[k]||0,s.total,'#444')).join('');
+
+  const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
+  const gcounts=gzones.map(z=>shots.filter(sh=>sh.goalZone===z.id).length);
+  const gmax=Math.max(1,...gcounts);
+  const goalHm=`<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;background:#111;border-radius:0 0 5px 5px;">
+    ${gzones.map((z,i)=>{const c=gcounts[i];const p=pctOf(c,s.total);const ins=c/gmax;
+      return `<div style="height:44px;border-radius:3px;background:rgba(40,200,30,${(ins*.7+.08).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-weight:700;font-size:13px;color:${ins>.5?'#fff':'#ccc'}">${c}</div>
+        <div style="font-size:9px;color:${ins>.5?'#ddd':'#999'}">${z.l}·${p}%</div></div>`;}).join('')}
+    </div>`;
+
+  const czones=[{id:124,l:'Left'},{id:152,l:'Center'},{id:125,l:'Right'}];
+  const ccounts=czones.map(z=>shots.filter(sh=>sh.courtZone===z.id).length);
+  const cmax=Math.max(1,...ccounts);
+  const courtHm=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+    ${czones.map((z,i)=>{const c=ccounts[i];const p=pctOf(c,s.total);const ins=c/cmax;
+      return `<div style="height:56px;border-radius:6px;border:1px solid #ddd;background:rgba(20,160,80,${(ins*.6+.1).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-weight:700;font-size:14px;color:${ins>.5?'#fff':'#333'}">${c}</div>
+        <div style="font-size:9px;color:${ins>.5?'#ddd':'#999'}">${z.id}·${p}%</div></div>`;}).join('')}
+    </div>`;
+
+  // Table rows
+  let tableHead='',tableRows='';
+  if(reportType==='game'){
+    tableHead='<th>Date</th><th>Opponent</th><th>Competition</th><th>GK</th><th>Season</th><th style="text-align:center">Shots</th><th style="text-align:center">Saves</th><th style="text-align:center">Goals</th><th style="text-align:center">Save%</th>';
+    tableRows=games.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(g=>{
+      const gs=calcStats(g.shots);
+      return `<tr><td>${g.date}</td><td>${g.opponent}</td><td>${g.competition||'—'}</td><td>${g.gk||'—'}</td><td>${g.season}</td>
+        <td style="text-align:center;">${g.shots.length}</td>
+        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
+        <td style="text-align:center;font-weight:700;">${gs.savePct}%</td></tr>`;
+    }).join('');
+  } else {
+    const key={competition:'competition',opponent:'opponent',season:'season',gk:'gk'}[reportType];
+    const groups={};
+    games.forEach(g=>{const k=g[key]||'?';if(!groups[k])groups[k]=[];groups[k].push(g);});
+    tableHead='<th>Group</th><th style="text-align:center">Games</th><th style="text-align:center">Shots</th><th style="text-align:center">Saves</th><th style="text-align:center">Goals</th><th style="text-align:center">Blocked</th><th style="text-align:center">Out</th><th style="text-align:center">Save%</th>';
+    tableRows=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,gList])=>{
+      const gs=calcStats(gList.flatMap(g=>g.shots));
+      return `<tr><td style="font-weight:600;">${k}</td>
+        <td style="text-align:center;">${gList.length}</td>
+        <td style="text-align:center;">${gs.total}</td>
+        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
+        <td style="text-align:center;">${gs.blocked}</td>
+        <td style="text-align:center;">${gs.out}</td>
+        <td style="text-align:center;font-weight:700;">${gs.savePct}%</td></tr>`;
+    }).join('');
+  }
+
+  const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>FluxGK Report — ${title}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#111;background:#fff;padding:0;}
+    @page{size:A4;margin:16mm 14mm;}
+    .wrap{max-width:820px;margin:0 auto;padding:0;}
+    h1{font-size:24px;font-weight:700;letter-spacing:-1px;}
+    .logo-row{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:14px;border-bottom:3px solid ${a};}
+    .logo-sq{width:36px;height:36px;background:${a};border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0;}
+    .sec{margin-bottom:24px;}
+    .sec-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #eee;}
+    .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+    .kpi{background:#f7f7f7;border-radius:6px;padding:10px;text-align:center;}
+    .kpi-n{font-size:22px;font-weight:700;letter-spacing:-1px;color:${a};line-height:1;}
+    .kpi-n.g{color:#16a34a;} .kpi-n.r{color:#dc2626;} .kpi-n.k{color:#111;}
+    .kpi-l{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-top:3px;}
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .chart-box{background:#f9f9f9;border-radius:8px;padding:14px;}
+    .chart-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:10px;}
+    .spatial{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+    th{background:#f0f0f0;padding:7px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.06em;color:#666;text-transform:uppercase;}
+    td{padding:7px 10px;border-bottom:1px solid #f5f5f5;}
+    tr:nth-child(even) td{background:#fafafa;}
+    .footer{margin-top:24px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10px;color:#ccc;}
+    .no-print{margin-top:20px;text-align:center;}
+    @media print{.no-print{display:none;}}
+  </style></head><body>
+  <div class="wrap">
+    <div class="logo-row">
+      <div class="logo-sq">GK</div>
+      <div>
+        <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${ST.clubName}</div>
+        <div style="font-size:9px;color:#aaa;letter-spacing:.15em;font-family:monospace;">FLUXGK · DATA-DRIVEN GK ANALYSIS</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-weight:700;font-size:15px;">Report: ${title}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px;">${now}</div>
+        <div style="margin-top:5px;display:inline-block;background:${a};color:#000;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Summary — ${games.length} game${games.length!==1?'s':''} · ${s.total} shots analyzed</div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-n k">${games.length}</div><div class="kpi-l">Games</div></div>
+        <div class="kpi"><div class="kpi-n k">${s.total}</div><div class="kpi-l">Shots</div></div>
+        <div class="kpi"><div class="kpi-n g">${s.saves}</div><div class="kpi-l">Saves</div></div>
+        <div class="kpi"><div class="kpi-n r">${s.goals}</div><div class="kpi-l">Goals</div></div>
+        <div class="kpi"><div class="kpi-n k">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
+        <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">Save Rate</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Shot Analysis</div>
+      <div class="charts">
+        <div class="chart-box"><div class="chart-title">Result Distribution</div>${resultsHtml}</div>
+        <div class="chart-box"><div class="chart-title">Game Moment</div>${momentHtml}</div>
+        <div class="chart-box"><div class="chart-title">Skill Type</div>${skillHtml}</div>
+        <div class="chart-box"><div class="chart-title">Horizontal Distance</div>${hdistHtml}</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Spatial Analysis</div>
+      <div class="spatial">
+        <div class="chart-box"><div class="chart-title">Shot Location on Goal</div>${goalHm}</div>
+        <div class="chart-box"><div class="chart-title">Vertical Shot Position (Corridor)</div>${courtHm}</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Detailed Data</div>
+      <table><thead><tr>${tableHead}</tr></thead><tbody>${tableRows}</tbody></table>
+    </div>
+
+    <div class="footer">
+      <span>FluxGK · Data-Driven GK Analysis Platform</span>
+      <span>${ST.clubName} · ${now}</span>
+    </div>
+
+    <div class="no-print">
+      <button onclick="window.print()" style="padding:11px 28px;background:${a};border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">🖨 Print / Save as PDF</button>
+      <button onclick="window.close()" style="padding:11px 24px;background:#eee;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-left:10px;">✕ Close</button>
+    </div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ═══ BOOT ═════════════════════════════════════════════════════════
+function bootUI(){
+  // Called after Firebase delivers first snapshot
+  document.getElementById('fb-loading').style.display='none';
+  document.documentElement.style.setProperty('--accent',ST.accent);
+  document.getElementById('nav-club-name').textContent=ST.clubName;
+  document.getElementById('rep-filter-gk-wrap').style.display='none';
+  populateAllSelects();
+  renderDashboard();
+  // Sync settings inputs
+  const cn=document.getElementById('set-club-name'); if(cn) cn.value=ST.clubName;
+  const ac=document.getElementById('set-accent'); if(ac) ac.value=ST.accent;
+  const ah=document.getElementById('set-accent-hex'); if(ah) ah.textContent=ST.accent;
+}
+function boot(){
+  // fbListen started by Firebase module script's DOMContentLoaded listener
+  // bootUI() will be called from fbListen once first data arrives
+}
+boot();
+</script>
+</body>
+</html>
