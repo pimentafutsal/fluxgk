@@ -10,73 +10,40 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-(function(){
-const firebaseConfig = {
-  apiKey: "AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",
-  authDomain: "fluxgk-statistics.firebaseapp.com",
-  databaseURL: "https://fluxgk-statistics-default-rtdb.firebaseio.com",
-  projectId: "fluxgk-statistics",
-  storageBucket: "fluxgk-statistics.firebasestorage.app",
-  messagingSenderId: "605696462663",
-  appId: "1:605696462663:web:1df401a86ba7f9e753c662"
-};
-const fbApp = firebase.initializeApp(firebaseConfig, 'stats');
-const db    = firebase.database(fbApp);
-window._fbReady = false;
-window.fbSet    = function(path, val) { return db.ref(path).set(val); };
-window.fbRemove = function(path)      { return db.ref(path).remove(); };
-window.fbUpdate = function(path, val) { return db.ref(path).update(val); };
-window.fbGet    = function(path)      { return db.ref(path).get(); };
-window.fbListen = function() {
-  db.ref('fluxgk').on('value', function(snapshot) {
-    var data = snapshot.val();
-    if (!data) { window._fbReady = true; bootUI(); return; }
-    if (data.settings) {
-      if (data.settings.clubs)    ST.clubs    = data.settings.clubs;
-      if (data.settings.comps)    ST.comps    = data.settings.comps;
-      if (data.settings.gks)      ST.gks      = data.settings.gks;
-      if (data.settings.accent)   { ST.accent = data.settings.accent; document.documentElement.style.setProperty('--accent', ST.accent); var inp=document.getElementById('set-accent'); if(inp) inp.value=ST.accent; var hex=document.getElementById('set-accent-hex'); if(hex) hex.textContent=ST.accent; }
-      if (data.settings.clubName) { ST.clubName = data.settings.clubName; document.getElementById('nav-club-name').textContent = ST.clubName; var inp2=document.getElementById('set-club-name'); if(inp2) inp2.value=ST.clubName; }
+var firebaseConfig={apiKey:"AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",authDomain:"fluxgk-statistics.firebaseapp.com",databaseURL:"https://fluxgk-statistics-default-rtdb.firebaseio.com",projectId:"fluxgk-statistics",storageBucket:"fluxgk-statistics.firebasestorage.app",messagingSenderId:"605696462663",appId:"1:605696462663:web:1df401a86ba7f9e753c662"};
+var fbApp=firebase.initializeApp(firebaseConfig,'stats');
+var db=firebase.database(fbApp);
+window._fbReady=false;
+window.fbSet=function(p,v){return db.ref(p).set(v);};
+window.fbRemove=function(p){return db.ref(p).remove();};
+window.fbUpdate=function(p,v){return db.ref(p).update(v);};
+window.fbGet=function(p){return db.ref(p).get();};
+window.fbListen=function(){
+  db.ref('fluxgk').on('value',function(snapshot){
+    var data=snapshot.val();
+    if(!data){window._fbReady=true;bootUI();return;}
+    if(data.settings){
+      if(data.settings.clubs)ST.clubs=data.settings.clubs;
+      if(data.settings.comps)ST.comps=data.settings.comps;
+      if(data.settings.gks)ST.gks=data.settings.gks;
+      if(data.settings.accent){ST.accent=data.settings.accent;document.documentElement.style.setProperty('--accent',ST.accent);var inp=document.getElementById('set-accent');if(inp)inp.value=ST.accent;var hex=document.getElementById('set-accent-hex');if(hex)hex.textContent=ST.accent;}
+      if(data.settings.clubName){ST.clubName=data.settings.clubName;document.getElementById('nav-club-name').textContent=ST.clubName;var inp2=document.getElementById('set-club-name');if(inp2)inp2.value=ST.clubName;}
     }
-    if (data.games) {
-      ST.games = Object.values(data.games).map(function(g) {
-        return Object.assign({}, g, { shots: g.shots ? (Array.isArray(g.shots) ? g.shots : Object.values(g.shots)) : [] });
-      });
-    } else {
-      ST.games = [];
-    }
-    if (!window._fbReady) { window._fbReady = true; bootUI(); }
-    else {
-      populateAllSelects();
-      var active = document.querySelector('.page.active');
-      if (active) {
-        var id = active.id.replace('page-','');
-        if (id === 'dashboard') renderDashboard();
-        if (id === 'history')   renderHistory();
-        if (id === 'reports')   { populateReportFilters(); buildReport(); }
-      }
-    }
+    if(data.games){ST.games=Object.values(data.games).map(function(g){return Object.assign({},g,{shots:g.shots?(Array.isArray(g.shots)?g.shots:Object.values(g.shots)):[]});});}
+    else{ST.games=[];}
+    if(!window._fbReady){window._fbReady=true;bootUI();}
+    else{populateAllSelects();var active=document.querySelector('.page.active');if(active){var id=active.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();if(id==='reports'){populateReportFilters();buildReport();}}}
+  });
+  db.ref('.info/connected').on('value',function(snap){
+    var dot=document.getElementById('fb-dot');var txt=document.getElementById('fb-status-text');if(!dot||!txt)return;
+    if(snap.val()===true){dot.style.background='#16a34a';txt.textContent='live';txt.style.color='#16a34a';}
+    else{dot.style.background='#dc2626';txt.textContent='offline';txt.style.color='#dc2626';}
   });
 };
-db.ref('.info/connected').on('value', function(snap) {
-  var dot = document.getElementById('fb-dot');
-  var txt = document.getElementById('fb-status-text');
-  if (!dot || !txt) return;
-  if (snap.val() === true) {
-    dot.style.background = '#16a34a';
-    txt.textContent = 'live';
-    txt.style.color = '#16a34a';
-  } else {
-    dot.style.background = '#dc2626';
-    txt.textContent = 'offline';
-    txt.style.color = '#dc2626';
-  }
-});
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('fb-loading').style.display='flex';
   window.fbListen();
 });
-})();
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
