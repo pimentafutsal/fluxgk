@@ -204,7 +204,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   <div class="g5 mb20">
     <div class="kpi"><div class="kpi-n" id="kpi-games">0</div><div class="kpi-l">Games</div></div>
     <div class="kpi"><div class="kpi-n" id="kpi-shots">0</div><div class="kpi-l">Total Shots</div></div>
-    <div class="kpi"><div class="kpi-n" style="color:var(--accent)" id="kpi-saves">0</div><div class="kpi-l">Saves</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--green)" id="kpi-saves">0</div><div class="kpi-l">Saves</div></div>
     <div class="kpi"><div class="kpi-n" style="color:var(--red)" id="kpi-goals">0</div><div class="kpi-l">Goals Conceded</div></div>
     <div class="kpi"><div class="kpi-n" id="kpi-savepct">—</div><div class="kpi-l">Save Rate</div></div>
   </div>
@@ -991,9 +991,7 @@ function calcStats(shots){
   const blocked=shots.filter(s=>s.result==='Blocked').length;
   const out=shots.filter(s=>s.result==='Out').length;
   const post=shots.filter(s=>s.result==='Post').length;
-  // Save% = saves / (saves + goals) — only shots on target count
-  const onTarget=saves+goals;
-  const savePct=onTarget?Math.round(saves/onTarget*100):0;
+  const savePct=total?Math.round(saves/total*100):0;
   return {total,saves,goals,blocked,out,post,savePct};
 }
 function countBy(arr,key){
@@ -1003,7 +1001,7 @@ function pctOf(n,t){return t?Math.round(n/t*100):0;}
 
 // ═══ CHARTS ═══════════════════════════════════════════════════════
 function acc(){return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e8ff00';}
-const RESULT_COLORS=[acc(),'#d4d4d4','#a3a3a3','#dc2626','#d97706'];
+const RESULT_COLORS=['#16a34a','#737373','#444','#dc2626','#d97706'];
 const RESULT_ORDER=['Save','Out','Blocked','Goal conceded','Post'];
 const HDIST_ORDER=['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'];
 const MOMENT_ORDER=['Leaving pressure','Organized attack','Transition','Ball stop','Special game'];
@@ -1016,11 +1014,11 @@ function mkChart(id,type,labels,data,colors,horiz){
   const ctx=document.getElementById(id); if(!ctx) return;
   if(CHARTS[id]) CHARTS[id].destroy();
   const a=acc();
-  const bg=colors||labels.map((_,i)=>[a,'#d4d4d4','#a3a3a3','#737373','#e5e5e5','#525252'][i%6]);
+  const bg=colors||labels.map((_,i)=>[a,'#555','#888','#333','#aaa','#1a1a1a'][i%6]);
   const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
-  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}}};
+  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}}};
   else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
-  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#f0f0f0':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
+  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#0d0d0d':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
 }
 function orderedChart(id,type,obj,order,colors,horiz){
   const labels=order?order.filter(l=>obj[l]!=null):Object.keys(obj);
@@ -1033,47 +1031,31 @@ function goalHeatmapHtml(shots,total){
   const zones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const counts=zones.map(z=>shots.filter(s=>s.goalZone===z.id).length);
   const max=Math.max(1,...counts);
-  return `<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;width:100%;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 6px 6px;width:100%;">
-    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.45;
-      return `<div class="hm-cell" style="height:64px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:4px;">
-        <div style="font-weight:700;font-size:16px;color:${bright?'#fafaf7':'#0a0a0a'}">${c}</div>
-        <div style="font-size:9px;color:${bright?'rgba(255,255,255,0.7)':'#737373'};font-family:var(--mono);">${z.l}·${p}%</div>
+  return `<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 6px 6px;">
+    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
+      return `<div class="hm-cell" style="height:50px;background:rgba(232,255,0,${(ins*.75+.05).toFixed(2)});">
+        <div style="font-weight:700;font-size:14px;color:${bright?'#0a0a0a':'#fafaf7'}">${c}</div>
+        <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
       </div>`;}).join('')}
     </div>`;
 }
 function courtHeatmapHtml(shots,total){
-  var zIds=[124,152,125];
-  var counts=zIds.map(function(z){return shots.filter(function(s){return s.courtZone===z;}).length;});
-  var max=Math.max(1,counts[0],counts[1],counts[2]);
-  function op(i){return (counts[i]/max*0.55+0.06).toFixed(2);}
-  function tc(i){return counts[i]/max>0.45?'#fafaf7':'#0a0a0a';}
-  function pc(i){return pctOf(counts[i],total);}
-  return '<div style="width:100%;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">'+
-  '<svg viewBox="0 0 300 480" width="100%" xmlns="http://www.w3.org/2000/svg">'+
-  '<rect width="300" height="480" fill="#2563eb"/>'+
-  '<rect x="10" y="10" width="280" height="460" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" rx="3"/>'+
-  '<line x1="10" y1="240" x2="290" y2="240" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<circle cx="150" cy="240" r="36" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<circle cx="150" cy="240" r="3" fill="rgba(255,255,255,0.9)"/>'+
-  '<rect x="64" y="10" width="172" height="54" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="100" y="10" width="100" height="24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="116" y="2" width="68" height="12" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>'+
-  '<rect x="64" y="416" width="172" height="54" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="100" y="446" width="100" height="24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="116" y="466" width="68" height="12" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>'+
-  '<circle cx="150" cy="84" r="4" fill="rgba(255,255,255,0.9)"/>'+
-  '<circle cx="150" cy="396" r="4" fill="rgba(255,255,255,0.9)"/>'+
-  '<rect x="10" y="322" width="93" height="128" fill="rgba(10,10,10,'+op(0)+')" rx="4"/>'+
-  '<rect x="103" y="322" width="94" height="128" fill="rgba(10,10,10,'+op(1)+')" rx="4"/>'+
-  '<rect x="197" y="322" width="93" height="128" fill="rgba(10,10,10,'+op(2)+')" rx="4"/>'+
-  '<text x="56" y="382" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="'+tc(0)+'">'+counts[0]+'</text>'+
-  '<text x="150" y="382" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="'+tc(1)+'">'+counts[1]+'</text>'+
-  '<text x="244" y="382" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="'+tc(2)+'">'+counts[2]+'</text>'+
-  '<text x="56" y="406" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="'+tc(0)+'" opacity="0.85">'+pc(0)+'%</text>'+
-  '<text x="150" y="406" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="'+tc(1)+'" opacity="0.85">'+pc(1)+'%</text>'+
-  '<text x="244" y="406" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="'+tc(2)+'" opacity="0.85">'+pc(2)+'%</text>'+
-  '</svg></div>';
+  const zones=[{id:124},{id:152},{id:125}];
+  const counts=zones.map(z=>shots.filter(s=>s.courtZone===z.id).length);
+  const max=Math.max(1,...counts);
+  return `<div class="court-wrap">
+    <div class="court-top"><div class="court-circle"></div></div>
+    <div class="court-div"></div>
+    <div style="background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;">
+    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
+      return `<div class="hm-cell" style="border-radius:4px;background:rgba(74,222,128,${(ins*.8+.05).toFixed(2)});">
+        <div style="font-weight:700;font-size:12px;color:${bright?'#0a2a0a':'#fafaf7'}">${c}</div>
+        <div style="font-size:8px;color:${bright?'#1a5a1a':'#555'};font-family:var(--mono);">${z.id}<br>${p}%</div>
+      </div>`;}).join('')}
+    </div>
+    <div class="court-gkbox"><div class="court-gkrect"></div></div>
+  </div>`;
 }
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════
@@ -1153,7 +1135,7 @@ function makeReportBlock(title,subtitle,shots,games){
     </div>
     <div class="g6 mb20">
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.total}</div><div class="kpi-l">Shots</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--accent);">${s.saves}</div><div class="kpi-l">Saves</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--green);">${s.saves}</div><div class="kpi-l">Saves</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--red);">${s.goals}</div><div class="kpi-l">Goals</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.out}</div><div class="kpi-l">Out</div></div>
@@ -1214,12 +1196,12 @@ function exportReport(){
   const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const gcounts=gzones.map(z=>shots.filter(sh=>sh.goalZone===z.id).length);
   const gmax=Math.max(1,...gcounts);
-  const goalHm=`<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;background:#f4f4f1;border:1px solid #e5e5e5;border-radius:0 0 5px 5px;">
-    ${gzones.map((z,i)=>{const c=gcounts[i];const p=pctOf(c,s.total);const ins=c/gmax;const bright=ins>0.45;
-      return `<div style="height:52px;border-radius:3px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-weight:700;font-size:14px;color:${bright?'#fff':'#0a0a0a'}">${c}</div>
-        <div style="font-size:9px;color:${bright?'rgba(255,255,255,0.7)':'#737373'}">${z.l}·${p}%</div></div>`;}).join('')}
+  const goalHm=`<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;background:#111;border-radius:0 0 5px 5px;">
+    ${gzones.map((z,i)=>{const c=gcounts[i];const p=pctOf(c,s.total);const ins=c/gmax;
+      return `<div style="height:44px;border-radius:3px;background:rgba(40,200,30,${(ins*.7+.08).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-weight:700;font-size:13px;color:${ins>.5?'#fff':'#ccc'}">${c}</div>
+        <div style="font-size:9px;color:${ins>.5?'#ddd':'#999'}">${z.l}·${p}%</div></div>`;}).join('')}
     </div>`;
 
   const czones=[{id:124,l:'Left'},{id:152,l:'Center'},{id:125,l:'Right'}];
@@ -1228,24 +1210,26 @@ function exportReport(){
   const cOp=(i)=>(ccounts[i]/cmax*0.55+0.06).toFixed(2);
   const cTc=(i)=>ccounts[i]/cmax>0.45?'#fafaf7':'#0a0a0a';
   const cPc=(i)=>pctOf(ccounts[i],s.total);
-  const courtHm='<svg viewBox="0 0 300 480" width="100%" xmlns="http://www.w3.org/2000/svg">'+
-  '<rect width="300" height="480" fill="#2563eb" rx="4"/>'+
-  '<rect x="10" y="10" width="280" height="460" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" rx="3"/>'+
-  '<line x1="10" y1="240" x2="290" y2="240" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<circle cx="150" cy="240" r="36" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="64" y="10" width="172" height="54" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="100" y="10" width="100" height="24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="64" y="416" width="172" height="54" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="100" y="446" width="100" height="24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>'+
-  '<rect x="10" y="322" width="93" height="128" fill="rgba(10,10,10,'+cOp(0)+')" rx="4"/>'+
-  '<rect x="103" y="322" width="94" height="128" fill="rgba(10,10,10,'+cOp(1)+')" rx="4"/>'+
-  '<rect x="197" y="322" width="93" height="128" fill="rgba(10,10,10,'+cOp(2)+')" rx="4"/>'+
-  '<text x="56" y="382" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="'+cTc(0)+'">'+ccounts[0]+'</text>'+
-  '<text x="150" y="382" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="'+cTc(1)+'">'+ccounts[1]+'</text>'+
-  '<text x="244" y="382" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="'+cTc(2)+'">'+ccounts[2]+'</text>'+
-  '<text x="56" y="406" text-anchor="middle" font-family="monospace" font-size="13" fill="'+cTc(0)+'" opacity="0.85">'+cPc(0)+'%</text>'+
-  '<text x="150" y="406" text-anchor="middle" font-family="monospace" font-size="13" fill="'+cTc(1)+'" opacity="0.85">'+cPc(1)+'%</text>'+
-  '<text x="244" y="406" text-anchor="middle" font-family="monospace" font-size="13" fill="'+cTc(2)+'" opacity="0.85">'+cPc(2)+'%</text>'+
+  const courtHm='<svg viewBox="0 0 300 240" width="100%" xmlns="http://www.w3.org/2000/svg">'+
+  '<rect width="300" height="240" fill="#2563eb" rx="4"/>'+
+  '<rect x="8" y="8" width="284" height="224" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<line x1="8" y1="120" x2="292" y2="120" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<circle cx="150" cy="120" r="28" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="60" y="8" width="180" height="42" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="96" y="8" width="108" height="18" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="60" y="190" width="180" height="42" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="96" y="214" width="108" height="18" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<circle cx="150" cy="60" r="3" fill="rgba(255,255,255,0.9)"/>'+
+  '<circle cx="150" cy="180" r="3" fill="rgba(255,255,255,0.9)"/>'+
+  '<rect x="8" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(0)+')" rx="3"/>'+
+  '<rect x="103" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(1)+')" rx="3"/>'+
+  '<rect x="198" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(2)+')" rx="3"/>'+
+  '<text x="55" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(0)+'">'+ccounts[0]+'</text>'+
+  '<text x="150" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(1)+'">'+ccounts[1]+'</text>'+
+  '<text x="245" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(2)+'">'+ccounts[2]+'</text>'+
+  '<text x="55" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(0)+'" opacity="0.85">'+cPc(0)+'%</text>'+
+  '<text x="150" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(1)+'" opacity="0.85">'+cPc(1)+'%</text>'+
+  '<text x="245" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(2)+'" opacity="0.85">'+cPc(2)+'%</text>'+
   '</svg>';
 
   // Table rows
@@ -1256,7 +1240,7 @@ function exportReport(){
       const gs=calcStats(g.shots);
       return `<tr><td>${g.date}</td><td>${g.opponent}</td><td>${g.competition||'—'}</td><td>${g.gk||'—'}</td><td>${g.season}</td>
         <td style="text-align:center;">${g.shots.length}</td>
-        <td style="text-align:center;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
         <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
         <td style="text-align:center;font-weight:700;">${gs.savePct}%</td></tr>`;
     }).join('');
@@ -1270,7 +1254,7 @@ function exportReport(){
       return `<tr><td style="font-weight:600;">${k}</td>
         <td style="text-align:center;">${gList.length}</td>
         <td style="text-align:center;">${gs.total}</td>
-        <td style="text-align:center;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
         <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
         <td style="text-align:center;">${gs.blocked}</td>
         <td style="text-align:center;">${gs.out}</td>
@@ -1293,7 +1277,7 @@ function exportReport(){
     .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
     .kpi{background:#f7f7f7;border-radius:6px;padding:10px;text-align:center;}
     .kpi-n{font-size:22px;font-weight:700;letter-spacing:-1px;color:${a};line-height:1;}
-    .kpi-n.g{color:#0a0a0a;} .kpi-n.r{color:#dc2626;} .kpi-n.k{color:#111;}
+    .kpi-n.g{color:#16a34a;} .kpi-n.r{color:#dc2626;} .kpi-n.k{color:#111;}
     .kpi-l{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-top:3px;}
     .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     .chart-box{background:#f9f9f9;border-radius:8px;padding:14px;}
@@ -1307,9 +1291,40 @@ function exportReport(){
     .no-print{margin-top:20px;text-align:center;}
     @media print{.no-print{display:none;}}
   </style></head><body>
+  <style>
+    .rpt-cover{background:${a};color:#FAFAF7;display:flex;flex-direction:column;min-height:100vh;font-family:'Segoe UI',Helvetica,Arial,sans-serif;page-break-after:always;}
+    .cover-top{padding:44pt 36pt 28pt;flex:1;}
+    .cover-logo{width:56pt;height:56pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);object-fit:cover;display:block;margin-bottom:22pt;}
+    .cover-logo-ph{width:56pt;height:56pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:18pt;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:22pt;}
+    .cover-eyebrow{font-size:8.5pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin-bottom:8pt;}
+    .cover-h1{font-size:28pt;font-weight:700;line-height:1.15;margin-bottom:10pt;}
+    .cover-sub{font-size:12pt;opacity:.8;margin-bottom:26pt;}
+    .cover-pills{display:flex;gap:20pt;flex-wrap:wrap;}
+    .cover-pill{font-size:9pt;opacity:.75;}
+    .cover-pill strong{display:block;font-size:10.5pt;opacity:1;margin-bottom:1pt;}
+    .cover-foot{background:rgba(0,0,0,.18);padding:14pt 36pt;display:flex;gap:28pt;flex-wrap:wrap;}
+    .cover-foot-item .lbl{font-size:8pt;opacity:.65;}
+    .cover-foot-item .val{font-size:9.5pt;font-weight:600;}
+  </style>
+  <div class="rpt-cover">
+    <div class="cover-top">
+      ${ST.clubBadge?`<img class="cover-logo" src="${ST.clubBadge}" onerror="this.style.display='none'">`:`<div class="cover-logo-ph">${(ST.clubName||'GK').slice(0,2).toUpperCase()}</div>`}
+      <div class="cover-eyebrow">FluxGK</div>
+      <div class="cover-h1">GK Statistics<br>Report</div>
+      <div class="cover-sub">${ST.clubName||'Goalkeeper Analysis'}</div>
+      <div class="cover-pills">
+        <div class="cover-pill"><strong>${games.length} game${games.length!==1?'s':''}</strong>Scope</div>
+        <div class="cover-pill"><strong>${now}</strong>Generated</div>
+        <div class="cover-pill"><strong>${title}</strong>Report type</div>
+      </div>
+    </div>
+    <div class="cover-foot">
+      <div class="cover-foot-item"><div class="lbl">Platform</div><div class="val">FluxGK · Data-Driven GK Analysis</div></div>
+    </div>
+  </div>
   <div class="wrap">
     <div class="logo-row">
-      <div class="logo-sq">GK</div>
+      <div class="logo-sq" style="background:${a};">GK</div>
       <div>
         <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${ST.clubName}</div>
         <div style="font-size:9px;color:#aaa;letter-spacing:.15em;font-family:monospace;">FLUXGK · DATA-DRIVEN GK ANALYSIS</div>
@@ -1317,7 +1332,7 @@ function exportReport(){
       <div style="margin-left:auto;text-align:right;">
         <div style="font-weight:700;font-size:15px;">Report: ${title}</div>
         <div style="font-size:11px;color:#aaa;margin-top:2px;">${now}</div>
-        <div style="margin-top:5px;display:inline-block;background:${a};color:#000;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
+        <div style="margin-top:5px;display:inline-block;background:${a};color:#fff;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
       </div>
     </div>
 
@@ -1326,7 +1341,7 @@ function exportReport(){
       <div class="kpi-row">
         <div class="kpi"><div class="kpi-n k">${games.length}</div><div class="kpi-l">Games</div></div>
         <div class="kpi"><div class="kpi-n k">${s.total}</div><div class="kpi-l">Shots</div></div>
-        <div class="kpi"><div class="kpi-n" style="color:${a}">${s.saves}</div><div class="kpi-l">Saves</div></div>
+        <div class="kpi"><div class="kpi-n g">${s.saves}</div><div class="kpi-l">Saves</div></div>
         <div class="kpi"><div class="kpi-n r">${s.goals}</div><div class="kpi-l">Goals</div></div>
         <div class="kpi"><div class="kpi-n k">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
         <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">Save Rate</div></div>
@@ -1347,7 +1362,7 @@ function exportReport(){
       <div class="sec-title">Spatial Analysis</div>
       <div class="spatial">
         <div class="chart-box"><div class="chart-title">Shot Location on Goal</div>${goalHm}</div>
-        <div class="chart-box"><div class="chart-title">Vertical Shot Position</div>${courtHm}</div>
+        <div class="chart-box"><div class="chart-title">Vertical Shot Position (Corridor)</div>${courtHm}</div>
       </div>
     </div>
 
@@ -1392,25 +1407,6 @@ function boot(){
   // bootUI() will be called from fbListen once first data arrives
 }
 boot();
-</script>
-<script>
-window.addEventListener('message',function(e){
-  if(!e.data||e.data.type!=='FLUXGK_CONTEXT')return;
-  var p=e.data.profile||{};
-  if(p.clubColor){
-    var h=document.getElementById('header');
-    if(h)h.style.background=p.clubColor;
-    document.documentElement.style.setProperty('--accent',p.clubColor);
-  }
-  if(p.clubName){
-    var cn=document.getElementById('nav-club-name');
-    if(cn)cn.textContent=p.clubName;
-  }
-  if(p.clubBadge){
-    var lb=document.querySelector('.logo-box');
-    if(lb)lb.innerHTML='<img src="'+p.clubBadge+'" style="width:30px;height:30px;object-fit:cover;border-radius:7px;">';
-  }
-});
 </script>
 </body>
 </html>
