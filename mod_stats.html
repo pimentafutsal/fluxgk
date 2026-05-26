@@ -1014,11 +1014,11 @@ function mkChart(id,type,labels,data,colors,horiz){
   const ctx=document.getElementById(id); if(!ctx) return;
   if(CHARTS[id]) CHARTS[id].destroy();
   const a=acc();
-  const bg=colors||labels.map((_,i)=>[a,'#555','#888','#333','#aaa','#1a1a1a'][i%6]);
+  const bg=colors||labels.map((_,i)=>[a,'#d4d4d4','#a3a3a3','#737373','#e5e5e5','#525252'][i%6]);
   const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
-  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}}};
+  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}}};
   else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
-  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#0d0d0d':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
+  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#f5f5f5':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
 }
 function orderedChart(id,type,obj,order,colors,horiz){
   const labels=order?order.filter(l=>obj[l]!=null):Object.keys(obj);
@@ -1031,31 +1031,47 @@ function goalHeatmapHtml(shots,total){
   const zones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const counts=zones.map(z=>shots.filter(s=>s.goalZone===z.id).length);
   const max=Math.max(1,...counts);
-  return `<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 6px 6px;">
+  return `<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 6px 6px;">
     ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
-      return `<div class="hm-cell" style="height:50px;background:rgba(232,255,0,${(ins*.75+.05).toFixed(2)});">
-        <div style="font-weight:700;font-size:14px;color:${bright?'#0a0a0a':'#fafaf7'}">${c}</div>
+      return `<div class="hm-cell" style="height:50px;background:rgba(10,10,10,${(ins*.6+.05).toFixed(2)});border-radius:4px;">
+        <div style="font-weight:700;font-size:14px;color:${bright?'#fafaf7':'#0a0a0a'}">${c}</div>
         <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
       </div>`;}).join('')}
     </div>`;
 }
 function courtHeatmapHtml(shots,total){
-  const zones=[{id:124},{id:152},{id:125}];
-  const counts=zones.map(z=>shots.filter(s=>s.courtZone===z.id).length);
-  const max=Math.max(1,...counts);
-  return `<div class="court-wrap">
-    <div class="court-top"><div class="court-circle"></div></div>
-    <div class="court-div"></div>
-    <div style="background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;">
-    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
-      return `<div class="hm-cell" style="border-radius:4px;background:rgba(74,222,128,${(ins*.8+.05).toFixed(2)});">
-        <div style="font-weight:700;font-size:12px;color:${bright?'#0a2a0a':'#fafaf7'}">${c}</div>
-        <div style="font-size:8px;color:${bright?'#1a5a1a':'#555'};font-family:var(--mono);">${z.id}<br>${p}%</div>
-      </div>`;}).join('')}
-    </div>
-    <div class="court-gkbox"><div class="court-gkrect"></div></div>
-  </div>`;
+  var zIds=[124,152,125];
+  var counts=zIds.map(function(z){return shots.filter(function(s){return s.courtZone===z;}).length;});
+  var max=Math.max(1,counts[0],counts[1],counts[2]);
+  function op(i){return (counts[i]/max*0.55+0.06).toFixed(2);}
+  function tc(i){return counts[i]/max>0.45?'#fafaf7':'#0a0a0a';}
+  function pc(i){return pctOf(counts[i],total);}
+  return '<div style="width:150px;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">'+
+  '<svg viewBox="0 0 150 240" width="150" height="240" xmlns="http://www.w3.org/2000/svg">'+
+  '<rect width="150" height="240" fill="#2563eb"/>'+
+  '<rect x="6" y="6" width="138" height="228" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" rx="2"/>'+
+  '<line x1="6" y1="120" x2="144" y2="120" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<circle cx="75" cy="120" r="18" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<circle cx="75" cy="120" r="1.5" fill="rgba(255,255,255,0.9)"/>'+
+  '<rect x="32" y="6" width="86" height="28" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="50" y="6" width="50" height="13" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="58" y="2" width="34" height="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.8)" stroke-width="1"/>'+
+  '<rect x="32" y="206" width="86" height="28" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="50" y="221" width="50" height="13" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
+  '<rect x="58" y="232" width="34" height="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.8)" stroke-width="1"/>'+
+  '<circle cx="75" cy="42" r="2" fill="rgba(255,255,255,0.9)"/>'+
+  '<circle cx="75" cy="198" r="2" fill="rgba(255,255,255,0.9)"/>'+
+  '<rect x="6" y="163" width="46" height="65" fill="rgba(10,10,10,'+op(0)+')" rx="3"/>'+
+  '<rect x="52" y="163" width="46" height="65" fill="rgba(10,10,10,'+op(1)+')" rx="3"/>'+
+  '<rect x="98" y="163" width="46" height="65" fill="rgba(10,10,10,'+op(2)+')" rx="3"/>'+
+  '<text x="29" y="192" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="'+tc(0)+'">'+counts[0]+'</text>'+
+  '<text x="75" y="192" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="'+tc(1)+'">'+counts[1]+'</text>'+
+  '<text x="121" y="192" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="'+tc(2)+'">'+counts[2]+'</text>'+
+  '<text x="29" y="208" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="'+tc(0)+'" opacity="0.85">'+pc(0)+'%</text>'+
+  '<text x="75" y="208" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="'+tc(1)+'" opacity="0.85">'+pc(1)+'%</text>'+
+  '<text x="121" y="208" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="'+tc(2)+'" opacity="0.85">'+pc(2)+'%</text>'+
+  '</svg></div>';
 }
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════
