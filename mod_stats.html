@@ -204,7 +204,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   <div class="g5 mb20">
     <div class="kpi"><div class="kpi-n" id="kpi-games">0</div><div class="kpi-l">Games</div></div>
     <div class="kpi"><div class="kpi-n" id="kpi-shots">0</div><div class="kpi-l">Total Shots</div></div>
-    <div class="kpi"><div class="kpi-n" style="color:var(--green)" id="kpi-saves">0</div><div class="kpi-l">Saves</div></div>
+    <div class="kpi"><div class="kpi-n" style="color:var(--accent)" id="kpi-saves">0</div><div class="kpi-l">Saves</div></div>
     <div class="kpi"><div class="kpi-n" style="color:var(--red)" id="kpi-goals">0</div><div class="kpi-l">Goals Conceded</div></div>
     <div class="kpi"><div class="kpi-n" id="kpi-savepct">—</div><div class="kpi-l">Save Rate</div></div>
   </div>
@@ -215,8 +215,8 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   </div>
   <div class="g3">
     <div class="card"><div class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="190"></canvas></div>
-    <div class="card"><div class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;"></div></div>
-    <div class="card"><div class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;display:flex;justify-content:center;"></div></div>
+    <div class="card"><div class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
+    <div class="card"><div class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
 </div>
 
@@ -991,7 +991,7 @@ function calcStats(shots){
   const blocked=shots.filter(s=>s.result==='Blocked').length;
   const out=shots.filter(s=>s.result==='Out').length;
   const post=shots.filter(s=>s.result==='Post').length;
-  const savePct=total?Math.round(saves/total*100):0;
+  const onTarget=saves+goals;const savePct=onTarget?Math.round(saves/onTarget*100):0;
   return {total,saves,goals,blocked,out,post,savePct};
 }
 function countBy(arr,key){
@@ -1001,7 +1001,7 @@ function pctOf(n,t){return t?Math.round(n/t*100):0;}
 
 // ═══ CHARTS ═══════════════════════════════════════════════════════
 function acc(){return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e8ff00';}
-const RESULT_COLORS=['#16a34a','#737373','#444','#dc2626','#d97706'];
+const RESULT_COLORS=[acc(),'#d4d4d4','#a3a3a3','#dc2626','#d97706'];
 const RESULT_ORDER=['Save','Out','Blocked','Goal conceded','Post'];
 const HDIST_ORDER=['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'];
 const MOMENT_ORDER=['Leaving pressure','Organized attack','Transition','Ball stop','Special game'];
@@ -1014,11 +1014,11 @@ function mkChart(id,type,labels,data,colors,horiz){
   const ctx=document.getElementById(id); if(!ctx) return;
   if(CHARTS[id]) CHARTS[id].destroy();
   const a=acc();
-  const bg=colors||labels.map((_,i)=>[a,'#555','#888','#333','#aaa','#1a1a1a'][i%6]);
+  const bg=colors||labels.map((_,i)=>[a,'#d4d4d4','#a3a3a3','#737373','#e5e5e5','#525252'][i%6]);
   const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
-  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#1a1a1a'},border:{color:'transparent'}}};
+  if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}}};
   else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
-  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#0d0d0d':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
+  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#f5f5f5':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
 }
 function orderedChart(id,type,obj,order,colors,horiz){
   const labels=order?order.filter(l=>obj[l]!=null):Object.keys(obj);
@@ -1031,31 +1031,90 @@ function goalHeatmapHtml(shots,total){
   const zones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const counts=zones.map(z=>shots.filter(s=>s.goalZone===z.id).length);
   const max=Math.max(1,...counts);
-  return `<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#0f0f0f;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 6px 6px;">
-    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
-      return `<div class="hm-cell" style="height:50px;background:rgba(232,255,0,${(ins*.75+.05).toFixed(2)});">
-        <div style="font-weight:700;font-size:14px;color:${bright?'#0a0a0a':'#fafaf7'}">${c}</div>
+  return `<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;width:100%;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;width:100%;">
+    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.45;
+      return `<div class="hm-cell" style="height:72px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:5px;">
+        <div style="font-weight:700;font-size:14px;color:${bright?'#fafaf7':'#0a0a0a'}">${c}</div>
         <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
       </div>`;}).join('')}
     </div>`;
 }
 function courtHeatmapHtml(shots,total){
-  const zones=[{id:124},{id:152},{id:125}];
-  const counts=zones.map(z=>shots.filter(s=>s.courtZone===z.id).length);
-  const max=Math.max(1,...counts);
-  return `<div class="court-wrap">
-    <div class="court-top"><div class="court-circle"></div></div>
-    <div class="court-div"></div>
-    <div style="background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;">
-    ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.55;
-      return `<div class="hm-cell" style="border-radius:4px;background:rgba(74,222,128,${(ins*.8+.05).toFixed(2)});">
-        <div style="font-weight:700;font-size:12px;color:${bright?'#0a2a0a':'#fafaf7'}">${c}</div>
-        <div style="font-size:8px;color:${bright?'#1a5a1a':'#555'};font-family:var(--mono);">${z.id}<br>${p}%</div>
-      </div>`;}).join('')}
-    </div>
-    <div class="court-gkbox"><div class="court-gkrect"></div></div>
-  </div>`;
+  var zIds=[124,152,125];
+  var counts=zIds.map(function(z){return shots.filter(function(s){return s.courtZone===z;}).length;});
+  var max=Math.max(1,counts[0],counts[1],counts[2]);
+  function op(i){return (counts[i]/max*0.10+0.20).toFixed(2);}
+  function pc(i){return pctOf(counts[i],total);}
+
+  // ── HALF-COURT SVG — exact match to QUADRA.png ───────────────────
+  // viewBox 240 x 290
+  // Boundary: x=8 y=8 w=224 h=274  (bottom line y=282)
+  // Halfway line at TOP:  y=8  (we're looking at the attacking half, goal at BOTTOM)
+  // Centre circle: cx=120 cy=8 r=44 — semicircle opening DOWNWARD (visible top arc)
+  // Centre spot: cx=120 cy=8 (on halfway line, but we show it just below: cy=12)
+  // 10m mark: small horizontal dash, y=148 (≈ halfway of half-court)
+  // Penalty spot: cx=120 cy=208 (6m from goal bottom line y=282 → 282-74=208)
+  // Large area arc: centre=(120,282), radius=100 — opens UPWARD
+  //   arc endpoints where r=100 hits boundary x=8 and x=232:
+  //   dx=112 → angle=acos(112/100) not valid (112>100), use r=100 from cx±112 →
+  //   use points at y where arc crosses boundary lines. Simpler: use r=100,
+  //   start M 20 282 A 100 100 0 0 0 220 282  (fits within x=8..232)
+  // Small GK area (área de meta): rect centred, w=80 h=18, at bottom line
+  //   x=80 y=264 w=80 h=18 → bottom at y=282
+  // Goal: rect centred w=40 h=10, sits below bottom boundary
+  //   x=100 y=282 w=40 h=10
+  // Columns: x=8 w=74 | x=82 w=76 | x=158 w=74, full height y=8..282
+  // Labels: numbers at y=155, pct at y=172 (centre of half, above 10m mark area)
+
+  var s='<div style="width:100%;max-width:240px;margin:0 auto;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">';
+  s+='<svg viewBox="0 0 240 300" width="100%" xmlns="http://www.w3.org/2000/svg">';
+  s+='<defs><clipPath id="court-clip"><rect x="8" y="8" width="224" height="274"/></clipPath></defs>';
+  // Background
+  s+='<rect width="240" height="300" fill="#2563eb"/>';
+  // Everything below is clipped to the court boundary — nothing can escape
+  s+='<g clip-path="url(#court-clip)">';
+  // Court lines pass 1
+  s+='<rect x="8" y="8" width="224" height="274" fill="none" stroke="white" stroke-width="1.5"/>';
+  // Centre spot on halfway line (top)
+  s+='<circle cx="120" cy="8" r="2.5" fill="white"/>';
+  // Centre circle arc — large r=60 so it looks like QUADRA_2, opens downward
+  s+='<circle cx="120" cy="8" r="60" fill="none" stroke="white" stroke-width="1.5"/>';
+  // 10m mark — small horizontal dash at y=155
+  s+='<line x1="113" y1="155" x2="127" y2="155" stroke="white" stroke-width="1.5"/>';
+  // Penalty spot
+  s+='<circle cx="120" cy="218" r="2.5" fill="white"/>';
+  // Large area arc — centre (120,282) r=100, opens upward
+  s+='<circle cx="120" cy="282" r="64" fill="none" stroke="white" stroke-width="1.5"/>';
+  // GK area semicircle — centre (120,282) r=32
+
+  // Goal rectangle on bottom line
+  s+='<rect x="104" y="272" width="32" height="10" fill="rgba(255,255,255,0.20)" stroke="white" stroke-width="1.5"/>';
+  // Columns overlay
+  s+='<rect x="8"   y="8" width="74"  height="274" fill="rgba(10,10,10,'+op(0)+')" />';
+  s+='<rect x="82"  y="8" width="76"  height="274" fill="rgba(10,10,10,'+op(1)+')" />';
+  s+='<rect x="158" y="8" width="74"  height="274" fill="rgba(10,10,10,'+op(2)+')" />';
+  // Court lines redrawn ON TOP of columns
+  s+='<rect x="8" y="8" width="224" height="274" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>';
+  s+='<circle cx="120" cy="8" r="2.5" fill="rgba(255,255,255,0.90)"/>';
+  s+='<circle cx="120" cy="8" r="60" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>';
+  s+='<line x1="113" y1="155" x2="127" y2="155" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>';
+  s+='<circle cx="120" cy="218" r="2.5" fill="rgba(255,255,255,0.90)"/>';
+  s+='<circle cx="120" cy="282" r="64" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>';
+
+  s+='<rect x="104" y="272" width="32" height="10" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>';
+  s+='</g>';
+  // Goal outside clip (below boundary, always visible)
+  s+='<rect x="104" y="282" width="32" height="11" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>';
+  // Labels always on top, no clip needed
+  s+='<text x="45"  y="150" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="white">'+counts[0]+'</text>';
+  s+='<text x="120" y="150" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="white">'+counts[1]+'</text>';
+  s+='<text x="195" y="150" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="22" font-weight="700" fill="white">'+counts[2]+'</text>';
+  s+='<text x="45"  y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+pc(0)+'%</text>';
+  s+='<text x="120" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+pc(1)+'%</text>';
+  s+='<text x="195" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+pc(2)+'%</text>';
+  s+='</svg></div>';
+  return s;
 }
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════
@@ -1196,41 +1255,52 @@ function exportReport(){
   const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const gcounts=gzones.map(z=>shots.filter(sh=>sh.goalZone===z.id).length);
   const gmax=Math.max(1,...gcounts);
-  const goalHm=`<div style="height:7px;background:#FFD700;border-radius:4px 4px 0 0;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;background:#111;border-radius:0 0 5px 5px;">
-    ${gzones.map((z,i)=>{const c=gcounts[i];const p=pctOf(c,s.total);const ins=c/gmax;
-      return `<div style="height:44px;border-radius:3px;background:rgba(40,200,30,${(ins*.7+.08).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-weight:700;font-size:13px;color:${ins>.5?'#fff':'#ccc'}">${c}</div>
-        <div style="font-size:9px;color:${ins>.5?'#ddd':'#999'}">${z.l}·${p}%</div></div>`;}).join('')}
+  const goalHm=`<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;">
+    ${gzones.map((z,i)=>{const c=gcounts[i];const p=pctOf(c,s.total);const ins=c/gmax;const bright=ins>0.45;
+      return `<div style="height:56px;border-radius:5px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+        <div style="font-weight:700;font-size:15px;color:${bright?'#fafaf7':'#0a0a0a'};font-family:monospace;">${c}</div>
+        <div style="font-size:9px;color:${bright?'#ccc':'#555'};font-family:monospace;">${z.l}·${p}%</div></div>`;}).join('')}
     </div>`;
 
   const czones=[{id:124,l:'Left'},{id:152,l:'Center'},{id:125,l:'Right'}];
   const ccounts=czones.map(z=>shots.filter(sh=>sh.courtZone===z.id).length);
   const cmax=Math.max(1,...ccounts);
-  const cOp=(i)=>(ccounts[i]/cmax*0.55+0.06).toFixed(2);
-  const cTc=(i)=>ccounts[i]/cmax>0.45?'#fafaf7':'#0a0a0a';
-  const cPc=(i)=>pctOf(ccounts[i],s.total);
-  const courtHm='<svg viewBox="0 0 300 240" width="100%" xmlns="http://www.w3.org/2000/svg">'+
-  '<rect width="300" height="240" fill="#2563eb" rx="4"/>'+
-  '<rect x="8" y="8" width="284" height="224" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<line x1="8" y1="120" x2="292" y2="120" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<circle cx="150" cy="120" r="28" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<rect x="60" y="8" width="180" height="42" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<rect x="96" y="8" width="108" height="18" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<rect x="60" y="190" width="180" height="42" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<rect x="96" y="214" width="108" height="18" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>'+
-  '<circle cx="150" cy="60" r="3" fill="rgba(255,255,255,0.9)"/>'+
-  '<circle cx="150" cy="180" r="3" fill="rgba(255,255,255,0.9)"/>'+
-  '<rect x="8" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(0)+')" rx="3"/>'+
-  '<rect x="103" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(1)+')" rx="3"/>'+
-  '<rect x="198" y="154" width="94" height="70" fill="rgba(10,10,10,'+cOp(2)+')" rx="3"/>'+
-  '<text x="55" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(0)+'">'+ccounts[0]+'</text>'+
-  '<text x="150" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(1)+'">'+ccounts[1]+'</text>'+
-  '<text x="245" y="188" text-anchor="middle" font-family="monospace" font-size="18" font-weight="700" fill="'+cTc(2)+'">'+ccounts[2]+'</text>'+
-  '<text x="55" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(0)+'" opacity="0.85">'+cPc(0)+'%</text>'+
-  '<text x="150" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(1)+'" opacity="0.85">'+cPc(1)+'%</text>'+
-  '<text x="245" y="208" text-anchor="middle" font-family="monospace" font-size="11" fill="'+cTc(2)+'" opacity="0.85">'+cPc(2)+'%</text>'+
-  '</svg>';
+  function copPDF(i){return (ccounts[i]/cmax*0.10+0.20).toFixed(2);}
+  function cpcPDF(i){return pctOf(ccounts[i],s.total);}
+  const courtHm='<div style="max-width:200px;margin:0 auto;border-radius:6px;overflow:hidden;border:1px solid #ddd;">'
+    +'<svg viewBox="0 0 240 300" width="100%" xmlns="http://www.w3.org/2000/svg">'
+    +'<defs><clipPath id="cc"><rect x="8" y="8" width="224" height="274"/></clipPath></defs>'
+    +'<rect width="240" height="300" fill="#2563eb"/>'
+    +'<g clip-path="url(#cc)">'
+    +'<rect x="8" y="8" width="224" height="274" fill="none" stroke="white" stroke-width="1.5"/>'
+    +'<circle cx="120" cy="8" r="2.5" fill="white"/>'
+    +'<circle cx="120" cy="8" r="60" fill="none" stroke="white" stroke-width="1.5"/>'
+    +'<line x1="113" y1="155" x2="127" y2="155" stroke="white" stroke-width="1.5"/>'
+    +'<circle cx="120" cy="218" r="2.5" fill="white"/>'
+    +'<circle cx="120" cy="282" r="64" fill="none" stroke="white" stroke-width="1.5"/>'
+    
+    +'<rect x="104" y="272" width="32" height="10" fill="rgba(255,255,255,0.20)" stroke="white" stroke-width="1.5"/>'
+    +'<rect x="8"   y="8" width="74"  height="274" fill="rgba(10,10,10,'+copPDF(0)+')" />'
+    +'<rect x="82"  y="8" width="76"  height="274" fill="rgba(10,10,10,'+copPDF(1)+')" />'
+    +'<rect x="158" y="8" width="74"  height="274" fill="rgba(10,10,10,'+copPDF(2)+')" />'
+    +'<rect x="8" y="8" width="224" height="274" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>'
+    +'<circle cx="120" cy="8" r="2.5" fill="rgba(255,255,255,0.90)"/>'
+    +'<circle cx="120" cy="8" r="60" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>'
+    +'<line x1="113" y1="155" x2="127" y2="155" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>'
+    +'<circle cx="120" cy="218" r="2.5" fill="rgba(255,255,255,0.90)"/>'
+    +'<circle cx="120" cy="282" r="64" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5"/>'
+    
+    +'<rect x="104" y="272" width="32" height="10" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>'
+    +'</g>'
+    +'<rect x="104" y="282" width="32" height="11" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>'
+    +'<text x="45"  y="150" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="white">'+ccounts[0]+'</text>'
+    +'<text x="120" y="150" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="white">'+ccounts[1]+'</text>'
+    +'<text x="195" y="150" text-anchor="middle" font-family="monospace" font-size="22" font-weight="700" fill="white">'+ccounts[2]+'</text>'
+    +'<text x="45"  y="172" text-anchor="middle" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+cpcPDF(0)+'%</text>'
+    +'<text x="120" y="172" text-anchor="middle" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+cpcPDF(1)+'%</text>'
+    +'<text x="195" y="172" text-anchor="middle" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.90)">'+cpcPDF(2)+'%</text>'
+    +'</svg></div>';
 
   // Table rows
   let tableHead='',tableRows='';
@@ -1240,7 +1310,7 @@ function exportReport(){
       const gs=calcStats(g.shots);
       return `<tr><td>${g.date}</td><td>${g.opponent}</td><td>${g.competition||'—'}</td><td>${g.gk||'—'}</td><td>${g.season}</td>
         <td style="text-align:center;">${g.shots.length}</td>
-        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;font-weight:600;">${gs.saves}</td>
         <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
         <td style="text-align:center;font-weight:700;">${gs.savePct}%</td></tr>`;
     }).join('');
@@ -1254,7 +1324,7 @@ function exportReport(){
       return `<tr><td style="font-weight:600;">${k}</td>
         <td style="text-align:center;">${gList.length}</td>
         <td style="text-align:center;">${gs.total}</td>
-        <td style="text-align:center;color:#16a34a;font-weight:600;">${gs.saves}</td>
+        <td style="text-align:center;font-weight:600;">${gs.saves}</td>
         <td style="text-align:center;color:#dc2626;font-weight:600;">${gs.goals}</td>
         <td style="text-align:center;">${gs.blocked}</td>
         <td style="text-align:center;">${gs.out}</td>
@@ -1291,40 +1361,9 @@ function exportReport(){
     .no-print{margin-top:20px;text-align:center;}
     @media print{.no-print{display:none;}}
   </style></head><body>
-  <style>
-    .rpt-cover{background:${a};color:#FAFAF7;display:flex;flex-direction:column;min-height:100vh;font-family:'Segoe UI',Helvetica,Arial,sans-serif;page-break-after:always;}
-    .cover-top{padding:44pt 36pt 28pt;flex:1;}
-    .cover-logo{width:56pt;height:56pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);object-fit:cover;display:block;margin-bottom:22pt;}
-    .cover-logo-ph{width:56pt;height:56pt;border-radius:50%;border:2pt solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:18pt;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:22pt;}
-    .cover-eyebrow{font-size:8.5pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin-bottom:8pt;}
-    .cover-h1{font-size:28pt;font-weight:700;line-height:1.15;margin-bottom:10pt;}
-    .cover-sub{font-size:12pt;opacity:.8;margin-bottom:26pt;}
-    .cover-pills{display:flex;gap:20pt;flex-wrap:wrap;}
-    .cover-pill{font-size:9pt;opacity:.75;}
-    .cover-pill strong{display:block;font-size:10.5pt;opacity:1;margin-bottom:1pt;}
-    .cover-foot{background:rgba(0,0,0,.18);padding:14pt 36pt;display:flex;gap:28pt;flex-wrap:wrap;}
-    .cover-foot-item .lbl{font-size:8pt;opacity:.65;}
-    .cover-foot-item .val{font-size:9.5pt;font-weight:600;}
-  </style>
-  <div class="rpt-cover">
-    <div class="cover-top">
-      ${ST.clubBadge?`<img class="cover-logo" src="${ST.clubBadge}" onerror="this.style.display='none'">`:`<div class="cover-logo-ph">${(ST.clubName||'GK').slice(0,2).toUpperCase()}</div>`}
-      <div class="cover-eyebrow">FluxGK</div>
-      <div class="cover-h1">GK Statistics<br>Report</div>
-      <div class="cover-sub">${ST.clubName||'Goalkeeper Analysis'}</div>
-      <div class="cover-pills">
-        <div class="cover-pill"><strong>${games.length} game${games.length!==1?'s':''}</strong>Scope</div>
-        <div class="cover-pill"><strong>${now}</strong>Generated</div>
-        <div class="cover-pill"><strong>${title}</strong>Report type</div>
-      </div>
-    </div>
-    <div class="cover-foot">
-      <div class="cover-foot-item"><div class="lbl">Platform</div><div class="val">FluxGK · Data-Driven GK Analysis</div></div>
-    </div>
-  </div>
   <div class="wrap">
     <div class="logo-row">
-      <div class="logo-sq" style="background:${a};">GK</div>
+      <div class="logo-sq">GK</div>
       <div>
         <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${ST.clubName}</div>
         <div style="font-size:9px;color:#aaa;letter-spacing:.15em;font-family:monospace;">FLUXGK · DATA-DRIVEN GK ANALYSIS</div>
@@ -1332,7 +1371,7 @@ function exportReport(){
       <div style="margin-left:auto;text-align:right;">
         <div style="font-weight:700;font-size:15px;">Report: ${title}</div>
         <div style="font-size:11px;color:#aaa;margin-top:2px;">${now}</div>
-        <div style="margin-top:5px;display:inline-block;background:${a};color:#fff;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
+        <div style="margin-top:5px;display:inline-block;background:${a};color:#000;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
       </div>
     </div>
 
@@ -1407,6 +1446,25 @@ function boot(){
   // bootUI() will be called from fbListen once first data arrives
 }
 boot();
+</script>
+<script>
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='FLUXGK_CONTEXT')return;
+  var p=e.data.profile||{};
+  if(p.clubColor){
+    var h=document.getElementById('header');
+    if(h)h.style.background=p.clubColor;
+    document.documentElement.style.setProperty('--accent',p.clubColor);
+  }
+  if(p.clubName){
+    var cn=document.getElementById('nav-club-name');
+    if(cn)cn.textContent=p.clubName;
+  }
+  if(p.clubBadge){
+    var lb=document.querySelector('.logo-box');
+    if(lb)lb.innerHTML='<img src="'+p.clubBadge+'" style="width:30px;height:30px;object-fit:cover;border-radius:7px;">';
+  }
+});
 </script>
 </body>
 </html>
