@@ -446,7 +446,9 @@ const ST = {
   gks:['GK 1','GK 2','GK 3'],
   games:[],
   accent:'#e8ff00',
-  clubName:'My Club'
+  clubName:'My Club',
+  coachName:'',
+  clubColor:''
 };
 let CUR = newGame();
 let editingGameId = null; // null = new game, string id = editing existing game
@@ -1340,17 +1342,22 @@ function exportReport(){
     @page{size:A4;margin:16mm 14mm;}
     .wrap{max-width:820px;margin:0 auto;padding:0;}
     h1{font-size:24px;font-weight:700;letter-spacing:-1px;}
-    .cover{background:#1a3a6b;color:#fff;padding:48px 40px 40px;margin-bottom:28px;page-break-after:always;}
-    .cover-fluxgk{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,0.50);margin-bottom:14px;font-family:monospace;}
-    .cover-badge{width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.20);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;margin-bottom:20px;overflow:hidden;}
-    .cover-badge img{width:52px;height:52px;object-fit:contain;}
-    .cover-title{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1.1;margin-bottom:6px;color:#fff;}
-    .cover-sub{font-size:15px;color:rgba(255,255,255,0.65);margin-bottom:36px;font-weight:400;}
-    .cover-meta{display:flex;gap:36px;flex-wrap:wrap;}
+    .cover{background:${a||'#1a3a6b'};color:#fff;padding:52px 48px 48px;margin:0;page-break-after:always;min-height:267mm;display:flex;flex-direction:column;box-sizing:border-box;}
+    .cover-top{flex:1;}
+    .cover-fluxgk{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:18px;font-family:monospace;}
+    .cover-badge{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;margin-bottom:28px;overflow:hidden;}
+    .cover-badge img{width:56px;height:56px;object-fit:contain;}
+    .cover-title{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px;color:#fff;}
+    .cover-sub{font-size:16px;color:rgba(255,255,255,0.60);margin-bottom:48px;font-weight:400;}
+    .cover-opponents{margin-bottom:40px;}
+    .cover-opponents-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.38);font-family:monospace;margin-bottom:8px;}
+    .cover-opponents-list{display:flex;flex-wrap:wrap;gap:6px;}
+    .cover-opp-tag{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);}
+    .cover-meta{display:flex;gap:40px;flex-wrap:wrap;margin-bottom:0;}
     .cover-meta-item{display:flex;flex-direction:column;gap:3px;}
-    .cover-meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.40);font-family:monospace;}
+    .cover-meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.38);font-family:monospace;}
     .cover-meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,0.88);}
-    .cover-footer-bar{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:.08em;text-transform:uppercase;font-family:monospace;}
+    .cover-footer-bar{padding-top:20px;border-top:1px solid rgba(255,255,255,0.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:.08em;text-transform:uppercase;font-family:monospace;}
     .sec{margin-bottom:24px;}
     .sec-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #eee;}
     .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
@@ -1372,15 +1379,22 @@ function exportReport(){
   </style></head><body>
   <div class="wrap">
     <div class="cover">
-      <div class="cover-fluxgk">FluxGK</div>
-      <div class="cover-badge">${ST.profile&&ST.profile.clubBadge?'<img src="'+ST.profile.clubBadge+'">':'GK'}</div>
-      <div class="cover-title">GK Statistics<br>Report</div>
-      <div class="cover-sub">${ST.clubName}</div>
-      <div class="cover-meta">
-        <div class="cover-meta-item"><div class="cover-meta-label">Report type</div><div class="cover-meta-value">${title}</div></div>
-        <div class="cover-meta-item"><div class="cover-meta-label">Games</div><div class="cover-meta-value">${games.length} game${games.length!==1?'s':''}</div></div>
-        <div class="cover-meta-item"><div class="cover-meta-label">Shots analyzed</div><div class="cover-meta-value">${s.total}</div></div>
-        <div class="cover-meta-item"><div class="cover-meta-label">Generated</div><div class="cover-meta-value">${now}</div></div>
+      <div class="cover-top">
+        <div class="cover-fluxgk">FluxGK</div>
+        <div class="cover-badge">${ST.clubBadge?'<img src="'+ST.clubBadge+'">':(ST.clubName?ST.clubName.slice(0,2).toUpperCase():'GK')}</div>
+        <div class="cover-title">GK Statistics<br>Report</div>
+        <div class="cover-sub">${ST.clubName}</div>
+        <div class="cover-opponents">
+          <div class="cover-opponents-label">Games in this report</div>
+          <div class="cover-opponents-list">${games.map(g=>'<span class="cover-opp-tag">'+g.date+' &nbsp;vs&nbsp; '+(g.opponent||'—')+'</span>').join('')}</div>
+        </div>
+        <div class="cover-meta">
+          <div class="cover-meta-item"><div class="cover-meta-label">Report type</div><div class="cover-meta-value">${title}</div></div>
+          <div class="cover-meta-item"><div class="cover-meta-label">Shots analyzed</div><div class="cover-meta-value">${s.total}</div></div>
+          <div class="cover-meta-item"><div class="cover-meta-label">Save rate</div><div class="cover-meta-value">${s.savePct}%</div></div>
+          <div class="cover-meta-item"><div class="cover-meta-label">Generated</div><div class="cover-meta-value">${now}</div></div>
+          ${ST.coachName?'<div class="cover-meta-item"><div class="cover-meta-label">Coach</div><div class="cover-meta-value">'+ST.coachName+'</div></div>':''}
+        </div>
       </div>
       <div class="cover-footer-bar">
         <span>FluxGK · Data-Driven GK Analysis</span>
@@ -1465,10 +1479,13 @@ window.addEventListener('message',function(e){
   if(!e.data||e.data.type!=='FLUXGK_CONTEXT')return;
   var p=e.data.profile||{};
   if(p.clubColor){
+    ST.clubColor=p.clubColor;
+    ST.accent=p.clubColor;
     var h=document.getElementById('header');
     if(h)h.style.background=p.clubColor;
     document.documentElement.style.setProperty('--accent',p.clubColor);
   }
+  if(p.coachName){ST.coachName=p.coachName;}
   if(p.clubName){
     var cn=document.getElementById('nav-club-name');
     if(cn)cn.textContent=p.clubName;
