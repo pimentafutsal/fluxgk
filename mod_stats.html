@@ -1340,8 +1340,17 @@ function exportReport(){
     @page{size:A4;margin:16mm 14mm;}
     .wrap{max-width:820px;margin:0 auto;padding:0;}
     h1{font-size:24px;font-weight:700;letter-spacing:-1px;}
-    .logo-row{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:14px;border-bottom:3px solid ${a};}
-    .logo-sq{width:36px;height:36px;background:${a};border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0;}
+    .cover{background:#1a3a6b;color:#fff;padding:48px 40px 40px;margin-bottom:28px;page-break-after:always;}
+    .cover-fluxgk{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,0.50);margin-bottom:14px;font-family:monospace;}
+    .cover-badge{width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.20);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;margin-bottom:20px;overflow:hidden;}
+    .cover-badge img{width:52px;height:52px;object-fit:contain;}
+    .cover-title{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1.1;margin-bottom:6px;color:#fff;}
+    .cover-sub{font-size:15px;color:rgba(255,255,255,0.65);margin-bottom:36px;font-weight:400;}
+    .cover-meta{display:flex;gap:36px;flex-wrap:wrap;}
+    .cover-meta-item{display:flex;flex-direction:column;gap:3px;}
+    .cover-meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.40);font-family:monospace;}
+    .cover-meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,0.88);}
+    .cover-footer-bar{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:.08em;text-transform:uppercase;font-family:monospace;}
     .sec{margin-bottom:24px;}
     .sec-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #eee;}
     .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
@@ -1362,16 +1371,20 @@ function exportReport(){
     @media print{.no-print{display:none;}}
   </style></head><body>
   <div class="wrap">
-    <div class="logo-row">
-      <div class="logo-sq">GK</div>
-      <div>
-        <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${ST.clubName}</div>
-        <div style="font-size:9px;color:#aaa;letter-spacing:.15em;font-family:monospace;">FLUXGK · DATA-DRIVEN GK ANALYSIS</div>
+    <div class="cover">
+      <div class="cover-fluxgk">FluxGK</div>
+      <div class="cover-badge">${ST.profile&&ST.profile.clubBadge?'<img src="'+ST.profile.clubBadge+'">':'GK'}</div>
+      <div class="cover-title">GK Statistics<br>Report</div>
+      <div class="cover-sub">${ST.clubName}</div>
+      <div class="cover-meta">
+        <div class="cover-meta-item"><div class="cover-meta-label">Report type</div><div class="cover-meta-value">${title}</div></div>
+        <div class="cover-meta-item"><div class="cover-meta-label">Games</div><div class="cover-meta-value">${games.length} game${games.length!==1?'s':''}</div></div>
+        <div class="cover-meta-item"><div class="cover-meta-label">Shots analyzed</div><div class="cover-meta-value">${s.total}</div></div>
+        <div class="cover-meta-item"><div class="cover-meta-label">Generated</div><div class="cover-meta-value">${now}</div></div>
       </div>
-      <div style="margin-left:auto;text-align:right;">
-        <div style="font-weight:700;font-size:15px;">Report: ${title}</div>
-        <div style="font-size:11px;color:#aaa;margin-top:2px;">${now}</div>
-        <div style="margin-top:5px;display:inline-block;background:${a};color:#000;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.06em;">${title.toUpperCase()}</div>
+      <div class="cover-footer-bar">
+        <span>FluxGK · Data-Driven GK Analysis</span>
+        <span>Constraints-Based Approach · Ecological Dynamics</span>
       </div>
     </div>
 
