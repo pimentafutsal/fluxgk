@@ -30,6 +30,7 @@
           if(!data){window._fbReady=true;bootUI();return;}
           if(data.settings){
             if(data.settings.clubs)ST.clubs=data.settings.clubs;
+            if(data.settings.clubBadges)ST.clubBadges=data.settings.clubBadges;
             if(data.settings.comps)ST.comps=data.settings.comps;
             if(data.settings.gks)ST.gks=data.settings.gks;
             if(data.settings.accent){ST.accent=data.settings.accent;document.documentElement.style.setProperty('--accent',ST.accent);var inp=document.getElementById('set-accent');if(inp)inp.value=ST.accent;var hex=document.getElementById('set-accent-hex');if(hex)hex.textContent=ST.accent;}
@@ -448,7 +449,8 @@ const ST = {
   accent:'#e8ff00',
   clubName:'My Club',
   coachName:'',
-  clubColor:''
+  clubColor:'',
+  clubBadges:{}
 };
 let CUR = newGame();
 let editingGameId = null; // null = new game, string id = editing existing game
@@ -472,7 +474,8 @@ function persist(){
     comps: ST.comps,
     gks:   ST.gks,
     accent: ST.accent,
-    clubName: ST.clubName
+    clubName: ST.clubName,
+    clubBadges: ST.clubBadges
   }).catch(e=>console.error('FB settings write error:',e));
 }
 function persistGame(game){
@@ -531,9 +534,35 @@ function renderList(key){
   if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No items yet.</div>';return;}
   ST[key].forEach((item,i)=>{
     const d=document.createElement('div'); d.className='list-item';
-    d.innerHTML=`<span style="font-size:13px;">${item}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+    if(key==='clubs'){
+      const badge=ST.clubBadges[item]||'';
+      const imgHtml=badge
+        ?`<img src="${badge}" style="width:26px;height:26px;object-fit:contain;border-radius:4px;margin-right:6px;border:1px solid var(--bdr);">`
+        :`<div style="width:26px;height:26px;border-radius:4px;background:var(--bg2);border:1px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center;margin-right:6px;font-size:9px;color:var(--mute);flex-shrink:0;">IMG</div>`;
+      d.innerHTML=`<div style="display:flex;align-items:center;flex:1;gap:0;">
+        ${imgHtml}
+        <span style="font-size:13px;flex:1;">${item}</span>
+        <label style="cursor:pointer;font-size:10px;color:var(--accent);font-weight:600;margin-right:8px;white-space:nowrap;" title="Upload badge">
+          ${badge?'Change':'+ Badge'}
+          <input type="file" accept="image/*" style="display:none;" onchange="uploadClubBadge('${item.replace(/'/g,"\'")}',this)">
+        </label>
+        <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>
+      </div>`;
+    } else {
+      d.innerHTML=`<span style="font-size:13px;">${item}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+    }
     el.appendChild(d);
   });
+}
+function uploadClubBadge(clubName, input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    ST.clubBadges[clubName]=e.target.result;
+    persist();
+    renderList('clubs');
+  };
+  reader.readAsDataURL(file);
 }
 function addItem(key,inputId,listId){
   const inp=document.getElementById(inputId);
@@ -1387,7 +1416,7 @@ function exportReport(){
         <div class="cover-sub">${ST.clubName}</div>
         <div class="cover-opponents">
           <div class="cover-opponents-label">Games in this report</div>
-          <div class="cover-opponents-list">${games.map(g=>'<span class="cover-opp-tag">'+g.date+' &nbsp;vs&nbsp; '+(g.opponent||'—')+'</span>').join('')}</div>
+          <div class="cover-opponents-list">${games.map(g=>{const b=ST.clubBadges&&ST.clubBadges[g.opponent];return '<span class="cover-opp-tag">'+(b?'<img src="'+b+'" style="width:18px;height:18px;object-fit:contain;border-radius:3px;vertical-align:middle;margin-right:5px;">':'')+g.date+' &nbsp;vs&nbsp; '+(g.opponent||'—')+'</span>';}).join('')}</div>
         </div>
         <div class="cover-meta">
           <div class="cover-meta-item"><div class="cover-meta-label">Report type</div><div class="cover-meta-value">${title}</div></div>
