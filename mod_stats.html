@@ -1155,7 +1155,7 @@ function calcStats(shots){
   return {total,saves,goals,blocked,out,post,savePct};
 }
 function countBy(arr,key){
-  return arr.reduce((acc,item)=>{const v=item[key]||'Unknown';acc[v]=(acc[v]||0)+1;return acc;},{});
+  return arr.reduce((acc,item)=>{const v=item[key];if(v!=null&&v!=='')acc[v]=(acc[v]||0)+1;return acc;},{});
 }
 function pctOf(n,t){return t?Math.round(n/t*100):0;}
 
@@ -1410,7 +1410,37 @@ function exportReport(){
   const RC=countBy(shots,'result'),MC=countBy(shots,'moment'),KC=countBy(shots,'skill'),DC=countBy(shots,'hDistance');
   const resultsHtml=RESULT_ORDER.map((k,i)=>RC[k]?bar(k,RC[k],s.total,[...RESULT_COLORS][i]):bar(k,0,s.total,RESULT_COLORS[i])).join('');
   const momentHtml=MOMENT_ORDER.map(k=>bar(k,MC[k]||0,s.total,a)).join('');
-  const skillHtml=SKILL_ORDER.map(k=>bar(k,KC[k]||0,s.total,a)).join('');
+  // Skill Type — donut chart (SVG, matches system chart style)
+  const skillHtml=(()=>{
+    const vals=SKILL_ORDER.map(k=>KC[k]||0);
+    const total=vals.reduce((a,b)=>a+b,0)||1;
+    const colors=[a,'#555','#999'];
+    const labels=SKILL_ORDER;
+    // SVG donut
+    const cx=80,cy=80,r=58,ir=36;
+    let paths='',startAngle=-Math.PI/2;
+    vals.forEach((v,i)=>{
+      const angle=(v/total)*2*Math.PI;
+      if(angle===0)return;
+      const x1=cx+r*Math.cos(startAngle),y1=cy+r*Math.sin(startAngle);
+      const x2=cx+r*Math.cos(startAngle+angle),y2=cy+r*Math.sin(startAngle+angle);
+      const ix1=cx+ir*Math.cos(startAngle),iy1=cy+ir*Math.sin(startAngle);
+      const ix2=cx+ir*Math.cos(startAngle+angle),iy2=cy+ir*Math.sin(startAngle+angle);
+      const lg=angle>Math.PI?1:0;
+      paths+=`<path d="M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${lg} 0 ${ix1} ${iy1} Z" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`;
+      startAngle+=angle;
+    });
+    const legend=labels.map((l,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></div>
+      <span style="font-size:11px;color:#555;font-family:monospace;">${l}</span>
+      <span style="font-size:11px;font-weight:600;margin-left:auto;">${vals[i]}</span>
+      <span style="font-size:10px;color:#999;width:32px;text-align:right;">${pctOf(vals[i],vals.reduce((a,b)=>a+b,0))}%</span>
+    </div>`).join('');
+    return `<div style="display:flex;align-items:center;gap:16px;">
+      <svg width="160" height="160" viewBox="0 0 160 160" style="flex-shrink:0;">${paths}</svg>
+      <div style="flex:1;">${legend}</div>
+    </div>`;
+  })();
   const hdistHtml=HDIST_ORDER.map(k=>bar(k,DC[k]||0,s.total,'#444')).join('');
 
   const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
