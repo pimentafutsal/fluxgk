@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxGK — GK Minutes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  function ldScript(src,cb){
+    var s=document.createElement('script');s.src=src;
+    s.onload=cb;s.onerror=function(){console.error('Failed:',src);};
+    document.head.appendChild(s);
+  }
+  ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',function(){
+    ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',function(){
+      var cfg={apiKey:"AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",authDomain:"fluxgk-statistics.firebaseapp.com",databaseURL:"https://fluxgk-statistics-default-rtdb.firebaseio.com",projectId:"fluxgk-statistics",storageBucket:"fluxgk-statistics.firebasestorage.app",messagingSenderId:"605696462663",appId:"1:605696462663:web:1df401a86ba7f9e753c662"};
+      var fbApp=firebase.initializeApp(cfg,'minutes');
+      var db=firebase.database(fbApp);
+      window.fbSet=function(p,v){return db.ref(p).set(v);};
+      window.fbGet=function(p){return db.ref(p).get();};
+      window.fbRemove=function(p){return db.ref(p).remove();};
+      window.fbListen=function(){
+        db.ref('fluxgk-minutes').on('value',function(snap){
+          var d=snap.val()||{};
+          if(d.settings){
+            if(d.settings.clubs)ST.clubs=d.settings.clubs;
+            if(d.settings.comps)ST.comps=d.settings.comps;
+            if(d.settings.gks)ST.gks=d.settings.gks;
+            if(d.settings.seasons)ST.seasons=d.settings.seasons;
+          }
+          ST.games=d.games?Object.values(d.games):[];
+          if(!window._fbReady){window._fbReady=true;bootUI();}
+          else{refreshAll();}
+        });
+        db.ref('.info/connected').on('value',function(snap){
+          var dot=document.getElementById('fb-dot'),txt=document.getElementById('fb-status');
+          if(!dot)return;
+          if(snap.val()){dot.style.background='#16a34a';if(txt)txt.textContent='live';}
+          else{dot.style.background='#dc2626';if(txt)txt.textContent='offline';}
+        });
+      };
+      document.getElementById('fb-loading').style.display='flex';
+      window.fbListen();
+    });
+  });
+})();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0a0a;--paper:#fafaf7;--carbon:#0a0a0a;--surface:#ffffff;
+  --surface2:#f4f4f1;--border:#e5e5e5;--border2:#d4d4d4;--mute:#737373;
+  --accent:#0a0a0a;--green:#16a34a;--red:#dc2626;--amber:#d97706;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:7px;
+}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--surface2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── HEADER ── */
+#header{background:var(--carbon);border-bottom:1px solid #1a1a1a;padding:0 24px;position:sticky;top:0;z-index:100;}
+#header-inner{max-width:1380px;margin:0 auto;display:flex;align-items:center;height:56px;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:24px;}
+.logo-box{width:30px;height:30px;background:var(--paper);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.logo-box span{font-weight:700;font-size:12px;color:var(--ink);}
+.logo-name{font-weight:700;font-size:13px;letter-spacing:-.3px;color:#fafaf7;}
+.logo-tag{font-size:8px;color:#555;letter-spacing:.15em;font-family:var(--mono);}
+.nav{display:flex;gap:1px;flex:1;}
+.nav-btn{padding:0 15px;height:56px;border:none;background:transparent;color:rgba(255,255,255,.5);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.05em;text-transform:uppercase;}
+.nav-btn:hover{color:#fafaf7;}
+.nav-btn.active{color:#fafaf7;border-bottom-color:#fafaf7;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.nav-club{font-size:10px;color:#555;font-family:var(--mono);}
+#fb-dot{width:6px;height:6px;border-radius:50%;background:#555;display:inline-block;}
+
+/* ── LAYOUT ── */
+#main{max-width:1380px;margin:0 auto;padding:24px 20px;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;}
+.page-sub{color:var(--mute);font-size:12px;margin-bottom:20px;}
+
+/* ── CARDS & GRID ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.card-title{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;margin-bottom:12px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.mb16{margin-bottom:16px;}
+.mb20{margin-bottom:20px;}
+.mb24{margin-bottom:24px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center;}
+.kpi-n{font-size:32px;font-weight:700;letter-spacing:-2px;line-height:1;color:var(--ink);}
+.kpi-l{font-size:9px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;margin-top:4px;}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border:none;border-radius:7px;font-family:var(--font);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px;}
+.btn-accent{background:var(--ink);color:var(--paper);}
+.btn-accent:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--mute);border:1px solid var(--border2);}
+.btn-ghost:hover{border-color:#999;color:var(--ink);}
+.btn-danger{background:#fef2f2;color:var(--red);border:1px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-green{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0;}
+.btn-green:hover{background:#dcfce7;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+
+/* ── FORM ELEMENTS ── */
+.label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--mute);text-transform:uppercase;margin-bottom:5px;}
+select,input[type=text],input[type=date],input[type=number]{background:var(--surface);border:1px solid var(--border2);color:var(--ink);padding:9px 12px;border-radius:7px;font-family:var(--font);font-size:13px;width:100%;outline:none;transition:border .15s;}
+select:focus,input:focus{border-color:#999;}
+.mc-group{display:flex;flex-wrap:wrap;gap:6px;}
+.mc-btn{padding:7px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--mute);font-size:12px;font-family:var(--font);cursor:pointer;transition:all .15s;}
+.mc-btn:hover{border-color:#999;color:var(--ink);}
+.mc-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:600;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;font-family:var(--mono);}
+.badge-green{background:#dcfce7;color:#15803d;}
+.badge-red{background:#fee2e2;color:var(--red);}
+.badge-mute{background:var(--surface2);color:var(--mute);}
+.badge-amber{background:#fef3c7;color:#b45309;}
+.badge-blue{background:#dbeafe;color:#1d4ed8;}
+
+/* ── TOGGLE ── */
+.toggle-sw{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-sw .slider{position:absolute;inset:0;background:var(--border2);border-radius:20px;transition:.2s;cursor:pointer;}
+.toggle-sw .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle-sw input:checked+.slider{background:var(--accent);}
+.toggle-sw input:checked+.slider:before{transform:translateX(16px);}
+
+/* ── GAME FORM ── */
+.section-hdr{font-size:13px;font-weight:700;letter-spacing:-.2px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.gk-minute-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
+.gk-minute-row .gk-name{font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.interval-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+.time-input{width:88px;font-family:var(--mono);text-align:center;padding:7px 8px;}
+.interval-del{background:none;border:none;color:var(--mute);cursor:pointer;font-size:16px;transition:color .15s;padding:4px;}
+.interval-del:hover{color:var(--red);}
+.interval-total{font-size:11px;font-family:var(--mono);color:var(--green);font-weight:600;margin-left:4px;}
+
+/* ── HISTORY TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--mute);text-transform:uppercase;padding:8px 12px;border-bottom:2px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.min-bar-wrap{display:flex;align-items:center;gap:8px;}
+.min-bar{height:6px;border-radius:3px;background:var(--border);flex:1;overflow:hidden;}
+.min-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .3s;}
+
+/* ── GAME LIST ── */
+.game-row{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px 18px;margin-bottom:10px;transition:border .15s;}
+.game-row:hover{border-color:#bbb;}
+.game-row-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.game-row-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.game-tag{font-size:9px;color:var(--mute);background:var(--surface2);padding:2px 7px;border-radius:4px;font-family:var(--mono);}
+
+/* ── REPORT ── */
+.rep-filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;}
+.rep-filter-item{display:flex;flex-direction:column;flex:1;min-width:130px;}
+.rep-table-wrap{overflow-x:auto;}
+.pct-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
+
+/* ── LOADING ── */
+#fb-loading{background:var(--carbon);}
+</style>
+</head>
+<body>
+
+<div id="fb-loading" style="display:none;position:fixed;inset:0;background:#0d0d0d;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <svg viewBox="0 0 36 36" width="48" height="48"><rect width="36" height="36" rx="8" fill="#e8ff00"/><text x="18" y="25" text-anchor="middle" fill="#0a0a0a" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="14">GK</text></svg>
+  <div style="font-family:'Space Grotesk',sans-serif;color:#fafaf7;font-weight:600;font-size:15px;">Loading GK Minutes…</div>
+  <div style="width:180px;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden;">
+    <div style="width:60%;height:100%;background:#fafaf7;border-radius:2px;animation:ldbar 1.2s ease-in-out infinite;"></div>
+  </div>
+  <style>@keyframes ldbar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}</style>
+</div>
+
+<div id="header">
+  <div id="header-inner">
+    <div class="logo">
+      <div class="logo-box"><span>GK</span></div>
+      <div>
+        <div class="logo-name">FluxGK</div>
+        <div class="logo-tag">MINUTES TRACKER</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="navTo('collect')">Record</button>
+      <button class="nav-btn" onclick="navTo('history')">History</button>
+      <button class="nav-btn" onclick="navTo('report')">Report</button>
+      <button class="nav-btn" onclick="navTo('settings')">Settings</button>
+    </nav>
+    <div class="nav-right">
+      <span id="nav-club-name" class="nav-club">—</span>
+      <span id="fb-dot" style="width:6px;height:6px;border-radius:50%;background:#555;display:inline-block;"></span>
+      <span id="fb-status" style="font-size:9px;color:#555;font-family:'JetBrains Mono',monospace;"></span>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+
+<!-- ═══ PAGE: COLLECT ═══════════════════════════════════════════ -->
+<div id="page-collect" class="page active">
+  <div class="page-title">Record Minutes</div>
+  <div class="page-sub">Register playing time per goalkeeper for each game.</div>
+
+  <!-- Game Info -->
+  <div class="card mb20">
+    <div class="section-hdr">Game Information</div>
+    <div class="g3 mb16">
+      <div><div class="label">Date</div><input type="date" id="g-date"></div>
+      <div><div class="label">Opponent</div><select id="g-opp"><option value="">Select opponent…</option></select></div>
+      <div><div class="label">Competition</div><select id="g-comp"><option value="">Select competition…</option></select></div>
+    </div>
+    <div class="g3 mb16">
+      <div><div class="label">Season</div><select id="g-season"><option value="">Select season…</option></select></div>
+      <div><div class="label">Total Game Minutes</div><input type="number" id="g-total-min" value="40" min="1" max="70" placeholder="e.g. 40 or 50 with OT"></div>
+      <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+        <div class="label">Half Duration</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:5px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;color:var(--mute);">Each half:</span>
+            <input type="number" id="g-half-min" value="20" min="1" max="30" style="width:70px;">
+            <span style="font-size:12px;color:var(--mute);">min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Squad Selection -->
+  <div class="card mb20">
+    <div class="section-hdr">Squad — Goalkeeper Selection</div>
+    <div style="font-size:12px;color:var(--mute);margin-bottom:12px;">Mark which GKs are in the squad for this game.</div>
+    <div id="squad-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- Minutes per Half -->
+  <div class="card mb20">
+    <div class="section-hdr">Playing Time — 1st Half</div>
+    <div id="gk-rows-h1" style="display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
+  <div class="card mb20">
+    <div class="section-hdr">Playing Time — 2nd Half</div>
+    <div id="gk-rows-h2" style="display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
+
+  <!-- Summary & Save -->
+  <div class="card mb20" id="game-summary-card" style="display:none;">
+    <div class="section-hdr">Game Summary</div>
+    <div id="game-summary-content"></div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-accent" onclick="saveGame()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save Game
+    </button>
+    <button class="btn btn-ghost" onclick="resetGameForm()">Clear Form</button>
+  </div>
+</div>
+
+<!-- ═══ PAGE: HISTORY ═══════════════════════════════════════════ -->
+<div id="page-history" class="page">
+  <div class="page-title">History</div>
+  <div class="page-sub">All recorded games and goalkeeper minutes.</div>
+
+  <!-- Filters -->
+  <div class="card mb20">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:120px;"><div class="label">Season</div><select id="h-season" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Competition</div><select id="h-comp" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Opponent</div><select id="h-opp" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Goalkeeper</div><select id="h-gk" onchange="renderHistory()"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">View</div>
+        <select id="h-view" onchange="renderHistory()">
+          <option value="games">By Game</option>
+          <option value="gk">By Goalkeeper</option>
+          <option value="opponent">By Opponent</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="g4 mb20" id="hist-kpis"></div>
+
+  <!-- Charts — compact 3-col grid -->
+  <div id="hist-charts-wrap" style="display:none;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="card"><div class="card-title">Minutes by GK</div><canvas id="ch-gk" height="100"></canvas></div>
+      <div class="card"><div class="card-title">% of Club Total</div><canvas id="ch-gk-pct" height="100"></canvas></div>
+      <div class="card"><div class="card-title">% When Selected</div><canvas id="ch-gk-sel" height="100"></canvas></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+      <div class="card"><div class="card-title">By Season</div><canvas id="ch-season" height="100"></canvas></div>
+      <div class="card"><div class="card-title">By Competition</div><canvas id="ch-comp" height="100"></canvas></div>
+      <div class="card"><div class="card-title">By Opponent</div><canvas id="ch-opp" height="100"></canvas></div>
+    </div>
+  </div>
+  <!-- Table -->
+  <div class="card">
+    <div class="rep-table-wrap">
+      <table id="hist-table">
+        <thead id="hist-thead"></thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: REPORT ═══════════════════════════════════════════ -->
+<div id="page-report" class="page">
+  <div class="page-title">Report</div>
+  <div class="page-sub">Goalkeeper minutes analysis and PDF export.</div>
+
+  <div class="card mb20">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:120px;"><div class="label">Season</div><select id="r-season"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Competition</div><select id="r-comp"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Opponent</div><select id="r-opp"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div class="label">Goalkeeper</div><select id="r-gk"><option value="">All</option></select></div>
+      <button class="btn btn-accent" onclick="exportReport()" style="flex-shrink:0;margin-top:18px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="g4 mb20" id="rep-kpis"></div>
+
+  <div class="card mb20">
+    <div class="card-title">Minutes by Goalkeeper</div>
+    <div class="rep-table-wrap">
+      <table id="rep-table">
+        <thead><tr>
+          <th>Goalkeeper</th><th>Games</th><th>Games Selected</th>
+          <th>1st Half</th><th>2nd Half</th><th>Total Min</th>
+          <th>% of Club Total</th><th>% When Selected</th>
+        </tr></thead>
+        <tbody id="rep-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Report Charts -->
+  <div id="rep-charts-wrap" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="card"><div class="card-title">Minutes by GK</div><canvas id="rch-gk" height="120"></canvas></div>
+      <div class="card"><div class="card-title">% of Club Total</div><canvas id="rch-gk-pct" height="120"></canvas></div>
+      <div class="card"><div class="card-title">% When Selected</div><canvas id="rch-gk-sel" height="120"></canvas></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+      <div class="card"><div class="card-title">By Season</div><canvas id="rch-season" height="120"></canvas></div>
+      <div class="card"><div class="card-title">By Competition</div><canvas id="rch-comp" height="120"></canvas></div>
+      <div class="card"><div class="card-title">By Opponent</div><canvas id="rch-opp" height="120"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: SETTINGS ═══════════════════════════════════════════ -->
+<div id="page-settings" class="page">
+  <div class="page-title">Settings</div>
+  <div class="page-sub">Manage goalkeepers, opponents, competitions and seasons.</div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Goalkeepers</div>
+      <div id="gks-list" class="mb16"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="gks-input" placeholder="GK name…" onkeydown="if(event.key==='Enter')addItem('gks')">
+        <button class="btn btn-accent btn-sm" onclick="addItem('gks')">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Opponents / Clubs</div>
+      <div id="clubs-list" class="mb16"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="clubs-input" placeholder="Club name…" onkeydown="if(event.key==='Enter')addItem('clubs')">
+        <button class="btn btn-accent btn-sm" onclick="addItem('clubs')">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Competitions</div>
+      <div id="comps-list" class="mb16"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="comps-input" placeholder="Competition…" onkeydown="if(event.key==='Enter')addItem('comps')">
+        <button class="btn btn-accent btn-sm" onclick="addItem('comps')">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Seasons</div>
+      <div id="seasons-list" class="mb16"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="seasons-input" placeholder="e.g. 2025-26…" onkeydown="if(event.key==='Enter')addItem('seasons')">
+        <button class="btn btn-accent btn-sm" onclick="addItem('seasons')">+ Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ═══ STATE ════════════════════════════════════════════════════════
+const ST = {
+  clubs:[], comps:[], gks:[], seasons:[],
+  games:[],
+  editingGameId:null,
+  accent:'#0a0a0a', clubName:'My Club',
+  coachName:'', clubColor:'', clubBadge:''
+};
+
+// ── NAVIGATION ────────────────────────────────────────────────────
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const btns=document.querySelectorAll('.nav-btn');
+  const map={collect:0,history:1,report:2,settings:3};
+  btns[map[page]].classList.add('active');
+  if(page==='history')renderHistory();
+  if(page==='report'){populateRepFilters();renderRepTable();}
+}
+
+// ── SETTINGS LISTS ────────────────────────────────────────────────
+function persist(){
+  window.fbSet('fluxgk-minutes/settings',{clubs:ST.clubs,comps:ST.comps,gks:ST.gks,seasons:ST.seasons})
+    .catch(e=>console.error('FB write error:',e));
+}
+function renderList(key){
+  const ids={gks:'gks-list',clubs:'clubs-list',comps:'comps-list',seasons:'seasons-list'};
+  const el=document.getElementById(ids[key]);if(!el)return;
+  el.innerHTML='';
+  if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No items yet.</div>';return;}
+  ST[key].forEach((item,i)=>{
+    const d=document.createElement('div');d.className='';
+    d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;margin-bottom:5px;';
+    d.innerHTML=`<span style="font-size:13px;">${item}</span><button style="background:none;border:none;color:var(--mute);cursor:pointer;font-size:15px;" onclick="removeItem('${key}',${i})">✕</button>`;
+    el.appendChild(d);
+  });
+}
+function addItem(key){
+  const ids={gks:'gks-input',clubs:'clubs-input',comps:'comps-input',seasons:'seasons-input'};
+  const inp=document.getElementById(ids[key]);
+  const v=inp.value.trim();
+  if(!v||ST[key].includes(v)){inp.focus();return;}
+  ST[key].push(v);inp.value='';persist();renderList(key);populateAllSelects();buildCollectForm();
+}
+function removeItem(key,idx){
+  ST[key].splice(idx,1);persist();renderList(key);populateAllSelects();buildCollectForm();
+}
+
+// ── SELECT HELPERS ────────────────────────────────────────────────
+function fillSelect(id,items,all){
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value;
+  el.innerHTML=`<option value="">${all}</option>`;
+  items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});
+  el.value=cur;
+}
+function populateAllSelects(){
+  fillSelect('g-opp',ST.clubs,'Select opponent…');
+  fillSelect('g-comp',ST.comps,'Select competition…');
+  fillSelect('g-season',ST.seasons,'Select season…');
+  fillSelect('h-season',ST.seasons,'All');
+  fillSelect('h-comp',ST.comps,'All');
+  fillSelect('h-opp',ST.clubs,'All');
+  fillSelect('h-gk',ST.gks,'All');
+  fillSelect('r-season',ST.seasons,'All');
+  fillSelect('r-comp',ST.comps,'All');
+  fillSelect('r-opp',ST.clubs,'All');
+  fillSelect('r-gk',ST.gks,'All');
+  ['gks','clubs','comps','seasons'].forEach(renderList);
+}
+
+// ── TIME HELPERS ──────────────────────────────────────────────────
+// Futsal: clock counts DOWN from halfMin (e.g.20:00) to 00:00
+// entry=time when GK entered, exit=time when GK left
+// minutes played = entry - exit  (since clock goes down)
+function parseTime(s){
+  if(!s)return null;
+  const parts=s.split(':');
+  if(parts.length!==2)return null;
+  const m=parseInt(parts[0]),sec=parseInt(parts[1]);
+  if(isNaN(m)||isNaN(sec))return null;
+  return m*60+sec;
+}
+function fmtTime(totalSecs){
+  if(isNaN(totalSecs)||totalSecs<0)return '0:00';
+  const m=Math.floor(totalSecs/60),s=totalSecs%60;
+  return m+':'+(s<10?'0':'')+s;
+}
+function intervalSecs(entry,exit){
+  // entry and exit are strings like "20:00", "16:38"
+  const en=parseTime(entry),ex=parseTime(exit);
+  if(en===null||ex===null)return 0;
+  const diff=en-ex; // clock counts down so entry > exit
+  return Math.max(0,diff);
+}
+function gkTotalSecs(intervals){
+  return intervals.reduce((sum,iv)=>sum+intervalSecs(iv.entry,iv.exit),0);
+}
+
+// ── COLLECT FORM ──────────────────────────────────────────────────
+function buildCollectForm(){
+  buildSquadList();
+  buildHalfRows('h1');
+  buildHalfRows('h2');
+  updateSummary();
+}
+
+function buildSquadList(){
+  const el=document.getElementById('squad-list');
+  if(!el)return;
+  el.innerHTML='';
+  if(ST.gks.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No GKs in settings.</div>';return;}
+  ST.gks.forEach(gk=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
+    row.innerHTML=`
+      <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;">
+        <input type="checkbox" id="sel-${gk.replace(/\s/g,'_')}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="updateSummary()">
+        <span style="font-weight:600;font-size:13px;">${gk}</span>
+      </label>
+      <span class="badge badge-mute" id="squad-badge-${gk.replace(/\s/g,'_')}">Not selected</span>
+    `;
+    el.appendChild(row);
+    // update badge on change
+    const cb=row.querySelector('input[type=checkbox]');
+    const badge=row.querySelector('.badge');
+    cb.addEventListener('change',function(){
+      badge.className='badge '+(this.checked?'badge-green':'badge-mute');
+      badge.textContent=this.checked?'Selected':'Not selected';
+    });
+  });
+}
+
+function buildHalfRows(half){
+  const el=document.getElementById('gk-rows-'+half);
+  if(!el)return;
+  // preserve existing intervals before rebuilding
+  const prev={};
+  el.querySelectorAll('.gk-minute-row').forEach(row=>{
+    const gk=row.dataset.gk;
+    const ivs=[];
+    row.querySelectorAll('.interval-row').forEach(ir=>{
+      ivs.push({entry:ir.querySelector('.iv-entry').value,exit:ir.querySelector('.iv-exit').value});
+    });
+    prev[gk]=ivs;
+  });
+  el.innerHTML='';
+  const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  ST.gks.forEach(gk=>{
+    const gkId=gk.replace(/\s/g,'_');
+    const row=document.createElement('div');
+    row.className='gk-minute-row';row.dataset.gk=gk;
+    const initIvs=prev[gk]||[{entry:halfMin+':00',exit:''}];
+    row.innerHTML=`
+      <div class="gk-name">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        ${gk}
+        <span class="badge badge-mute" id="total-badge-${half}-${gkId}" style="margin-left:auto;">0:00</span>
+      </div>
+      <div id="intervals-${half}-${gkId}"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="addInterval('${half}','${gkId}')">+ Add interval</button>
+    `;
+    el.appendChild(row);
+    // Render initial intervals
+    initIvs.forEach((iv,i)=>addInterval(half,gkId,iv.entry,iv.exit));
+  });
+}
+
+function addInterval(half,gkId,entryVal,exitVal){
+  const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  const container=document.getElementById('intervals-'+half+'-'+gkId);
+  if(!container)return;
+  const idx=container.children.length;
+  const row=document.createElement('div');
+  row.className='interval-row';
+  row.innerHTML=`
+    <span style="font-size:10px;color:var(--mute);font-family:var(--mono);width:20px;">${idx+1}.</span>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">Entry</span>
+      <input type="text" class="time-input iv-entry" placeholder="${halfMin}:00" value="${entryVal||''}" oninput="updateTotals()">
+    </div>
+    <span style="color:var(--mute);">→</span>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">Exit</span>
+      <input type="text" class="time-input iv-exit" placeholder="0:00" value="${exitVal||''}" oninput="updateTotals()">
+    </div>
+    <span class="interval-total" id="iv-dur-${half}-${gkId}-${idx}">—</span>
+    <button class="interval-del" onclick="this.closest('.interval-row').remove();updateTotals();">✕</button>
+  `;
+  container.appendChild(row);
+  updateTotals();
+}
+
+function updateTotals(){
+  ST.gks.forEach(gk=>{
+    const gkId=gk.replace(/\s/g,'_');
+    ['h1','h2'].forEach(half=>{
+      const container=document.getElementById('intervals-'+half+'-'+gkId);
+      if(!container)return;
+      let total=0;
+      container.querySelectorAll('.interval-row').forEach((row,i)=>{
+        const entry=row.querySelector('.iv-entry').value;
+        const exit=row.querySelector('.iv-exit').value;
+        const dur=intervalSecs(entry,exit);
+        total+=dur;
+        const durEl=container.parentElement.querySelector(`#iv-dur-${half}-${gkId}-${i}`);
+        if(durEl)durEl.textContent=(entry&&exit)?fmtTime(dur):'—';
+      });
+      const badge=document.getElementById('total-badge-'+half+'-'+gkId);
+      if(badge)badge.textContent=fmtTime(total);
+    });
+  });
+  updateSummary();
+}
+
+function updateSummary(){
+  const card=document.getElementById('game-summary-card');
+  const content=document.getElementById('game-summary-content');
+  if(!card||!content)return;
+  if(ST.gks.length===0){card.style.display='none';return;}
+  card.style.display='block';
+  const totalGameMin=(parseInt(document.getElementById('g-total-min').value)||40)*60;
+  let html='<div style="display:flex;flex-direction:column;gap:8px;">';
+  ST.gks.forEach(gk=>{
+    const gkId=gk.replace(/\s/g,'_');
+    const selCb=document.getElementById('sel-'+gkId);
+    const selected=selCb&&selCb.checked;
+    let h1=0,h2=0;
+    ['h1','h2'].forEach(half=>{
+      const c=document.getElementById('intervals-'+half+'-'+gkId);
+      if(!c)return;
+      c.querySelectorAll('.interval-row').forEach(row=>{
+        const dur=intervalSecs(row.querySelector('.iv-entry').value,row.querySelector('.iv-exit').value);
+        if(half==='h1')h1+=dur;else h2+=dur;
+      });
+    });
+    const total=h1+h2;
+    const pctTotal=totalGameMin>0?Math.round(total/totalGameMin*100):0;
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
+      <span style="font-weight:600;min-width:120px;">${gk}</span>
+      <span class="badge ${selected?'badge-green':'badge-mute'}">${selected?'Selected':'Not selected'}</span>
+      <span style="font-size:12px;color:var(--mute);">1st: <b>${fmtTime(h1)}</b></span>
+      <span style="font-size:12px;color:var(--mute);">2nd: <b>${fmtTime(h2)}</b></span>
+      <span style="font-size:12px;font-weight:700;color:var(--ink);">Total: ${fmtTime(total)}</span>
+      <span class="badge badge-blue">${pctTotal}% of game</span>
+    </div>`;
+  });
+  html+='</div>';
+  content.innerHTML=html;
+}
+
+function collectGameData(){
+  const date=document.getElementById('g-date').value;
+  const opp=document.getElementById('g-opp').value;
+  const comp=document.getElementById('g-comp').value;
+  const season=document.getElementById('g-season').value;
+  const totalMin=parseInt(document.getElementById('g-total-min').value)||40;
+  const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  const gkData={};
+  ST.gks.forEach(gk=>{
+    const gkId=gk.replace(/\s/g,'_');
+    const selCb=document.getElementById('sel-'+gkId);
+    const selected=selCb&&selCb.checked;
+    let h1Ivs=[],h2Ivs=[];
+    ['h1','h2'].forEach(half=>{
+      const c=document.getElementById('intervals-'+half+'-'+gkId);
+      if(!c)return;
+      c.querySelectorAll('.interval-row').forEach(row=>{
+        const iv={entry:row.querySelector('.iv-entry').value,exit:row.querySelector('.iv-exit').value};
+        if(half==='h1')h1Ivs.push(iv);else h2Ivs.push(iv);
+      });
+    });
+    const h1Secs=h1Ivs.reduce((s,iv)=>s+intervalSecs(iv.entry,iv.exit),0);
+    const h2Secs=h2Ivs.reduce((s,iv)=>s+intervalSecs(iv.entry,iv.exit),0);
+    gkData[gk]={selected,h1Ivs,h2Ivs,h1Secs,h2Secs,totalSecs:h1Secs+h2Secs};
+  });
+  return {date,opp,comp,season,totalMin,halfMin,gkData,id:Date.now()};
+}
+
+function saveGame(){
+  const g=collectGameData();
+  if(!g.date){alert('Please enter a date.');return;}
+  if(!g.opp){alert('Please select an opponent.');return;}
+  // If editing, use the original id
+  if(ST.editingGameId){g.id=ST.editingGameId;}
+  window.fbSet('fluxgk-minutes/games/'+g.id,g)
+    .then(()=>{
+      const wasEditing=!!ST.editingGameId;
+      ST.editingGameId=null;
+      const banner=document.getElementById('edit-banner');
+      if(banner)banner.style.display='none';
+      alert(wasEditing?'Game updated!':'Game saved!');
+      resetGameForm();
+    })
+    .catch(e=>{alert('Error saving: '+e.message);});
+}
+
+function resetGameForm(){
+  document.getElementById('g-date').value='';
+  document.getElementById('g-opp').value='';
+  document.getElementById('g-comp').value='';
+  document.getElementById('g-season').value='';
+  document.getElementById('g-total-min').value='40';
+  document.getElementById('g-half-min').value='20';
+  buildCollectForm();
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────
+function getFilteredGames(seasonId,compId,oppId,gkId){
+  return ST.games.filter(g=>{
+    if(seasonId&&g.season!==seasonId)return false;
+    if(compId&&g.comp!==compId)return false;
+    if(oppId&&g.opp!==oppId)return false;
+    if(gkId&&(!g.gkData||!g.gkData[gkId]||!g.gkData[gkId].totalSecs))return false;
+    return true;
+  });
+}
+
+function renderHistory(){
+  const season=document.getElementById('h-season').value;
+  const comp=document.getElementById('h-comp').value;
+  const opp=document.getElementById('h-opp').value;
+  const gk=document.getElementById('h-gk').value;
+  const view=document.getElementById('h-view').value;
+  const games=getFilteredGames(season,comp,opp,gk);
+
+  // KPIs
+  const totalGames=games.length;
+  const totalClubMin=games.reduce((s,g)=>s+(g.totalMin||0),0);
+  const allGks=ST.gks;
+  const kpiEl=document.getElementById('hist-kpis');
+  kpiEl.innerHTML=`
+    <div class="kpi"><div class="kpi-n">${totalGames}</div><div class="kpi-l">Games</div></div>
+    <div class="kpi"><div class="kpi-n">${totalClubMin}'</div><div class="kpi-l">Club Total Min</div></div>
+    <div class="kpi"><div class="kpi-n">${allGks.length}</div><div class="kpi-l">Goalkeepers</div></div>
+    <div class="kpi"><div class="kpi-n">${totalGames>0?Math.round(totalClubMin/totalGames):0}'</div><div class="kpi-l">Avg Game Length</div></div>
+  `;
+
+  const thead=document.getElementById('hist-thead');
+  const tbody=document.getElementById('hist-tbody');
+
+  if(view==='games'){
+    thead.innerHTML='<tr><th>Date</th><th>Opponent</th><th>Competition</th><th>Season</th><th>Duration</th>'+allGks.map(g=>`<th>${g}</th>`).join('')+'<th></th></tr>';
+    tbody.innerHTML=games.sort((a,b)=>b.date.localeCompare(a.date)).map(g=>{
+      const gkCols=allGks.map(gkName=>{
+        const d=g.gkData&&g.gkData[gkName];
+        if(!d)return '<td>—</td>';
+        const t=d.totalSecs||0;
+        const pct=g.totalMin>0?Math.round(t/(g.totalMin*60)*100):0;
+        const sel=d.selected;
+        return `<td><span style="font-family:var(--mono);font-weight:600;">${fmtTime(t)}</span> <span class="badge ${sel?'badge-green':'badge-mute'}" style="font-size:9px;">${pct}%</span></td>`;
+      }).join('');
+      return `<tr><td><span style="font-family:var(--mono);font-size:12px;">${g.date}</span></td><td><b>${g.opp||'—'}</b></td><td>${g.comp||'—'}</td><td>${g.season||'—'}</td><td>${g.totalMin||40}'</td>${gkCols}<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="editGame(${g.id})" style="margin-right:4px;">✎ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})">✕</button></td></tr>`;
+    }).join('');
+  } else if(view==='gk'){
+    thead.innerHTML='<tr><th>Goalkeeper</th><th>Games</th><th>Games Selected</th><th>1st Half</th><th>2nd Half</th><th>Total Min</th><th>% Club Total</th><th>% When Selected</th></tr>';
+    const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||0)*60,0);
+    tbody.innerHTML=allGks.map(gkName=>{
+      let gamesCount=0,selectedCount=0,h1=0,h2=0,total=0,selectedSecs=0;
+      games.forEach(g=>{
+        const d=g.gkData&&g.gkData[gkName];
+        if(!d)return;
+        gamesCount++;
+        if(d.selected)selectedCount++;
+        h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+        if(d.selected)selectedSecs+=(g.totalMin||40)*60;
+      });
+      const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
+      const pctSel=selectedSecs>0?Math.round(total/selectedSecs*100):0;
+      return `<tr><td><b>${gkName}</b></td><td>${gamesCount}</td><td>${selectedCount}</td><td style="font-family:var(--mono);">${fmtTime(h1)}</td><td style="font-family:var(--mono);">${fmtTime(h2)}</td><td style="font-family:var(--mono);font-weight:700;">${fmtTime(total)}</td>
+        <td><div class="min-bar-wrap"><div class="min-bar"><div class="min-bar-fill" style="width:${pctTotal}%;"></div></div><span style="font-size:11px;font-family:var(--mono);font-weight:600;">${pctTotal}%</span></div></td>
+        <td><span class="pct-pill" style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};">${pctSel}%</span></td></tr>`;
+    }).join('');
+  } else { // opponent
+    thead.innerHTML='<tr><th>Opponent</th><th>Games</th>'+allGks.map(g=>`<th>${g}</th>`).join('')+'</tr>';
+    const opps=[...new Set(games.map(g=>g.opp).filter(Boolean))].sort();
+    tbody.innerHTML=opps.map(oppName=>{
+      const og=games.filter(g=>g.opp===oppName);
+      const gkCols=allGks.map(gkName=>{
+        let total=0;
+        og.forEach(g=>{const d=g.gkData&&g.gkData[gkName];if(d)total+=d.totalSecs||0;});
+        const totalOppSecs=og.reduce((s,g)=>s+(g.totalMin||40)*60,0);
+        const pct=totalOppSecs>0?Math.round(total/totalOppSecs*100):0;
+        return `<td><span style="font-family:var(--mono);">${fmtTime(total)}</span> <span class="badge badge-mute">${pct}%</span></td>`;
+      }).join('');
+      return `<tr><td><b>${oppName}</b></td><td>${og.length}</td>${gkCols}</tr>`;
+    }).join('');
+  }
+  renderCharts('ch',games,allGks);
+}
+
+function editGame(id){
+  const g=ST.games.find(x=>String(x.id)===String(id));
+  if(!g){alert('Game not found.');return;}
+  ST.editingGameId=id;
+  // Navigate to collect tab
+  navTo('collect');
+  // Fill game info fields
+  document.getElementById('g-date').value=g.date||'';
+  document.getElementById('g-opp').value=g.opp||'';
+  document.getElementById('g-comp').value=g.comp||'';
+  document.getElementById('g-season').value=g.season||'';
+  document.getElementById('g-total-min').value=g.totalMin||40;
+  document.getElementById('g-half-min').value=g.halfMin||20;
+  // Rebuild form with GK data from the game
+  buildCollectForm();
+  // After form is built, populate squad selection and intervals
+  setTimeout(()=>{
+    ST.gks.forEach(gk=>{
+      const gkId=gk.replace(/\s/g,'_');
+      const d=g.gkData&&g.gkData[gk];
+      if(!d)return;
+      // Squad selection
+      const selCb=document.getElementById('sel-'+gkId);
+      if(selCb){
+        selCb.checked=!!d.selected;
+        const badge=selCb.closest('label').parentElement.querySelector('.badge');
+        if(badge){badge.className='badge '+(d.selected?'badge-green':'badge-mute');badge.textContent=d.selected?'Selected':'Not selected';}
+      }
+      // Intervals per half
+      ['h1','h2'].forEach(half=>{
+        const container=document.getElementById('intervals-'+half+'-'+gkId);
+        if(!container)return;
+        container.innerHTML=''; // clear defaults
+        const ivs=(half==='h1'?d.h1Ivs:d.h2Ivs)||[];
+        if(ivs.length===0){
+          addInterval(half,gkId,'','');
+        } else {
+          ivs.forEach(iv=>addInterval(half,gkId,iv.entry||'',iv.exit||''));
+        }
+      });
+    });
+    updateTotals();
+    // Show editing banner
+    let banner=document.getElementById('edit-banner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='edit-banner';
+      banner.style.cssText='background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
+      banner.innerHTML='<span style="font-size:13px;color:#92400e;font-weight:600;">✎ Editing game — changes will overwrite the existing record</span><button class="btn btn-ghost btn-sm" onclick="cancelEdit()">Cancel Edit</button>';
+      const main=document.getElementById('page-collect');
+      main.insertBefore(banner,main.firstChild);
+    }
+    banner.style.display='flex';
+  },50);
+}
+
+function cancelEdit(){
+  ST.editingGameId=null;
+  const banner=document.getElementById('edit-banner');
+  if(banner)banner.style.display='none';
+  resetGameForm();
+}
+
+// ── CHART ENGINE ─────────────────────────────────────────────────
+const ALL_CHARTS={};
+function destroyChart(id){if(ALL_CHARTS[id]){ALL_CHARTS[id].destroy();delete ALL_CHARTS[id];}}
+
+function mkBar(id,labels,datasets,extraOpts){
+  destroyChart(id);
+  const el=document.getElementById(id);if(!el)return;
+  const base={
+    responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:datasets.length>1,position:'bottom',labels:{font:{family:'JetBrains Mono',size:9},boxWidth:8,padding:8}},tooltip:{backgroundColor:'#1a1a1a',titleColor:'#fafaf7',bodyColor:'#aaa',borderColor:'#333',borderWidth:1}},
+    scales:{x:{grid:{display:false},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373',maxRotation:30}},y:{grid:{color:'#f0f0f0'},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373'},beginAtZero:true}}
+  };
+  ALL_CHARTS[id]=new Chart(el,{type:'bar',data:{labels,datasets},options:Object.assign({},base,extraOpts||{})});
+}
+function mkDoughnut(id,labels,data,colors){
+  destroyChart(id);
+  const el=document.getElementById(id);if(!el)return;
+  ALL_CHARTS[id]=new Chart(el,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fafaf7'}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{family:'JetBrains Mono',size:9},boxWidth:8,padding:8}},tooltip:{backgroundColor:'#1a1a1a',titleColor:'#fafaf7',bodyColor:'#aaa'}},cutout:'60%'}
+  });
+}
+
+function renderCharts(prefix,games,allGks){
+  const wrapId=prefix==='ch'?'hist-charts-wrap':'rep-charts-wrap';
+  const wrap=document.getElementById(wrapId);
+  if(wrap)wrap.style.display=games.length?'block':'none';
+  if(!games.length){['gk','gk-pct','gk-sel','season','comp','opp'].forEach(k=>destroyChart(prefix+'-'+k));return;}
+
+  const a=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#0a0a0a';
+  const palette=[a,'#555','#888','#bbb','#ddd','#ccc'].slice(0,Math.max(allGks.length,1));
+  const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
+
+  // Minutes by GK (bar)
+  mkBar(prefix+'-gk',allGks,[{
+    label:'Total min',
+    data:allGks.map(gk=>{let t=0;games.forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return+(t/60).toFixed(1);}),
+    backgroundColor:palette,borderRadius:4
+  }]);
+
+  // % of Club Total (doughnut)
+  mkDoughnut(prefix+'-gk-pct',allGks,
+    allGks.map(gk=>{let t=0;games.forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return totalClubSecs>0?Math.round(t/totalClubSecs*100):0;}),
+    palette
+  );
+
+  // % When Selected (bar)
+  mkBar(prefix+'-gk-sel',allGks,[{
+    label:'% when selected',
+    data:allGks.map(gk=>{let t=0,sel=0;games.forEach(g=>{const d=g.gkData&&g.gkData[gk];if(!d)return;t+=d.totalSecs||0;if(d.selected)sel+=(g.totalMin||40)*60;});return sel>0?Math.round(t/sel*100):0;}),
+    backgroundColor:palette,borderRadius:4
+  }],{scales:{x:{grid:{display:false},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373'}},y:{max:100,grid:{color:'#f0f0f0'},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373',callback:v=>v+'%'},beginAtZero:true}}});
+
+  // By Season (grouped)
+  const seasons=[...new Set(games.map(g=>g.season).filter(Boolean))].sort();
+  if(seasons.length){
+    mkBar(prefix+'-season',seasons,allGks.map((gk,i)=>({
+      label:gk,
+      data:seasons.map(s=>{let t=0;games.filter(g=>g.season===s).forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return+(t/60).toFixed(1);}),
+      backgroundColor:palette[i],borderRadius:3
+    })));
+  }
+
+  // By Competition (grouped)
+  const comps=[...new Set(games.map(g=>g.comp).filter(Boolean))].sort();
+  if(comps.length){
+    mkBar(prefix+'-comp',comps,allGks.map((gk,i)=>({
+      label:gk,
+      data:comps.map(c=>{let t=0;games.filter(g=>g.comp===c).forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return+(t/60).toFixed(1);}),
+      backgroundColor:palette[i],borderRadius:3
+    })));
+  }
+
+  // By Opponent (stacked)
+  const opps=[...new Set(games.map(g=>g.opp).filter(Boolean))].sort();
+  if(opps.length){
+    mkBar(prefix+'-opp',opps,allGks.map((gk,i)=>({
+      label:gk,
+      data:opps.map(o=>{let t=0;games.filter(g=>g.opp===o).forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return+(t/60).toFixed(1);}),
+      backgroundColor:palette[i],borderRadius:3,stack:'opp'
+    })),{scales:{x:{stacked:true,grid:{display:false},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373',maxRotation:30}},y:{stacked:true,grid:{color:'#f0f0f0'},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373'},beginAtZero:true}}});
+  }
+}
+
+function deleteGame(id){
+  if(!confirm('Delete this game?'))return;
+  window.fbRemove('fluxgk-minutes/games/'+id).catch(e=>console.error(e));
+}
+
+// ── REPORT ────────────────────────────────────────────────────────
+function populateRepFilters(){
+  // already done in populateAllSelects
+}
+
+function renderRepTable(){
+  const season=document.getElementById('r-season').value;
+  const comp=document.getElementById('r-comp').value;
+  const opp=document.getElementById('r-opp').value;
+  const gkFilter=document.getElementById('r-gk').value;
+  const games=ST.games.filter(g=>{
+    if(season&&g.season!==season)return false;
+    if(comp&&g.comp!==comp)return false;
+    if(opp&&g.opp!==opp)return false;
+    return true;
+  });
+  const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
+  const gks=gkFilter?[gkFilter]:ST.gks;
+
+  // KPIs
+  document.getElementById('rep-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">Games</div></div>
+    <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">Club Total Min</div></div>
+    <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">GKs</div></div>
+    <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">Avg Game</div></div>
+  `;
+
+  const tbody=document.getElementById('rep-tbody');
+  tbody.innerHTML=gks.map(gkName=>{
+    let gc=0,sel=0,h1=0,h2=0,total=0,selSecs=0;
+    games.forEach(g=>{
+      const d=g.gkData&&g.gkData[gkName];if(!d)return;
+      gc++;if(d.selected){sel++;selSecs+=(g.totalMin||40)*60;}
+      h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+    });
+    const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
+    const pctSel=selSecs>0?Math.round(total/selSecs*100):0;
+    return `<tr>
+      <td><b>${gkName}</b></td><td>${gc}</td><td>${sel}</td>
+      <td style="font-family:var(--mono);">${fmtTime(h1)}</td>
+      <td style="font-family:var(--mono);">${fmtTime(h2)}</td>
+      <td style="font-family:var(--mono);font-weight:700;">${fmtTime(total)}</td>
+      <td><div class="min-bar-wrap"><div class="min-bar"><div class="min-bar-fill" style="width:${pctTotal}%;"></div></div><span style="font-size:11px;font-family:var(--mono);font-weight:600;">${pctTotal}%</span></div></td>
+      <td><span class="pct-pill" style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};">${pctSel}%</span></td>
+    </tr>`;
+  }).join('');
+  renderCharts('rch',games,gks);
+}
+
+// ── EXPORT PDF ────────────────────────────────────────────────────
+function exportReport(){
+  const season=document.getElementById('r-season').value;
+  const comp=document.getElementById('r-comp').value;
+  const opp=document.getElementById('r-opp').value;
+  const gkFilter=document.getElementById('r-gk').value;
+  const games=ST.games.filter(g=>{
+    if(season&&g.season!==season)return false;
+    if(comp&&g.comp!==comp)return false;
+    if(opp&&g.opp!==opp)return false;
+    return true;
+  });
+  if(games.length===0){alert('No data to export.');return;}
+  const gks=gkFilter?[gkFilter]:ST.gks;
+  const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
+  const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const a=ST.accent||'#1a3a6b';
+
+  // Capture report chart canvases as base64 images
+  const chartIds=['rch-gk','rch-gk-pct','rch-gk-sel','rch-season','rch-comp','rch-opp'];
+  const chartImgs=chartIds.map(id=>{
+    const el=document.getElementById(id);
+    if(!el||!ALL_CHARTS[id])return '';
+    try{return el.toDataURL('image/png');}catch(e){return '';}
+  });
+
+  function bar(pct,color){
+    return `<div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px;min-width:${pct>0?3:0}px;"></div></div>`;
+  }
+
+  const gkRows=gks.map(gkName=>{
+    let gc=0,sel=0,h1=0,h2=0,total=0,selSecs=0;
+    games.forEach(g=>{
+      const d=g.gkData&&g.gkData[gkName];if(!d)return;
+      gc++;if(d.selected){sel++;selSecs+=(g.totalMin||40)*60;}
+      h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+    });
+    const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
+    const pctSel=selSecs>0?Math.round(total/selSecs*100):0;
+    return `<tr style="border-bottom:1px solid #eee;">
+      <td style="padding:10px 12px;font-weight:700;">${gkName}</td>
+      <td style="padding:10px 12px;text-align:center;">${gc}</td>
+      <td style="padding:10px 12px;text-align:center;">${sel}</td>
+      <td style="padding:10px 12px;font-family:monospace;">${fmtTime(h1)}</td>
+      <td style="padding:10px 12px;font-family:monospace;">${fmtTime(h2)}</td>
+      <td style="padding:10px 12px;font-family:monospace;font-weight:700;">${fmtTime(total)}</td>
+      <td style="padding:10px 12px;"><div style="display:flex;align-items:center;gap:8px;">${bar(pctTotal,a)}<span style="font-size:11px;font-family:monospace;font-weight:600;min-width:36px;">${pctTotal}%</span></div></td>
+      <td style="padding:10px 12px;"><span style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:monospace;">${pctSel}%</span></td>
+    </tr>`;
+  }).join('');
+
+  const gameRows=games.sort((a,b)=>b.date.localeCompare(a.date)).map(g=>{
+    const gkCols=gks.map(gkName=>{
+      const d=g.gkData&&g.gkData[gkName];
+      if(!d)return '<td style="padding:8px 10px;color:#999;">—</td>';
+      const t=d.totalSecs||0;
+      const pct=g.totalMin>0?Math.round(t/(g.totalMin*60)*100):0;
+      return `<td style="padding:8px 10px;font-family:monospace;">${fmtTime(t)} <span style="font-size:10px;color:#999;">${pct}%</span></td>`;
+    }).join('');
+    return `<tr style="border-bottom:1px solid #eee;"><td style="padding:8px 10px;font-family:monospace;font-size:12px;">${g.date}</td><td style="padding:8px 10px;font-weight:600;">${g.opp||'—'}</td><td style="padding:8px 10px;">${g.comp||'—'}</td><td style="padding:8px 10px;font-family:monospace;">${g.totalMin||40}'</td>${gkCols}</tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>FluxGK — Minutes Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Space Grotesk',sans-serif;background:#fafaf7;color:#0a0a0a;font-size:13px;}
+    @page{size:A4;margin:16mm 14mm;}
+    @page:first{margin:0;}
+    .cover{background:${a};color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;box-sizing:border-box;page-break-after:always;}
+    .cover-top{flex:1;}
+    .cover-tag{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px;font-family:'JetBrains Mono',monospace;}
+    .cover-badge{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;margin-bottom:28px;overflow:hidden;}
+    .cover-badge img{width:56px;height:56px;object-fit:contain;border-radius:10px;}
+    .cover-title{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px;}
+    .cover-sub{font-size:16px;color:rgba(255,255,255,.60);margin-bottom:36px;}
+    .cover-games{margin-bottom:36px;}
+    .cover-games-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.38);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+    .cover-games-list{display:flex;flex-wrap:wrap;gap:6px;}
+    .game-tag{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);}
+    .cover-meta{display:flex;gap:36px;flex-wrap:wrap;}
+    .meta-item{display:flex;flex-direction:column;gap:3px;}
+    .meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);font-family:'JetBrains Mono',monospace;}
+    .meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,.88);}
+    .cover-footer{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+    .sec{margin-bottom:28px;}
+    .sec-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#737373;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e5e5e5;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 12px;border-bottom:2px solid #e5e5e5;}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+    .kpi{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:14px;text-align:center;}
+    .kpi-n{font-size:28px;font-weight:700;letter-spacing:-1.5px;}
+    .kpi-l{font-size:9px;letter-spacing:.1em;color:#737373;text-transform:uppercase;margin-top:3px;}
+    .footer{display:flex;justify-content:space-between;font-size:9px;color:#aaa;padding-top:16px;border-top:1px solid #eee;margin-top:24px;font-family:'JetBrains Mono',monospace;}
+    .no-print{text-align:center;padding:32px;display:flex;gap:12px;justify-content:center;}
+    @media print{.no-print{display:none;}}
+  </style></head><body>
+  <div class="cover">
+    <div class="cover-top">
+      <div class="cover-tag">FluxGK</div>
+      <div class="cover-badge">${ST.clubBadge?'<img src="'+ST.clubBadge+'">':(ST.clubName?ST.clubName.slice(0,2).toUpperCase():'GK')}</div>
+      <div class="cover-title">GK Minutes<br>Report</div>
+      <div class="cover-sub">${ST.clubName}</div>
+      <div class="cover-games">
+        <div class="cover-games-label">Games in this report</div>
+        <div class="cover-games-list">${games.sort((a,b)=>b.date.localeCompare(a.date)).map(g=>`<span class="game-tag">${g.date} vs ${g.opp||'—'}</span>`).join('')}</div>
+      </div>
+      <div class="cover-meta">
+        <div class="meta-item"><div class="meta-label">Games</div><div class="meta-value">${games.length}</div></div>
+        <div class="meta-item"><div class="meta-label">Club Total Min</div><div class="meta-value">${Math.round(totalClubSecs/60)}'</div></div>
+        <div class="meta-item"><div class="meta-label">Generated</div><div class="meta-value">${now}</div></div>
+        ${ST.coachName?'<div class="meta-item"><div class="meta-label">Coach</div><div class="meta-value">'+ST.coachName+'</div></div>':''}
+      </div>
+    </div>
+    <div class="cover-footer">
+      <span>FluxGK · GK Minutes Tracker</span>
+      <span>Constraints-Based Approach · Ecological Dynamics</span>
+    </div>
+  </div>
+
+  <div style="padding:0;">
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">Games</div></div>
+      <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">Club Total Min</div></div>
+      <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">GKs</div></div>
+      <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">Avg Game Length</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Minutes by Goalkeeper</div>
+      <table>
+        <thead><tr><th>Goalkeeper</th><th>Games</th><th>Selected</th><th>1st Half</th><th>2nd Half</th><th>Total</th><th>% Club Total</th><th>% When Selected</th></tr></thead>
+        <tbody>${gkRows}</tbody>
+      </table>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Charts</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+        ${chartImgs[0]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">MINUTES BY GK</div><img src=\"'+chartImgs[0]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[1]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">% CLUB TOTAL</div><img src=\"'+chartImgs[1]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[2]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">% WHEN SELECTED</div><img src=\"'+chartImgs[2]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+        ${chartImgs[3]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY SEASON</div><img src=\"'+chartImgs[3]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[4]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY COMPETITION</div><img src=\"'+chartImgs[4]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[5]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY OPPONENT</div><img src=\"'+chartImgs[5]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Game Log</div>
+      <table>
+        <thead><tr><th>Date</th><th>Opponent</th><th>Competition</th><th>Duration</th>${gks.map(g=>`<th>${g}</th>`).join('')}</tr></thead>
+        <tbody>${gameRows}</tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <span>FluxGK · GK Minutes Tracker</span>
+      <span>${ST.clubName} · ${now}</span>
+    </div>
+
+    <div class="no-print">
+      <button onclick="window.print()" style="padding:11px 28px;background:${a};border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;color:${a==='#0a0a0a'?'#fafaf7':'#0a0a0a'};">🖨 Print / Save as PDF</button>
+      <button onclick="window.close()" style="padding:11px 24px;background:#eee;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">✕ Close</button>
+    </div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── REFRESH ALL VIEWS ─────────────────────────────────────────────
+function refreshAll(){
+  populateAllSelects();
+  const active=document.querySelector('.page.active');
+  if(!active)return;
+  const id=active.id.replace('page-','');
+  if(id==='history')renderHistory();
+  if(id==='report'){renderRepTable();}
+  buildCollectForm();
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────
+function bootUI(){
+  document.getElementById('fb-loading').style.display='none';
+  document.documentElement.style.setProperty('--accent',ST.accent);
+  document.getElementById('nav-club-name').textContent=ST.clubName;
+  populateAllSelects();
+  buildCollectForm();
+  // Set today's date
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('g-date').value=today;
+}
+</script>
+
+<script>
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='FLUXGK_CONTEXT')return;
+  var p=e.data.profile||{};
+  if(p.clubColor){
+    ST.clubColor=p.clubColor;ST.accent=p.clubColor;
+    var h=document.getElementById('header');
+    if(h)h.style.background=p.clubColor;
+    document.documentElement.style.setProperty('--accent',p.clubColor);
+  }
+  if(p.coachName)ST.coachName=p.coachName;
+  if(p.clubName){
+    ST.clubName=p.clubName;
+    var cn=document.getElementById('nav-club-name');
+    if(cn)cn.textContent=p.clubName;
+  }
+  if(p.clubBadge){
+    ST.clubBadge=p.clubBadge;
+    var lb=document.querySelector('.logo-box');
+    if(lb)lb.innerHTML='<img src="'+p.clubBadge+'" style="width:30px;height:30px;object-fit:cover;border-radius:7px;">';
+  }
+});
+</script>
+</body>
+</html>
