@@ -1407,11 +1407,19 @@ function cancelEdit(){
     <div class="settings-body">
       <div class="settings-section">
         <div class="settings-title">Club Badge</div>
-        <div id="xg-badge-prev" style="width:64px;height:64px;border-radius:10px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background-size:cover;background-position:center;margin-bottom:8px;position:relative;">
-          <span style="font-size:28px;">&#x1F6E1;</span>
-          <input type="file" accept="image/*" onchange="loadXGBadge(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div id="xg-badge-prev" style="width:64px;height:64px;border-radius:10px;background:var(--bg3);border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:cover;background-position:center;flex-shrink:0;">
+            <span style="font-size:28px;">&#x1F6E1;</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label for="xg-badge-input" class="fbtn2 p" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;">
+              &#128247; Upload Badge
+            </label>
+            <input type="file" id="xg-badge-input" accept="image/*" onchange="loadXGBadge(event)" style="display:none;">
+            <button class="fbtn2" onclick="XGS.clubBadge='';var p=document.getElementById('xg-badge-prev');p.style.backgroundImage='none';p.innerHTML='<span style=&quot;font-size:28px;&quot;>&#x1F6E1;</span>';" style="font-size:11px;padding:6px 12px;border-radius:8px;">Remove</button>
+          </div>
         </div>
-        <p style="font-size:10px;color:var(--text3);">Click to upload your club badge. Used in PDF reports.</p>
+        <p style="font-size:10px;color:var(--text3);">Used in PDF reports. Click "Upload Badge" to select an image.</p>
       </div>
       <div class="settings-section">
         <div class="settings-title">Default Team A</div>
