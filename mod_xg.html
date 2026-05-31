@@ -219,10 +219,11 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
 .ntab.active{color:var(--text);border-bottom-color:var(--alfa);}
 .pg-ov{position:fixed;inset:0;z-index:150;background:var(--bg);display:flex;flex-direction:column;transform:translateX(110%);transition:transform .25s cubic-bezier(.4,0,.2,1);will-change:transform;}
 .pg-ov.open{transform:translateX(0);}
-.pov-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
+.pov-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;max-width:1200px;width:100%;margin:0 auto;}
 .pov-ttl{font-size:14px;font-weight:800;flex:1;}
 .pov-bk{padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font-h);font-size:11px;font-weight:600;cursor:pointer;}
-.pov-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;}
+.pov-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;max-width:1200px;width:100%;margin:0 auto;align-self:center;}
+.pov-filter-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;max-width:1200px;width:100%;margin:0 auto;}
 .cd2{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:14px 16px;}
 .kpis2{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
 .kpi2{background:var(--bg2);border-radius:10px;border:1px solid var(--border);padding:10px;text-align:center;}
@@ -269,7 +270,8 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
     <button class="ntab active" id="ntab-match" onclick="navTab('match')">⚽ Match</button>
     <button class="ntab" id="ntab-history" onclick="navTab('history')">📋 History</button>
     <button class="ntab" id="ntab-clubs" onclick="navTab('clubs')">🛡 Clubs</button>
-    <button class="ntab" id="ntab-season" onclick="navTab('season')">📊 Season</button>
+    <button class="ntab" id="ntab-report" onclick="navTab('report')">&#128196; Report</button>
+    <button class="ntab" id="ntab-xgsettings" onclick="navTab('xgsettings')">&#9881; Settings</button>
   </div>
   <div class="header-right">
     <div class="minute-wrap">
@@ -579,45 +581,41 @@ function exportPDF(){
   var s=S.shots,nA=S.teamA.name,nB=S.teamB.name;
   var dateStr=S.date?(function(){var p=S.date.split('-');return p[2]+'/'+p[1]+'/'+p[0];})()
     :(new Date().toLocaleDateString('en-GB'));
-  var PER=25,tot=Math.ceil(s.length/PER)||1,totPgs=tot+1;
-  var tablePages='';
-  for(var p=0;p<tot;p++){
-    var chunk=s.slice(p*PER,(p+1)*PER),si=p*PER;
-    var range=s.length>PER?' ('+(si+1)+'-'+Math.min(si+chunk.length,s.length)+')':'';
-    var rows='';
-    for(var ci=0;ci<chunk.length;ci++){
-      var sh=chunk[ci],i=si+ci;
-      var nm=sh.team==='alfa'?nA:nB,cls=sh.team==='alfa'?'t-alfa':'t-beta';
-      var a=sh.assist?'Yes':'No',pr=sh.pressao?'Yes':'No',o=sh.gol?'<span class="gol-b">GOAL</span>':'';
-      rows+='<tr><td>'+(i+1)+'</td>'
-        +'<td class="'+cls+'">'+nm+'</td>'
-        +'<td>'+sh.min+"'</td>"
-        +'<td class="xg-c">'+sh.xg.toFixed(3)+'</td>'
-        +'<td>'+(TIPO[sh.tipo]||sh.tipo)+'</td>'
-        +'<td>'+(CORPO[sh.corpo]||sh.corpo)+'</td>'
-        +'<td>'+a+'</td><td>'+pr+'</td><td>'+o+'</td></tr>';
-    }
-    tablePages+='<div class="pdf-page">'
-      +'<div class="pdf-hdr2"><div>'
-      +'<div class="pdf-app-tag">Futsal xG Tracker · Match Report</div>'
-      +'<div class="pdf-match-name">Shot Table'+range+'</div>'
-      +'<div class="pdf-match-meta">'+nA+' vs '+nB+' · '+(S.comp||'--')+' · '+dateStr+'</div>'
-      +'</div></div>'
-      +'<table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min.</th><th>xG</th><th>Game Moment</th><th>Body Part</th><th>Assist</th><th>Pressure</th><th>Outcome</th></tr></thead>'
-      +'<tbody>'+rows+'</tbody></table>'
-      +'<div class="pdf-foot">'
-      +'<span class="pdf-foot-txt">Futsal xG Tracker · Page '+(p+2)+' of '+totPgs+'</span>'
-      +'<span class="pdf-foot-txt">Generated on '+new Date().toLocaleDateString('en-GB')+'</span>'
-      +'</div></div>';
-  }
   var win=window.open('','_blank','width=900,height=700');
   if(!win){alert('Autorize popups para este site.');return;}
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
     +'<style>'
     +"@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500;600&display=swap');"
     +"*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0;padding:0;}\nbody{font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;background:#fff;}\n@page{size:A4 portrait;margin:12mm 10mm;}\n.pdf-page:last-child{page-break-after:avoid;break-after:avoid;}\nimg{max-width:100%;display:block;}\n.xg-card{background:var(--bg3);border-radius:11px;padding:11px;border:1px solid var(--border);text-align:center;}\n  @page{size:A4 portrait;margin:12mm 10mm;}\n  #pdf-report{display:block!important;}\n  .pdf-page{page-break-after:always;}\n  .pdf-page:last-child{page-break-after:avoid;}\n#pdf-report{display:block;font-family:'Syne','Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;background:#fff;}\n.pdf-page{width:100%;background:#fff;page-break-after:always;break-after:page;}\n.pdf-hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #111827;padding-bottom:10px;margin-bottom:14px;}\n.pdf-title-blk{display:flex;flex-direction:column;}\n.pdf-app-tag{font-size:9px;font-weight:600;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:2px;}\n.pdf-match-name{font-size:21px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}\n.pdf-match-meta{font-size:10px;color:#666;margin-top:3px;font-family:'DM Mono',monospace;}\n.pdf-logos{display:flex;align-items:center;gap:10px;}\n.pdf-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;}\n.pdf-logo-img{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #eee;}\n.pdf-logo-ph{width:44px;height:44px;border-radius:8px;background:#f5f5f5;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:24px;}\n.pdf-vs{font-size:11px;font-weight:700;color:#bbb;}\n.pdf-team-sm{font-size:8px;font-weight:700;color:#666;text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}\n.pdf-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px;}\n.pdf-kpi{background:#f9f9f9;border-radius:7px;padding:7px 5px;text-align:center;border:1px solid #eee;}\n.pdf-kpi-val{font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;}\n.pdf-kpi-lbl{font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}\n.pdf-compare{display:grid;grid-template-columns:1fr 56px 1fr;gap:7px;margin-bottom:12px;align-items:center;}\n.pdf-tcol{background:#f9f9f9;border-radius:9px;padding:10px;border:1px solid #eee;}\n.pdf-tcol.alfa{border-left:3px solid #3B82F6;}\n.pdf-tcol.beta{border-left:3px solid #F59E0B;}\n.pdf-tc-name{font-size:12px;font-weight:800;margin-bottom:6px;}\n.pdf-tc-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:1px solid #f0f0f0;}\n.pdf-tc-row:last-child{border-bottom:none;}\n.pdf-tc-k{color:#777;}\n.pdf-tc-v{font-weight:700;font-family:'DM Mono',monospace;}\n.pdf-mid{text-align:center;}\n.pdf-score{font-size:26px;font-weight:800;font-family:'DM Mono',monospace;}\n.pdf-score-lbl{font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;}\n.pdf-section-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:3px;}\n.pdf-court-img{width:100%;border-radius:7px;border:1px solid #eee;display:block;margin-bottom:12px;}\n.pdf-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}\n.pdf-table{width:100%;border-collapse:collapse;font-size:9px;}\n.pdf-table th{background:#111827;color:#fff;padding:5px 7px;text-align:left;font-size:8px;letter-spacing:.5px;text-transform:uppercase;}\n.pdf-table td{padding:4px 7px;border-bottom:1px solid #f0f0f0;}\n.pdf-table tr:nth-child(even) td{background:#fafafa;}\n.t-alfa{color:#3B82F6;font-weight:700;}\n.t-beta{color:#F59E0B;font-weight:700;}\n.xg-c{font-family:'DM Mono',monospace;font-weight:600;}\n.gol-b{background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:10px;font-size:8px;font-weight:700;}\n.pdf-foot{margin-top:12px;border-top:1px solid #eee;padding-top:7px;display:flex;justify-content:space-between;}\n.pdf-foot-txt{font-size:8px;color:#bbb;font-family:'DM Mono',monospace;}"
+    +(function(){
+      var ac=(typeof _hubColor!=='undefined'&&_hubColor)||XGS.clubBadge||'#1a3a6b';
+      var badge=(typeof _hubBadge!=='undefined'&&_hubBadge)||XGS.clubBadge||'';
+      var club=(typeof _hubClub!=='undefined'&&_hubClub)||XGS.defaultTeamA||'';
+      var coach=(typeof _hubCoach!=='undefined'&&_hubCoach)||XGS.coachName||'';
+      return "@page:first{margin:0;}.cover{background:"+ac+";color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;box-sizing:border-box;page-break-after:always;}.cover-top{flex:1;}.cover-tag{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px;font-family:'DM Mono',monospace;}.cover-badge{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;margin-bottom:28px;overflow:hidden;}.cover-badge img{width:56px;height:56px;object-fit:contain;border-radius:10px;}.cover-title{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px;}.cover-sub{font-size:16px;color:rgba(255,255,255,.60);margin-bottom:36px;}.cover-meta{display:flex;gap:36px;flex-wrap:wrap;}.meta-item{display:flex;flex-direction:column;gap:3px;}.meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);font-family:'DM Mono',monospace;}.meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,.88);}.cover-footer{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.08em;text-transform:uppercase;font-family:'DM Mono',monospace;}";
+    })()
     +'</style></head><body>'
-    +p1content+tablePages
+    +(function(){
+      var ac=(typeof _hubColor!=='undefined'&&_hubColor)||'#1a3a6b';
+      var badge=(typeof _hubBadge!=='undefined'&&_hubBadge)||XGS.clubBadge||'';
+      var club=(typeof _hubClub!=='undefined'&&_hubClub)||XGS.defaultTeamA||'';
+      var coach=(typeof _hubCoach!=='undefined'&&_hubCoach)||XGS.coachName||'';
+      return '<div class="cover"><div class="cover-top">'
+        +'<div class="cover-tag">FluxGK</div>'
+        +(badge?'<div class="cover-badge"><img src="'+badge+'"></div>':'<div class="cover-badge">xG</div>')
+        +'<div class="cover-title">Futsal xG<br>Report</div>'
+        +'<div class="cover-sub">'+(club||nA+' vs '+nB)+'</div>'
+        +'<div class="cover-meta">'
+        +'<div class="meta-item"><div class="meta-label">Match</div><div class="meta-value">'+nA+' vs '+nB+'</div></div>'
+        +'<div class="meta-item"><div class="meta-label">Competition</div><div class="meta-value">'+(S.comp||'—')+'</div></div>'
+        +'<div class="meta-item"><div class="meta-label">Date</div><div class="meta-value">'+dateStr+'</div></div>'
+        +'<div class="meta-item"><div class="meta-label">Shots</div><div class="meta-value">'+s.length+'</div></div>'
+        +(coach?'<div class="meta-item"><div class="meta-label">Coach</div><div class="meta-value">'+coach+'</div></div>':'')
+        +'</div></div>'
+        +'<div class="cover-footer"><span>FluxGK · Futsal xG Tracker</span><span>Constraints-Based Approach · Ecological Dynamics</span></div>'
+        +'</div>';
+    })()
+    +p1content
     +'</body></html>');
   win.document.close();
   setTimeout(function(){win.print();},1000);
@@ -630,12 +628,12 @@ function buildPDF(){
   const aG=aS.filter(x=>x.gol).length,bG=bS.filter(x=>x.gol).length;
   const aConv=aS.length>0?Math.round(aG/aS.length*100)+'%':'—',bConv=bS.length>0?Math.round(bG/bS.length*100)+'%':'—';
   const dateStr=S.date?(()=>{const[y,m,d]=S.date.split('-');return`${d}/${m}/${y}`;})():'—';
-  const courtImg=cv.toDataURL('image/png');
-  const logoA=S.teamA.emb?`<img class="pdf-logo-img" src="${S.teamA.emb}">`:`<div class="pdf-logo-ph">⚽</div>`;
-  const logoB=S.teamB.emb?`<img class="pdf-logo-img" src="${S.teamB.emb}">`:`<div class="pdf-logo-ph">⚽</div>`;
+  const logoA=S.teamA.emb?`<img class="pdf-logo-img" src="${S.teamA.emb}">`:`<div class="pdf-logo-ph">&#9917;</div>`;
+  const logoB=S.teamB.emb?`<img class="pdf-logo-img" src="${S.teamB.emb}">`:`<div class="pdf-logo-ph">&#9917;</div>`;
   const tipoCount={};s.forEach(sh=>{tipoCount[sh.tipo]=(tipoCount[sh.tipo]||0)+1;});
   const tipoRows=Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<tr><td>${TIPO[t]||t}</td><td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;">${n}</td></tr>`).join('');
-  const tRows=s.map((sh,i)=>`<tr><td>${i+1}</td><td class="${sh.team==='alfa'?'t-alfa':'t-beta'}">${sh.team==='alfa'?nA:nB}</td><td>${sh.min}'</td><td class="xg-c">${sh.xg.toFixed(3)}</td><td>${TIPO[sh.tipo]||sh.tipo}</td><td>${CORPO[sh.corpo]||sh.corpo}</td><td>${sh.assist?'Sim':'Não'}</td><td>${sh.pressao?'Sim':'Não'}</td><td>${sh.gol?'<span class="gol-b">GOAL</span>':''}</td></tr>`).join('');
+  const tRows=s.map((sh,i)=>`<tr><td>${i+1}</td><td class="${sh.team==='alfa'?'t-alfa':'t-beta'}">${sh.team==='alfa'?nA:nB}</td><td>${sh.min}'</td><td class="xg-c">${sh.xg.toFixed(3)}</td><td>${TIPO[sh.tipo]||sh.tipo}</td><td>${CORPO[sh.corpo]||sh.corpo}</td><td>${sh.assist?'Yes':'No'}</td><td>${sh.pressao?'Yes':'No'}</td><td>${sh.gol?'<span class="gol-b">GOAL</span>':''}</td></tr>`).join('');
+  const courtImg=cv.toDataURL('image/png');
   document.getElementById('pdf-report').innerHTML=`
   <div class="pdf-page">
     <div class="pdf-hdr">
@@ -651,39 +649,41 @@ function buildPDF(){
       </div>
     </div>
     <div class="pdf-kpi-grid">
-      <div class="pdf-kpi"><div class="pdf-kpi-val">${s.length}</div><div class="pdf-kpi-lbl">Finalizações</div></div>
-      <div class="pdf-kpi"><div class="pdf-kpi-val">${aG+bG}</div><div class="pdf-kpi-lbl">Gols</div></div>
+      <div class="pdf-kpi"><div class="pdf-kpi-val">${s.length}</div><div class="pdf-kpi-lbl">Shots</div></div>
+      <div class="pdf-kpi"><div class="pdf-kpi-val">${aG+bG}</div><div class="pdf-kpi-lbl">Goals</div></div>
       <div class="pdf-kpi"><div class="pdf-kpi-val" style="color:#3B82F6;">${aXG.toFixed(2)}</div><div class="pdf-kpi-lbl">xG ${nA}</div></div>
       <div class="pdf-kpi"><div class="pdf-kpi-val" style="color:#F59E0B;">${bXG.toFixed(2)}</div><div class="pdf-kpi-lbl">xG ${nB}</div></div>
-      <div class="pdf-kpi"><div class="pdf-kpi-val">${aS.length}</div><div class="pdf-kpi-lbl">Fin. ${nA}</div></div>
-      <div class="pdf-kpi"><div class="pdf-kpi-val">${bS.length}</div><div class="pdf-kpi-lbl">Fin. ${nB}</div></div>
+      <div class="pdf-kpi"><div class="pdf-kpi-val">${aS.length}</div><div class="pdf-kpi-lbl">Shots ${nA}</div></div>
+      <div class="pdf-kpi"><div class="pdf-kpi-val">${bS.length}</div><div class="pdf-kpi-lbl">Shots ${nB}</div></div>
     </div>
     <div class="pdf-compare">
       <div class="pdf-tcol alfa">
         <div class="pdf-tc-name" style="color:#3B82F6;">${nA}</div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Finalizações</span><span class="pdf-tc-v">${aS.length}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Gols</span><span class="pdf-tc-v">${aG}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">xG total</span><span class="pdf-tc-v">${aXG.toFixed(2)}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">xG médio/fin.</span><span class="pdf-tc-v">${aS.length>0?(aXG/aS.length).toFixed(3):'—'}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversão</span><span class="pdf-tc-v">${aConv}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">${aS.length}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">${aG}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">${aXG.toFixed(2)}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">${aS.length>0?(aXG/aS.length).toFixed(3):'—'}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">${aConv}</span></div>
       </div>
-      <div class="pdf-mid"><div class="pdf-score">${aG}–${bG}</div><div class="pdf-score-lbl">Placar</div></div>
+      <div class="pdf-mid"><div class="pdf-score">${aG}–${bG}</div><div class="pdf-score-lbl">Score</div></div>
       <div class="pdf-tcol beta">
         <div class="pdf-tc-name" style="color:#F59E0B;">${nB}</div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Finalizações</span><span class="pdf-tc-v">${bS.length}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Gols</span><span class="pdf-tc-v">${bG}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">xG total</span><span class="pdf-tc-v">${bXG.toFixed(2)}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">xG médio/fin.</span><span class="pdf-tc-v">${bS.length>0?(bXG/bS.length).toFixed(3):'—'}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversão</span><span class="pdf-tc-v">${bConv}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">${bS.length}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">${bG}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">${bXG.toFixed(2)}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">${bS.length>0?(bXG/bS.length).toFixed(3):'—'}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">${bConv}</span></div>
       </div>
     </div>
-    <div class="pdf-section-title">Mapa de finalizações</div>
-    <img class="pdf-court-img" src="${courtImg}" alt="Mapa">
-    <div class="pdf-2col">
-      <div><div class="pdf-section-title">Finalizações por tipo de jogada</div><table class="pdf-table"><thead><tr><th>Tipo</th><th style="text-align:right;">Total</th></tr></thead><tbody>${tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">—</td></tr>'}</tbody></table></div>
-      <div><div class="pdf-section-title">Referência xG</div><table class="pdf-table"><thead><tr><th>Intervalo</th><th>Interpretação</th></tr></thead><tbody><tr><td>0.00–0.09</td><td>Improvável</td></tr><tr><td>0.10–0.24</td><td>Baixa</td></tr><tr><td>0.25–0.44</td><td>Moderada</td></tr><tr><td>0.45–0.64</td><td>Boa chance</td></tr><tr><td>0.65–1.00</td><td>Grande chance</td></tr></tbody></table></div>
+    <div class="pdf-section-title">Shot Map</div>
+    <img class="pdf-court-img" src="${courtImg}" alt="Shot Map">
+    <div class="pdf-2col" style="margin-top:10px;">
+      <div><div class="pdf-section-title">Shots by Game Moment</div><table class="pdf-table"><thead><tr><th>Type</th><th style="text-align:right;">Total</th></tr></thead><tbody>${tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">—</td></tr>'}</tbody></table></div>
+      <div><div class="pdf-section-title">xG Reference</div><table class="pdf-table"><thead><tr><th>Range</th><th>Interpretation</th></tr></thead><tbody><tr><td>0.00–0.09</td><td>Unlikely</td></tr><tr><td>0.10–0.24</td><td>Low probability</td></tr><tr><td>0.25–0.44</td><td>Moderate</td></tr><tr><td>0.45–0.64</td><td>Good chance</td></tr><tr><td>0.65–1.00</td><td>Big chance</td></tr></tbody></table></div>
     </div>
-    <div class="pdf-foot"><span class="pdf-foot-txt">Futsal xG Tracker · Página 1 de 2</span><span class="pdf-foot-txt">${S.comp||''} · ${dateStr}</span></div>
+    <div class="pdf-section-title" style="margin-top:10px;">Shot Table</div>
+    <table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min</th><th>xG</th><th>Moment</th><th>Body</th><th>Assist</th><th>Press</th><th>Result</th></tr></thead><tbody>${tRows}</tbody></table>
+    <div class="pdf-foot" style="margin-top:10px;"><span class="pdf-foot-txt">Futsal xG Tracker</span><span class="pdf-foot-txt">${S.comp||''} · ${dateStr}</span></div>
   </div>`;
   var _rep=document.getElementById('pdf-report');
   var _PER=25,_tot=Math.ceil(s.length/_PER)||1,_totPgs=_tot+1;
@@ -694,7 +694,7 @@ function buildPDF(){
     for(var _ci=0;_ci<_chunk.length;_ci++){
       var _sh=_chunk[_ci],_i=_si+_ci;
       var _nm=_sh.team==='alfa'?nA:nB,_cls=_sh.team==='alfa'?'t-alfa':'t-beta';
-      var _a=_sh.assist?'Yes':'No',_pr=_sh.pressao?'Sim':'Nao';
+      var _a=_sh.assist?'Yes':'No',_pr=_sh.pressao?'Yes':'No';
       var _o=_sh.gol?'<span class="gol-b">GOAL</span>':'';
       _rows+='<tr><td>'+(_i+1)+'</td><td class="'+_cls+'">'+_nm+'</td>'
         +'<td>'+_sh.min+"'</td>"
@@ -734,7 +734,10 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 /* ── INIT ── */
 window.addEventListener('resize',resize);
-window.addEventListener('load',()=>{resize();updTogg();document.getElementById('inDate').valueAsDate=new Date();syncMatch();});
+window.addEventListener('load',()=>{
+  resize();updTogg();document.getElementById('inDate').valueAsDate=new Date();syncMatch();
+  loadXGSettings();
+});
 
 /* ════════ DB ════════ */
 const DB={
@@ -756,17 +759,112 @@ DB.saveClub=function(cl){_origSaveClub(cl);setTimeout(syncToCloud,500);};
 const _origDelClub=DB.delClub.bind(DB);
 DB.delClub=function(id){_origDelClub(id);setTimeout(syncToCloud,500);};
 
+/* ════════ XG SETTINGS ════════ */
+var XGS={defaultTeamA:'',coachName:'',clubBadge:'',seasons:[],competitions:[]};
+
+async function loadXGSettings(){
+  var remote=null;
+  if(FB.ready()){try{remote=await FB.get('settings');}catch(e){}}
+  if(remote){
+    XGS=Object.assign({defaultTeamA:'',coachName:'',clubBadge:'',seasons:[],competitions:[]},remote);
+    localStorage.setItem('xg_settings',JSON.stringify(XGS));
+  } else {
+    try{var ls=JSON.parse(localStorage.getItem('xg_settings'));if(ls)XGS=ls;}catch(e){}
+  }
+  applyXGSettings();
+}
+
+function applyXGSettings(){
+  function sv(id,v){var el=document.getElementById(id);if(el)el.value=v||'';}
+  sv('xg-default-teamA',XGS.defaultTeamA);
+  sv('xg-coach-name',XGS.coachName);
+  var prev=document.getElementById('xg-badge-prev');
+  if(prev){
+    if(XGS.clubBadge){prev.style.backgroundImage='url('+XGS.clubBadge+')';prev.innerHTML='';}
+    else{prev.style.backgroundImage='none';prev.innerHTML='<span style="font-size:20px;">&#x1F6E1;</span>';}
+  }
+  renderXGList('seasons','xg-seasons-list');
+  renderXGList('competitions','xg-comps-list');
+  if(XGS.defaultTeamA){var inNA=document.getElementById('inNA');if(inNA){inNA.value=XGS.defaultTeamA;syncNames();}}
+  if(XGS.clubBadge){var le=document.getElementById('logo-emb');if(le)le.innerHTML='<img src="'+XGS.clubBadge+'" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">';}
+  populateXGSelects();
+}
+
+function renderXGList(key,listId){
+  var el=document.getElementById(listId);if(!el)return;
+  var arr=XGS[key]||[];
+  if(!arr.length){el.innerHTML='<div style="font-size:11px;color:var(--text3);">None added yet.</div>';return;}
+  el.innerHTML=arr.map(function(v,i){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:6px;margin-bottom:4px;font-size:12px;">'
+      +'<span>'+v+'</span>'
+      +'<button onclick="removeXGItem(\''+key+'\','+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;">x</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addXGItem(key,inputId){
+  var inp=document.getElementById(inputId);if(!inp)return;
+  var v=inp.value.trim();if(!v||(XGS[key]||[]).includes(v))return;
+  if(!XGS[key])XGS[key]=[];
+  XGS[key].push(v);inp.value='';
+  renderXGList(key,key==='seasons'?'xg-seasons-list':'xg-comps-list');
+  populateXGSelects();
+}
+
+function removeXGItem(key,idx){
+  if(!XGS[key])return;
+  XGS[key].splice(idx,1);
+  renderXGList(key,key==='seasons'?'xg-seasons-list':'xg-comps-list');
+  populateXGSelects();
+}
+
+function populateXGSelects(){
+  var comps=XGS.competitions||[];
+  var seasons=XGS.seasons||[];
+  ['xg-hist-comp','xg-hist-season','xg-rep-comp','xg-rep-season'].forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el.value;
+    if(id.indexOf('comp')>=0){
+      el.innerHTML='<option value="">All Competitions</option>'+comps.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+    }
+    if(id.indexOf('season')>=0){
+      el.innerHTML='<option value="">All Seasons</option>'+seasons.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+    }
+    el.value=cur;
+  });
+}
+
+function loadXGBadge(e){
+  var f=e.target.files[0];if(!f)return;
+  var r=new FileReader();r.onload=function(ev){
+    XGS.clubBadge=ev.target.result;
+    var prev=document.getElementById('xg-badge-prev');
+    if(prev){prev.style.backgroundImage='url('+XGS.clubBadge+')';prev.innerHTML='';}
+  };r.readAsDataURL(f);
+}
+
+async function saveXGSettings(){
+  XGS.defaultTeamA=(document.getElementById('xg-default-teamA')||{value:''}).value.trim();
+  XGS.coachName=(document.getElementById('xg-coach-name')||{value:''}).value.trim();
+  localStorage.setItem('xg_settings',JSON.stringify(XGS));
+  if(FB.ready()){try{await FB.set('settings',XGS);}catch(e){console.warn('FB settings write failed:',e);}}
+  applyXGSettings();
+  toast('Settings saved');
+}
+
 /* ════════ NAV ════════ */
 let _tab='match',_editClubId=null,_clubImg=null;
 function navTab(tab){
+  if(tab==='xgsettings'){loadXGSettings();}
   _tab=tab;
-  ['match','history','clubs','season'].forEach(t=>{
+  ['match','history','clubs','season','xgsettings','report'].forEach(t=>{
     const b=document.getElementById('ntab-'+t);if(b)b.classList.toggle('active',t===tab);
     const p=document.getElementById('pg-'+t);if(p)p.classList.toggle('open',t===tab);
   });
-  if(tab==='history')renderHist();
+  if(tab==='history'){populateHistFilters();renderHist();}
   if(tab==='clubs')renderClubs();
   if(tab==='season')renderSeason();
+  if(tab==='report'){populateHistFilters();renderReport();}
   if(tab==='match'){setTimeout(resize,50);setTimeout(resize,200);}
 }
 
@@ -779,22 +877,225 @@ function saveCurrentGame(){
 }
 
 /* ════════ HISTÓRICO ════════ */
+function getFilteredGames(oppId,compId,seasonId){
+  return DB.games().slice().reverse().filter(function(g){
+    if(oppId&&g.teamB!==oppId)return false;
+    if(compId&&g.comp!==compId)return false;
+    if(seasonId&&g.season!==seasonId)return false;
+    return true;
+  });
+}
+
+function gameCardHtml(g,editMode){
+  var aS=g.shots.filter(function(s){return s.team==='alfa';}),bS=g.shots.filter(function(s){return s.team==='beta';});
+  var aXG=aS.reduce(function(a,s){return a+s.xg;},0).toFixed(2),bXG=bS.reduce(function(a,s){return a+s.xg;},0).toFixed(2);
+  var aG=aS.filter(function(s){return s.gol;}).length,bG=bS.filter(function(s){return s.gol;}).length;
+  var d=g.date?(function(p){return p[2]+'/'+p[1]+'/'+p[0];})(g.date.split('-')):'--';
+  var click=editMode?'onclick="loadGameToEdit(\''+g.id+'\')"':'';
+  return '<div class="gi2" '+click+' style="'+(editMode?'cursor:pointer;':'')+'">'
+    +'<div class="gi2-meta">'+(g.comp||'--')+' · '+(g.season||'--')+' · '+d+'</div>'
+    +'<div class="gi2-ttl">'+g.teamA+' '+aG+'-'+bG+' '+g.teamB+'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">'
+    +'<span style="font-size:11px;color:var(--alfa);font-family:var(--font-m);">'+g.teamA+': '+aS.length+' shots · xG '+aXG+'</span>'
+    +'<span style="font-size:11px;color:var(--beta);font-family:var(--font-m);">'+g.teamB+': '+bS.length+' shots · xG '+bXG+'</span>'
+    +'</div></div>';
+}
+
+function populateHistFilters(){
+  var games=DB.games();
+  var opps=[...new Set(games.map(function(g){return g.teamB;}).filter(Boolean))].sort();
+  var comps=[...new Set(games.map(function(g){return g.comp;}).filter(Boolean))].sort();
+  var seasons=[...new Set(games.map(function(g){return g.season;}).filter(Boolean))].sort();
+  function fill(id,vals,all){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el.value;
+    el.innerHTML='<option value="">'+all+'</option>'+vals.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join('');
+    el.value=cur;
+  }
+  fill('xg-hist-opp',opps,'All Opponents');
+  fill('xg-hist-comp',comps,'All Competitions');
+  fill('xg-hist-season',seasons,'All Seasons');
+  fill('xg-rep-opp',opps,'All Opponents');
+  fill('xg-rep-comp',comps,'All Competitions');
+  fill('xg-rep-season',seasons,'All Seasons');
+}
+
 function renderHist(){
-  const body=document.getElementById('hist-body'),games=DB.games().slice().reverse();
-  if(!games.length){body.innerHTML='<div class="emp2">Nenhuma partida salva.<br><br>Registre finalizações e clique em <b>💾 Salvar</b>.</div>';return;}
-  body.innerHTML=games.map(g=>{
-    const aS=g.shots.filter(s=>s.team==='alfa'),bS=g.shots.filter(s=>s.team==='beta');
-    const aXG=aS.reduce((a,s)=>a+s.xg,0).toFixed(2),bXG=bS.reduce((a,s)=>a+s.xg,0).toFixed(2);
-    const aG=aS.filter(s=>s.gol).length,bG=bS.filter(s=>s.gol).length;
-    const d=g.date?(([y,m,dd])=>dd+'/'+m+'/'+y)(g.date.split('-')):'—';
-    return '<div class="gi2" onclick="loadGameToEdit(\''+g.id+'\')">'
-      +'<div class="gi2-meta">'+(g.comp||'—')+' · '+d+'</div>'
-      +'<div class="gi2-ttl">'+g.teamA+' '+aG+'-'+bG+' '+g.teamB+'</div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">'
-      +'<span style="font-size:11px;color:var(--alfa);font-family:var(--font-m);">'+g.teamA+': '+aS.length+' shots · xG '+aXG+'</span>'
-      +'<span style="font-size:11px;color:var(--beta);font-family:var(--font-m);">'+g.teamB+': '+bS.length+' shots · xG '+bXG+'</span>'
-      +'</div></div>';
-  }).join('');
+  var opp=(document.getElementById('xg-hist-opp')||{}).value||'';
+  var comp=(document.getElementById('xg-hist-comp')||{}).value||'';
+  var season=(document.getElementById('xg-hist-season')||{}).value||'';
+  var body=document.getElementById('hist-body');
+  var games=getFilteredGames(opp,comp,season);
+  if(!games.length){body.innerHTML='<div class="emp2">No matches found.<br><br>Adjust filters or record a match first.</div>';return;}
+  body.innerHTML=games.map(function(g){return gameCardHtml(g,true);}).join('');
+}
+
+function renderReport(){
+  populateHistFilters();
+  var opp=(document.getElementById('xg-rep-opp')||{}).value||'';
+  var comp=(document.getElementById('xg-rep-comp')||{}).value||'';
+  var season=(document.getElementById('xg-rep-season')||{}).value||'';
+  var body=document.getElementById('rep-preview-body');if(!body)return;
+  var games=getFilteredGames(opp,comp,season);
+  if(!games.length){body.innerHTML='<div class="emp2">No matches found for the selected filters.</div>';return;}
+  var allShots=games.flatMap(function(g){return g.shots;});
+  var aShots=allShots.filter(function(s){return s.team==='alfa';}),bShots=allShots.filter(function(s){return s.team==='beta';});
+  var aXG=aShots.reduce(function(a,s){return a+s.xg;},0),bXG=bShots.reduce(function(a,s){return a+s.xg;},0);
+  var html='<div style="padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:4px;border:1px solid var(--border2);">'
+    +'<div style="font-size:10px;color:var(--text3);font-family:var(--font-m);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">'+games.length+' match'+(games.length!==1?'es':'')+' found — check games to export</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;font-family:var(--font-m);">'+games.length+'</div><div style="font-size:9px;color:var(--text3);">Matches</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;font-family:var(--font-m);">'+allShots.length+'</div><div style="font-size:9px;color:var(--text3);">Shots</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--alfa);font-family:var(--font-m);">'+aXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">Team A xG</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--beta);font-family:var(--font-m);">'+bXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">Team B xG</div></div>'
+    +'</div></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;padding:8px 4px;">'
+    +'<input type="checkbox" id="rep-check-all" checked onchange="toggleAllReportChecks(this.checked)" style="width:16px;height:16px;accent-color:var(--alfa);cursor:pointer;">'
+    +'<label for="rep-check-all" style="font-size:12px;color:var(--text2);cursor:pointer;">Select all</label>'
+    +'</div>';
+  games.forEach(function(g){
+    var aS=g.shots.filter(function(s){return s.team==='alfa';}),bS=g.shots.filter(function(s){return s.team==='beta';});
+    var aXGg=aS.reduce(function(a,s){return a+s.xg;},0),bXGg=bS.reduce(function(a,s){return a+s.xg;},0);
+    var aGg=aS.filter(function(s){return s.gol;}).length,bGg=bS.filter(function(s){return s.gol;}).length;
+    var d=g.date?(function(p){return p[2]+'/'+p[1]+'/'+p[0];})(g.date.split('-')):'--';
+    html+='<label style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border-radius:8px;border:1px solid var(--border);cursor:pointer;">'
+      +'<input type="checkbox" class="rep-game-check" data-id="'+g.id+'" checked style="width:16px;height:16px;accent-color:var(--alfa);flex-shrink:0;cursor:pointer;">'
+      +'<div style="flex:1;">'
+      +'<div style="font-size:10px;color:var(--text3);font-family:var(--font-m);margin-bottom:2px;">'+(g.comp||'--')+' \xb7 '+(g.season||'--')+' \xb7 '+d+'</div>'
+      +'<div style="font-size:13px;font-weight:700;">'+g.teamA+' '+aGg+'-'+bGg+' '+g.teamB+'</div>'
+      +'<div style="display:flex;gap:10px;margin-top:3px;">'
+      +'<span style="font-size:11px;color:var(--alfa);font-family:var(--font-m);">'+g.teamA+': '+aS.length+' shots \xb7 xG '+aXGg.toFixed(2)+'</span>'
+      +'<span style="font-size:11px;color:var(--beta);font-family:var(--font-m);">'+g.teamB+': '+bS.length+' shots \xb7 xG '+bXGg.toFixed(2)+'</span>'
+      +'</div></div></label>';
+  });
+  body.innerHTML=html;
+}
+
+function toggleAllReportChecks(checked){
+  document.querySelectorAll('.rep-game-check').forEach(function(cb){cb.checked=checked;});
+}
+
+function exportCheckedPDF(){
+  var checked=[...document.querySelectorAll('.rep-game-check:checked')].map(function(cb){return cb.dataset.id;});
+  if(!checked.length){toast('Select at least one match');return;}
+  var games=DB.games().filter(function(g){return checked.includes(g.id);});
+  if(!games.length){toast('No matches found');return;}
+  if(games.length===1){
+    var g=games[0];
+    S.shots=g.shots.map(function(s){return Object.assign({},s);});
+    S.teamA.name=g.teamA;S.teamB.name=g.teamB;S.comp=g.comp||'';S.date=g.date||'';
+    syncMatch();updStats();draw();
+    setTimeout(function(){exportPDF();},200);
+  } else {
+    exportCombinedPDF(games,'','','');
+  }
+}
+
+// ── COURT SVG RENDERER FOR PDF ─────────────────────────────────────
+var GAME_COLORS=['#3B82F6','#F59E0B','#22C55E','#EC4899','#A855F7','#F97316'];
+
+function renderCourtSVG(shotGroups,W,H){
+  W=W||520;H=H||260;
+  var ml=W*.044,mr=W*.044,mt=H*.06,mb=H*.08;
+  var fw=W-ml-mr,fh=H-mt-mb;
+  var x0=ml,y0=mt,x1=x0+fw,y1=y0+fh,cx=(x0+x1)/2,cy=(y0+y1)/2;
+  var ppm=fw/40;
+  var lw=Math.max(1,W*.003);
+  var lc='rgba(255,255,255,0.85)';
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="border-radius:8px;overflow:hidden;display:block;">';
+  s+='<rect width="'+W+'" height="'+H+'" fill="#0D1117"/>';
+  // Floor strips (matching canvas)
+  var cols=['#C9AA6F','#C0A064','#C9AA6F','#C4A369','#BEA060'];
+  var ph=fh/5;
+  for(var fi=0;fi<5;fi++){s+='<rect x="'+x0+'" y="'+(y0+fi*ph)+'" width="'+fw+'" height="'+ph+'" fill="'+cols[fi%cols.length]+'"/>';}
+  // Court lines
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+fw+'" height="'+fh+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  s+='<line x1="'+cx+'" y1="'+y0+'" x2="'+cx+'" y2="'+y1+'" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(3*ppm)+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(lw*1.5)+'" fill="'+lc+'"/>';
+  // Area arcs
+  var R=6*ppm;
+  s+='<path d="M '+x0+' '+(cy-R)+' A '+R+' '+R+' 0 0 1 '+x0+' '+(cy+R)+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  s+='<path d="M '+x1+' '+(cy-R)+' A '+R+' '+R+' 0 0 0 '+x1+' '+(cy+R)+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  // Penalty spots
+  s+='<circle cx="'+(x0+6*ppm)+'" cy="'+cy+'" r="'+(lw*2)+'" fill="'+lc+'"/>';
+  s+='<circle cx="'+(x1-6*ppm)+'" cy="'+cy+'" r="'+(lw*2)+'" fill="'+lc+'"/>';
+  // Goals
+  var gh=3*ppm,gd=Math.max(5,1.5*ppm),gy0=cy-gh/2;
+  s+='<rect x="'+(x0-gd)+'" y="'+gy0+'" width="'+gd+'" height="'+gh+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  s+='<rect x="'+x1+'" y="'+gy0+'" width="'+gd+'" height="'+gh+'" fill="none" stroke="'+lc+'" stroke-width="'+lw+'"/>';
+  // Shot dots with xG label inside (matching canvas)
+  var r=Math.max(6,W*.013);
+  var fz=Math.max(5,r*.75);
+  shotGroups.forEach(function(grp){
+    (grp.shots||[]).forEach(function(sh){
+      if(sh.nx===undefined||sh.ny===undefined)return;
+      var px=x0+sh.nx*fw,py=y0+sh.ny*fh;
+      var col=sh.gol?'#EF4444':grp.color;
+      // Halo for goals
+      if(sh.gol){
+        s+='<circle cx="'+px+'" cy="'+py+'" r="'+(r*1.7)+'" fill="'+col+'" opacity="0.25"/>';
+      }
+      // Main dot
+      s+='<circle cx="'+px+'" cy="'+py+'" r="'+r+'" fill="'+col+'" opacity="0.9" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>';
+      // xG value inside dot (same as canvas)
+      var label=sh.gol?'G':(sh.xg!==undefined?sh.xg.toFixed(2):'');
+      if(label){
+        s+='<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="central" font-size="'+fz+'" font-weight="700" fill="#fff" font-family="monospace">'+label+'</text>';
+      }
+    });
+  });
+  // Legend for multi-game
+  if(shotGroups.length>1){
+    var legItemW=fw/shotGroups.length;
+    shotGroups.forEach(function(grp,i){
+      var lx=x0+i*legItemW+6,ly=y0+fh+mb*.55;
+      s+='<circle cx="'+lx+'" cy="'+ly+'" r="5" fill="'+grp.color+'"/>';
+      s+='<text x="'+(lx+10)+'" y="'+(ly+4)+'" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">'+(grp.label||'').substring(0,20)+'</text>';
+    });
+  }
+  s+='</svg>';
+  return s;
+}
+
+
+// ── renderCourtSVGwithBG: same as renderCourtSVG but uses a canvas
+// image as the court background instead of drawing it in SVG ──────
+function renderCourtSVGwithBG(shotGroups,bgImg,W,H){
+  W=W||680;H=H||340;
+  // The canvas image already contains the full court; we just need
+  // to overlay the shot dots on top using the same coordinate math.
+  var ml=W*.044,mr=W*.044,mt=H*.06,mb=H*.08;
+  var fw=W-ml-mr,fh=H-mt-mb;
+  var x0=ml,y0=mt;
+  var r=Math.max(6,W*.013);
+  var fz=Math.max(5,r*.75);
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:8px;overflow:hidden;">';
+  // Background: the captured canvas image
+  s+='<image href="'+bgImg+'" x="0" y="0" width="'+W+'" height="'+H+'" preserveAspectRatio="none"/>';
+  // Shot dots per group (each game a different colour)
+  shotGroups.forEach(function(grp){
+    (grp.shots||[]).forEach(function(sh){
+      if(sh.nx===undefined||sh.ny===undefined)return;
+      var px=x0+sh.nx*fw, py=y0+sh.ny*fh;
+      var col=sh.gol?'#EF4444':grp.color;
+      if(sh.gol){s+='<circle cx="'+px+'" cy="'+py+'" r="'+(r*1.7)+'" fill="'+col+'" opacity="0.25"/>';}
+      s+='<circle cx="'+px+'" cy="'+py+'" r="'+r+'" fill="'+col+'" opacity="0.9" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>';
+      var label=sh.gol?'G':(sh.xg!==undefined?sh.xg.toFixed(2):'');
+      if(label){s+='<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="central" font-size="'+fz+'" font-weight="700" fill="#fff" font-family="monospace">'+label+'</text>';}
+    });
+  });
+  // Legend
+  if(shotGroups.length>1){
+    var legItemW=fw/shotGroups.length;
+    shotGroups.forEach(function(grp,i){
+      var lx=x0+i*legItemW+6, ly=y0+fh+mb*.55;
+      s+='<circle cx="'+lx+'" cy="'+ly+'" r="5" fill="'+grp.color+'"/>';
+      s+='<text x="'+(lx+10)+'" y="'+(ly+4)+'" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">'+(grp.label||'').substring(0,20)+'</text>';
+    });
+  }
+  s+='</svg>';
+  return s;
 }
 
 function loadGameToEdit(id){
@@ -960,7 +1261,7 @@ async function saveFBConfig(){
     if(ag.length)localStorage.setItem('fxg_games',JSON.stringify(ag));
     if(ac.length)localStorage.setItem('fxg_clubs',JSON.stringify(ac));
   }
-  toast('Firebase configured ✓');syncToCloud();
+  toast('Firebase configured ✓');syncToCloud();loadXGSettings();
 }
 
 function discFB(){localStorage.removeItem('fxg_fb');document.getElementById('fb-disc-btn').style.display='none';updateFBStatus();}
@@ -1080,16 +1381,69 @@ function cancelEdit(){
 </script>
 
 <div class="pg-ov" id="pg-history">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">← Back</button><div class="pov-ttl">History</div><div></div></div>
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">History</div><div></div></div>
+  <div class="pov-filter-bar">
+    <select id="xg-hist-opp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Opponents</option></select>
+    <select id="xg-hist-comp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Competitions</option></select>
+    <select id="xg-hist-season" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Seasons</option></select>
+  </div>
   <div class="pov-body" id="hist-body"></div>
+</div>
+
+<div class="pg-ov" id="pg-report">
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">Report</div><div></div></div>
+  <div class="pov-filter-bar">
+    <select id="xg-rep-opp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Opponents</option></select>
+    <select id="xg-rep-comp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Competitions</option></select>
+    <select id="xg-rep-season" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Seasons</option></select>
+    <button onclick="exportCheckedPDF()" style="padding:6px 14px;border-radius:7px;border:none;background:var(--alfa);color:#fff;font-family:var(--font-h);font-size:12px;font-weight:700;cursor:pointer;">Export PDF</button>
+  </div>
+  <div class="pov-body" id="rep-preview-body"></div>
+</div>
+
+<div class="pg-ov" id="pg-xgsettings">
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">Settings</div><div></div></div>
+  <div class="pov-body">
+    <div class="settings-body">
+      <div class="settings-section">
+        <div class="settings-title">Club Badge</div>
+        <div id="xg-badge-prev" style="width:64px;height:64px;border-radius:10px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background-size:cover;background-position:center;margin-bottom:8px;position:relative;">
+          <span style="font-size:28px;">&#x1F6E1;</span>
+          <input type="file" accept="image/*" onchange="loadXGBadge(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+        </div>
+        <p style="font-size:10px;color:var(--text3);">Click to upload your club badge. Used in PDF reports.</p>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Default Team A</div>
+        <input type="text" id="xg-default-teamA" class="fin2" placeholder="e.g. Kuwait Club">
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Coach Name</div>
+        <input type="text" id="xg-coach-name" class="fin2" placeholder="e.g. Lucas Pimenta">
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Seasons</div>
+        <div id="xg-seasons-list" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="xg-season-input" class="fin2" placeholder="e.g. 2025-26" style="flex:1;" onkeydown="if(event.key==='Enter')addXGItem('seasons','xg-season-input')">
+          <button class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('seasons','xg-season-input')">+ Add</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Competitions</div>
+        <div id="xg-comps-list" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="xg-comp-input" class="fin2" placeholder="e.g. Kuwait Premier League" style="flex:1;" onkeydown="if(event.key==='Enter')addXGItem('competitions','xg-comp-input')">
+          <button class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('competitions','xg-comp-input')">+ Add</button>
+        </div>
+      </div>
+      <button class="fbtn2 p" onclick="saveXGSettings()" style="margin-top:8px;">Save Settings</button>
+    </div>
+  </div>
 </div>
 <div class="pg-ov" id="pg-clubs">
   <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">← Back</button><div class="pov-ttl">Clubs</div><button class="hbtn accent" onclick="openClubForm(null)">+ Add</button></div>
   <div class="pov-body" id="clubs-body"></div>
-</div>
-<div class="pg-ov" id="pg-season">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">← Back</button><div class="pov-ttl">Season</div><div></div></div>
-  <div class="pov-body" id="season-body"></div>
 </div>
 <div class="overlay" id="ov-club" onclick="closeOvOut(event,'ov-club')">
   <div class="sheet"><div class="sheet-header"><div class="sheet-title" id="club-form-ttl">New Club</div><button class="sheet-close" onclick="closeOv('ov-club')">✕</button></div>
@@ -1117,5 +1471,313 @@ function cancelEdit(){
     <pre id="fb-diag" style="display:none;font-size:9px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;max-height:200px;white-space:pre-wrap;"></pre>
   </div></div></div>
 </div>
+
+<script>
+// ── buildGameHTML: generates full single-game report HTML (court + stats + shot table)
+// Uses renderCourtSVG so works for any game, not just the current canvas state
+function buildGameHTML(g, gameColor, showPageBreak, courtImg){
+  var s=g.shots, nA=g.teamA, nB=g.teamB;
+  var aS=s.filter(function(sh){return sh.team==='alfa';}), bS=s.filter(function(sh){return sh.team==='beta';});
+  var aXG=aS.reduce(function(a,sh){return a+sh.xg;},0), bXG=bS.reduce(function(a,sh){return a+sh.xg;},0);
+  var aG=aS.filter(function(sh){return sh.gol;}).length, bG=bS.filter(function(sh){return sh.gol;}).length;
+  var aConv=aS.length>0?Math.round(aG/aS.length*100)+'%':'--', bConv=bS.length>0?Math.round(bG/bS.length*100)+'%':'--';
+  var d=g.date?(function(p){return p[2]+'/'+p[1]+'/'+p[0];})(g.date.split('-')):'--';
+  var logoA=g.teamAEmb?'<img class="pdf-logo-img" src="'+g.teamAEmb+'">'
+    :'<div class="pdf-logo-ph" style="display:flex;align-items:center;justify-content:center;font-size:20px;">&#9917;</div>';
+  var logoB=g.teamBEmb?'<img class="pdf-logo-img" src="'+g.teamBEmb+'">'
+    :'<div class="pdf-logo-ph" style="display:flex;align-items:center;justify-content:center;font-size:20px;">&#9917;</div>';
+  var col=gameColor||'#3B82F6';
+  // Use captured canvas image if available, otherwise SVG
+  var courtEl=courtImg
+    ?'<img class="pdf-court-img" src="'+courtImg+'" alt="Shot Map" style="width:100%;border-radius:7px;border:1px solid #eee;display:block;margin-bottom:12px;">'
+    :renderCourtSVG([{shots:s,color:col,label:''}],560,280);
+  // Tipo breakdown
+  var tipoCount={};s.forEach(function(sh){tipoCount[sh.tipo]=(tipoCount[sh.tipo]||0)+1;});
+  var tipoRows=Object.entries(tipoCount).sort(function(a,b){return b[1]-a[1];})
+    .map(function(e){return '<tr><td>'+(TIPO[e[0]]||e[0])+'</td><td style="text-align:right;font-family:monospace;font-weight:600;">'+e[1]+'</td></tr>';}).join('');
+  // Shot table rows
+  var PER=25, pages='', tot=Math.ceil(s.length/PER)||1;
+  for(var p=0;p<tot;p++){
+    var chunk=s.slice(p*PER,(p+1)*PER), si=p*PER;
+    var range=s.length>PER?' ('+(si+1)+'-'+Math.min(si+chunk.length,s.length)+')':'';
+    var rows=chunk.map(function(sh,ci){
+      var i=si+ci;
+      var nm=sh.team==='alfa'?nA:nB, cls=sh.team==='alfa'?'t-alfa':'t-beta';
+      return '<tr><td>'+(i+1)+'</td><td class="'+cls+'">'+nm+"</td><td>"+sh.min+"'</td>"
+        +'<td class="xg-c">'+sh.xg.toFixed(3)+'</td>'
+        +'<td>'+(TIPO[sh.tipo]||sh.tipo)+'</td>'
+        +'<td>'+(CORPO[sh.corpo]||sh.corpo)+'</td>'
+        +'<td>'+(sh.assist?'Yes':'No')+'</td>'
+        +'<td>'+(sh.pressao?'Yes':'No')+'</td>'
+        +'<td>'+(sh.gol?'<span class="gol-b">GOAL</span>':'')+'</td></tr>';
+    }).join('');
+    var pb=p===0&&showPageBreak?'page-break-before:always;break-before:page;':'';
+    if(p===0){
+      // First page: stats + court + shot table header
+      pages+='<div class="pdf-page" style="'+pb+'">'
+        +'<div class="pdf-hdr">'
+        +'<div class="pdf-title-blk">'
+        +'<div class="pdf-app-tag">Futsal xG Tracker · Match Report</div>'
+        +'<div class="pdf-match-name">'+nA+' vs '+nB+'</div>'
+        +'<div class="pdf-match-meta">'+(g.comp||'--')+' &nbsp;&middot;&nbsp; '+(g.season||'--')+' &nbsp;&middot;&nbsp; '+d+'</div>'
+        +'</div>'
+        +'<div class="pdf-logos">'
+        +'<div class="pdf-logo-wrap">'+logoA+'<div class="pdf-team-sm">'+nA+'</div></div>'
+        +'<div class="pdf-vs">VS</div>'
+        +'<div class="pdf-logo-wrap">'+logoB+'<div class="pdf-team-sm">'+nB+'</div></div>'
+        +'</div></div>'
+        +'<div class="pdf-kpi-grid">'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val">'+s.length+'</div><div class="pdf-kpi-lbl">Shots</div></div>'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val">'+(aG+bG)+'</div><div class="pdf-kpi-lbl">Goals</div></div>'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val" style="color:#3B82F6;">'+aXG.toFixed(2)+'</div><div class="pdf-kpi-lbl">xG '+nA+'</div></div>'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val" style="color:#F59E0B;">'+bXG.toFixed(2)+'</div><div class="pdf-kpi-lbl">xG '+nB+'</div></div>'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val">'+aS.length+'</div><div class="pdf-kpi-lbl">Shots '+nA+'</div></div>'
+        +'<div class="pdf-kpi"><div class="pdf-kpi-val">'+bS.length+'</div><div class="pdf-kpi-lbl">Shots '+nB+'</div></div>'
+        +'</div>'
+        +'<div class="pdf-compare">'
+        +'<div class="pdf-tcol alfa">'
+        +'<div class="pdf-tc-name" style="color:#3B82F6;">'+nA+'</div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">'+aS.length+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">'+aG+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">'+aXG.toFixed(2)+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">'+(aS.length>0?(aXG/aS.length).toFixed(3):'--')+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">'+aConv+'</span></div>'
+        +'</div>'
+        +'<div class="pdf-mid"><div class="pdf-score">'+aG+'&ndash;'+bG+'</div><div class="pdf-score-lbl">Score</div></div>'
+        +'<div class="pdf-tcol beta">'
+        +'<div class="pdf-tc-name" style="color:#F59E0B;">'+nB+'</div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">'+bS.length+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">'+bG+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">'+bXG.toFixed(2)+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">'+(bS.length>0?(bXG/bS.length).toFixed(3):'--')+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">'+bConv+'</span></div>'
+        +'</div></div>'
+        +'<div class="pdf-section-title">Shot Map</div>'
+        +courtEl
+        +'<div class="pdf-2col" style="margin-top:10px;">'
+        +'<div><div class="pdf-section-title">Shots by Game Moment</div>'
+        +'<table class="pdf-table"><thead><tr><th>Type</th><th style="text-align:right;">Total</th></tr></thead>'
+        +'<tbody>'+(tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">--</td></tr>')+'</tbody></table></div>'
+        +'<div><div class="pdf-section-title">xG Reference</div>'
+        +'<table class="pdf-table"><thead><tr><th>Range</th><th>Interpretation</th></tr></thead>'
+        +'<tbody><tr><td>0.00–0.09</td><td>Unlikely</td></tr><tr><td>0.10–0.24</td><td>Low probability</td></tr><tr><td>0.25–0.44</td><td>Moderate</td></tr><tr><td>0.45–0.64</td><td>Good chance</td></tr><tr><td>0.65–1.00</td><td>Big chance</td></tr></tbody></table></div>'
+        +'</div>'
+        +'<div class="pdf-section-title" style="margin-top:10px;">Shot Table'+range+'</div>'
+        +'<table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min</th><th>xG</th><th>Moment</th><th>Body</th><th>Assist</th><th>Press</th><th>Result</th></tr></thead>'
+        +'<tbody>'+rows+'</tbody></table>'
+        +'<div class="pdf-foot" style="margin-top:10px;"><span class="pdf-foot-txt">Futsal xG Tracker</span><span class="pdf-foot-txt">'+(g.comp||'')+'&nbsp;&middot;&nbsp;'+d+'</span></div>'
+        +'</div>';
+    } else {
+      // Additional pages: shot table continuation
+      pages+='<div class="pdf-page" style="page-break-before:always;break-before:page;">'
+        +'<div class="pdf-app-tag" style="margin-bottom:8px;">'+nA+' vs '+nB+' &middot; Shot Table'+range+'</div>'
+        +'<table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min</th><th>xG</th><th>Moment</th><th>Body</th><th>Assist</th><th>Press</th><th>Result</th></tr></thead>'
+        +'<tbody>'+rows+'</tbody></table>'
+        +'<div class="pdf-foot"><span class="pdf-foot-txt">Futsal xG Tracker</span><span class="pdf-foot-txt">'+d+'</span></div>'
+        +'</div>';
+    }
+  }
+  return pages;
+}
+
+function exportFilteredPDF(){
+  var opp=(document.getElementById('xg-rep-opp')||{}).value||'';
+  var comp=(document.getElementById('xg-rep-comp')||{}).value||'';
+  var season=(document.getElementById('xg-rep-season')||{}).value||'';
+  var games=getFilteredGames(opp,comp,season);
+  if(!games.length){toast('No matches to export');return;}
+  if(games.length===1){
+    var g=games[0];
+    S.shots=g.shots.map(function(s){return Object.assign({},s);});
+    S.teamA.name=g.teamA;S.teamB.name=g.teamB;S.comp=g.comp||'';S.date=g.date||'';
+    syncMatch();updStats();draw();
+    setTimeout(function(){exportPDF();},200);
+    return;
+  }
+  var choice=confirm('Export as ONE combined report?\n\nOK = Combined report\nCancel = Individual PDF per game');
+  if(choice){exportCombinedPDF(games,opp,comp,season);}
+  else{exportIndividualPDFs(games);}
+}
+
+function exportIndividualPDFs(games){
+  var idx=0;
+  function next(){
+    if(idx>=games.length)return;
+    var g=games[idx++];
+    S.shots=g.shots.map(function(s){return Object.assign({},s);});
+    S.teamA.name=g.teamA;S.teamB.name=g.teamB;S.comp=g.comp||'';S.date=g.date||'';
+    syncMatch();updStats();draw();
+    setTimeout(function(){exportPDF();setTimeout(next,1500);},200);
+  }
+  next();
+}
+
+function exportCombinedPDF(games,opp,comp,season){
+  var now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  var ac=(typeof _hubColor!=='undefined'&&_hubColor)||'#1a3a6b';
+  var badge=(typeof _hubBadge!=='undefined'&&_hubBadge)||XGS.clubBadge||'';
+  var club=(typeof _hubClub!=='undefined'&&_hubClub)||XGS.defaultTeamA||'';
+  var coach=(typeof _hubCoach!=='undefined'&&_hubCoach)||XGS.coachName||'';
+  var allShots=games.flatMap(function(g){return g.shots;});
+  var aShots=allShots.filter(function(s){return s.team==='alfa';}),bShots=allShots.filter(function(s){return s.team==='beta';});
+  var aXG=aShots.reduce(function(a,s){return a+s.xg;},0),bXG=bShots.reduce(function(a,s){return a+s.xg;},0);
+
+  // Summary table rows
+  var gameRows=games.map(function(g){
+    var aS=g.shots.filter(function(s){return s.team==='alfa';}),bS=g.shots.filter(function(s){return s.team==='beta';});
+    var gAXG=aS.reduce(function(a,s){return a+s.xg;},0),gBXG=bS.reduce(function(a,s){return a+s.xg;},0);
+    var gAG=aS.filter(function(s){return s.gol;}).length,gBG=bS.filter(function(s){return s.gol;}).length;
+    var d=g.date?(function(p){return p[2]+'/'+p[1]+'/'+p[0];})(g.date.split('-')):'--';
+    return '<tr style="border-bottom:1px solid #eee;">'
+      +'<td style="padding:8px 10px;font-family:monospace;font-size:11px;">'+d+'</td>'
+      +'<td style="padding:8px 10px;font-weight:600;">'+g.teamB+'</td>'
+      +'<td style="padding:8px 10px;">'+(g.comp||'--')+'</td>'
+      +'<td style="padding:8px 10px;">'+(g.season||'--')+'</td>'
+      +'<td style="padding:8px 10px;text-align:center;font-weight:700;font-family:monospace;">'+gAG+'-'+gBG+'</td>'
+      +'<td style="padding:8px 10px;color:#3B82F6;font-family:monospace;">'+gAXG.toFixed(2)+'</td>'
+      +'<td style="padding:8px 10px;color:#F59E0B;font-family:monospace;">'+gBXG.toFixed(2)+'</td>'
+      +'<td style="padding:8px 10px;text-align:center;">'+aS.length+'</td></tr>';
+  }).join('');
+
+  // Combined court — capture app canvas as background, overlay coloured dots per game
+  var _s0=S.shots.slice(),_ta0=S.teamA.name,_tb0=S.teamB.name,_c0=S.comp,_d0=S.date;
+  // Capture empty court (no shots) as background
+  S.shots=[];draw();
+  var bgImg=cv.toDataURL('image/png');
+  S.shots=_s0;S.teamA.name=_ta0;S.teamB.name=_tb0;S.comp=_c0;S.date=_d0;draw();
+  // Build SVG that uses the canvas image as background + coloured dots on top
+  var combinedGroups=games.map(function(g,i){
+    var d=g.date?(function(p){return p[2]+'/'+p[1];})(g.date.split('-')):'--';
+    return {shots:g.shots,color:GAME_COLORS[i%GAME_COLORS.length],label:'vs '+g.teamB+' ('+d+')'};
+  });
+  var combinedCourt=renderCourtSVGwithBG(combinedGroups,bgImg,680,340);
+
+  // Individual game sections — capture canvas for each game first
+  // Save current state to restore after
+  var _savedShots=S.shots.slice();
+  var _savedTA=S.teamA.name,_savedTB=S.teamB.name,_savedComp=S.comp,_savedDate=S.date;
+  var individualSections=games.map(function(g,i){
+    // Load game into live state and redraw canvas to capture identical image
+    S.shots=g.shots.map(function(sh){return Object.assign({},sh);});
+    S.teamA.name=g.teamA;S.teamB.name=g.teamB;S.comp=g.comp||'';S.date=g.date||'';
+    draw();
+    var capturedImg=cv.toDataURL('image/png');
+    return buildGameHTML(g,GAME_COLORS[i%GAME_COLORS.length],true,capturedImg);
+  }).join('');
+  // Restore original state
+  S.shots=_savedShots;S.teamA.name=_savedTA;S.teamB.name=_savedTB;S.comp=_savedComp;S.date=_savedDate;
+  draw();
+
+  // PDF CSS — reuse same classes as buildPDF output
+  var pdfCSS='*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0;padding:0;}'
+    +'body{font-family:\'DM Sans\',Helvetica,Arial,sans-serif;color:#111827;background:#fff;}'
+    +'@page{size:A4 portrait;margin:12mm 10mm;}@page:first{margin:0;}'
+    +'.pdf-page{width:100%;background:#fff;page-break-after:always;break-after:page;}'
+    +'.pdf-page:last-child{page-break-after:avoid;break-after:avoid;}'
+    +'.pdf-hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #111827;padding-bottom:10px;margin-bottom:14px;}'
+    +'.pdf-title-blk{display:flex;flex-direction:column;}'
+    +'.pdf-app-tag{font-size:9px;font-weight:600;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:2px;}'
+    +'.pdf-match-name{font-size:21px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}'
+    +'.pdf-match-meta{font-size:10px;color:#666;margin-top:3px;font-family:monospace;}'
+    +'.pdf-logos{display:flex;align-items:center;gap:10px;}'
+    +'.pdf-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;}'
+    +'.pdf-logo-img{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #eee;}'
+    +'.pdf-logo-ph{width:44px;height:44px;border-radius:8px;background:#f5f5f5;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;}'
+    +'.pdf-vs{font-size:11px;font-weight:700;color:#bbb;}'
+    +'.pdf-team-sm{font-size:8px;font-weight:700;color:#666;text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+    +'.pdf-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px;}'
+    +'.pdf-kpi{background:#f9f9f9;border-radius:7px;padding:7px 5px;text-align:center;border:1px solid #eee;}'
+    +'.pdf-kpi-val{font-size:18px;font-weight:800;font-family:monospace;line-height:1;}'
+    +'.pdf-kpi-lbl{font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}'
+    +'.pdf-compare{display:grid;grid-template-columns:1fr 56px 1fr;gap:7px;margin-bottom:12px;align-items:center;}'
+    +'.pdf-tcol{background:#f9f9f9;border-radius:9px;padding:10px;border:1px solid #eee;}'
+    +'.pdf-tcol.alfa{border-left:3px solid #3B82F6;}'
+    +'.pdf-tcol.beta{border-left:3px solid #F59E0B;}'
+    +'.pdf-tc-name{font-size:12px;font-weight:800;margin-bottom:6px;}'
+    +'.pdf-tc-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:1px solid #f0f0f0;}'
+    +'.pdf-tc-row:last-child{border-bottom:none;}'
+    +'.pdf-tc-k{color:#777;}.pdf-tc-v{font-weight:700;font-family:monospace;}'
+    +'.pdf-mid{text-align:center;}'
+    +'.pdf-score{font-size:26px;font-weight:800;font-family:monospace;}'
+    +'.pdf-score-lbl{font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;}'
+    +'.pdf-section-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:3px;}'
+    +'.pdf-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}'
+    +'.pdf-table{width:100%;border-collapse:collapse;font-size:9px;}'
+    +'.pdf-table th{background:#111827;color:#fff;padding:5px 7px;text-align:left;font-size:8px;letter-spacing:.5px;text-transform:uppercase;}'
+    +'.pdf-table td{padding:4px 7px;border-bottom:1px solid #f0f0f0;}'
+    +'.pdf-table tr:nth-child(even) td{background:#fafafa;}'
+    +'.t-alfa{color:#3B82F6;font-weight:700;}.t-beta{color:#F59E0B;font-weight:700;}'
+    +'.xg-c{font-family:monospace;font-weight:600;}'
+    +'.gol-b{background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:10px;font-size:8px;font-weight:700;}'
+    +'.pdf-foot{margin-top:12px;border-top:1px solid #eee;padding-top:7px;display:flex;justify-content:space-between;}'
+    +'.pdf-foot-txt{font-size:8px;color:#bbb;font-family:monospace;}'
+    // Cover
+    +'@page:first{margin:0;}'
+    +'.cv{background:'+ac+';color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;box-sizing:border-box;page-break-after:always;}'
+    +'.ct{flex:1;}.ctag{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px;font-family:monospace;}'
+    +'.cbg{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;margin-bottom:28px;overflow:hidden;}'
+    +'.cbg img{width:56px;height:56px;object-fit:contain;border-radius:10px;}'
+    +'.ctit{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px;}'
+    +'.csub{font-size:16px;color:rgba(255,255,255,.60);margin-bottom:36px;}'
+    +'.cmeta{display:flex;gap:32px;flex-wrap:wrap;}.cmi{display:flex;flex-direction:column;gap:3px;}'
+    +'.cml{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);font-family:monospace;}'
+    +'.cmv{font-size:13px;font-weight:600;color:rgba(255,255,255,.88);}'
+    +'.cft{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.08em;text-transform:uppercase;font-family:monospace;}'
+    // Summary page
+    +'.kr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}'
+    +'.k{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:14px;text-align:center;}'
+    +'.kn{font-size:28px;font-weight:700;letter-spacing:-1px;}.kl{font-size:9px;letter-spacing:.1em;color:#737373;text-transform:uppercase;margin-top:3px;}'
+    +'.sc{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#737373;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e5e5e5;}'
+    +'.ft{display:flex;justify-content:space-between;font-size:9px;color:#aaa;padding-top:16px;border-top:1px solid #eee;margin-top:24px;font-family:monospace;}'
+    +'.np{text-align:center;padding:32px;display:flex;gap:12px;justify-content:center;}@media print{.np{display:none;}}';
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+pdfCSS+'</style></head><body>'
+    // ── COVER ──
+    +'<div class="cv"><div class="ct">'
+    +'<div class="ctag">FluxGK</div>'
+    +(badge?'<div class="cbg"><img src="'+badge+'"></div>':'<div class="cbg">xG</div>')
+    +'<div class="ctit">Futsal xG<br>Report</div>'
+    +'<div class="csub">'+club+'</div>'
+    +'<div class="cmeta">'
+    +'<div class="cmi"><div class="cml">Matches</div><div class="cmv">'+games.length+'</div></div>'
+    +(opp?'<div class="cmi"><div class="cml">Opponent</div><div class="cmv">'+opp+'</div></div>':'')
+    +(comp?'<div class="cmi"><div class="cml">Competition</div><div class="cmv">'+comp+'</div></div>':'')
+    +(season?'<div class="cmi"><div class="cml">Season</div><div class="cmv">'+season+'</div></div>':'')
+    +(coach?'<div class="cmi"><div class="cml">Coach</div><div class="cmv">'+coach+'</div></div>':'')
+    +'<div class="cmi"><div class="cml">Generated</div><div class="cmv">'+now+'</div></div>'
+    +'</div></div>'
+    +'<div class="cft"><span>FluxGK · Futsal xG Tracker</span><span>Constraints-Based Approach · Ecological Dynamics</span></div>'
+    +'</div>'
+    // ── SUMMARY PAGE ──
+    +'<div class="pdf-page" style="page-break-before:always;break-before:page;">'
+    +'<div class="kr">'
+    +'<div class="k"><div class="kn">'+games.length+'</div><div class="kl">Matches</div></div>'
+    +'<div class="k"><div class="kn">'+allShots.length+'</div><div class="kl">Total Shots</div></div>'
+    +'<div class="k"><div class="kn" style="color:#3B82F6;">'+aXG.toFixed(2)+'</div><div class="kl">Team A xG</div></div>'
+    +'<div class="k"><div class="kn" style="color:#F59E0B;">'+bXG.toFixed(2)+'</div><div class="kl">Team B xG</div></div>'
+    +'</div>'
+    +'<div style="margin-bottom:18px;"><div class="sc">Combined Shot Map — All Matches</div>'
+    +combinedCourt+'</div>'
+    +'<div style="margin-bottom:18px;"><div class="sc">Match Log</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Date</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Opponent</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Competition</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Season</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Score</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Team A xG</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Team B xG</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Shots</th></tr></thead>'
+    +'<tbody>'+gameRows+'</tbody></table></div>'
+    +'<div class="ft"><span>FluxGK · Futsal xG Tracker</span><span>'+club+' · '+now+'</span></div>'
+    +'</div>'
+    // ── INDIVIDUAL GAME SECTIONS — each on its own page ──
+    +individualSections
+    // ── PRINT BUTTON ──
+    +'<div class="np">'
+    +'<button onclick="window.print()" style="padding:11px 28px;background:'+ac+';border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;color:#fff;">Print / Save as PDF</button>'
+    +'<button onclick="window.close()" style="padding:11px 24px;background:#eee;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-left:10px;">Close</button>'
+    +'</div>'
+    +'</body></html>';
+
+  var win=window.open('','_blank','width=900,height=700');
+  if(!win){alert('Allow popups for this site.');return;}
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){win.print();},800);
+}
+</script>
 </body>
 </html>
