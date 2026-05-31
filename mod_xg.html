@@ -1198,28 +1198,56 @@ function renderSeason(){
     +'<div class="cd2"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Por adversário</div>'+advRows+'</div>';
 }
 
-/* ════════ FIREBASE ════════ */
+/* ════════ FIREBASE REALTIME DATABASE ════════ */
+// Uses the same project as Stats & Minutes (fluxgk-statistics)
+// Data path: fluxgk-xg/
+var _fbXGApp=null,_fbXGDb=null,_fbXGReady=false;
+
+(function initFBXG(){
+  function ld(src,cb){var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}
+  ld('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',function(){
+    ld('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',function(){
+      var cfg={apiKey:'AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ',
+        authDomain:'fluxgk-statistics.firebaseapp.com',
+        databaseURL:'https://fluxgk-statistics-default-rtdb.firebaseio.com',
+        projectId:'fluxgk-statistics',storageBucket:'fluxgk-statistics.firebasestorage.app',
+        messagingSenderId:'605696462663',appId:'1:605696462663:web:1df401a86ba7f9e753c662'};
+      // Reuse existing app if already initialized
+      try{_fbXGApp=firebase.app('xg');}catch(e){_fbXGApp=firebase.initializeApp(cfg,'xg');}
+      _fbXGDb=firebase.database(_fbXGApp);
+      _fbXGReady=true;
+      // Pull data from Firebase into localStorage on connect
+      _fbXGDb.ref('fluxgk-xg/main').get().then(function(snap){
+        var d=snap.val();
+        if(d){
+          var rg=d.games||[],rc=d.clubs||[];
+          var lg=DB.games(),lc=DB.clubs();
+          var ag=[...new Map([...rg,...lg].map(function(g){return[g.id,g];}).filter(function(x){return x[0];})).values()];
+          var ac=[...new Map([...rc,...lc].map(function(c){return[c.id,c];}).filter(function(x){return x[0];})).values()];
+          if(ag.length)localStorage.setItem('fxg_games',JSON.stringify(ag));
+          if(ac.length)localStorage.setItem('fxg_clubs',JSON.stringify(ac));
+          renderHist();renderClubs();
+        }
+      }).catch(function(e){console.warn('FB XG pull failed:',e);});
+      updateFBStatus();
+    });
+  });
+})();
+
 const FB={
-  _cfg(){try{return JSON.parse(localStorage.getItem('fxg_fb'));}catch{return null;}},
-  _url(path){const c=this._cfg();if(!c)return null;return 'https://firestore.googleapis.com/v1/projects/'+c.pid+'/databases/(default)/documents/fxg_data/'+path+'?key='+c.key;},
-  ready(){const c=this._cfg();return !!(c&&c.pid&&c.key);},
+  ready(){return _fbXGReady;},
   async get(path){
-    const url=this._url(path);if(!url)return null;
-    try{const r=await fetch(url);if(r.status===404)return null;if(!r.ok)return null;
-    const d=await r.json();return d.fields&&d.fields.payload&&d.fields.payload.stringValue?JSON.parse(d.fields.payload.stringValue):null;}
-    catch{return null;}
+    if(!_fbXGDb)return null;
+    try{var snap=await _fbXGDb.ref('fluxgk-xg/'+path).get();return snap.val();}
+    catch(e){return null;}
   },
   async set(path,data){
-    const url=this._url(path);if(!url)return false;
-    const cfg=this._cfg();
-    try{const r=await fetch('https://firestore.googleapis.com/v1/projects/'+cfg.pid+'/databases/(default)/documents/fxg_data/'+path+'?updateMask.fieldPaths=payload&key='+cfg.key,
-      {method:'PATCH',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({fields:{payload:{stringValue:JSON.stringify(data)}}})});return r.ok;}
-    catch{return false;}
+    if(!_fbXGDb)return false;
+    try{await _fbXGDb.ref('fluxgk-xg/'+path).set(data);return true;}
+    catch(e){return false;}
   },
-  async test(){const c=this._cfg();if(!c)return false;
-    try{const r=await fetch('https://firestore.googleapis.com/v1/projects/'+c.pid+'/databases/(default)/documents/fxg_data/ping?key='+c.key);return r.status===200||r.status===404;}
-    catch{return false;}},
+  async test(){return _fbXGReady;},
+  _cfg(){return _fbXGReady?{pid:'fluxgk-statistics'}:null;}
 };
 
 function openFB(){
@@ -1246,22 +1274,20 @@ async function syncToCloud(){
 }
 
 async function saveFBConfig(){
-  const pid=document.getElementById('fb-pid').value.trim();
-  const key=document.getElementById('fb-key').value.trim();
-  if(!pid||!key){alert('Fill in Project ID and API Key');return;}
-  localStorage.setItem('fxg_fb',JSON.stringify({pid,key}));
-  document.getElementById('fb-disc-btn').style.display='block';
-  updateFBStatus();
+  // Manual sync — pull latest from Firebase and merge with local
+  if(!FB.ready()){toast('Firebase not ready yet, please wait...');return;}
   const remote=await FB.get('main');
   if(remote){
     const lg=DB.games(),lc=DB.clubs();
     const rg=remote.games||[],rc=remote.clubs||[];
-    const ag=[...new Map([...rg,...lg].map(g=>[g.id,g])).values()];
-    const ac=[...new Map([...rc,...lc].map(c=>[c.id,c])).values()];
+    const ag=[...new Map([...rg,...lg].map(g=>[g.id,g]).filter(x=>x[0])).values()];
+    const ac=[...new Map([...rc,...lc].map(c=>[c.id,c]).filter(x=>x[0])).values()];
     if(ag.length)localStorage.setItem('fxg_games',JSON.stringify(ag));
     if(ac.length)localStorage.setItem('fxg_clubs',JSON.stringify(ac));
+    renderHist();renderClubs();
   }
-  toast('Firebase configured ✓');syncToCloud();loadXGSettings();
+  toast('Synced ✓');syncToCloud();loadXGSettings();
+  closeOv('ov-fb');updateFBStatus();
 }
 
 function discFB(){localStorage.removeItem('fxg_fb');document.getElementById('fb-disc-btn').style.display='none';updateFBStatus();}
@@ -1320,11 +1346,7 @@ async function importFromAny(results){
 }
 
 window.addEventListener('load',()=>{
-  if(!localStorage.getItem('fxg_fb')){
-    localStorage.setItem('fxg_fb',JSON.stringify({pid:'xgsystem-ab646',url:'https://xgsystem-ab646-default-rtdb.firebaseio.com'}));
-  }
   updateFBStatus();
-  if(FB.ready())startFBListener();
 });
 
 
