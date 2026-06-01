@@ -445,6 +445,7 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
                 oninput="syncNames();showClubPicker('A',this.value)"
                 onfocus="showClubPicker('A',this.value)"
                 autocomplete="off">
+              <select id="clubSelA" onchange="pickClubFromSelect('A',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option value="">📋 Select club...</option></select>
               <div id="club-picker-A" onclick="event.stopPropagation()" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
             </div>
           </div>
@@ -461,6 +462,7 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
                 oninput="syncNames();showClubPicker('B',this.value)"
                 onfocus="showClubPicker('B',this.value)"
                 autocomplete="off">
+              <select id="clubSelB" onchange="pickClubFromSelect('B',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option value="">📋 Select club...</option></select>
               <div id="club-picker-B" onclick="event.stopPropagation()" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
             </div>
           </div>
@@ -543,7 +545,32 @@ function onSlider(){S.CFG.base=parseFloat(document.getElementById('sl-base').val
 function applyPreset(n){const p=PRESETS[n];S.CFG={...p};document.getElementById('sl-base').value=p.base;document.getElementById('sl-dist').value=p.dist;document.getElementById('sl-ang').value=p.ang;document.getElementById('vl-base').textContent=p.base.toFixed(2);document.getElementById('vl-dist').textContent=p.dist.toFixed(1);document.getElementById('vl-ang').textContent=p.ang.toFixed(1);document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));const el=document.getElementById('pre-'+n);if(el)el.classList.add('active');calcXG();}
 
 /* ── SETTINGS ── */
-function openSettings(){openOv('ovS');}
+function openSettings(){
+  var clubs=DB.clubs();
+  ['A','B'].forEach(function(t){
+    var sel=document.getElementById('clubSel'+t);
+    if(!sel)return;
+    sel.innerHTML='<option value="">📋 '+clubs.length+' club(s)</option>';
+    clubs.forEach(function(c){
+      var o=document.createElement('option');
+      o.value=c.id;o.textContent=c.name;sel.appendChild(o);
+    });
+  });
+  openOv('ovS');
+}
+function pickClubFromSelect(team,sel){
+  var c=DB.clubs().find(function(x){return x.id===sel.value;});
+  if(!c){return;}
+  document.getElementById(team==='A'?'inNA':'inNB').value=c.name;
+  syncNames();
+  if(c.img){
+    var b=document.getElementById(team==='A'?'embBtnA':'embBtnB');
+    var st=team==='A'?'alfa':'beta';
+    b.innerHTML='<img src="'+c.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:9px;"><input type="file" accept="image/*" onchange="loadEmb(event,\''+st+'\')" style="position:absolute;inset:0;opacity:0;cursor:pointer;">';
+    S[st==='alfa'?'teamA':'teamB'].emb=c.img;draw();
+  }
+  sel.value='';
+}
 function loadEmb(event,team){const file=event.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const src=e.target.result;if(team==='alfa'){S.teamA.emb=src;setEmbUI('A',src,'alfa');}else{S.teamB.emb=src;setEmbUI('B',src,'beta');}syncNames();};r.readAsDataURL(file);}
 function setEmbUI(let_,src,team){const btn=document.getElementById('embBtn'+let_);btn.innerHTML=`<img src="${src}" alt="escudo"><input type="file" accept="image/*" onchange="loadEmb(event,'${team}')">`;if(let_==='A'){const le=document.getElementById('logoEmbA');le.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">`;}const sm=document.getElementById('embSm'+let_);sm.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;">`;}
 function syncNames(){const nA=document.getElementById('inNA').value||'Team A',nB=document.getElementById('inNB').value||'Team B';S.teamA.name=nA;S.teamB.name=nB;document.getElementById('hMatchName').textContent=nA+' vs '+nB;document.getElementById('btnNA').textContent=nA;document.getElementById('btnNB').textContent=nB;document.getElementById('sideLN').textContent=S.alfaLeft?nA:nB;document.getElementById('sideRN').textContent=S.alfaLeft?nB:nA;draw();}
