@@ -156,6 +156,7 @@ select.fi option{background:var(--paper)}
     <button class="ntab active" onclick="showPage('session',this)">Session</button>
     <button class="ntab" onclick="showPage('post',this)">Post-Training</button>
     <button class="ntab" onclick="showPage('library',this)">Sessions Library</button>
+    <button class="ntab" onclick="showPage('exlib',this)">Exercise Library</button>
     <button class="ntab" onclick="showPage('settings',this)">Club Settings</button>
   </div>
   <div id="navBadge" style="margin-left:8px;display:flex;align-items:center"></div>
@@ -196,6 +197,10 @@ select.fi option{background:var(--paper)}
           </div>
         </div>
         <input type="file" id="exImgInput" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-o btn-sm" onclick="openTactica()">⚽ Create on Tactical Court</button>
+          <button class="btn btn-o btn-sm" id="fromLibBtn" onclick="openExPicker()">📚 From Exercise Library</button>
+        </div>
       </div>
 
       <!-- FORM -->
@@ -240,6 +245,25 @@ select.fi option{background:var(--paper)}
         <button class="btn btn-o" onclick="closeWizard()">Cancel</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- TACTICAL COURT MODAL -->
+<div id="tacticaModal" class="overlay" style="z-index:400">
+  <div style="position:relative;width:96vw;height:92vh;margin:auto;background:#0d0e14;border-radius:8px;overflow:hidden;border:1px solid var(--bdr)">
+    <button onclick="closeTactica()" style="position:absolute;top:10px;right:10px;z-index:10;background:rgba(0,0,0,.65);border:none;border-radius:4px;color:#fff;font-size:13px;padding:6px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace">✕ CLOSE</button>
+    <iframe id="tacticaFrame" style="width:100%;height:100%;border:none" allow="fullscreen"></iframe>
+  </div>
+</div>
+
+<!-- EXERCISE PICKER MODAL -->
+<div id="exPickerModal" class="overlay" style="z-index:420">
+  <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:680px;margin:auto;overflow:hidden">
+    <div style="background:var(--paper);padding:14px 20px;border-bottom:1px solid var(--faint);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px">Pick from Exercise Library</div>
+      <button onclick="closeExPicker()" style="background:var(--faint);border:none;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:14px;color:var(--mute)">✕</button>
+    </div>
+    <div id="exPickerGrid" style="padding:16px;max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px"></div>
   </div>
 </div>
 
@@ -388,6 +412,20 @@ const PAGES = {
       <div style="font-size:13px;color:var(--mute)">Close a session from the Post-Training tab to save it here</div>
     </div>
   </div>`,
+  exlib: `<div class="btwn mb20">
+    <div>
+      <div class="disp" style="font-size:20px">Exercise Library</div>
+      <div class="lbl mt8">Reusable exercises · create once, use in any session</div>
+    </div>
+    <button class="btn btn-p" onclick="openWizard(-1,'lib')">+ New Exercise</button>
+  </div>
+  <div id="exLibGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    <div class="empty" style="grid-column:1/-1">
+      <div style="font-size:36px;opacity:.22;margin-bottom:12px">⚽</div>
+      <div style="font-weight:600;margin-bottom:5px">No saved exercises yet</div>
+      <div style="font-size:13px;color:var(--mute)">Click "+ New Exercise" to build one on the Tactical Court</div>
+    </div>
+  </div>`,
   settings: `<div class="disp" style="font-size:20px;margin-bottom:3px">Club Settings</div>
   <div class="lbl mb20">Personalise for your current club</div>
   <div class="set-grid">
@@ -458,6 +496,9 @@ let _clubColor = '#0A0A0A'; // club primary color
 let _currentPage      = 'session';
 let _sessionOpen      = false;
 let savedSessions   = JSON.parse(localStorage.getItem('fluxgk_sessions') || '[]');
+let savedExercises  = JSON.parse(localStorage.getItem('fluxgk_exercises') || '[]');
+let _wizMode        = 'session';   // 'session' | 'lib'
+let _libEditId      = null;        // id do exercício da biblioteca em edição
 let selectedSessions= new Set();
 let fbDatabase  = null;   // Firebase Realtime DB reference (null = local only)
 
@@ -563,6 +604,7 @@ function showPage(name, btn){
   // Run page-specific logic
   if(name==='post')     refreshPost();
   if(name==='library')  renderLibrary();
+  if(name==='exlib')    renderExLib();
   if(name==='settings') _loadBadgeState();
 }
 
@@ -598,10 +640,19 @@ function clearExImg(){
 }
 
 // ── WIZARD ────────────────────────────────────────────────────
-function openWizard(idx=-1){
-  editIdx=idx;
-  const ex=idx>=0?exercises[idx]:null;
-  document.getElementById('wizTitle').textContent=idx>=0?'Edit Exercise':'Add Exercise';
+function openWizard(idx=-1, mode='session'){
+  _wizMode = mode;
+  editIdx = (mode==='session') ? idx : -1;
+  _libEditId = (mode==='lib' && idx>=0) ? savedExercises[idx].id : null;
+  const ex = (mode==='lib')
+    ? (idx>=0 ? savedExercises[idx] : null)
+    : (idx>=0 ? exercises[idx] : null);
+  document.getElementById('wizTitle').textContent =
+    mode==='lib'
+      ? (idx>=0 ? 'Edit Library Exercise' : 'New Library Exercise')
+      : (idx>=0 ? 'Edit Exercise' : 'Add Exercise');
+  const flb = document.getElementById('fromLibBtn');
+  if(flb) flb.style.display = (mode==='lib') ? 'none' : '';
   document.getElementById('exPhase').value   = ex?ex.phase:'Main';
   document.getElementById('exName').value    = ex?ex.name:'';
   document.getElementById('exDur').value     = ex?ex.duration:8;
@@ -613,7 +664,7 @@ function openWizard(idx=-1){
   if(ex&&ex.img) setExImg(ex.img); else clearExImg();
   document.getElementById('wizModal').classList.add('open');
   // Mark session as open when first exercise is added
-  _sessionOpen=true;
+  if(_wizMode==='session') _sessionOpen=true;
 }
 function closeWizard(){
   document.getElementById('wizModal').classList.remove('open');
@@ -633,11 +684,124 @@ function confirmEx(){
     materials: document.getElementById('exMat').value.trim(),
     img:       _currentImgData||null,
   };
+  if(_wizMode==='lib'){
+    ex.id = _libEditId || Date.now();
+    const li = savedExercises.findIndex(e=>e.id===ex.id);
+    if(li>=0) savedExercises[li]=ex; else savedExercises.unshift(ex);
+    _persistExercise(ex);
+    renderExLib();
+    closeWizard();
+    toast(_libEditId?'Library exercise updated':'Exercise saved to library');
+    _libEditId=null;
+    return;
+  }
   if(editIdx>=0) exercises[editIdx]=ex; else exercises.push(ex);
   renderExercises();
   closeWizard();
   toast(editIdx>=0?'Exercise updated':'Exercise added');
 }
+
+// ── EXERCISE LIBRARY ──────────────────────────────────────────
+function _persistExercise(ex){
+  localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
+  if(fbDatabase){
+    dotY(); fbDatabase.ref('exercises/'+ex.id).set(ex).then(dotG).catch(dotR);
+  }
+}
+function renderExLib(){
+  const grid=document.getElementById('exLibGrid');
+  if(!grid) return;
+  if(!savedExercises.length){
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
+      <div style="font-size:36px;opacity:.22;margin-bottom:12px">⚽</div>
+      <div style="font-weight:600;margin-bottom:5px">No saved exercises yet</div>
+      <div style="font-size:13px;color:var(--mute)">Click "+ New Exercise" to build one on the Tactical Court</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML=savedExercises.map((ex,i)=>{
+    const bc=ex.phase==='Warm Up'?'b-ca':ex.phase==='Cool Down'?'b-ok':'b-n';
+    return `<div class="exc">
+      <div class="exc-hdr">
+        <span class="bdg ${bc}">${ex.phase}</span>
+        <span class="mono" style="font-size:10px;color:var(--mute);margin-left:6px">${ex.duration}min · ${ex.players}p</span>
+      </div>
+      <div class="exc-body">
+        ${ex.img?`<div style="margin-bottom:12px;border-radius:4px;overflow:hidden;border:1px solid var(--faint)"><img src="${ex.img}" style="width:100%;display:block;max-height:170px;object-fit:cover"/></div>`:''}
+        <div class="exc-title">${ex.name}</div>
+        ${ex.desc?`<div class="exc-desc">${ex.desc}</div>`:''}
+        <div class="row" style="margin-top:11px">
+          <button class="btn btn-p btn-sm" onclick="addLibToSession(${i})">+ Add to Session</button>
+          <button class="btn btn-o btn-sm" onclick="openWizard(${i},'lib')">Edit</button>
+          <button class="btn-danger" onclick="rmLibEx(${i})">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function addLibToSession(i){
+  const src=savedExercises[i]; if(!src) return;
+  const copy=Object.assign({}, src, {id:Date.now()});
+  exercises.push(copy);
+  _sessionOpen=true;
+  toast('"'+copy.name+'" added to current session');
+  if(_currentPage==='session') renderExercises();
+}
+function rmLibEx(i){
+  const ex=savedExercises[i]; if(!ex) return;
+  if(!confirm('Delete "'+ex.name+'" from the library?')) return;
+  savedExercises.splice(i,1);
+  localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
+  if(fbDatabase){dotY();fbDatabase.ref('exercises/'+ex.id).remove().then(dotG).catch(dotR);}
+  renderExLib();
+}
+
+// ── EXERCISE PICKER (dentro do wizard de sessão) ──────────────
+function openExPicker(){
+  const grid=document.getElementById('exPickerGrid');
+  grid.innerHTML = savedExercises.length
+    ? savedExercises.map((ex,i)=>`
+      <div onclick="pickLibEx(${i})" style="border:1px solid var(--faint);border-radius:6px;overflow:hidden;cursor:pointer;background:var(--paper);transition:border-color .15s" onmouseover="this.style.borderColor='var(--ink)'" onmouseout="this.style.borderColor='var(--faint)'">
+        ${ex.img?`<img src="${ex.img}" style="width:100%;height:96px;object-fit:cover;display:block"/>`:`<div style="height:96px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:22px">⚽</div>`}
+        <div style="padding:9px 11px">
+          <div style="font-weight:600;font-size:12.5px;margin-bottom:3px">${ex.name}</div>
+          <div class="mono" style="font-size:9.5px;color:var(--mute)">${ex.phase} · ${ex.duration}min</div>
+        </div>
+      </div>`).join('')
+    : `<div style="grid-column:1/-1;text-align:center;color:var(--mute);font-size:13px;padding:26px">No exercises in the library yet — create them in the Exercise Library tab</div>`;
+  document.getElementById('exPickerModal').classList.add('open');
+}
+function closeExPicker(){ document.getElementById('exPickerModal').classList.remove('open'); }
+function pickLibEx(i){
+  const ex=savedExercises[i]; if(!ex) return;
+  document.getElementById('exPhase').value = ex.phase||'Main';
+  document.getElementById('exName').value  = ex.name||'';
+  document.getElementById('exDur').value   = ex.duration||8;
+  document.getElementById('exPl').value    = ex.players||2;
+  document.getElementById('exDesc').value  = ex.desc||'';
+  document.getElementById('exGoal').value  = ex.goal||'';
+  document.getElementById('exVar').value   = ex.variations||'';
+  document.getElementById('exMat').value   = ex.materials||'';
+  if(ex.img) setExImg(ex.img); else clearExImg();
+  closeExPicker();
+  toast('Loaded from library — adjust and save');
+}
+
+// ── TACTICAL COURT (iframe embed) ─────────────────────────────
+function openTactica(){
+  const fr=document.getElementById('tacticaFrame');
+  if(!fr.src) fr.src='tatica3d.html?embed=1';
+  document.getElementById('tacticaModal').classList.add('open');
+}
+function closeTactica(){ document.getElementById('tacticaModal').classList.remove('open'); }
+window.addEventListener('message', e=>{
+  const d=e.data;
+  if(d && d.type==='fluxgk-tatica-image' && d.dataUrl){
+    setExImg(d.dataUrl);
+    closeTactica();
+    toast('Diagram captured from Tactical Court');
+  }
+});
 
 // ── EXERCISE CARDS ────────────────────────────────────────────
 function renderExercises(){
@@ -1241,6 +1405,24 @@ function _initFirebase(cfg){
       }
       localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
       if(_currentPage==='library') renderLibrary();
+    });
+
+    // ── EXERCISES listener — real-time sync (same pattern) ──────
+    fbDatabase.ref('exercises').on('value', snap=>{
+      const data = snap.val();
+      if(data){
+        savedExercises = Object.values(data).sort((a,b)=>b.id-a.id);
+      } else {
+        const local = JSON.parse(localStorage.getItem('fluxgk_exercises')||'[]');
+        if(local.length){
+          local.forEach(ex=>fbDatabase.ref('exercises/'+ex.id).set(ex));
+          savedExercises = local;
+        } else {
+          savedExercises = [];
+        }
+      }
+      localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
+      if(_currentPage==='exlib') renderExLib();
     });
 
   } catch(e){
