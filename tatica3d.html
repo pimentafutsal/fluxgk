@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FluxGK · Tática 3D</title>
+<title>FluxGK · Tactics 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -104,55 +104,55 @@
 <div id="app">
 
   <div id="topbar">
-    <div id="brand">FLUXGK <b>·</b> TÁTICA 3D</div>
+    <div id="brand">FLUXGK <b>·</b> TACTICS 3D</div>
     <div class="sep"></div>
-    <button class="tbtn on" id="m-select">SELECIONAR</button>
-    <button class="tbtn" id="m-draw">DESENHAR</button>
-    <button class="tbtn" id="m-erase">BORRACHA</button>
-    <button class="tbtn" id="m-camera">CÂMERA</button>
+    <button class="tbtn on" id="m-select">SELECT</button>
+    <button class="tbtn" id="m-draw">DRAW</button>
+    <button class="tbtn" id="m-erase">ERASER</button>
+    <button class="tbtn" id="m-camera">CAMERA</button>
     <div class="sep"></div>
     <button class="tbtn" data-cam="2d">2D</button>
-    <button class="tbtn" data-cam="meia">MEIA</button>
-    <button class="tbtn" data-cam="livre">LIVRE</button>
-    <button class="tbtn" data-cam="tatica">TÁTICA</button>
-    <button class="tbtn" data-cam="gol">GOL</button>
-    <button class="tbtn" data-cam="lateral">LATERAL</button>
+    <button class="tbtn" data-cam="meia">HALF</button>
+    <button class="tbtn" data-cam="livre">FREE</button>
+    <button class="tbtn" data-cam="tatica">TOP</button>
+    <button class="tbtn" data-cam="gol">GOAL</button>
+    <button class="tbtn" data-cam="lateral">SIDE</button>
     <div class="grow"></div>
-    <button class="tbtn" id="b-undo">DESFAZER</button>
-    <button class="tbtn" id="b-clear">LIMPAR</button>
+    <button class="tbtn" id="b-undo">UNDO</button>
+    <button class="tbtn" id="b-clear">CLEAR</button>
     <div class="sep"></div>
-    <button class="tbtn" id="b-open">ABRIR</button>
-    <button class="tbtn" id="b-save">SALVAR</button>
-    <button class="tbtn primary" id="b-photo">📷 FOTO</button>
+    <button class="tbtn" id="b-open">OPEN</button>
+    <button class="tbtn" id="b-save">SAVE</button>
+    <button class="tbtn primary" id="b-photo">📷 PHOTO</button>
   </div>
 
   <div id="palette">
-    <h4>Jogadores</h4>
-    <button class="pitem" data-kind="goleiro"><span class="dot" style="background:#11224f"></span>Goleiro</button>
-    <button class="pitem" data-kind="jogador"><span class="dot" style="background:#1E4FFF"></span>Jogador</button>
-    <button class="pitem" data-kind="adversario"><span class="dot" style="background:#E03131"></span>Adversário</button>
-    <h4>Bola</h4>
-    <button class="pitem" data-kind="bola"><span class="dot" style="background:#fff"></span>Bola</button>
-    <h4>Equipamentos</h4>
+    <h4>Players</h4>
+    <button class="pitem" data-kind="goleiro"><span class="dot" style="background:#11224f"></span>Goalkeeper</button>
+    <button class="pitem" data-kind="jogador"><span class="dot" style="background:#1E4FFF"></span>Player</button>
+    <button class="pitem" data-kind="adversario"><span class="dot" style="background:#E03131"></span>Opponent</button>
+    <h4>Ball</h4>
+    <button class="pitem" data-kind="bola"><span class="dot" style="background:#fff"></span>Ball</button>
+    <h4>Equipment</h4>
     <button class="pitem" data-kind="cone"><span class="dot" style="background:#ff7a1a"></span>Cone</button>
-    <button class="pitem" data-kind="chapeu"><span class="dot" style="background:#1E4FFF"></span>Chapéu</button>
-    <button class="pitem" data-kind="minitrave"><span class="dot" style="background:#eee"></span>Baliza aux.</button>
-    <button class="pitem" data-kind="boneco"><span class="dot" style="background:#11224f"></span>Boneco</button>
-    <button class="pitem" data-kind="barreira"><span class="dot" style="background:#E03131"></span>Barreira</button>
-    <button class="pitem" data-kind="escada"><span class="dot" style="background:#f5c518"></span>Escada</button>
-    <button class="pitem" data-kind="arco"><span class="dot" style="background:#1E4FFF"></span>Arco</button>
-    <button class="pitem" data-kind="vara"><span class="dot" style="background:#f5c518"></span>Vara</button>
+    <button class="pitem" data-kind="chapeu"><span class="dot" style="background:#1E4FFF"></span>Disc cone</button>
+    <button class="pitem" data-kind="minitrave"><span class="dot" style="background:#eee"></span>Aux. goal</button>
+    <button class="pitem" data-kind="boneco"><span class="dot" style="background:#11224f"></span>Mannequin</button>
+    <button class="pitem" data-kind="barreira"><span class="dot" style="background:#E03131"></span>Hurdle</button>
+    <button class="pitem" data-kind="escada"><span class="dot" style="background:#f5c518"></span>Ladder</button>
+    <button class="pitem" data-kind="arco"><span class="dot" style="background:#1E4FFF"></span>Hoop</button>
+    <button class="pitem" data-kind="vara"><span class="dot" style="background:#f5c518"></span>Pole</button>
   </div>
 
   <div id="drawpanel">
-    <h4 style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted)">TRAÇO</h4>
+    <h4 style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted)">STROKE</h4>
     <div class="row">
-      <button class="style-btn on" data-style="linha">LINHA</button>
-      <button class="style-btn" data-style="seta">SETA</button>
-      <button class="style-btn" data-style="tracejada">TRACEJ.</button>
+      <button class="style-btn on" data-style="linha">LINE</button>
+      <button class="style-btn" data-style="seta">ARROW</button>
+      <button class="style-btn" data-style="tracejada">DASHED</button>
     </div>
     <div class="row">
-      <button class="style-btn" id="d-reta">RETA (TAB)</button>
+      <button class="style-btn" id="d-reta">STRAIGHT (TAB)</button>
     </div>
     <div class="row">
       <div class="swatch on" data-color="#1E4FFF" style="background:#1E4FFF"></div>
@@ -164,17 +164,17 @@
   </div>
 
   <div id="selpanel">
-    <button class="tbtn" id="s-menor">− MENOR</button>
-    <button class="tbtn" id="s-maior">+ MAIOR</button>
-    <button class="tbtn" id="s-rotl">⟲ GIRAR</button>
-    <button class="tbtn" id="s-rotr">GIRAR ⟳</button>
-    <button class="tbtn" id="s-dup">DUPLICAR</button>
-    <button class="tbtn danger" id="s-del">EXCLUIR</button>
+    <button class="tbtn" id="s-menor">− SMALLER</button>
+    <button class="tbtn" id="s-maior">+ LARGER</button>
+    <button class="tbtn" id="s-rotl">⟲ ROTATE</button>
+    <button class="tbtn" id="s-rotr">ROTATE ⟳</button>
+    <button class="tbtn" id="s-dup">DUPLICATE</button>
+    <button class="tbtn danger" id="s-del">DELETE</button>
   </div>
 
   <div id="hint">
-    <b>Clique</b> num item da paleta e depois na quadra para posicionar · <b>Arraste</b> para mover ·
-    <b>Botão direito</b> (ou modo CÂMERA) gira a visão · <b>Scroll</b> aproxima onde o mouse aponta · <b>2D⇄3D</b> mantém o exercício · <b>TAB</b> liga/desliga linha reta · <b>Q/E</b> gira · <b>+/−</b> redimensiona · <b>Delete</b> exclui
+    <b>Click</b> a palette item, then click the court to place it · <b>Drag</b> to move ·
+    <b>Right-drag</b> (or CAMERA mode) orbits the view · <b>Scroll</b> zooms where the mouse points · <b>2D⇄3D</b> keeps the drill · <b>TAB</b> toggles straight line · <b>Q/E</b> rotates · <b>+/−</b> resizes · <b>Delete</b> removes
   </div>
 
   <div id="toast"></div>
@@ -1255,7 +1255,7 @@ function toggleStraight(){
   straightStroke = !straightStroke;
   const b = document.getElementById('d-reta');
   if(b) b.classList.toggle('on', straightStroke);
-  toast(straightStroke ? 'Linha reta ATIVADA (TAB desativa)' : 'Linha reta desativada');
+  toast(straightStroke ? 'Straight line ON (TAB toggles off)' : 'Straight line OFF');
 }
 window.addEventListener('keydown', e=>{
   if(e.key==='Tab'){
@@ -1506,18 +1506,18 @@ $('s-del').onclick = ()=>{ if(selected) removeObject(selected); };
 $('b-undo').onclick = doUndo;
 function doUndo(){
   const a = undoStack.pop();
-  if(!a) return toast('Nada para desfazer');
+  if(!a) return toast('Nothing to undo');
   if(a.type==='obj') removeObject(a.ref);
   if(a.type==='draw') removeDrawing(a.ref);
 }
 $('b-clear').onclick = ()=>{
   if(!placeables.length && !drawings.length) return;
-  if(!confirm('Limpar toda a quadra?')) return;
+  if(!confirm('Clear the entire court?')) return;
   [...placeables].forEach(removeObject);
   [...drawings].forEach(removeDrawing);
   undoStack.length = 0;
   teamCount.jogador = 1; teamCount.adversario = 1;
-  toast('Quadra limpa');
+  toast('Court cleared');
 };
 
 /* teclado */
@@ -1565,13 +1565,18 @@ function captureReport(){
 if(EMBED){
   const useBtn = document.createElement('button');
   useBtn.className = 'tbtn primary';
-  useBtn.textContent = '✓ USAR NO EXERCÍCIO';
+  useBtn.textContent = '✓ USE IN EXERCISE';
   useBtn.onclick = ()=>{
     const url = captureReport();
     window.parent.postMessage({type:'fluxgk-tatica-image', dataUrl:url}, '*');
-    toast('Imagem enviada ao exercício');
+    toast('Image sent to exercise');
   };
   document.getElementById('topbar').appendChild(useBtn);
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'tbtn';
+  closeBtn.textContent = '✕ CLOSE';
+  closeBtn.onclick = ()=>window.parent.postMessage({type:'fluxgk-tatica-close'}, '*');
+  document.getElementById('topbar').appendChild(closeBtn);
 }
 
 function stamp(){
@@ -1584,7 +1589,7 @@ $('b-photo').onclick = ()=>{
   a.download = 'fluxgk-tatica-' + stamp() + '.png';
   a.href = renderer.domElement.toDataURL('image/png');
   a.click();
-  toast('Imagem salva');
+  toast('Image saved');
 };
 $('b-save').onclick = ()=>{
   const data = {
@@ -1597,7 +1602,7 @@ $('b-save').onclick = ()=>{
   a.download = 'fluxgk-tatica-' + stamp() + '.json';
   a.href = URL.createObjectURL(blob);
   a.click();
-  toast('Projeto salvo (.json)');
+  toast('Project saved (.json)');
 };
 $('b-open').onclick = ()=>$('fileinput').click();
 $('fileinput').addEventListener('change', e=>{
@@ -1623,8 +1628,8 @@ $('fileinput').addEventListener('change', e=>{
         });
       });
       undoStack.length = 0;
-      toast('Projeto carregado');
-    }catch(err){ toast('Arquivo inválido'); }
+      toast('Project loaded');
+    }catch(err){ toast('Invalid file'); }
     e.target.value = '';
   };
   r.readAsText(f);
