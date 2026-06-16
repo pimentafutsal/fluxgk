@@ -3218,7 +3218,7 @@ function renderDashTab(){
     const row = document.createElement('div');
     row.className = 'dlrow' + (d.id === dashEdit.dashId ? ' sel' : '');
     row.innerHTML = '<div class="dlname">' + escapeHtml(d.name) +
-      (d.id === state.currentDashId ? ' <span class="badge">ATIVO</span>' : '') + '</div>' +
+      (d.id === state.currentDashId ? ' <span class="badge">ACTIVE</span>' : '') + '</div>' +
       '<div class="dlmeta">' + d.tags.length + ' tag' + (d.tags.length === 1 ? '' : 's') + '</div>';
     row.addEventListener('click', () => { dashEdit = { dashId: d.id, tagId: null }; renderDashTab(); });
     list.appendChild(row);
@@ -4418,11 +4418,16 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
   try {
     const q = new URLSearchParams(location.search);
     if (q.get('club') || q.get('color')){
+      let badge = '';
+      try {
+        badge = localStorage.getItem('fluxgk_video_badge_handoff') || '';
+        if (badge) localStorage.removeItem('fluxgk_video_badge_handoff'); // usa uma vez só
+      } catch (e) {}
       applyContext({ profile: {
         clubName: q.get('club') || '',
         clubColor: q.get('color') || '',
         coachName: q.get('coach') || '',
-        clubBadge: q.get('badge') || '',
+        clubBadge: badge,
       }});
     }
   } catch (e) {}
@@ -4438,7 +4443,11 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
         if (p.clubName) params.set('club', p.clubName);
         if (p.clubColor) params.set('color', p.clubColor);
         if (p.coachName) params.set('coach', p.coachName);
-        if (p.clubBadge) params.set('badge', p.clubBadge);
+        // o badge é uma imagem (base64) — grande demais para a URL; passamos via localStorage
+        try {
+          if (p.clubBadge) localStorage.setItem('fluxgk_video_badge_handoff', p.clubBadge);
+          else localStorage.removeItem('fluxgk_video_badge_handoff');
+        } catch (e) {}
         const url = location.pathname + (params.toString() ? '?' + params.toString() : '');
         window.open(url, '_blank');
       });
