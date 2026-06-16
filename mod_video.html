@@ -1,0 +1,4552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxGK · Video Lab — Teste de Exportação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js"></script>
+<script>
+  // Fallback: se o jsDelivr estiver bloqueado/indisponível, tenta o cdnjs.
+  if (typeof MP4Box === 'undefined') {
+    document.write('<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/mp4box/0.5.2/mp4box.all.min.js"></scr' + 'ipt>');
+  }
+</script>
+<style>
+  :root{
+    --paper:#fafaf7;
+    --ink:#0a0a0a;
+    --blue:#1E4FFF;
+    --red:#C8102E;
+    --line:#e3e1da;
+    --muted:#6b6b66;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:'Space Grotesk',sans-serif}
+  body{min-height:100vh;display:flex;flex-direction:column}
+
+  header{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding:18px 24px 14px;border-bottom:2px solid var(--ink);
+  }
+  header .brand{font-weight:700;font-size:20px;letter-spacing:.02em}
+  header .brand span{color:var(--blue)}
+  header .tag{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    border:1px solid var(--line);padding:3px 8px;border-radius:3px;background:var(--card)
+  }
+
+  main{
+    flex:1;display:block;
+    padding:20px 24px;max-width:1600px;width:100%;margin:0 auto;
+  }
+  .tabpane{display:none}
+  .tabpane.active{display:block}
+
+  /* ---------- layout LongoMatch (3 zonas) ---------- */
+  #lmLayout{
+    display:grid;
+    grid-template-columns:300px minmax(0,1fr);
+    gap:14px;align-items:start;
+  }
+  #lmLeft{align-self:stretch;display:flex;flex-direction:column;
+    border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden;max-height:84vh}
+  #lmCenter{min-width:0}
+  .zhead{
+    font-size:11px;font-weight:600;letter-spacing:.12em;padding:9px 12px;
+    border-bottom:1px solid var(--line);background:var(--paper);color:var(--muted);flex:none;
+  }
+  #lmLeftSlot{overflow-y:auto;padding:10px}
+  #lmBottomSlot{padding:12px}
+  /* dentro das zonas, os corpos de painel viram conteúdo simples */
+  #lmLeftSlot .fpsection:first-child{margin-top:0;border-top:none;padding-top:0}
+  /* só o painel de LANCES/PLAYLISTS achata ao ancorar na coluna esquerda; ETIQUETAS nunca */
+  body.docked #plPanel{position:static;width:auto !important;max-width:none;border:none;
+    box-shadow:none;display:block;background:transparent;border-radius:0}
+  body.docked #plPanel .fphead, body.docked #plPanel .fpresize{display:none}
+  body.docked #lmLeftSlot .fpbody{padding:0;max-height:none !important;overflow:visible}
+  @media (max-width:880px){
+    #lmLayout{grid-template-columns:1fr}
+    #lmLeft{max-height:none}
+  }
+  nav#tabs{display:flex;gap:4px;margin-left:10px}
+  .tabbtn{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:5px;font-weight:600;font-size:13px}
+  .tabbtn.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .badge{
+    font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--blue);color:#fff;
+    border-radius:8px;padding:1px 6px;margin-left:2px;vertical-align:1px;
+  }
+  header .spacer{flex:1}
+
+  /* ---------- tela cheia do app ---------- */
+  body:fullscreen{background:var(--paper);overflow-y:auto}
+  body:-webkit-full-screen{background:var(--paper);overflow-y:auto}
+  body.app-fs.hide-header > header{display:none}
+  body.app-fs.hide-header #fsShow{display:flex}
+  #fsShow{
+    position:fixed;top:10px;right:10px;z-index:130;display:none;align-items:center;gap:6px;
+    background:rgba(10,10,10,.7);color:#fff;border:none;border-radius:6px;padding:6px 10px;
+    font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;opacity:.5;transition:opacity .15s;
+  }
+  #fsShow:hover{opacity:1}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .card h2{
+    font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .card .body{padding:14px}
+
+  /* ---------- video column ---------- */
+  #dropzone{
+    border:2px dashed var(--line);border-radius:8px;background:var(--card);
+    padding:48px 20px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s;
+  }
+  #dropzone.drag{border-color:var(--blue);background:#f2f5ff}
+  #dropzone .big{font-size:17px;font-weight:600;margin-bottom:6px}
+  #dropzone .small{font-size:13px;color:var(--muted)}
+  #dropzone .small code{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+  #videoWrap{display:none}
+  #videoWrap.on{display:block}
+  #stage{position:relative;overflow:hidden;background:#000;border-radius:8px 8px 0 0;max-height:80vh;touch-action:none}
+  #stage.zoomed{cursor:grab}
+  #stage.dragging{cursor:grabbing}
+  #stage:fullscreen{max-height:none;border-radius:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #stage:fullscreen video{height:100vh;max-height:none;object-fit:contain}
+  video{width:100%;display:block;background:#000;max-height:80vh;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-select:none}
+
+  #drawCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+  #stage.drawing #drawCanvas{pointer-events:auto;cursor:crosshair}
+  #drawbar{
+    position:absolute;left:10px;bottom:10px;display:none;gap:5px;align-items:center;flex-wrap:wrap;
+    background:rgba(10,10,10,.7);padding:6px 8px;border-radius:6px;z-index:6;max-width:calc(100% - 20px);
+  }
+  #drawbar.on{display:flex}
+  #drawbar button{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;padding:4px 9px;border-radius:4px}
+  #drawbar button:hover{background:rgba(255,255,255,.28)}
+  #drawbar button.active{background:var(--blue)}
+  #drawbar .dcolor{width:20px;height:20px;padding:0;border-radius:50%;border:2px solid transparent}
+  #drawbar .dcolorpick{display:inline-flex;width:20px;height:20px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6);cursor:pointer;position:relative;background:conic-gradient(red,orange,yellow,green,cyan,blue,magenta,red)}
+  #drawbar .dcolorpick input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;padding:0;background:transparent;cursor:pointer;opacity:0}
+  #drawbar .dcolor.active{border-color:#fff;background-clip:padding-box}
+  #drawbar .sep{width:1px;height:18px;background:rgba(255,255,255,.25)}
+  #drawProps{flex-basis:100%;width:100%;margin-top:4px;border-top:1px solid rgba(255,255,255,.18);padding-top:5px}
+  .dprops{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  #drawProps input[type=range]{accent-color:var(--blue)}
+  #drawProps .dlabel{color:#fff;font-size:11px}
+
+  #clipBack{
+    position:absolute;top:10px;left:10px;z-index:7;display:none;align-items:center;gap:6px;
+    background:rgba(30,79,255,.9);color:#fff;border:none;border-radius:6px;padding:8px 14px;
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+    box-shadow:0 2px 10px rgba(10,10,10,.3);
+  }
+  #clipBack:hover{background:var(--blue)}
+  #stage.clipmode #clipBack{display:flex}
+
+  .zoomctl{
+    position:absolute;top:10px;right:10px;display:flex;gap:6px;align-items:center;
+    background:rgba(10,10,10,.6);padding:6px 8px;border-radius:6px;opacity:0;transition:opacity .15s;z-index:5;
+  }
+  #stage:hover .zoomctl, #stage.zoomed .zoomctl{opacity:1}
+  .zoomctl button{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;padding:4px 9px;border-radius:4px}
+  .zoomctl button:hover{background:rgba(255,255,255,.28)}
+  .zoomctl .zlevel{font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:42px;text-align:center}
+
+  .pbar{
+    display:flex;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap;
+    border:1px solid var(--line);border-top:none;background:var(--card);
+  }
+  .pbar input[type=range]{flex:1;min-width:140px;accent-color:var(--blue)}
+  .speeds{display:flex;gap:4px;flex-wrap:wrap}
+  .speeds button{padding:4px 7px;font-size:11px;border-radius:4px;border-color:var(--line);font-family:'JetBrains Mono',monospace;font-weight:600}
+  .speeds button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  /* ---------- modo lance + edição na linha do tempo ---------- */
+  #clipBar{
+    display:none;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap;
+    border:1px solid var(--blue);border-top:none;background:#f2f5ff;
+  }
+  #clipBar.on{display:flex}
+  #clipBar .cdot{width:10px;height:10px;border-radius:3px;flex:none}
+  #clipBar .cinfo{font-size:13px;font-weight:600}
+  #clipBar .crange{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+  #trimWrap{
+    display:none;align-items:center;gap:10px;padding:12px 14px;flex-wrap:wrap;
+    border:1px solid var(--blue);border-top:none;background:var(--card);
+  }
+  #trimWrap.on{display:flex}
+  .ttime{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;min-width:62px;text-align:center}
+  #trimTrack{
+    position:relative;flex:1;min-width:220px;height:28px;background:var(--paper);
+    border:1px solid var(--line);border-radius:5px;cursor:pointer;touch-action:none;
+  }
+  #trimRegion{position:absolute;top:0;bottom:0;background:rgba(30,79,255,.18)}
+  #trimPlayhead{position:absolute;top:0;bottom:0;width:2px;background:var(--red);pointer-events:none}
+  .thandle{
+    position:absolute;top:-5px;bottom:-5px;width:12px;margin-left:-6px;
+    background:var(--blue);border-radius:3px;cursor:ew-resize;touch-action:none;
+  }
+  .thandle:hover{background:#1640d6}
+  .vbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 14px;border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;background:var(--card);
+  }
+  .clock{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
+  .clock .dur{color:var(--muted);font-weight:400}
+  .vbar .filename{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+  .spacer{flex:1}
+  .prepost{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .prepost input{
+    width:54px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--paper);color:var(--ink)
+  }
+
+  #nowPlaying{
+    display:none;margin-top:10px;padding:8px 12px;border:1px solid var(--blue);border-radius:6px;
+    background:#f2f5ff;font-size:13px;align-items:center;gap:10px;
+  }
+  #nowPlaying.on{display:flex}
+  #nowPlaying .dotpulse{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ---------- buttons ---------- */
+  button{
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;
+    border:1px solid var(--ink);background:var(--card);color:var(--ink);
+    padding:7px 12px;border-radius:5px;cursor:pointer;transition:transform .05s, background .12s;
+  }
+  button:hover{background:#f1f0ea}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.primary:hover{background:#1640d6}
+  button.ghost{border-color:var(--line);font-weight:500}
+  button.danger{color:var(--red);border-color:var(--red)}
+  button.mini{padding:3px 8px;font-size:11px;border-radius:4px}
+
+  /* ---------- tags ---------- */
+  .dashbar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .dashbar select{
+    flex:1;min-width:130px;padding:7px 8px;border:1px solid var(--line);border-radius:5px;
+    background:var(--paper);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--ink)
+  }
+  #tagGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  #tagGrid.editing{grid-template-columns:1fr}
+  .tagedit{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--paper)}
+  .tagedit input{
+    flex:1;border:none;background:transparent;font-family:'Space Grotesk',sans-serif;
+    font-size:13px;font-weight:600;color:var(--ink);min-width:40px;outline:none
+  }
+  .tagedit .sw{width:24px;height:24px;border-radius:5px;border:none;cursor:pointer;flex:none;padding:0}
+  .tagedit .tlabel{font-size:10px;color:var(--muted);flex:none}
+  .tagedit .tnum{
+    width:44px;flex:none;padding:3px 4px;border:1px solid var(--line);border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;background:#fff;color:var(--ink);
+  }
+  .ename{
+    font-size:12px;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;max-width:150px;flex:none;
+  }
+  .ename:hover{text-decoration:underline;text-underline-offset:3px}
+  .tagbtn{
+    border:none;color:#fff;padding:14px 10px;border-radius:6px;font-size:13px;font-weight:600;
+    letter-spacing:.02em;text-align:center;line-height:1.2;
+  }
+  .tagbtn:hover{filter:brightness(1.08);background:none}
+  .tagbtn:disabled{filter:grayscale(.6)}
+  .addtag{display:flex;gap:8px;margin-top:12px}
+  .addtag input{
+    flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:5px;
+    font-family:'Space Grotesk',sans-serif;font-size:13px;background:var(--paper);color:var(--ink)
+  }
+
+  /* ---------- playlists ---------- */
+  .plist{border:1px solid var(--line);border-radius:6px;margin-bottom:12px;overflow:hidden}
+  .plist:last-child{margin-bottom:0}
+  .plist .phead{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);
+    border-bottom:1px solid var(--line);flex-wrap:wrap;
+  }
+  .plist .dot{width:10px;height:10px;border-radius:3px;flex:none}
+  .plist .pname{font-weight:600;font-size:13px}
+  .plist .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .erow{
+    display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .erow:last-child{border-bottom:none}
+  .erow.current{background:#f2f5ff}
+  .erow.sel{background:#e7edff;box-shadow:inset 3px 0 0 var(--blue)}
+  .erow{cursor:default;user-select:none}
+
+  /* ---------- menu de contexto ---------- */
+  #ctxMenu{
+    position:fixed;z-index:200;min-width:210px;background:var(--card);border:1px solid var(--ink);
+    border-radius:8px;box-shadow:0 14px 36px rgba(10,10,10,.28);padding:5px;display:none;font-size:13px;
+  }
+  #ctxMenu.on{display:block}
+  .ctxitem{position:relative;padding:7px 12px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .ctxitem:hover{background:var(--paper)}
+  .ctxitem.danger{color:var(--red)}
+  .ctxitem.has-sub::after{content:'▸';position:absolute;right:10px;color:var(--muted)}
+  .ctxsep{height:1px;background:var(--line);margin:5px 0}
+  .ctxhead{padding:6px 12px 4px;font-size:10px;letter-spacing:.1em;color:var(--muted);font-weight:600}
+  .ctxsub{
+    position:absolute;top:-5px;left:100%;min-width:180px;background:var(--card);border:1px solid var(--ink);
+    border-radius:8px;box-shadow:0 14px 36px rgba(10,10,10,.28);padding:5px;display:none;max-height:300px;overflow-y:auto;
+  }
+  .ctxitem:hover > .ctxsub{display:block}
+  .erow .et{font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .erow .er{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* ---------- painéis flutuantes ---------- */
+  .fpanel{
+    position:fixed;top:84px;right:24px;width:380px;max-width:92vw;background:var(--card);
+    border:1px solid var(--ink);border-radius:8px;box-shadow:0 12px 32px rgba(10,10,10,.2);
+    z-index:50;display:none;
+  }
+  #plPanel{right:auto;left:24px;width:440px;z-index:49}
+  /* posição padrão do painel flutuante de etiquetas: inferior direito */
+  #tagPanel{top:auto;bottom:24px;right:24px;width:360px}
+  .fpanel.on{display:block}
+  .fpanel.min .fpbody{display:none}
+  .fpanel.min .fpresize{display:none}
+  .fphead{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:grab;user-select:none;
+    border-bottom:1px solid var(--line);background:var(--paper);border-radius:8px 8px 0 0;
+    font-size:11px;font-weight:600;letter-spacing:.12em;
+  }
+  .fpanel.min .fphead{border-bottom:none;border-radius:8px}
+  .fphead:active{cursor:grabbing}
+  .fpbody{padding:12px;max-height:70vh;overflow-y:auto}
+  .fpresize{
+    position:absolute;right:1px;bottom:1px;width:18px;height:18px;cursor:nwse-resize;
+    color:var(--muted);font-size:11px;line-height:18px;text-align:center;user-select:none;touch-action:none;
+  }
+  .fpsection{
+    font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--muted);
+    margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--line);
+  }
+  .fpsection.plsection{display:flex;align-items:center;gap:8px}
+  .fpsection.plsection span{flex:1}
+  #drawbar .dlabel{color:#fff;font-size:11px;font-family:'JetBrains Mono',monospace}
+  #drawbar input[type=number]{
+    width:46px;padding:3px 5px;border:none;border-radius:4px;background:rgba(255,255,255,.16);
+    color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;
+  }
+
+
+  /* ---------- aba dashboards ---------- */
+  .dashwrap{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+  @media (max-width:900px){ .dashwrap{grid-template-columns:1fr} }
+  .dlrow{padding:10px 12px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;cursor:pointer}
+  .dlrow:hover{border-color:var(--ink)}
+  .dlrow.sel{border-color:var(--blue);background:#f2f5ff}
+  .dlname{font-weight:600;font-size:14px}
+  .dlmeta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px}
+  .deheader{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .deheader input{
+    flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:5px;
+    font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;background:var(--paper);color:var(--ink);
+  }
+  .degrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+  .degrid .tagbtn{outline:3px solid transparent;outline-offset:1px}
+  .degrid .tagbtn.sel{outline-color:var(--ink)}
+  .degrid .tbadge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:400;opacity:.85;margin-top:4px}
+  .deprops{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
+    border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--paper);
+  }
+  .deprops label{font-size:11px;color:var(--muted)}
+  .deprops input[type=text]{
+    padding:6px 8px;border:1px solid var(--line);border-radius:5px;min-width:140px;
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;background:#fff;color:var(--ink);
+  }
+  .deprops input[type=number]{
+    width:54px;padding:6px;border:1px solid var(--line);border-radius:5px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;background:#fff;color:var(--ink);
+  }
+  .swrow{display:flex;gap:5px}
+  .swrow button{width:22px;height:22px;border-radius:5px;border:2px solid transparent;padding:0;cursor:pointer}
+  .swrow button.sel{border-color:var(--ink)}
+
+  /* ---------- aba exportação ---------- */
+  .exprow{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .exprow label{font-size:13px;min-width:90px;color:var(--ink)}
+  .exprow.check label{min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .exprow select, .exprow input[type=text]{
+    flex:1;min-width:140px;padding:8px 10px;border:1px solid var(--line);border-radius:5px;
+    font-family:'Space Grotesk',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);
+  }
+  .expnote{
+    font-size:12px;line-height:1.5;color:var(--muted);background:var(--paper);
+    border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-top:4px;
+  }
+  .expnote.warn{border-color:var(--red);color:var(--ink)}
+  .expgrp{margin-bottom:14px}
+  .expgrp .ghead{
+    display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;margin-bottom:6px;cursor:pointer;
+  }
+  .expgrp .ghead .dot{width:10px;height:10px;border-radius:3px;flex:none}
+  .expitem{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0 4px 22px}
+  .expitem .er{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .expsum{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* ---------- biblioteca ---------- */
+  .librow{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:6px;margin-bottom:8px;
+  }
+  .librow .lname{font-weight:600;font-size:14px;word-break:break-all}
+  .librow .lmeta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+  /* ---------- modal de nomear lance ---------- */
+  #nameModal, #askModal{
+    position:fixed;inset:0;background:rgba(10,10,10,.45);z-index:120;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  #nameModal.on, #askModal.on{display:flex}
+  #askModal{z-index:140}
+  .nmcard{
+    width:480px;max-width:94vw;background:var(--card);border:1px solid var(--ink);
+    border-radius:10px;box-shadow:0 18px 50px rgba(10,10,10,.3);overflow:hidden;
+  }
+  .nmhead{
+    display:flex;align-items:center;gap:10px;padding:13px 16px;font-weight:600;font-size:14px;
+    border-bottom:1px solid var(--line);background:var(--paper);
+  }
+  .nmhead .nmdot{width:12px;height:12px;border-radius:4px;flex:none}
+  .nmbody{padding:16px}
+  .nmlabel{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+  .nmbody input, .nmbody textarea{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;margin-bottom:14px;
+    font-family:'Space Grotesk',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);
+  }
+  .nmbody input:focus, .nmbody textarea:focus{outline:none;border-color:var(--blue)}
+  .nmbody textarea{resize:vertical;min-height:60px;margin-bottom:8px}
+  .nmrange{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .nmfoot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--paper)}
+
+  /* ---------- status ---------- */
+  #statusBar{
+    border-top:1px solid var(--line);background:var(--card);padding:10px 24px 14px;
+  }
+  #statusBar .inner{max-width:1400px;margin:0 auto}
+  #progressWrap{display:none;align-items:center;gap:12px;margin-bottom:8px}
+  #progressWrap.on{display:flex}
+  #progressTrack{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+  #progressFill{height:100%;width:0%;background:var(--blue);transition:width .15s}
+  #progressLabel{font-family:'JetBrains Mono',monospace;font-size:12px;min-width:200px}
+  #log{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    max-height:96px;overflow-y:auto;line-height:1.6;
+  }
+  #log .err{color:var(--red)}
+  #log .ok{color:var(--blue)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" id="brandBox"><span id="brandBadge" style="display:none"></span>FLUX<span>GK</span> · <span id="brandName">VIDEO LAB</span></div>
+  <div class="tag">HUB MODULE — v1.0</div>
+  <nav id="tabs">
+    <button class="tabbtn active" data-tab="analise">Analysis</button>
+    <button class="tabbtn" data-tab="dash">Dashboards</button>
+    <button class="tabbtn" data-tab="export">Export</button>
+    <button class="tabbtn" data-tab="library">Library</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="mini" id="togglePanel" title="Show/hide the tags panel">Tags</button>
+  <button class="mini" id="togglePl" title="Show/hide the playlists panel">Playlists <span class="badge" id="plCount">0</span></button>
+  <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels">▦ Layout</button>
+  <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" style="display:none">▱ Header</button>
+  <button class="mini" id="appFullscreen" title="Fullscreen the whole app">⛶ Fullscreen</button>
+  <button class="mini" id="openTab" title="Open this module in its own tab — enables the Save-as dialog and full screen" style="display:none">⤢ New tab</button>
+</header>
+
+<main>
+  <!-- ================= ABA: ANÁLISE ================= -->
+  <section id="tab-analise" class="tabpane active">
+    <div id="lmLayout">
+    <aside id="lmLeft">
+      <div class="zhead">CLIPS</div>
+      <div id="lmLeftSlot"></div>
+    </aside>
+    <div id="lmCenter">
+    <div id="dropzone">
+      <div class="big">Load match video</div>
+      <div class="small">Click here or drag the file · formats: <code>.mp4 / .m4v / .mov</code> (H.264 or HEVC)</div>
+      <div class="small" style="margin-top:6px">The video stays on your computer — nothing is uploaded to the internet.</div>
+      <input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mp4,.m4v,.mov" style="display:none">
+    </div>
+
+    <div id="videoWrap">
+      <div id="stage">
+        <video id="video" playsinline preload="metadata"></video>
+        <canvas id="drawCanvas"></canvas>
+        <button id="clipBack" title="Back to the full match video">← Back to match</button>
+        <div class="zoomctl">
+          <button id="drawBtn" title="Draw over the video">✎</button>
+          <button id="zoomOut" title="Zoom out">−</button>
+          <div class="zlevel" id="zoomLevel">100%</div>
+          <button id="zoomIn" title="Zoom in">+</button>
+          <button id="zoomReset" title="Reset to 100%">⟲</button>
+          <button id="fsBtn" title="Fullscreen">⛶</button>
+        </div>
+        <div id="drawbar">
+          <button data-tool="move" class="dtool" title="Move / Select — click a drawing to select it and edit its properties; drag to reposition">✥</button>
+          <button data-tool="erase" class="dtool" title="Eraser — click a drawing to delete just that one">⌫</button>
+          <button data-tool="pen" class="dtool active" title="Freehand pen">✎</button>
+          <button data-tool="line" class="dtool" title="Line">╱</button>
+          <button data-tool="arrow" class="dtool" title="Arrow">➔</button>
+          <button data-tool="rect" class="dtool" title="Rectangle">▭</button>
+          <button data-tool="ellipse" class="dtool" title="Ellipse">◯</button>
+          <button data-tool="text" class="dtool" title="Text — click a point and type">T</button>
+          <button data-tool="spot" class="dtool" title="Spotlight — drag from the top down to the player's feet">▼</button>
+          <button data-tool="measure" class="dtool" title="Measure — drag between two points (calibrate first)">↔</button>
+          <button data-tool="poly" class="dtool" title="Polygon — click to add vertices; click the 1st point to close and form the shape">⬠</button>
+          <button data-tool="link" class="dtool" title="Linking — click players to connect; click the 1st point again to close, or double-click to finish open">🔗</button>
+          <button data-tool="angle" class="dtool" title="Angle — click 3 points: end, vertex, end">∠</button>
+          <button data-tool="lens" class="dtool" title="Magnifier — drag from the center outward">🔍</button>
+          <span class="sep"></span>
+          <button class="dcolor active" data-color="#FFD400" style="background:#FFD400" title="Yellow"></button>
+          <button class="dcolor" data-color="#1E4FFF" style="background:#1E4FFF" title="Blue"></button>
+          <button class="dcolor" data-color="#C8102E" style="background:#C8102E" title="Red"></button>
+          <button class="dcolor" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+          <button class="dcolor" data-color="#0a0a0a" style="background:#0a0a0a" title="Black"></button>
+          <label class="dcolorpick" title="Pick a custom color">
+            <input type="color" id="drawColorPick" value="#FFD400">
+          </label>
+          <span class="sep"></span>
+          <label class="dlabel" for="drawOpacity" title="Stroke opacity">opac.</label>
+          <input type="range" id="drawOpacity" min="10" max="100" step="5" value="100" style="width:80px">
+          <span class="dlabel" id="drawOpacityVal">100%</span>
+          <span class="sep"></span>
+          <label class="dlabel" for="drawWidth" title="Line thickness">esp.</label>
+          <input type="range" id="drawWidth" min="0.5" max="4" step="0.25" value="1" style="width:80px">
+          <span class="dlabel" id="drawWidthVal">1,0×</span>
+          <span class="sep"></span>
+          <button id="drawCalib" title="Calibrate measurement: draw a line over a known distance (e.g. goal width = 3m)">Calibrate</button>
+          <button id="drawUndo" title="Undo last stroke">↩</button>
+          <button id="drawClear" title="Erase all strokes on screen">Clear</button>
+          <span class="sep"></span>
+          <label class="dlabel" for="freezeSec">freeze</label>
+          <input type="number" id="freezeSec" value="3" min="1" max="60" step="1">
+          <span class="dlabel">s</span>
+          <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration">💾 Save at time</button>
+          <button id="drawSnap" title="Save current frame + drawing as a PNG image">⤓ PNG</button>
+          <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)">✕</button>
+        <div id="drawProps" style="display:none">
+          <div id="lensProps" class="dprops" style="display:none">
+            <span class="dlabel">Magnifier — zoom</span>
+            <input type="range" id="lensMag" min="1.5" max="6" step="0.1" value="2.2" style="width:110px">
+            <span class="dlabel" id="lensMagVal">2,2×</span>
+          </div>
+          <div id="textProps" class="dprops" style="display:none">
+            <span class="dlabel">Text</span>
+            <input type="range" id="textSize" min="2" max="12" step="0.5" value="4.5" style="width:90px" title="Size">
+            <span class="dlabel" id="textSizeVal">4,5</span>
+            <span class="sep"></span>
+            <label class="dlabel"><input type="checkbox" id="textBg" checked> background</label>
+            <span class="dlabel">bg opacity</span>
+            <input type="range" id="textBgOpacity" min="0" max="100" step="5" value="45" style="width:80px">
+            <span class="dlabel" id="textBgOpacityVal">45%</span>
+            <span class="sep"></span>
+            <span class="dlabel">text opacity</span>
+            <input type="range" id="textInkOpacity" min="20" max="100" step="5" value="100" style="width:80px">
+            <span class="dlabel" id="textInkOpacityVal">100%</span>
+          </div>
+          <div id="polyProps" class="dprops" style="display:none">
+            <span class="dlabel">Fill</span>
+            <select id="polyFill" style="font-size:11px">
+              <option value="none">None</option>
+              <option value="solid">Solid color</option>
+              <option value="hatch" selected>Lines</option>
+            </select>
+            <span class="sep"></span>
+            <span class="dlabel">fill opacity</span>
+            <input type="range" id="polyFillOpacity" min="5" max="100" step="5" value="50" style="width:90px">
+            <span class="dlabel" id="polyFillOpacityVal">50%</span>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="pbar">
+        <button id="playBtn" title="Play/pause (space)">▶</button>
+        <button class="ghost mini" id="back5" title="Back 5s (←)">−5s</button>
+        <button class="ghost mini" id="fwd5" title="Forward 5s (→)">+5s</button>
+        <button class="ghost mini" id="muteBtn" title="Sound on/off">🔊</button>
+        <input type="range" id="seek" min="0" max="100" step="0.05" value="0">
+        <div class="speeds" id="speeds"></div>
+      </div>
+      <div id="clipBar">
+        <div class="cdot" id="clipDot"></div>
+        <div class="cinfo"><span id="clipName"></span><span class="crange" id="clipRange"></span></div>
+        <div class="spacer"></div>
+        <button class="mini" id="clipReplay" title="Play the clip from the start">↺ Replay</button>
+        <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins">✎ Edit time</button>
+        <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing">🔍 Frame</button>
+        <button class="mini" id="clipExport" title="Export this clip (.mp4)">⤓ Export</button>
+        <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video">✕ Exit clip</button>
+      </div>
+      <div id="trimWrap">
+        <span class="ttime" id="trimInLbl">00:00.0</span>
+        <div id="trimTrack">
+          <div id="trimRegion"></div>
+          <div id="trimPlayhead"></div>
+          <div class="thandle" id="trimIn" title="Drag to adjust the start"></div>
+          <div class="thandle" id="trimOut" title="Drag to adjust the end"></div>
+        </div>
+        <span class="ttime" id="trimOutLbl">00:00.0</span>
+        <button class="mini primary" id="trimSave">Save</button>
+        <button class="mini ghost" id="trimCancel">Cancel</button>
+      </div>
+      <div class="vbar">
+        <div class="clock"><span id="curTime">00:00.0</span> <span class="dur">/ <span id="durTime">00:00</span></span></div>
+        <div class="filename" id="fileName"></div>
+        <div class="spacer"></div>
+        <div class="prepost" title="Default times — tags with their own times (set in Edit tags) ignore these values">
+          <label for="preSec">pre default</label><input type="number" id="preSec" value="5" min="0" max="60" step="1">s
+          <label for="postSec" style="margin-left:6px">post default</label><input type="number" id="postSec" value="3" min="0" max="60" step="1">s
+        </div>
+        <button class="ghost" id="changeVideo">Change video</button>
+      </div>
+      <div id="nowPlaying">
+        <div class="dotpulse"></div>
+        <div id="nowPlayingLabel" style="flex:1"></div>
+        <button class="mini" id="stopPlaylist">Stop</button>
+      </div>
+    </div>
+    </div><!-- /lmCenter -->
+    </div><!-- /lmLayout -->
+  </section>
+
+
+  <!-- ================= ABA: DASHBOARDS ================= -->
+  <section id="tab-dash" class="tabpane">
+    <div class="dashwrap">
+      <div class="card">
+        <h2>My dashboards</h2>
+        <div class="body" id="dashList"></div>
+      </div>
+      <div class="card">
+        <h2>Dashboard editor <span style="font-weight:400;text-transform:none;letter-spacing:0">click a tag to edit</span></h2>
+        <div class="body" id="dashEditor"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ABA: EXPORTAÇÃO ================= -->
+  <section id="tab-export" class="tabpane">
+    <div class="dashwrap">
+      <div class="card">
+        <h2>Clips to export <span style="font-weight:400;text-transform:none;letter-spacing:0">check what to include</span></h2>
+        <div class="body" id="expList"></div>
+      </div>
+      <div class="card">
+        <h2>Video properties</h2>
+        <div class="body">
+          <div id="expProps">
+            <div class="exprow">
+              <label>Quality</label>
+              <select id="expQuality">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low (smaller file)</option>
+              </select>
+            </div>
+            <div class="exprow">
+              <label>Resolution</label>
+              <select id="expRes">
+                <option value="0">Original (no re-encode)</option>
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+              </select>
+            </div>
+            <div class="exprow">
+              <label>Format</label>
+              <select id="expFormat">
+                <option value="mp4">MP4 (H.264)</option>
+                <option value="webm">WebM (VP8/9)</option>
+              </select>
+            </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expTitle"> Overlay the clip name on the video</label>
+            </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expDraw" checked> Burn the drawings into the video</label>
+            </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expWatermark"> Watermark</label>
+              <input type="text" id="expWmText" placeholder="@e.pimentagoleiros" maxlength="40" style="flex:1;min-width:120px">
+            </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expAudio" checked> Include audio</label>
+            </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expPerFile"> One file per clip (instead of a single compilation)</label>
+            </div>
+            <div id="expNote" class="expnote"></div>
+            <div class="exprow" style="margin-top:14px">
+              <button class="primary" id="expRun" style="flex:1">⤓ Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ABA: BIBLIOTECA ================= -->
+  <section id="tab-library" class="tabpane">
+    <div class="card">
+      <h2>Match library</h2>
+      <div class="body" id="library">
+        <div class="empty">No matches saved yet.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= PAINÉIS FLUTUANTES ================= -->
+<div id="tagPanel" class="fpanel on">
+  <div class="fphead" id="tagPanelHandle">
+    <span>TAGS</span>
+    <span style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
+    <span class="spacer"></span>
+    <button class="mini ghost" id="panelMin" title="Minimize/expand">—</button>
+  </div>
+  <div class="fpbody" id="tagPanelBody">
+    <div class="dashbar">
+      <select id="dashSelect" title="Active dashboard"></select>
+      <button class="mini" id="dashEditGo" title="Open the dashboards editor">⚙ Dashboards</button>
+    </div>
+    <div id="tagGrid"></div>
+    <div class="addtag">
+      <input type="text" id="newTagName" placeholder="New tag (e.g. Back pass)" maxlength="28">
+      <button id="addTagBtn">Add</button>
+    </div>
+  </div>
+  <div class="fpresize" id="tagGrip" title="Drag to resize">◢</div>
+</div>
+
+<div id="plPanel" class="fpanel">
+  <div class="fphead" id="plPanelHandle">
+    <span>PLAYLISTS</span>
+    <span style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
+    <span class="spacer"></span>
+    <button class="mini ghost" id="plMin" title="Minimize/expand">—</button>
+  </div>
+  <div class="fpbody" id="plPanelBody">
+    <div id="playlists">
+      <div class="empty">No clips tagged yet. Load a video and click a tag during playback.</div>
+    </div>
+    <div class="fpsection">TIMED DRAWINGS</div>
+    <div id="drawList">
+      <div class="empty">No drawings saved on the video timeline.</div>
+    </div>
+  </div>
+  <div class="fpresize" id="plGrip" title="Drag to resize">◢</div>
+</div>
+
+<div id="askModal">
+  <div class="nmcard">
+    <div class="nmhead" id="askHead">—</div>
+    <div class="nmbody">
+      <div id="askTextWrap">
+        <input type="text" id="askInput" maxlength="80" autocomplete="off">
+      </div>
+      <div id="askMsg" class="nmrange" style="display:none"></div>
+    </div>
+    <div class="nmfoot">
+      <button class="ghost" id="askCancel">Cancel</button>
+      <span class="spacer"></span>
+      <button class="primary" id="askOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="nameModal">
+  <div class="nmcard">
+    <div class="nmhead" id="nmHead">Clip details</div>
+    <div class="nmbody">
+      <label class="nmlabel" for="nameInput">Name</label>
+      <input type="text" id="nameInput" maxlength="60" autocomplete="off">
+      <label class="nmlabel" for="noteInput">Notes</label>
+      <textarea id="noteInput" rows="3" placeholder="Notes about the clip (optional)"></textarea>
+      <div class="nmrange" id="nmRange"></div>
+    </div>
+    <div class="nmfoot">
+      <button class="ghost" id="nameDiscard" title="Discard this clip">Discard</button>
+      <span class="spacer"></span>
+      <button class="primary" id="nameOk">OK &amp; continue</button>
+    </div>
+  </div>
+</div>
+
+<button id="fsShow" title="Show the header">▾ Menu</button>
+<div id="ctxMenu"></div>
+
+<div id="statusBar">
+  <div class="inner">
+    <div id="progressWrap">
+      <div id="progressLabel">Exporting…</div>
+      <div id="progressTrack"><div id="progressFill"></div></div>
+      <button class="mini danger" id="cancelExport">Cancel</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   FluxGK Video Lab — Teste 01
+   Player + etiquetas + playlists por etiqueta + exportação MP4 no navegador.
+   Exportação: corte em keyframes sem re-encoding (mp4box.js).
+   O clipe pode começar 1-2s antes do ponto marcado (keyframe anterior).
+   ===================================================================== */
+
+const $ = (id) => document.getElementById(id);
+
+/* =====================================================================
+   Diálogos do app (substituem prompt/confirm nativos, que tiram o
+   navegador da tela cheia). Retornam Promise.
+   ===================================================================== */
+let _askResolve = null;
+function askText(title, defValue){
+  return new Promise((resolve) => {
+    _askResolve = resolve;
+    $('askHead').textContent = title;
+    $('askMsg').style.display = 'none';
+    $('askTextWrap').style.display = '';
+    $('askOk').textContent = 'OK';
+    const inp = $('askInput');
+    inp.value = defValue || '';
+    $('askModal').classList.add('on');
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  });
+}
+function askConfirm(title, message, okLabel){
+  return new Promise((resolve) => {
+    _askResolve = resolve;
+    $('askHead').textContent = title;
+    $('askTextWrap').style.display = 'none';
+    $('askMsg').style.display = '';
+    $('askMsg').textContent = message || '';
+    $('askOk').textContent = okLabel || 'Confirmar';
+    $('askModal').classList.add('on');
+    setTimeout(() => $('askOk').focus(), 30);
+  });
+}
+function _askClose(value){
+  $('askModal').classList.remove('on');
+  const r = _askResolve; _askResolve = null;
+  if (r) r(value);
+}
+document.addEventListener('DOMContentLoaded', () => {});
+{
+  // liga os botões do modal genérico assim que o DOM existir
+  const wire = () => {
+    if (!$('askOk')) { setTimeout(wire, 30); return; }
+    $('askOk').addEventListener('click', () => {
+      const textMode = $('askTextWrap').style.display !== 'none';
+      _askClose(textMode ? $('askInput').value : true);
+    });
+    $('askCancel').addEventListener('click', () => {
+      const textMode = $('askTextWrap').style.display !== 'none';
+      _askClose(textMode ? null : false);
+    });
+    $('askInput').addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter'){ e.preventDefault(); _askClose($('askInput').value); }
+      if (e.key === 'Escape'){ e.preventDefault(); _askClose(null); }
+    });
+    $('askModal').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){ e.preventDefault(); const t = $('askTextWrap').style.display !== 'none'; _askClose(t ? null : false); }
+    });
+  };
+  wire();
+}
+
+const state = {
+  file: null,
+  url: null,
+  duration: 0,
+  events: [],   // {id, tagId, t, start, end}
+  nextEventId: 1,
+  drawings: [],          // desenhos salvos no tempo {id, t, freeze, shapes}
+  namedPlaylists: [],    // playlists manuais {id, name, evIds:[]}
+  measureScale: null,    // calibração da medição (metros por unidade normalizada)
+  clip: null,            // lance aberto cortado no visualizador
+  dashboards: [],
+  currentDashId: null,
+  zoom: 1, panX: 0, panY: 0,
+};
+
+const TAG_COLORS = ['#1E4FFF', '#C8102E', '#0A2A6B', '#3A3A3A', '#5B7DB1', '#8C1D2F', '#16263F', '#6b6b66'];
+
+let colorIdx = 0;
+function makeTag(name, color){
+  const tag = { id: 't' + Math.random().toString(36).slice(2, 9), name, color: color || TAG_COLORS[colorIdx % TAG_COLORS.length] };
+  colorIdx++;
+  return tag;
+}
+
+/* ---------------- dashboards ---------------- */
+const STORE_KEY = 'fluxgk_videolab_dashboards_v1';
+
+function currentDash(){ return state.dashboards.find(d => d.id === state.currentDashId) || state.dashboards[0]; }
+function currentTags(){ const d = currentDash(); return d ? d.tags : []; }
+function findTag(tagId){
+  for (const d of state.dashboards){
+    const t = d.tags.find(x => x.id === tagId);
+    if (t) return t;
+  }
+  return { id: tagId, name: '(tag removed)', color: '#6b6b66' };
+}
+
+function persistDashboards(){
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ dashboards: state.dashboards, currentId: state.currentDashId }));
+  } catch (e) {
+    log('Could not save dashboards in this browser.', 'err');
+  }
+  if (typeof pushToCloud === 'function') pushToCloud();
+}
+
+function loadDashboards(){
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw){
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.dashboards) && d.dashboards.length){
+        state.dashboards = d.dashboards;
+        state.currentDashId = d.currentId || d.dashboards[0].id;
+        log('Dashboards loaded: ' + state.dashboards.map(x => x.name).join(' · '));
+        return;
+      }
+    }
+  } catch (e) { /* primeiro uso ou armazenamento indisponível */ }
+  const def = {
+    id: 'd' + Math.random().toString(36).slice(2, 9),
+    name: 'Goalkeeper — Default',
+    tags: ['Hand save', 'Foot save', 'Goal conceded', 'Coming out', '1v1', 'Play with feet'].map(n => makeTag(n)),
+  };
+  state.dashboards = [def];
+  state.currentDashId = def.id;
+  persistDashboards();
+}
+
+/* ---------------- util ---------------- */
+function fmt(t, withTenth){
+  if (!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t / 60), s = t - m * 60;
+  const ss = withTenth ? s.toFixed(1).padStart(4, '0') : String(Math.floor(s)).padStart(2, '0');
+  return String(m).padStart(2, '0') + ':' + ss;
+}
+function log(msg, cls){
+  const el = document.createElement('div');
+  if (cls) el.className = cls;
+  el.textContent = '[' + new Date().toTimeString().slice(0, 8) + '] ' + msg;
+  $('log').prepend(el);
+}
+function safeName(s){ return s.replace(/[^\p{L}\p{N}\-_ ]/gu, '').trim().replace(/\s+/g, '_').toLowerCase() || 'clipe'; }
+
+/* ---------------- video load ---------------- */
+const video = $('video');
+
+function loadFile(file){
+  if (!file) return;
+  const okExt = /\.(mp4|m4v|mov)$/i.test(file.name);
+  if (!okExt) log('Note: "' + file.name + '" does not look like MP4/MOV. Playback may work, but export requires MP4 (H.264/HEVC).', 'err');
+  if (state.url) URL.revokeObjectURL(state.url);
+  state.file = file;
+  state.url = URL.createObjectURL(file);
+  video.src = state.url;
+  $('fileName').textContent = file.name + ' · ' + (file.size / 1048576).toFixed(0) + ' MB';
+  $('dropzone').style.display = 'none';
+  $('videoWrap').classList.add('on');
+  renderTags();
+  exitClip();
+  restoreSession();
+  log('Video loaded: ' + file.name, 'ok');
+}
+
+let _wasAppFsBeforePick = false;
+function openFilePicker(){
+  _wasAppFsBeforePick = (document.fullscreenElement === document.body || document.webkitFullscreenElement === document.body);
+  $('fileInput').click();
+}
+$('dropzone').addEventListener('click', () => openFilePicker());
+$('changeVideo').addEventListener('click', () => openFilePicker());
+$('fileInput').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  loadFile(f);
+  // o seletor de arquivo do SO derruba a tela cheia; se estávamos nela, voltamos
+  if (f && _wasAppFsBeforePick && !(document.fullscreenElement || document.webkitFullscreenElement)){
+    const el = document.body;
+    setTimeout(() => { try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (err) {} }, 120);
+  }
+  _wasAppFsBeforePick = false;
+});
+$('dropzone').addEventListener('dragover', (e) => { e.preventDefault(); $('dropzone').classList.add('drag'); });
+$('dropzone').addEventListener('dragleave', () => $('dropzone').classList.remove('drag'));
+$('dropzone').addEventListener('drop', (e) => {
+  e.preventDefault();
+  $('dropzone').classList.remove('drag');
+  if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+});
+
+video.addEventListener('loadedmetadata', () => {
+  state.duration = video.duration;
+  $('durTime').textContent = fmt(video.duration);
+  $('seek').min = 0;
+  $('seek').max = video.duration;
+  setZoom(1, 0, 0);
+});
+let seeking = false;
+video.addEventListener('timeupdate', () => {
+  $('curTime').textContent = fmt(video.currentTime, true);
+  if (!seeking) $('seek').value = video.currentTime;
+  checkDrawingFreeze();
+  enforceClipBounds();
+  tickPlaylist();
+});
+video.addEventListener('play', () => { $('playBtn').textContent = '⏸'; });
+video.addEventListener('pause', () => { $('playBtn').textContent = '▶'; });
+
+/* ---------------- player: controles ---------------- */
+function togglePlay(){
+  if (!state.file) return;
+  cancelFreeze();
+  if (video.paused) video.play(); else video.pause();
+}
+$('playBtn').addEventListener('click', togglePlay);
+$('back5').addEventListener('click', () => { seekClamped(video.currentTime - 5); });
+$('fwd5').addEventListener('click', () => { seekClamped(video.currentTime + 5); });
+$('muteBtn').addEventListener('click', () => {
+  video.muted = !video.muted;
+  $('muteBtn').textContent = video.muted ? '🔇' : '🔊';
+});
+
+const seekEl = $('seek');
+seekEl.addEventListener('input', () => {
+  seeking = true;
+  const t = parseFloat(seekEl.value);
+  video.currentTime = t;
+  $('curTime').textContent = fmt(t, true);
+});
+seekEl.addEventListener('change', () => { seeking = false; });
+
+/* ---------------- player: velocidade ---------------- */
+const SPEEDS = [0.5, 1, 1.25, 1.5, 1.75, 2, 3, 4];
+function renderSpeeds(){
+  const box = $('speeds');
+  box.innerHTML = '';
+  SPEEDS.forEach(s => {
+    const b = document.createElement('button');
+    b.textContent = String(s).replace('.', ',') + 'x';
+    b.title = 'Velocidade ' + String(s).replace('.', ',') + 'x';
+    if (Math.abs(video.playbackRate - s) < 0.001) b.classList.add('active');
+    b.addEventListener('click', () => { video.playbackRate = s; });
+    box.appendChild(b);
+  });
+}
+video.addEventListener('ratechange', renderSpeeds);
+
+/* ---------------- player: zoom e pan ---------------- */
+const stage = $('stage');
+const MAXZOOM = 5;
+
+function clampPan(){
+  const r = stage.getBoundingClientRect();
+  const mx = (state.zoom - 1) * r.width / 2;
+  const my = (state.zoom - 1) * r.height / 2;
+  state.panX = Math.max(-mx, Math.min(mx, state.panX));
+  state.panY = Math.max(-my, Math.min(my, state.panY));
+}
+function setZoom(z, px, py){
+  state.zoom = Math.max(1, Math.min(MAXZOOM, z));
+  if (px !== undefined) state.panX = px;
+  if (py !== undefined) state.panY = py;
+  if (state.zoom === 1){ state.panX = 0; state.panY = 0; }
+  clampPan();
+  video.style.transform = 'translate(' + state.panX + 'px,' + state.panY + 'px) scale(' + state.zoom + ')';
+  drawCanvas.style.transformOrigin = 'center center';
+  drawCanvas.style.transform = 'translate(' + state.panX + 'px,' + state.panY + 'px) scale(' + state.zoom + ')';
+  $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
+  stage.classList.toggle('zoomed', state.zoom > 1);
+}
+$('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.25));
+$('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.25));
+$('zoomReset').addEventListener('click', () => setZoom(1, 0, 0));
+$('fsBtn').addEventListener('click', () => {
+  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  if (stage.requestFullscreen){
+    const r = stage.requestFullscreen();
+    if (r && r.catch) r.catch(() => log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err'));
+  }
+});
+
+/* ---------------- tela cheia do APP inteiro ---------------- */
+function isAppFs(){
+  return document.fullscreenElement === document.body || document.webkitFullscreenElement === document.body;
+}
+$('appFullscreen').addEventListener('click', () => {
+  if (document.fullscreenElement || document.webkitFullscreenElement){
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const el = document.body;
+    try {
+      const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      if (r && r.catch) r.catch(() => log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err'));
+    } catch (err) {
+      log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err');
+    }
+  }
+});
+$('toggleHeader').addEventListener('click', () => {
+  document.body.classList.toggle('hide-header');
+});
+$('fsShow').addEventListener('click', () => {
+  document.body.classList.remove('hide-header');
+});
+function syncAppFs(){
+  const on = isAppFs();
+  document.body.classList.toggle('app-fs', on);
+  $('toggleHeader').style.display = on ? '' : 'none';
+  $('appFullscreen').textContent = on ? '⛶ Exit' : '⛶ Fullscreen';
+  if (!on) document.body.classList.remove('hide-header');
+  setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
+}
+document.addEventListener('fullscreenchange', syncAppFs);
+document.addEventListener('webkitfullscreenchange', syncAppFs);
+
+/* Auto tela cheia: na ABA ISOLADA, entra em tela cheia no 1º clique dentro do player.
+   Só dispara uma vez; se o usuário sair da tela cheia depois, não força de novo. */
+(function setupAutoFullscreen(){
+  const inHubFs = (window.parent && window.parent !== window);
+  if (inHubFs) return;            // dentro do hub a tela cheia é bloqueada; não tenta
+  let armed = true;               // ainda não disparou
+  function tryAuto(ev){
+    if (!armed) return;
+    if (typeof drawMode !== 'undefined' && drawMode) return;  // não interrompe o desenho
+    // ignora cliques em botões/controles — só conta clique na área do vídeo
+    const t = ev.target;
+    if (t.closest('button, input, select, textarea, a, label, .ctxmenu, .modal, #drawbar')) return;
+    const insideStage = t.closest('#stage') || t.closest('#videoWrap');
+    if (!insideStage) return;
+    if (document.fullscreenElement || document.webkitFullscreenElement) { armed = false; return; }
+    armed = false;                // dispara só uma vez
+    const el = document.body;
+    try {
+      const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      if (r && r.catch) r.catch(() => {});
+    } catch (e) {}
+  }
+  // desarma se o usuário já usou tela cheia manualmente
+  document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) armed = false; });
+  document.addEventListener('click', tryAuto, true);
+})();
+
+stage.addEventListener('wheel', (e) => {
+  if (!state.file) return;
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  const mx = e.clientX - r.left - r.width / 2;
+  const my = e.clientY - r.top - r.height / 2;
+  const nz = Math.max(1, Math.min(MAXZOOM, state.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+  state.panX = mx - (mx - state.panX) * (nz / state.zoom);
+  state.panY = my - (my - state.panY) * (nz / state.zoom);
+  setZoom(nz);
+}, { passive: false });
+
+let dragInfo = null;
+stage.addEventListener('pointerdown', (e) => {
+  if (drawMode) return;
+  if (e.target.closest('.zoomctl') || e.target.closest('#drawbar') || e.target.closest('#clipBack')) return;
+  dragInfo = { x: e.clientX, y: e.clientY, px: state.panX, py: state.panY, moved: false };
+  try { stage.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
+});
+stage.addEventListener('pointermove', (e) => {
+  if (!dragInfo) return;
+  const dx = e.clientX - dragInfo.x, dy = e.clientY - dragInfo.y;
+  if (Math.abs(dx) + Math.abs(dy) > 4) dragInfo.moved = true;
+  if (state.zoom > 1 && dragInfo.moved){
+    stage.classList.add('dragging');
+    state.panX = dragInfo.px + dx;
+    state.panY = dragInfo.py + dy;
+    setZoom(state.zoom);
+  }
+});
+stage.addEventListener('pointerup', (e) => {
+  if (drawMode){ dragInfo = null; return; }
+  if (e.target.closest('#clipBack')){ dragInfo = null; return; }
+  const wasDrag = dragInfo && dragInfo.moved && state.zoom > 1;
+  dragInfo = null;
+  stage.classList.remove('dragging');
+  if (!wasDrag && !e.target.closest('.zoomctl') && !e.target.closest('#drawbar')) togglePlay();
+});
+
+/* ---------------- player: teclado ---------------- */
+document.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  if (!state.file) return;
+  if (e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); seekClamped(video.currentTime - 5); }
+  else if (e.key === 'ArrowRight'){ e.preventDefault(); seekClamped(video.currentTime + 5); }
+  else if (e.key === ','){ video.pause(); seekClamped(video.currentTime - 1 / 30); }
+  else if (e.key === '.'){ video.pause(); seekClamped(video.currentTime + 1 / 30); }
+});
+
+/* =====================================================================
+   MODO LANCE — o lance abre cortado no visualizador; edição de tempo
+   numa linha do tempo com margens de 10s antes e depois.
+   ===================================================================== */
+const CLIP_MARGIN = 10;
+
+function viewBounds(){
+  const c = state.clip;
+  if (c){
+    if (c.editing) return { a: c.viewStart, b: c.viewEnd };
+    return { a: c.ev.start, b: c.ev.end };
+  }
+  return { a: 0, b: state.duration || 0 };
+}
+function seekClamped(t){
+  const b = viewBounds();
+  video.currentTime = Math.max(b.a, Math.min(b.b, t));
+}
+function applySeekRange(){
+  const b = viewBounds();
+  seekEl.min = b.a;
+  seekEl.max = b.b || 100;
+}
+function enforceClipBounds(){
+  const c = state.clip;
+  if (!c) return;
+  const b = viewBounds();
+  if (video.currentTime > b.b + 0.05){
+    video.pause();
+    video.currentTime = b.b;
+  } else if (video.currentTime < b.a - 0.05){
+    video.currentTime = b.a;
+  }
+  if (c.editing) renderTrim();
+}
+
+function openClip(ev, tag, edit){
+  stopPlaylist();
+  cancelFreeze();
+  switchTab('analise');
+  state.clip = { ev: ev, tag: tag, editing: false, viewStart: ev.start, viewEnd: ev.end };
+  $('clipDot').style.background = tag.color;
+  $('clipName').textContent = ev.name ? (ev.name + ' — ' + tag.name) : tag.name;
+  updateClipRange();
+  $('clipBar').classList.add('on');
+  stage.classList.add('clipmode');
+  updateClipFrameBtn();
+  if (edit){
+    startTrimEdit();
+  } else {
+    applySeekRange();
+    video.currentTime = ev.start;
+    video.play();
+  }
+}
+function updateClipRange(){
+  if (!state.clip) return;
+  $('clipRange').textContent = fmt(state.clip.ev.start) + ' → ' + fmt(state.clip.ev.end);
+}
+function exitClip(){
+  if (!state.clip) return;
+  if (state.clip.editing) stopTrimEdit(false);
+  state.clip = null;
+  $('clipBar').classList.remove('on');
+  $('trimWrap').classList.remove('on');
+  stage.classList.remove('clipmode');
+  applySeekRange();
+}
+$('clipExit').addEventListener('click', () => { video.pause(); exitClip(); });
+$('clipBack').addEventListener('click', () => { video.pause(); exitClip(); });
+$('clipReplay').addEventListener('click', () => {
+  const c = state.clip;
+  if (!c) return;
+  cancelFreeze();
+  video.currentTime = c.editing ? c.trimIn : c.ev.start;
+  video.play();
+});
+$('clipExport').addEventListener('click', () => {
+  const c = state.clip;
+  if (!c) return;
+  const base = c.ev.name ? safeName(c.ev.name) : (safeName(c.tag.name) + '_lance_' + fmt(c.ev.t).replace(':', '-'));
+  exportEvents([c.ev], base + '.mp4', c.ev.name || (c.tag.name + ' · ' + fmt(c.ev.t)));
+});
+$('clipFrame').addEventListener('click', async () => {
+  const c = state.clip;
+  if (!c) return;
+  if (c.ev.exportZoom){
+    // já tem enquadramento salvo — pergunta se quer atualizar ou remover
+    const keep = await askConfirm('Export framing',
+      'This clip already has a saved framing (zoom ' + Math.round(c.ev.exportZoom.zoom * 100) + '%). Atualizar para o zoom atual? (Cancelar remove o enquadramento.)',
+      'Atualizar');
+    if (!keep){
+      delete c.ev.exportZoom;
+      saveSession();
+      updateClipFrameBtn();
+      log('Export framing removed — the clip exports without zoom.');
+      return;
+    }
+  }
+  if (state.zoom <= 1.001){
+    log('Zoom into the video first (mouse wheel or + buttons), then save the framing.', 'err');
+    return;
+  }
+  c.ev.exportZoom = { zoom: state.zoom, panX: state.panX, panY: state.panY,
+    stageW: stage.getBoundingClientRect().width, stageH: stage.getBoundingClientRect().height };
+  saveSession();
+  updateClipFrameBtn();
+  log('Framing saved: the clip will export with a zoom of ' + Math.round(state.zoom * 100) + '%.', 'ok');
+});
+function updateClipFrameBtn(){
+  const c = state.clip;
+  const btn = $('clipFrame');
+  if (!btn) return;
+  if (c && c.ev.exportZoom){
+    btn.textContent = '🔍 Framed (' + Math.round(c.ev.exportZoom.zoom * 100) + '%)';
+    btn.classList.add('primary');
+  } else {
+    btn.textContent = '🔍 Frame';
+    btn.classList.remove('primary');
+  }
+}
+$('clipEditBtn').addEventListener('click', () => {
+  const c = state.clip;
+  if (!c) return;
+  if (c.editing) stopTrimEdit(false); else startTrimEdit();
+});
+
+function startTrimEdit(){
+  const c = state.clip;
+  if (!c) return;
+  video.pause();
+  c.editing = true;
+  c.viewStart = Math.max(0, c.ev.start - CLIP_MARGIN);
+  c.viewEnd = Math.min(state.duration || (c.ev.end + CLIP_MARGIN), c.ev.end + CLIP_MARGIN);
+  c.trimIn = c.ev.start;
+  c.trimOut = c.ev.end;
+  $('trimWrap').classList.add('on');
+  $('clipEditBtn').classList.add('primary');
+  applySeekRange();
+  video.currentTime = c.trimIn;
+  renderTrim();
+  log('Time editing: the timeline shows ' + CLIP_MARGIN + 's before and after the clip. Drag the blue handles.');
+}
+function stopTrimEdit(save){
+  const c = state.clip;
+  if (!c || !c.editing) return;
+  if (save){
+    c.ev.start = Math.max(0, Math.min(c.trimIn, c.trimOut - 0.5));
+    c.ev.end = Math.max(c.trimOut, c.ev.start + 0.5);
+    c.ev.t = Math.min(Math.max(c.ev.t, c.ev.start), c.ev.end);
+    saveSession();
+    renderPlaylists();
+    log('Clip updated: ' + fmt(c.ev.start, true) + ' → ' + fmt(c.ev.end, true), 'ok');
+  }
+  c.editing = false;
+  c.viewStart = c.ev.start;
+  c.viewEnd = c.ev.end;
+  $('trimWrap').classList.remove('on');
+  $('clipEditBtn').classList.remove('primary');
+  updateClipRange();
+  applySeekRange();
+  seekClamped(video.currentTime);
+}
+$('trimSave').addEventListener('click', () => stopTrimEdit(true));
+$('trimCancel').addEventListener('click', () => stopTrimEdit(false));
+
+function trimPct(t){
+  const c = state.clip;
+  const span = Math.max(0.001, c.viewEnd - c.viewStart);
+  return Math.max(0, Math.min(100, (t - c.viewStart) / span * 100));
+}
+function renderTrim(){
+  const c = state.clip;
+  if (!c || !c.editing) return;
+  $('trimIn').style.left = trimPct(c.trimIn) + '%';
+  $('trimOut').style.left = trimPct(c.trimOut) + '%';
+  $('trimRegion').style.left = trimPct(c.trimIn) + '%';
+  $('trimRegion').style.width = (trimPct(c.trimOut) - trimPct(c.trimIn)) + '%';
+  $('trimInLbl').textContent = fmt(c.trimIn, true);
+  $('trimOutLbl').textContent = fmt(c.trimOut, true);
+  $('trimPlayhead').style.left = trimPct(video.currentTime) + '%';
+}
+(function(){
+  const track = $('trimTrack');
+  let dragging = null; // 'in' | 'out' | 'seek'
+  function timeAt(e){
+    const r = track.getBoundingClientRect();
+    const c = state.clip;
+    const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    return c.viewStart + f * (c.viewEnd - c.viewStart);
+  }
+  function move(e){
+    if (!dragging) return;
+    const c = state.clip;
+    if (!c || !c.editing){ dragging = null; return; }
+    const t = timeAt(e);
+    if (dragging === 'in'){
+      c.trimIn = Math.min(t, c.trimOut - 0.5);
+      video.pause();
+      video.currentTime = c.trimIn;
+    } else if (dragging === 'out'){
+      c.trimOut = Math.max(t, c.trimIn + 0.5);
+      video.pause();
+      video.currentTime = c.trimOut;
+    } else {
+      video.currentTime = t;
+    }
+    renderTrim();
+  }
+  function down(which){
+    return (e) => {
+      const c = state.clip;
+      if (!c || !c.editing) return;
+      dragging = which;
+      e.stopPropagation();
+      e.preventDefault();
+      try { track.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
+      move(e);
+    };
+  }
+  $('trimIn').addEventListener('pointerdown', down('in'));
+  $('trimOut').addEventListener('pointerdown', down('out'));
+  track.addEventListener('pointerdown', (e) => {
+    if (e.target.classList && e.target.classList.contains('thandle')) return;
+    down('seek')(e);
+  });
+  track.addEventListener('pointermove', move);
+  track.addEventListener('pointerup', () => { dragging = null; });
+})();
+
+/* ---------------- tags ---------------- */
+function renderDashboards(){
+  const sel = $('dashSelect');
+  sel.innerHTML = '';
+  state.dashboards.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.id;
+    o.textContent = d.name;
+    if (d.id === state.currentDashId) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function renderTags(){
+  const grid = $('tagGrid');
+  grid.innerHTML = '';
+  const tags = currentTags();
+  if (!tags.length){
+    grid.innerHTML = '<div class="empty">This dashboard has no tags yet — add them below or in the Dashboards editor.</div>';
+    return;
+  }
+  const gPre = parseFloat($('preSec').value) || 0;
+  const gPost = parseFloat($('postSec').value) || 0;
+  tags.forEach(tag => {
+    const b = document.createElement('button');
+    b.className = 'tagbtn';
+    b.style.background = tag.color;
+    b.textContent = tag.name;
+    b.disabled = !state.file;
+    const ePre = (typeof tag.pre === 'number') ? tag.pre : gPre;
+    const ePos = (typeof tag.post === 'number') ? tag.post : gPost;
+    b.title = state.file
+      ? 'Marcar "' + tag.name + '" — pre ' + ePre + 's · post ' + ePos + 's' + ((typeof tag.pre === 'number' || typeof tag.post === 'number') ? ' (own times)' : ' (default)')
+      : 'Load a video first';
+    b.addEventListener('click', () => addEvent(tag));
+    grid.appendChild(b);
+  });
+}
+
+$('addTagBtn').addEventListener('click', () => {
+  const name = $('newTagName').value.trim();
+  if (!name) return;
+  const d = currentDash();
+  if (!d) return;
+  d.tags.push(makeTag(name));
+  $('newTagName').value = '';
+  persistDashboards();
+  renderTags();
+});
+$('newTagName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('addTagBtn').click(); });
+
+$('dashSelect').addEventListener('change', (e) => {
+  state.currentDashId = e.target.value;
+  persistDashboards();
+  renderTags();
+  const d = currentDash();
+  const el = $('lmDashName');
+  if (el) el.textContent = d ? '· ' + d.name : '';
+});
+$('dashEditGo').addEventListener('click', () => {
+  dashEdit = { dashId: state.currentDashId, tagId: null };
+  switchTab('dash');
+});
+
+function addEvent(tag){
+  if (!state.file) return;
+  if ($('nameModal').classList.contains('on')) return; // já há um lance aguardando nome
+  // fluxo: pausa o jogo, cria o lance e abre o modal para nomear; só ao confirmar o vídeo segue
+  const wasPlaying = !video.paused;
+  video.pause();
+  const gPre = Math.max(0, parseFloat($('preSec').value) || 0);
+  const gPost = Math.max(0, parseFloat($('postSec').value) || 0);
+  const pre = (typeof tag.pre === 'number') ? tag.pre : gPre;
+  const post = (typeof tag.post === 'number') ? tag.post : gPost;
+  const t = video.currentTime;
+  const n = state.events.filter(e => e.tagId === tag.id).length + 1;
+  const ev = {
+    id: state.nextEventId++,
+    tagId: tag.id,
+    t,
+    name: tag.name + ' ' + String(n).padStart(2, '0'),
+    note: '',
+    start: Math.max(0, t - pre),
+    end: Math.min(state.duration || (t + post), t + post),
+  };
+  state.events.push(ev);
+  saveSession();
+  updateBadge();
+  renderPlaylists();
+  openNameModal(ev, tag, wasPlaying);
+  log(tag.name + ' marcada em ' + fmt(t, true) + '  (clipe ' + fmt(ev.start) + ' → ' + fmt(ev.end) + ')');
+}
+
+/* ---------------- modal: nomear o lance ao marcar ---------------- */
+let namingEv = null, namingResume = false;
+function openNameModal(ev, tag, resume){
+  namingEv = ev;
+  namingResume = resume;
+  $('nmHead').innerHTML = '<span class="nmdot" style="background:' + tag.color + '"></span>' +
+    'Clip details — ' + escapeHtml(tag.name) + ' · ' + fmt(ev.t, true);
+  $('nameInput').value = ev.name || '';
+  $('noteInput').value = ev.note || '';
+  $('nmRange').textContent = 'Trecho: ' + fmt(ev.start) + ' → ' + fmt(ev.end) + '  ·  edite o tempo depois pelo ✎ na playlist';
+  $('nameModal').classList.add('on');
+  setTimeout(() => { $('nameInput').focus(); $('nameInput').select(); }, 30);
+}
+function closeNameModal(resume){
+  $('nameModal').classList.remove('on');
+  const wasResume = resume && namingResume;
+  namingEv = null;
+  namingResume = false;
+  if (wasResume && state.file) video.play();
+}
+function commitName(){
+  if (namingEv){
+    namingEv.name = $('nameInput').value.trim() || namingEv.name;
+    namingEv.note = $('noteInput').value.trim();
+    saveSession();
+    renderPlaylists();
+  }
+  closeNameModal(true);
+}
+function discardEvent(){
+  if (namingEv){
+    state.events = state.events.filter(e => e.id !== namingEv.id);
+    saveSession();
+    updateBadge();
+    renderPlaylists();
+    log('Clip discarded.');
+  }
+  closeNameModal(true);
+}
+$('nameOk').addEventListener('click', commitName);
+$('nameDiscard').addEventListener('click', discardEvent);
+$('nameInput').addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter'){ e.preventDefault(); commitName(); }
+  if (e.key === 'Escape'){ e.preventDefault(); commitName(); }
+});
+$('noteInput').addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Escape'){ e.preventDefault(); commitName(); }
+});
+
+/* ---------------- playlists ---------------- */
+let selectedIds = new Set();
+let lastClickedId = null;
+
+function flatEventsInOrder(){
+  const seen = [];
+  state.events.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
+  const out = [];
+  seen.forEach(tagId => {
+    state.events.filter(e => e.tagId === tagId).sort((a, b) => a.start - b.start).forEach(e => out.push(e));
+  });
+  return out;
+}
+
+function rowClick(ev, e){
+  const order = flatEventsInOrder();
+  if (e.metaKey || e.ctrlKey){
+    if (selectedIds.has(ev.id)) selectedIds.delete(ev.id); else selectedIds.add(ev.id);
+    lastClickedId = ev.id;
+  } else if (e.shiftKey && lastClickedId != null){
+    const a = order.findIndex(x => x.id === lastClickedId);
+    const b = order.findIndex(x => x.id === ev.id);
+    if (a >= 0 && b >= 0){
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      for (let k = lo; k <= hi; k++) selectedIds.add(order[k].id);
+    }
+  } else {
+    selectedIds = new Set([ev.id]);
+    lastClickedId = ev.id;
+  }
+  updateRowSelection();
+}
+function updateRowSelection(){
+  document.querySelectorAll('.erow[data-evid]').forEach(r => {
+    r.classList.toggle('sel', selectedIds.has(parseInt(r.dataset.evid, 10)));
+  });
+}
+function selectedEventObjs(){
+  return state.events.filter(e => selectedIds.has(e.id));
+}
+
+function renderPlaylists(){
+  const box = $('playlists');
+  box.innerHTML = '';
+  const seen = [];
+  state.events.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
+  const groups = seen.map(tagId => ({
+    tag: findTag(tagId),
+    evs: state.events.filter(e => e.tagId === tagId).sort((a, b) => a.start - b.start),
+  }));
+
+  // limpa seleção de ids que já não existem
+  const ids = new Set(state.events.map(e => e.id));
+  selectedIds.forEach(id => { if (!ids.has(id)) selectedIds.delete(id); });
+
+  if (!groups.length){
+    box.innerHTML = '<div class="empty">No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.</div>';
+  }
+
+  groups.forEach(g => {
+    const wrap = document.createElement('div');
+    wrap.className = 'plist';
+
+    const head = document.createElement('div');
+    head.className = 'phead';
+    head.innerHTML = '<div class="dot" style="background:' + g.tag.color + '"></div>' +
+      '<div class="pname">' + escapeHtml(g.tag.name) + '</div>' +
+      '<div class="count">' + g.evs.length + ' clip' + (g.evs.length === 1 ? '' : 's') + '</div>' +
+      '<div class="spacer"></div>';
+
+    const playAll = document.createElement('button');
+    playAll.className = 'mini ghost';
+    playAll.textContent = '▶ View all';
+    playAll.title = "Plays this tag's clips in sequence";
+    playAll.addEventListener('click', () => startPlaylist(g.evs, g.tag.name));
+
+    const selAll = document.createElement('button');
+    selAll.className = 'mini ghost';
+    selAll.textContent = '☑ Select';
+    selAll.title = 'Select all clips for this tag (to create a playlist later)';
+    selAll.addEventListener('click', () => {
+      g.evs.forEach(e => selectedIds.add(e.id));
+      lastClickedId = g.evs.length ? g.evs[g.evs.length - 1].id : null;
+      updateRowSelection();
+    });
+
+    head.appendChild(playAll);
+    head.appendChild(selAll);
+    wrap.appendChild(head);
+
+    g.evs.forEach((ev, i) => {
+      const row = document.createElement('div');
+      row.className = 'erow';
+      row.dataset.evid = ev.id;
+      if (selectedIds.has(ev.id)) row.classList.add('sel');
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.classList.contains('et') || e.target.classList.contains('ename')) return;
+        rowClick(ev, e);
+      });
+      row.addEventListener('dblclick', (e) => {
+        if (e.target.closest('button') || e.target.classList.contains('ename')) return;
+        openClip(ev, g.tag);
+      });
+      row.title = 'Double-click opens the clip in the player';
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (!selectedIds.has(ev.id)){ selectedIds = new Set([ev.id]); lastClickedId = ev.id; updateRowSelection(); }
+        openCtxMenu(e.clientX, e.clientY);
+      });
+
+      const tEl = document.createElement('span');
+      tEl.className = 'et';
+      tEl.textContent = fmt(ev.t, true);
+      tEl.title = 'Open this trimmed clip in the viewer';
+      tEl.addEventListener('click', () => openClip(ev, g.tag));
+
+      const nEl = document.createElement('span');
+      nEl.className = 'ename';
+      nEl.textContent = ev.name || (g.tag.name + ' ' + (i + 1));
+      nEl.title = 'Click to rename the clip';
+      nEl.addEventListener('click', async () => {
+        const nv = await askText('Clip name', ev.name || '');
+        if (nv === null) return;
+        ev.name = nv.trim();
+        saveSession();
+        renderPlaylists();
+      });
+
+      const rEl = document.createElement('span');
+      rEl.className = 'er';
+      rEl.textContent = fmt(ev.start) + '→' + fmt(ev.end);
+
+      const sp = document.createElement('span');
+      sp.className = 'spacer';
+
+      const bMenu = document.createElement('button');
+      bMenu.className = 'mini ghost';
+      bMenu.textContent = '⋯';
+      bMenu.title = 'More actions (or right-click the clip)';
+      bMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!selectedIds.has(ev.id)){ selectedIds = new Set([ev.id]); lastClickedId = ev.id; updateRowSelection(); }
+        const r = bMenu.getBoundingClientRect();
+        openCtxMenu(r.left, r.bottom);
+      });
+
+      const bEdit = document.createElement('button');
+      bEdit.className = 'mini ghost';
+      bEdit.textContent = '✎';
+      bEdit.title = 'Edit start/end on the timeline (10s before and after)';
+      bEdit.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, g.tag, true); });
+
+      row.appendChild(tEl); row.appendChild(nEl); row.appendChild(rEl); row.appendChild(sp);
+      row.appendChild(bEdit); row.appendChild(bMenu);
+      wrap.appendChild(row);
+    });
+
+    box.appendChild(wrap);
+  });
+
+  // ----- seção de PLAYLISTS (criadas por você) -----
+  const sec = document.createElement('div');
+  sec.className = 'fpsection plsection';
+  const selCount = selectedIds.size;
+  sec.innerHTML = '<span>PLAYLISTS</span>';
+  const bCreate = document.createElement('button');
+  bCreate.className = 'mini' + (selCount ? ' primary' : ' ghost');
+  bCreate.textContent = selCount ? '+ Nova (' + selCount + ' selec.)' : '+ Nova playlist';
+  bCreate.title = selCount
+    ? 'Criar uma playlist com os ' + selCount + ' clip(s) selected'
+    : 'Select clips (click / Cmd+click) and create a playlist with them';
+  bCreate.addEventListener('click', async () => {
+    const sel = selectedEventObjs();
+    if (!sel.length){ log('Select clips first (click clips; Cmd+click for multiple).'); return; }
+    const name = await askText('Nome da nova playlist');
+    if (!name || !name.trim()) return;
+    const pl = { id: 'p' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), evIds: sel.map(e => e.id) };
+    state.namedPlaylists.push(pl);
+    saveSession(); renderPlaylists();
+    log('Playlist "' + pl.name + '" created with ' + sel.length + ' clip(s).', 'ok');
+  });
+  sec.appendChild(bCreate);
+  box.appendChild(sec);
+
+  if (!state.namedPlaylists || !state.namedPlaylists.length){
+    const em = document.createElement('div');
+    em.className = 'empty';
+    em.style.cssText = 'padding:12px;font-size:12px';
+    em.textContent = 'No playlists yet. Select edited clips and click "+ New playlist".';
+    box.appendChild(em);
+  } else {
+    state.namedPlaylists.forEach(pl => {
+      const evs = pl.evIds.map(id => state.events.find(e => e.id === id)).filter(Boolean);
+      const wrap = document.createElement('div');
+      wrap.className = 'plist';
+      const head = document.createElement('div');
+      head.className = 'phead';
+      head.innerHTML = '<div class="dot" style="background:var(--blue)"></div>' +
+        '<div class="pname">' + escapeHtml(pl.name) + '</div>' +
+        '<div class="count">' + evs.length + ' clip' + (evs.length === 1 ? '' : 's') + '</div>' +
+        '<div class="spacer"></div>';
+      const bPlay = document.createElement('button');
+      bPlay.className = 'mini';
+      bPlay.textContent = '▶ Playlist';
+      bPlay.disabled = !evs.length;
+      bPlay.addEventListener('click', () => startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name));
+      const bExp = document.createElement('button');
+      bExp.className = 'mini primary';
+      bExp.textContent = '⤓';
+      bExp.title = 'Export this playlist as a single .mp4';
+      bExp.disabled = !evs.length;
+      bExp.addEventListener('click', () => exportEvents(evs.slice().sort((a,b)=>a.start-b.start), safeName(pl.name) + '.mp4', 'Playlist "' + pl.name + '"'));
+      const bDel = document.createElement('button');
+      bDel.className = 'mini ghost danger';
+      bDel.textContent = '✕';
+      bDel.title = 'Delete this playlist (clips stay under their tags)';
+      bDel.addEventListener('click', () => {
+        state.namedPlaylists = state.namedPlaylists.filter(x => x.id !== pl.id);
+        saveSession();
+        renderPlaylists();
+      });
+      head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
+      wrap.appendChild(head);
+      box.appendChild(wrap);
+    });
+  }
+}
+
+/* =====================================================================
+   MENU DE CONTEXTO DO LANCE (clique direito / botão ⋯)
+   Ações sobre o(s) lance(s) selecionado(s): excluir, mover de etiqueta,
+   adicionar a playlist, criar playlist, exportar vídeo/PNG, desenhos.
+   ===================================================================== */
+function closeCtxMenu(){ $('ctxMenu').classList.remove('on'); }
+document.addEventListener('click', (e) => { if (!e.target.closest('#ctxMenu')) closeCtxMenu(); });
+document.addEventListener('scroll', closeCtxMenu, true);
+window.addEventListener('blur', closeCtxMenu);
+
+function ctxItem(label, fn, opts){
+  opts = opts || {};
+  const d = document.createElement('div');
+  d.className = 'ctxitem' + (opts.danger ? ' danger' : '') + (opts.sub ? ' has-sub' : '');
+  d.textContent = label;
+  if (opts.sub){
+    const sub = document.createElement('div');
+    sub.className = 'ctxsub';
+    opts.sub.forEach(c => sub.appendChild(c));
+    d.appendChild(sub);
+  } else if (fn){
+    d.addEventListener('click', (e) => { e.stopPropagation(); closeCtxMenu(); fn(); });
+  }
+  return d;
+}
+
+function openCtxMenu(x, y){
+  const menu = $('ctxMenu');
+  menu.innerHTML = '';
+  const sel = selectedEventObjs();
+  if (!sel.length) return;
+  const n = sel.length;
+  const plural = n > 1 ? ' (' + n + ')' : '';
+
+  const head = document.createElement('div');
+  head.className = 'ctxhead';
+  head.textContent = n > 1 ? n + ' clips selected' : (sel[0].name || findTag(sel[0].tagId).name);
+  menu.appendChild(head);
+
+  // abrir / editar — só para 1 lance
+  if (n === 1){
+    const ev = sel[0], tag = findTag(ev.tagId);
+    menu.appendChild(ctxItem('Open in viewer', () => openClip(ev, tag)));
+    menu.appendChild(ctxItem('Edit time (timeline)', () => openClip(ev, tag, true)));
+    menu.appendChild(ctxItem('Rename / notes', () => openNameModal(ev, tag, false)));
+    menu.appendChild(ctxItem('Duplicate', () => {
+      const copy = Object.assign({}, ev, { id: state.nextEventId++, name: (ev.name || tag.name) + ' (copy)' });
+      state.events.push(copy);
+      saveSession(); updateBadge(); renderPlaylists();
+    }));
+    menu.appendChild(document.createElement('div')).className = 'ctxsep';
+  }
+
+  // mover para outra etiqueta (submenu com etiquetas do dashboard ativo + todas as já usadas)
+  const tagPool = [];
+  currentTags().forEach(t => tagPool.push(t));
+  const usedIds = [];
+  state.events.forEach(e => { if (!usedIds.includes(e.tagId)) usedIds.push(e.tagId); });
+  usedIds.forEach(id => { if (!tagPool.find(t => t.id === id)) tagPool.push(findTag(id)); });
+  const moveSubs = tagPool.map(t => {
+    const c = ctxItem(t.name, () => {
+      sel.forEach(ev => ev.tagId = t.id);
+      saveSession(); renderPlaylists();
+      log(n + ' clip(s) moved to "' + t.name + '".', 'ok');
+    });
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:3px;flex:none;order:-1;background:' + t.color;
+    c.prepend(dot);
+    return c;
+  });
+  menu.appendChild(ctxItem('Move to' + plural, null, { sub: moveSubs }));
+
+  // adicionar a playlist (submenu: playlists existentes + criar nova)
+  const plSubs = [];
+  (state.namedPlaylists || []).forEach(pl => {
+    plSubs.push(ctxItem(pl.name, () => {
+      sel.forEach(ev => { if (!pl.evIds.includes(ev.id)) pl.evIds.push(ev.id); });
+      saveSession(); renderPlaylists();
+      log(n + ' clip(s) added to playlist "' + pl.name + '".', 'ok');
+    }));
+  });
+  if (plSubs.length) plSubs.push(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
+  plSubs.push(ctxItem('Criar nova playlist…', async () => {
+    const name = await askText('Nome da nova playlist');
+    if (!name || !name.trim()) return;
+    const pl = { id: 'p' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), evIds: sel.map(e => e.id) };
+    state.namedPlaylists.push(pl);
+    saveSession(); renderPlaylists();
+    log('Playlist "' + pl.name + '" created with ' + n + ' clip(s).', 'ok');
+  }));
+  menu.appendChild(ctxItem('Add to playlist' + plural, null, { sub: plSubs }));
+
+  menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
+
+  // exportar vídeo
+  menu.appendChild(ctxItem('Exportar' + plural + '…', () => {
+    // abre a aba Exportar já com estes lances marcados, com todas as opções
+    const ids = new Set(sel.map(e => e.id));
+    state.events.forEach(e => { expSel[e.id] = ids.has(e.id); });
+    switchTab('export');
+    log('Export tab opened with ' + n + ' clip(s) selected. Adjust the options and click Export.');
+  }));
+
+  // exportar PNG do quadro (1 lance) — abre no visualizador e o usuário usa ⤓ PNG
+  if (n === 1){
+    menu.appendChild(ctxItem('Export PNG image', () => {
+      const ev = sel[0], tag = findTag(ev.tagId);
+      openClip(ev, tag);
+      setTimeout(() => log('Pause on the desired frame and use ✎ → ⤓ PNG to save the image.'), 200);
+    }));
+  }
+
+  // desenhos: ir para o desenho mais próximo do lance, se houver; senão, abrir e desenhar
+  menu.appendChild(ctxItem('Drawings', () => {
+    const ev = sel[0];
+    const tag = findTag(ev.tagId);
+    openClip(ev, tag);
+    setTimeout(() => { setDrawMode(true); log('Draw mode active on this clip. Save with 💾 to pin it to the time.'); }, 250);
+  }));
+
+  menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
+
+  // excluir
+  menu.appendChild(ctxItem('Delete' + plural, async () => {
+    if (!(await askConfirm('Delete clip(s)', 'Delete ' + n + ' clip(s)?', 'Delete'))) return;
+    const delIds = new Set(sel.map(e => e.id));
+    state.events = state.events.filter(e => !delIds.has(e.id));
+    (state.namedPlaylists || []).forEach(pl => { pl.evIds = pl.evIds.filter(id => !delIds.has(id)); });
+    if (state.clip && delIds.has(state.clip.ev.id)){ video.pause(); exitClip(); }
+    selectedIds.clear();
+    saveSession(); updateBadge(); renderPlaylists();
+    log(n + ' clip(s) deleted.');
+  }, { danger: true }));
+
+  // posiciona dentro da janela
+  menu.classList.add('on');
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  menu.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
+}
+
+/* ---------------- sequential playback ---------------- */
+let playSession = null;
+
+function startPlaylist(list, label){
+  if (!list.length) return;
+  switchTab('analise');
+  exitClip();
+  playSession = { list, idx: 0, label };
+  $('nowPlaying').classList.add('on');
+  jumpToCurrent();
+}
+function jumpToCurrent(){
+  const ev = playSession.list[playSession.idx];
+  $('nowPlayingLabel').textContent = playSession.label + ' — ' + (playSession.idx + 1) + '/' + playSession.list.length +
+    ' (' + fmt(ev.start) + '→' + fmt(ev.end) + ')';
+  document.querySelectorAll('.erow.current').forEach(r => r.classList.remove('current'));
+  const row = document.querySelector('.erow[data-evid="' + ev.id + '"]');
+  if (row) row.classList.add('current');
+  video.currentTime = ev.start;
+  video.play();
+}
+function tickPlaylist(){
+  if (!playSession) return;
+  const ev = playSession.list[playSession.idx];
+  if (video.currentTime >= ev.end - 0.05){
+    playSession.idx++;
+    if (playSession.idx >= playSession.list.length) stopPlaylist();
+    else jumpToCurrent();
+  }
+}
+function stopPlaylist(){
+  playSession = null;
+  video.pause();
+  $('nowPlaying').classList.remove('on');
+  document.querySelectorAll('.erow.current').forEach(r => r.classList.remove('current'));
+}
+$('stopPlaylist').addEventListener('click', stopPlaylist);
+
+/* =====================================================================
+   ABAS · PAINÉIS FLUTUANTES · DESENHO PRO · FREEZE
+   ===================================================================== */
+
+/* ---------------- abas ---------------- */
+let currentTab = 'analise';
+let tagsVisible = true;
+let plVisible = false;  // painel flutuante de lances (só quando o layout é solto)
+
+function switchTab(name){
+  currentTab = name;
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  syncPanels();
+  if (name === 'library') renderLibrary();
+  if (name === 'dash') renderDashTab();
+  if (name === 'export') renderExportTab();
+}
+document.querySelectorAll('.tabbtn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+let dockedLayout = true;
+
+function applyDock(){
+  // LANCES + PLAYLISTS ficam fixos na coluna esquerda; ETIQUETAS sempre flutua.
+  document.body.classList.toggle('docked', dockedLayout);
+  const left = $('lmLeftSlot');
+  const plBody = $('plPanelBody');
+  if (dockedLayout){
+    if (plBody.parentElement !== left) left.appendChild(plBody);
+  } else {
+    if (plBody.parentElement !== $('plPanel')) $('plPanel').insertBefore(plBody, $('plGrip'));
+  }
+}
+
+function syncPanels(){
+  applyDock();
+  // ETIQUETAS é sempre flutuante (independe do layout)
+  $('tagPanel').classList.toggle('on', tagsVisible && currentTab === 'analise');
+  if (dockedLayout){
+    // no ancorado os lances vivem na coluna; o painel flutuante de playlists fica oculto
+    $('plPanel').classList.remove('on');
+  } else {
+    $('plPanel').classList.toggle('on', plVisible && currentTab === 'analise');
+  }
+}
+
+$('toggleLayout').addEventListener('click', () => {
+  dockedLayout = !dockedLayout;
+  if (dockedLayout && currentTab !== 'analise') switchTab('analise');
+  applyDock();
+  syncPanels();
+  log('Layout: ' + (dockedLayout ? 'clips docked on the left' : 'clips in a floating panel') + '.');
+});
+$('togglePanel').addEventListener('click', () => {
+  tagsVisible = !tagsVisible;
+  if (tagsVisible && currentTab !== 'analise') switchTab('analise');
+  syncPanels();
+});
+$('togglePl').addEventListener('click', () => {
+  if (dockedLayout){ log('Clips stay docked on the left. Use ▦ Layout to detach them into a floating panel.'); return; }
+  plVisible = !plVisible;
+  if (plVisible && currentTab !== 'analise') switchTab('analise');
+  syncPanels();
+});
+$('panelMin').addEventListener('click', () => {
+  const min = $('tagPanel').classList.toggle('min');
+  $('panelMin').textContent = min ? '+' : '—';
+});
+$('plMin').addEventListener('click', () => {
+  const min = $('plPanel').classList.toggle('min');
+  $('plMin').textContent = min ? '+' : '—';
+});
+
+/* ---------------- arrasto + redimensionamento dos painéis ---------------- */
+function makeFloating(panelId, headId, gripId, bodyId){
+  const panel = $(panelId), head = $(headId), grip = $(gripId), body = $(bodyId);
+  let drag = null, rs = null;
+  head.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    const r = panel.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    try { head.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
+  });
+  head.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const x = Math.max(4, Math.min(window.innerWidth - 80, e.clientX - drag.dx));
+    const y = Math.max(4, Math.min(window.innerHeight - 44, e.clientY - drag.dy));
+    panel.style.left = x + 'px';
+    panel.style.top = y + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';   // evita esticar entre top e bottom (gerava espaço vazio)
+  });
+  head.addEventListener('pointerup', () => { drag = null; });
+
+  grip.addEventListener('pointerdown', (e) => {
+    const r = panel.getBoundingClientRect();
+    // fixa a posição por top/left e remove bottom para a largura não esticar a altura
+    panel.style.top = r.top + 'px';
+    panel.style.left = r.left + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    rs = { x: e.clientX, y: e.clientY, w: r.width };
+    try { grip.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!rs) return;
+    // só largura — a altura do painel acompanha o conteúdo (sem espaço vazio)
+    panel.style.width = Math.max(260, Math.min(window.innerWidth * 0.92, rs.w + e.clientX - rs.x)) + 'px';
+  });
+  grip.addEventListener('pointerup', () => { rs = null; });
+}
+makeFloating('tagPanel', 'tagPanelHandle', 'tagGrip', 'tagPanelBody');
+makeFloating('plPanel', 'plPanelHandle', 'plGrip', 'plPanelBody');
+
+/* =====================================================================
+   DESENHO PRO — caneta, formas, spotlight, medição, linking, ângulo, lupa
+   Coordenadas normalizadas (0..1) em relação ao palco: os desenhos
+   sobrevivem a redimensionamentos e são salvos por jogo na biblioteca.
+   ===================================================================== */
+const drawCanvas = $('drawCanvas');
+const dctx = drawCanvas.getContext('2d');
+const CLICK_TOOLS = ['link', 'angle', 'poly'];
+let drawMode = false, drawTool = 'pen', drawColor = '#FFD400', drawOpacity = 1, drawWidth = 1;
+let lensMag = 2.2;
+let textSize = 0.045, textHasBg = true, textBgOpacity = 0.45, textInkOpacity = 1;
+let drawFill = 'hatch', drawFillOpacity = 0.5;  // preenchimento do polígono: 'none' | 'solid' | 'hatch'
+let selectedShape = null;  // desenho selecionado para editar propriedades
+let shapes = [], curShape = null, pending = null;
+let editingDrawingId = null, editingDrawingIds = [];
+let prevT = 0, activeFreeze = null, freezeTimer = null, _freezeSeeking = false;
+
+function hexToRgba(hex, a){
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function normDist(a, b, hOverW){
+  const dx = b.x - a.x;
+  const dy = (b.y - a.y) * hOverW;
+  return Math.hypot(dx, dy);
+}
+function labelBox(ctx, x, y, txt){
+  ctx.save();
+  ctx.font = '600 13px "JetBrains Mono", monospace';
+  const w = ctx.measureText(txt).width + 14;
+  ctx.fillStyle = 'rgba(10,10,10,.82)';
+  ctx.fillRect(x - w / 2, y - 12, w, 24);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(txt, x, y);
+  ctx.restore();
+}
+
+function resizeDrawCanvas(){
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const dpr = window.devicePixelRatio || 1;
+  drawCanvas.width = Math.round(r.width * dpr);
+  drawCanvas.height = Math.round(r.height * dpr);
+  dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  redrawShapes();
+}
+window.addEventListener('resize', resizeDrawCanvas);
+document.addEventListener('fullscreenchange', () => setTimeout(resizeDrawCanvas, 60));
+
+function drawShape(ctx, s, W, H){
+  ctx.save();
+  ctx.globalAlpha = (typeof s.opacity === 'number') ? s.opacity : 1;
+  try { _drawShapeImpl(ctx, s, W, H); } finally { ctx.restore(); }
+}
+// espessura de traço proporcional ao tamanho de saída (elegante em qualquer resolução)
+function strokeW(W, s){
+  const base = Math.max(2.5, Math.round(W / 480));
+  const mult = (s && typeof s.width === 'number') ? s.width : 1;
+  return base * mult;
+}
+function softShadow(ctx, blur){
+  ctx.shadowColor = 'rgba(10,10,10,.35)';
+  ctx.shadowBlur = blur || 6;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1;
+}
+function noShadow(ctx){ ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; }
+function smoothPath(ctx, pts){
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 2){ ctx.lineTo(pts[1].x, pts[1].y); return; }
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+    ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+  }
+}
+function roundRect(ctx, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function _drawShapeImpl(ctx, s, W, H){
+  if (s.tool === 'text'){
+    const p = s.points[0];
+    if (!p) return;
+    const x = p.x * W, y = p.y * H;
+    const fs = (s.size || 0.045) * H;
+    ctx.font = '600 ' + Math.round(fs) + 'px "Space Grotesk", sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    const lines = (s.text || '').split('\n');
+    const pad = fs * 0.35, lh = fs * 1.25;
+    let maxW = 0;
+    lines.forEach(l => { maxW = Math.max(maxW, ctx.measureText(l).width); });
+    const hasBg = (s.hasBg !== false);
+    const bgOp = (typeof s.bgOpacity === 'number') ? s.bgOpacity : 0.45;
+    const inkOp = (typeof s.inkOpacity === 'number') ? s.inkOpacity : 1;
+    if (hasBg){
+      ctx.fillStyle = 'rgba(10,10,10,' + bgOp + ')';
+      roundRect(ctx, x - pad, y - pad, maxW + pad * 2, lh * lines.length + pad * 1.2, fs * 0.18);
+      ctx.fill();
+      ctx.fillStyle = s.color;
+      roundRect(ctx, x - pad, y - pad, fs * 0.12, lh * lines.length + pad * 1.2, fs * 0.06);
+      ctx.fill();
+    }
+    ctx.globalAlpha = (ctx.globalAlpha) * inkOp;
+    ctx.fillStyle = hasBg ? '#fff' : s.color;
+    softShadow(ctx, hasBg ? 4 : 6);
+    lines.forEach((l, i) => ctx.fillText(l, x + (hasBg ? fs * 0.25 : 0), y + i * lh));
+    noShadow(ctx);
+    return;
+  }
+
+  const pts = s.points.map(p => ({ x: p.x * W, y: p.y * H }));
+  if (!pts.length) return;
+  const lw = strokeW(W, s);
+  ctx.strokeStyle = s.color;
+  ctx.fillStyle = s.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  softShadow(ctx, lw * 2);
+
+  if (s.tool === 'pen'){
+    smoothPath(ctx, pts);
+    ctx.stroke();
+    return;
+  }
+
+  if (s.tool === 'poly'){
+    if (pts.length < 2) return;
+    // caminho do polígono
+    const path = new Path2D();
+    path.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) path.lineTo(pts[i].x, pts[i].y);
+    if (s.closed) path.closePath();
+    // preenchimento
+    const fillMode = s.fillMode || 'hatch';
+    const fop = (typeof s.fillOpacity === 'number') ? s.fillOpacity : 0.5;
+    if (s.closed && fillMode !== 'none'){
+      noShadow(ctx);
+      if (fillMode === 'solid'){
+        ctx.fillStyle = hexToRgba(s.color, fop);
+        ctx.fill(path);
+      } else if (fillMode === 'hatch'){
+        // hachura: poucas linhas diagonais dentro da área
+        ctx.save();
+        ctx.clip(path);
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        pts.forEach(p => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); });
+        const gap = Math.max(14, (maxX - minX) / 9);   // espaçamento — poucas linhas
+        ctx.strokeStyle = hexToRgba(s.color, Math.min(1, fop + 0.2));
+        ctx.lineWidth = lw * 0.6;
+        ctx.beginPath();
+        for (let x = minX - (maxY - minY); x < maxX; x += gap){
+          ctx.moveTo(x, minY);
+          ctx.lineTo(x + (maxY - minY), maxY);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // contorno
+    softShadow(ctx, lw * 2);
+    ctx.lineWidth = lw;
+    ctx.stroke(path);
+    return;
+  }
+
+  if (s.tool === 'link'){
+    if (pts.length > 1){
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+    pts.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, lw * 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(s.color, .92);
+      softShadow(ctx, lw * 2);
+      ctx.fill();
+      noShadow(ctx);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, lw * 3.2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,.95)';
+      ctx.lineWidth = lw * 0.8;
+      ctx.stroke();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = lw;
+      softShadow(ctx, lw * 2);
+    });
+    return;
+  }
+
+  if (s.tool === 'angle'){
+    if (pts.length < 2) return;
+    const A = pts[0], B = pts[1], C = pts[2];
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y);
+    if (C) ctx.lineTo(C.x, C.y);
+    ctx.stroke();
+    if (C){
+      const a1 = Math.atan2(A.y - B.y, A.x - B.x);
+      const a2 = Math.atan2(C.y - B.y, C.x - B.x);
+      let diff = a2 - a1;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      noShadow(ctx);
+      ctx.beginPath();
+      ctx.moveTo(B.x, B.y);
+      ctx.arc(B.x, B.y, lw * 9, a1, a1 + diff, diff < 0);
+      ctx.closePath();
+      ctx.fillStyle = hexToRgba(s.color, .18);
+      ctx.fill();
+      softShadow(ctx, lw * 2);
+      ctx.beginPath();
+      ctx.arc(B.x, B.y, lw * 9, a1, a1 + diff, diff < 0);
+      ctx.stroke();
+      const deg = Math.abs(diff) * 180 / Math.PI;
+      const bis = a1 + diff / 2;
+      labelBox(ctx, B.x + Math.cos(bis) * lw * 17, B.y + Math.sin(bis) * lw * 17, Math.round(deg) + '\u00b0');
+    }
+    return;
+  }
+
+  if (s.tool === 'measure' || s.tool === 'calib'){
+    if (pts.length < 2) return;
+    const a = pts[0], b = pts[pts.length - 1];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    const tdx = Math.cos(ang + Math.PI / 2) * lw * 2.6, tdy = Math.sin(ang + Math.PI / 2) * lw * 2.6;
+    ctx.beginPath();
+    ctx.moveTo(a.x - tdx, a.y - tdy); ctx.lineTo(a.x + tdx, a.y + tdy);
+    ctx.moveTo(b.x - tdx, b.y - tdy); ctx.lineTo(b.x + tdx, b.y + tdy);
+    ctx.stroke();
+    if (s.tool === 'measure'){
+      const dn = normDist(s.points[0], s.points[s.points.length - 1], H / W);
+      const txt = state.measureScale ? (dn * state.measureScale).toFixed(1).replace('.', ',') + ' m' : 'sem calibra\u00e7\u00e3o';
+      labelBox(ctx, (a.x + b.x) / 2, (a.y + b.y) / 2 - lw * 6, txt);
+    }
+    return;
+  }
+
+  if (s.tool === 'spot'){
+    if (pts.length < 2) return;
+    const a = pts[0], b = pts[pts.length - 1];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const rx = Math.max(16, len * 0.22), ry = Math.max(7, rx * 0.38);
+    noShadow(ctx);
+    const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+    grad.addColorStop(0, hexToRgba(s.color, .05));
+    grad.addColorStop(1, hexToRgba(s.color, .32));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x - rx, b.y);
+    ctx.lineTo(b.x + rx, b.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = hexToRgba(s.color, .42);
+    ctx.fill();
+    softShadow(ctx, lw * 2);
+    ctx.lineWidth = lw * 0.9;
+    ctx.stroke();
+    return;
+  }
+
+  if (s.tool === 'lens'){
+    if (pts.length < 2) return;
+    const c = pts[0], e = pts[pts.length - 1];
+    const r = Math.max(24, Math.hypot(e.x - c.x, e.y - c.y));
+    const M = s.mag || 2.2;   // ampliação ajustável
+    noShadow(ctx);
+    if (video.videoWidth){
+      const vw = video.videoWidth, vh = video.videoHeight;
+      // o vídeo é desenhado em (W,H) com letterbox; mapeia o centro da lupa (em px do canvas) para px do vídeo-fonte
+      const sc = Math.min(W / vw, H / vh);
+      const dispW = vw * sc, dispH = vh * sc;
+      const ox = (W - dispW) / 2, oy = (H - dispH) / 2;
+      const vx = (c.x - ox) / sc;   // ponto exato sob o centro da lupa, em coordenadas do vídeo
+      const vy = (c.y - oy) / sc;
+      const srcR = r / (sc * M);    // raio amostrado na fonte (quanto menor, mais zoom)
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+      ctx.clip();
+      try { ctx.drawImage(video, vx - srcR, vy - srcR, srcR * 2, srcR * 2, c.x - r, c.y - r, r * 2, r * 2); }
+      catch (err) { /* quadro indisponível */ }
+      ctx.restore();
+    }
+    softShadow(ctx, lw * 3);
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    ctx.lineWidth = lw * 0.5;
+    ctx.strokeStyle = s.color;
+    ctx.stroke();
+    // rótulo da ampliação
+    ctx.fillStyle = '#fff';
+    softShadow(ctx, 3);
+    ctx.font = '600 ' + Math.round(r * 0.28) + 'px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(M.toFixed(1).replace('.', ',') + '×', c.x, c.y - r - r * 0.22);
+    ctx.textAlign = 'left';
+    noShadow(ctx);
+    return;
+  }
+
+  /* linha, seta, ret\u00e2ngulo, elipse */
+  if (pts.length < 2) return;
+  const a = pts[0], b = pts[pts.length - 1];
+  if (s.tool === 'line' || s.tool === 'arrow'){
+    if (s.tool === 'arrow'){
+      const ang0 = Math.atan2(b.y - a.y, b.x - a.x);
+      const head = lw * 5.5;
+      const bx = b.x - Math.cos(ang0) * head * 0.6, by = b.y - Math.sin(ang0) * head * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x - head * Math.cos(ang0 - 0.4), b.y - head * Math.sin(ang0 - 0.4));
+      ctx.lineTo(b.x - head * 0.7 * Math.cos(ang0), b.y - head * 0.7 * Math.sin(ang0));
+      ctx.lineTo(b.x - head * Math.cos(ang0 + 0.4), b.y - head * Math.sin(ang0 + 0.4));
+      ctx.closePath();
+      ctx.fillStyle = s.color;
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  } else if (s.tool === 'rect'){
+    roundRect(ctx, Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y), lw * 1.5);
+    ctx.stroke();
+  } else if (s.tool === 'ellipse'){
+    ctx.beginPath();
+    ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function drawSelectionHighlight(ctx, s, W, H){
+  ctx.save();
+  const pts = s.points.map(p => ({ x: p.x * W, y: p.y * H }));
+  if (!pts.length){ ctx.restore(); return; }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  pts.forEach(p => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); });
+  const pad = 12;
+  ctx.strokeStyle = 'rgba(30,79,255,.9)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(minX - pad, minY - pad, (maxX - minX) + pad * 2, (maxY - minY) + pad * 2);
+  ctx.setLineDash([]);
+  if (['link', 'angle', 'pen', 'poly'].includes(s.tool)){
+    pts.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(30,79,255,.9)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  }
+  ctx.restore();
+}
+
+function redrawShapes(){
+  const r = stage.getBoundingClientRect();
+  dctx.save();
+  dctx.setTransform(1, 0, 0, 1, 0, 0);
+  dctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  dctx.restore();
+  if (!r.width || !r.height) return;
+  const list = activeFreeze ? activeFreeze.shapes : shapes;
+  list.forEach(s => drawShape(dctx, s, r.width, r.height));
+  if (!activeFreeze && selectedShape && shapes.includes(selectedShape)){
+    drawSelectionHighlight(dctx, selectedShape, r.width, r.height);
+  }
+  if (!activeFreeze){
+    if (curShape) drawShape(dctx, curShape, r.width, r.height);
+    if (pending){
+      const pts = pending.preview ? pending.points.concat([pending.preview]) : pending.points;
+      if (pts.length) drawShape(dctx, { tool: pending.tool, color: pending.color, opacity: pending.opacity, width: pending.width, points: pts, fillMode: 'none' }, r.width, r.height);
+    }
+  }
+}
+
+function setTool(t){
+  drawTool = t;
+  document.querySelectorAll('#drawbar .dtool').forEach(x => x.classList.toggle('active', x.dataset.tool === t));
+  if (t !== 'move' && selectedShape){ selectedShape = null; redrawShapes(); }
+  // barra de propriedades contextual
+  const showLens = t === 'lens', showText = t === 'text', showPoly = t === 'poly';
+  $('drawProps').style.display = (showLens || showText || showPoly) ? 'block' : 'none';
+  $('lensProps').style.display = showLens ? 'flex' : 'none';
+  $('textProps').style.display = showText ? 'flex' : 'none';
+  $('polyProps').style.display = showPoly ? 'flex' : 'none';
+}
+function finishPending(commit){
+  if (!pending) return;
+  const pts = pending.points;
+  while (pts.length > 1){
+    const a = pts[pts.length - 2], b = pts[pts.length - 1];
+    if (Math.hypot(b.x - a.x, b.y - a.y) < 0.012) pts.pop(); else break;
+  }
+  if (commit && pts.length >= 2) shapes.push({ tool: pending.tool, color: pending.color, opacity: pending.opacity, width: pending.width, points: pts });
+  pending = null;
+  redrawShapes();
+}
+function setDrawMode(on){
+  if (!on){
+    finishPending(true);
+    // saiu sem salvar: descarta traços não confirmados e a edição em curso
+    if (editingDrawingId != null){ editingDrawingId = null; editingDrawingIds = []; shapes = []; redrawShapes(); }
+    selectedShape = null;
+  }
+  drawMode = on;
+  stage.classList.toggle('drawing', on);
+  $('drawbar').classList.toggle('on', on);
+  $('drawBtn').style.background = on ? 'var(--blue)' : '';
+  if (on){
+    cancelFreeze();
+    if (state.file) video.pause();
+    resizeDrawCanvas();
+  }
+}
+$('drawBtn').addEventListener('click', () => setDrawMode(!drawMode));
+$('drawExit').addEventListener('click', () => setDrawMode(false));
+$('drawUndo').addEventListener('click', () => { finishPending(false); shapes.pop(); redrawShapes(); });
+$('drawClear').addEventListener('click', () => { shapes = []; curShape = null; pending = null; redrawShapes(); });
+$('drawCalib').addEventListener('click', () => {
+  finishPending(true);
+  drawTool = 'calib';
+  document.querySelectorAll('#drawbar .dtool').forEach(x => x.classList.remove('active'));
+  log('Calibration: draw a line over a known distance in the image (e.g. the goal width) and enter the meters.');
+});
+
+document.querySelectorAll('#drawbar .dtool').forEach(b => {
+  b.addEventListener('click', () => {
+    finishPending(true);
+    setTool(b.dataset.tool);
+  });
+});
+document.querySelectorAll('#drawbar .dcolor').forEach(b => {
+  b.addEventListener('click', () => {
+    drawColor = b.dataset.color;
+    document.querySelectorAll('#drawbar .dcolor').forEach(x => x.classList.toggle('active', x === b));
+    if (selectedShape){ selectedShape.color = drawColor; redrawShapes(); }
+  });
+});
+$('drawColorPick').addEventListener('input', () => {
+  drawColor = $('drawColorPick').value;
+  document.querySelectorAll('#drawbar .dcolor').forEach(x => x.classList.remove('active'));
+  if (selectedShape){ selectedShape.color = drawColor; redrawShapes(); }
+});
+// alvo das propriedades: o desenho selecionado, senão o último desenhado
+function propTarget(){ return selectedShape || (shapes.length ? shapes[shapes.length - 1] : null); }
+function propTargetOfTool(tool){
+  if (selectedShape && selectedShape.tool === tool) return selectedShape;
+  return [...shapes].reverse().find(s => s.tool === tool) || null;
+}
+$('drawOpacity').addEventListener('input', () => {
+  drawOpacity = parseInt($('drawOpacity').value, 10) / 100;
+  $('drawOpacityVal').textContent = $('drawOpacity').value + '%';
+  const t = propTarget(); if (t){ t.opacity = drawOpacity; redrawShapes(); }
+});
+$('drawWidth').addEventListener('input', () => {
+  drawWidth = parseFloat($('drawWidth').value);
+  $('drawWidthVal').textContent = drawWidth.toFixed(1).replace('.', ',') + '×';
+  const t = propTarget(); if (t){ t.width = drawWidth; redrawShapes(); }
+});
+// ---- propriedades da lupa ----
+$('lensMag').addEventListener('input', () => {
+  lensMag = parseFloat($('lensMag').value);
+  $('lensMagVal').textContent = lensMag.toFixed(1).replace('.', ',') + '×';
+  const t = propTargetOfTool('lens'); if (t){ t.mag = lensMag; redrawShapes(); }
+});
+// ---- propriedades do texto ----
+$('textSize').addEventListener('input', () => {
+  textSize = parseFloat($('textSize').value) / 100;
+  $('textSizeVal').textContent = $('textSize').value;
+  const t = propTargetOfTool('text'); if (t){ t.size = textSize; redrawShapes(); }
+});
+$('textBg').addEventListener('change', () => {
+  textHasBg = $('textBg').checked;
+  const t = propTargetOfTool('text'); if (t){ t.hasBg = textHasBg; redrawShapes(); }
+});
+$('textBgOpacity').addEventListener('input', () => {
+  textBgOpacity = parseInt($('textBgOpacity').value, 10) / 100;
+  $('textBgOpacityVal').textContent = $('textBgOpacity').value + '%';
+  const t = propTargetOfTool('text'); if (t){ t.bgOpacity = textBgOpacity; redrawShapes(); }
+});
+$('textInkOpacity').addEventListener('input', () => {
+  textInkOpacity = parseInt($('textInkOpacity').value, 10) / 100;
+  $('textInkOpacityVal').textContent = $('textInkOpacity').value + '%';
+  const t = propTargetOfTool('text'); if (t){ t.inkOpacity = textInkOpacity; redrawShapes(); }
+});
+// ---- preenchimento do polígono ----
+$('polyFill').addEventListener('change', () => {
+  drawFill = $('polyFill').value;
+  const t = propTargetOfTool('poly'); if (t){ t.fillMode = drawFill; redrawShapes(); }
+});
+$('polyFillOpacity').addEventListener('input', () => {
+  drawFillOpacity = parseInt($('polyFillOpacity').value, 10) / 100;
+  $('polyFillOpacityVal').textContent = $('polyFillOpacity').value + '%';
+  const t = propTargetOfTool('poly'); if (t){ t.fillOpacity = drawFillOpacity; redrawShapes(); }
+});
+
+function normPt(e){
+  // o canvas é transformado por zoom/pan via CSS; invertemos para obter a coordenada
+  // normalizada no espaço base (sem zoom), que é como os traços são armazenados.
+  const r = stage.getBoundingClientRect();
+  const sx = e.clientX - r.left;
+  const sy = e.clientY - r.top;
+  // desfaz translate(pan) scale(zoom) com origem no centro
+  const cxp = r.width / 2, cyp = r.height / 2;
+  const ux = (sx - state.panX - cxp) / state.zoom + cxp;
+  const uy = (sy - state.panY - cyp) / state.zoom + cyp;
+  return { x: ux / r.width, y: uy / r.height };
+}
+async function placeText(np){
+  const txt = await askText('Texto a exibir no v\u00eddeo', '');
+  if (txt === null || !txt.trim()) return;
+  shapes.push({
+    tool: 'text', color: drawColor, opacity: drawOpacity, text: txt.trim(),
+    size: textSize, hasBg: textHasBg, bgOpacity: textBgOpacity, inkOpacity: textInkOpacity,
+    points: [np],
+  });
+  redrawShapes();
+}
+
+let movingShape = null, moveStart = null, movingVertex = null;
+
+// encontra o vértice (ponto) de um shape multi-ponto próximo ao clique
+function pickVertex(np, r){
+  const P = { x: np.x * r.width, y: np.y * r.height };
+  const multi = ['link', 'angle', 'pen', 'poly'];
+  for (let i = shapes.length - 1; i >= 0; i--){
+    const s = shapes[i];
+    if (!multi.includes(s.tool)) continue;
+    for (let j = 0; j < s.points.length; j++){
+      const px = s.points[j].x * r.width, py = s.points[j].y * r.height;
+      if (Math.hypot(P.x - px, P.y - py) < 14){
+        // para link fechado, mover o 1º ponto move também o último (que é cópia)
+        return { shape: s, index: j };
+      }
+    }
+  }
+  return null;
+}
+
+// distância de um ponto normalizado ao shape (em px de tela), para selecionar ao mover
+function shapeHitDist(s, np, W, H){
+  const P = { x: np.x * W, y: np.y * H };
+  if (s.tool === 'text'){
+    const p = s.points[0];
+    const x = p.x * W, y = p.y * H, fs = (s.size || 0.045) * H;
+    // caixa aproximada do texto
+    const lines = (s.text || '').split('\n');
+    const w = Math.max(60, (s.text || '').length * fs * 0.32);
+    const h = fs * 1.25 * lines.length;
+    if (P.x >= x - fs * 0.4 && P.x <= x + w && P.y >= y - fs * 0.4 && P.y <= y + h) return 0;
+    return 9999;
+  }
+  const pts = s.points.map(p => ({ x: p.x * W, y: p.y * H }));
+  if (!pts.length) return 9999;
+  // distância mínima aos segmentos / pontos
+  let best = 9999;
+  for (let i = 0; i < pts.length; i++){
+    best = Math.min(best, Math.hypot(P.x - pts[i].x, P.y - pts[i].y));
+    if (i > 0){
+      best = Math.min(best, distToSeg(P, pts[i - 1], pts[i]));
+    }
+  }
+  // formas fechadas: também o segmento de volta
+  if ((s.tool === 'rect' || s.tool === 'ellipse') && pts.length >= 2){
+    const a = pts[0], b = pts[1];
+    const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    best = Math.min(best, Math.hypot(P.x - cx, P.y - cy));
+  }
+  // polígono fechado: clicar dentro da área seleciona
+  if (s.tool === 'poly' && s.closed && pts.length >= 3){
+    best = Math.min(best, distToSeg(P, pts[pts.length - 1], pts[0])); // segmento de fechamento
+    if (pointInPoly(P, pts)) best = 0;
+  }
+  return best;
+}
+function pointInPoly(P, pts){
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++){
+    const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+    const intersect = ((yi > P.y) !== (yj > P.y)) && (P.x < (xj - xi) * (P.y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function distToSeg(p, a, b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+function selectShape(s){
+  selectedShape = s || null;
+  if (!s){ redrawShapes(); return; }
+  const op = (typeof s.opacity === 'number') ? s.opacity : 1;
+  $('drawOpacity').value = Math.round(op * 100);
+  $('drawOpacityVal').textContent = Math.round(op * 100) + '%';
+  const w = (typeof s.width === 'number') ? s.width : 1;
+  $('drawWidth').value = w;
+  $('drawWidthVal').textContent = w.toFixed(1).replace('.', ',') + '×';
+  document.querySelectorAll('#drawbar .dcolor').forEach(x => x.classList.toggle('active', x.dataset.color === s.color));
+  if (s.color){ drawColor = s.color; if (/^#[0-9a-fA-F]{6}$/.test(s.color)) $('drawColorPick').value = s.color; }
+  const showLens = s.tool === 'lens', showText = s.tool === 'text', showPoly = s.tool === 'poly';
+  $('drawProps').style.display = (showLens || showText || showPoly) ? 'block' : 'none';
+  $('lensProps').style.display = showLens ? 'flex' : 'none';
+  $('textProps').style.display = showText ? 'flex' : 'none';
+  $('polyProps').style.display = showPoly ? 'flex' : 'none';
+  if (showPoly){
+    const fm = s.fillMode || 'hatch';
+    $('polyFill').value = fm;
+    const fo = (typeof s.fillOpacity === 'number') ? s.fillOpacity : 0.5;
+    $('polyFillOpacity').value = Math.round(fo * 100); $('polyFillOpacityVal').textContent = Math.round(fo * 100) + '%';
+  }
+  if (showLens){
+    const m = s.mag || 2.2;
+    $('lensMag').value = m; $('lensMagVal').textContent = m.toFixed(1).replace('.', ',') + '×';
+  }
+  if (showText){
+    $('textSize').value = (s.size || 0.045) * 100;
+    $('textSizeVal').textContent = ((s.size || 0.045) * 100).toString();
+    $('textBg').checked = (s.hasBg !== false);
+    const bo = (typeof s.bgOpacity === 'number') ? s.bgOpacity : 0.45;
+    $('textBgOpacity').value = Math.round(bo * 100); $('textBgOpacityVal').textContent = Math.round(bo * 100) + '%';
+    const io = (typeof s.inkOpacity === 'number') ? s.inkOpacity : 1;
+    $('textInkOpacity').value = Math.round(io * 100); $('textInkOpacityVal').textContent = Math.round(io * 100) + '%';
+  }
+  redrawShapes();
+}
+
+function pickShape(np){
+  const r = stage.getBoundingClientRect();
+  let best = null, bestD = 18; // tolerância em px
+  for (let i = shapes.length - 1; i >= 0; i--){
+    const d = shapeHitDist(shapes[i], np, r.width, r.height);
+    if (d < bestD){ bestD = d; best = shapes[i]; break; }
+  }
+  return best;
+}
+function pickShapeOfTool(np, tool){
+  const r = stage.getBoundingClientRect();
+  for (let i = shapes.length - 1; i >= 0; i--){
+    if (shapes[i].tool !== tool) continue;
+    if (shapeHitDist(shapes[i], np, r.width, r.height) < 24) return shapes[i];
+  }
+  return null;
+}
+
+drawCanvas.addEventListener('pointerdown', (e) => {
+  if (!drawMode) return;
+  e.stopPropagation();
+  const np = normPt(e);
+  if (drawTool === 'erase'){
+    const s = pickShape(np);
+    if (s){
+      shapes = shapes.filter(x => x !== s);
+      if (selectedShape === s) selectShape(null);
+      redrawShapes();
+    }
+    return;
+  }
+  if (drawTool === 'move'){
+    const r = stage.getBoundingClientRect();
+    // primeiro tenta pegar um VÉRTICE específico (para editar cada ponto do linking, ângulo, etc.)
+    const hit = pickVertex(np, r);
+    if (hit){
+      selectShape(hit.shape);
+      movingShape = hit.shape;
+      movingVertex = hit.index;
+      moveStart = { np, pts: hit.shape.points.map(p => ({ x: p.x, y: p.y })) };
+      try { drawCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+      drawCanvas.style.cursor = 'grabbing';
+      return;
+    }
+    const s = pickShape(np);
+    selectShape(s);
+    if (s){
+      movingShape = s;
+      movingVertex = null;
+      moveStart = { np, pts: s.points.map(p => ({ x: p.x, y: p.y })) };
+      try { drawCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+      drawCanvas.style.cursor = 'grabbing';
+    }
+    return;
+  }
+  if (drawTool === 'text'){
+    placeText(np);
+    return;
+  }
+  if (CLICK_TOOLS.includes(drawTool)){
+    if (!pending || pending.tool !== drawTool){
+      finishPending(true);
+      pending = { tool: drawTool, color: drawColor, opacity: drawOpacity, width: drawWidth, points: [], preview: null };
+    }
+    // linking ou polígono: clicar perto do 1º ponto fecha a figura nele
+    if ((pending.tool === 'link' || pending.tool === 'poly') && pending.points.length >= 2){
+      const p0 = pending.points[0];
+      const r2 = stage.getBoundingClientRect();
+      const dx = (np.x - p0.x) * r2.width, dy = (np.y - p0.y) * r2.height;
+      if (Math.hypot(dx, dy) < 16){
+        if (pending.tool === 'poly'){
+          if (pending.points.length < 3){ return; } // precisa de ao menos 3 vértices
+          shapes.push({ tool: 'poly', color: pending.color, opacity: pending.opacity, width: pending.width,
+            points: pending.points.slice(), closed: true,
+            fillMode: drawFill, fillOpacity: drawFillOpacity });
+          pending = null;
+          redrawShapes();
+          return;
+        }
+        pending.points.push({ x: p0.x, y: p0.y });   // link: fecha no 1º ponto
+        pending.closed = true;
+        shapes.push({ tool: 'link', color: pending.color, opacity: pending.opacity, width: pending.width, points: pending.points, closed: true });
+        pending = null;
+        redrawShapes();
+        return;
+      }
+    }
+    pending.points.push(np);
+    if (pending.tool === 'angle' && pending.points.length === 3){
+      shapes.push({ tool: 'angle', color: pending.color, opacity: pending.opacity, width: pending.width, points: pending.points });
+      pending = null;
+    }
+    redrawShapes();
+    return;
+  }
+  curShape = { tool: drawTool, color: drawColor, opacity: drawOpacity, width: drawWidth, points: [np] };
+  if (drawTool === 'lens') curShape.mag = lensMag;
+  try { drawCanvas.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
+});
+drawCanvas.addEventListener('pointermove', (e) => {
+  if (!drawMode) return;
+  const np = normPt(e);
+  if (movingShape){
+    const ddx = np.x - moveStart.np.x, ddy = np.y - moveStart.np.y;
+    if (movingVertex != null){
+      // move só o vértice selecionado
+      movingShape.points[movingVertex] = { x: moveStart.pts[movingVertex].x + ddx, y: moveStart.pts[movingVertex].y + ddy };
+      // link fechado: o 1º e o último ponto coincidem; mantém o fecho
+      if (movingShape.tool === 'link' && movingShape.closed){
+        const last = movingShape.points.length - 1;
+        if (movingVertex === 0) movingShape.points[last] = { x: movingShape.points[0].x, y: movingShape.points[0].y };
+        if (movingVertex === last) movingShape.points[0] = { x: movingShape.points[last].x, y: movingShape.points[last].y };
+      }
+    } else {
+      movingShape.points = moveStart.pts.map(p => ({ x: p.x + ddx, y: p.y + ddy }));
+    }
+    redrawShapes();
+    return;
+  }
+  if (drawTool === 'move'){
+    // feedback de cursor ao passar sobre um desenho ou vértice
+    const r = stage.getBoundingClientRect();
+    drawCanvas.style.cursor = (pickVertex(np, r) ? 'cell' : (pickShape(np) ? 'grab' : 'default'));
+    return;
+  }
+  if (pending){
+    pending.preview = np;
+    redrawShapes();
+    return;
+  }
+  if (!curShape) return;
+  if (curShape.tool === 'pen') curShape.points.push(np);
+  else curShape.points[1] = np;
+  redrawShapes();
+});
+drawCanvas.addEventListener('pointerup', async (e) => {
+  if (movingShape){ movingShape = null; moveStart = null; movingVertex = null; drawCanvas.style.cursor = 'grab'; redrawShapes(); return; }
+  if (!drawMode || !curShape) return;
+  e.stopPropagation();
+  if (curShape.points.length > 1){
+    if (curShape.tool === 'calib'){
+      const a = curShape.points[0], b = curShape.points[curShape.points.length - 1];
+      const r = stage.getBoundingClientRect();
+      const dn = normDist(a, b, r.height / Math.max(1, r.width));
+      curShape = null;
+      redrawShapes();
+      const ans = await askText('Real length of this line in meters (e.g. 3 for the goal width)');
+      const m = parseFloat(String(ans || '').replace(',', '.'));
+      if (isFinite(m) && m > 0 && dn > 0.005){
+        state.measureScale = m / dn;
+        saveSession();
+        log('Measurement calibrated for this match. Note: it is measured on the screen plane — with a tilted camera it is an approximation.', 'ok');
+      } else {
+        log('Calibration canceled.', 'err');
+      }
+      setTool('measure');
+      return;
+    } else {
+      shapes.push(curShape);
+    }
+  }
+  curShape = null;
+  redrawShapes();
+});
+drawCanvas.addEventListener('dblclick', async (e) => {
+  if (!drawMode) return;
+  e.stopPropagation();
+  const np = normPt(e);
+  const hit = pickShapeOfTool(np, 'text');
+  if (hit){
+    setTool('text');
+    selectShape(hit);
+    const nv = await askText('Edit text', hit.text || '');
+    if (nv !== null){
+      if (!nv.trim()){
+        shapes = shapes.filter(s => s !== hit);
+        selectShape(null);
+      } else {
+        hit.text = nv.trim();
+      }
+      redrawShapes();
+    }
+    return;
+  }
+  finishPending(true);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if ($('ctxMenu').classList.contains('on')){ closeCtxMenu(); return; }
+  if (pending){ pending = null; redrawShapes(); }
+  else if (drawMode) setDrawMode(false);
+});
+
+/* ---------------- desenhos salvos no tempo (freeze frame) ---------------- */
+function checkDrawingFreeze(){
+  if (exporting) return; // durante a exportação o freeze é controlado pelo gravador
+  const t = video.currentTime;
+  if (!activeFreeze && !drawMode && !video.paused && state.drawings && state.drawings.length){
+    for (const d of state.drawings){
+      if (prevT < d.t && t >= d.t && (t - d.t) < 1.5){
+        startFreeze(d);
+        break;
+      }
+    }
+  }
+  prevT = t;
+}
+function startFreeze(d){
+  video.pause();
+  activeFreeze = d;
+  // volta ao frame EXATO em que o desenho foi feito (o timeupdate pode ter passado alguns frames)
+  if (Math.abs(video.currentTime - d.t) > 0.02){
+    _freezeSeeking = true;
+    const restore = () => { video.removeEventListener('seeked', restore); _freezeSeeking = false; resizeDrawCanvas(); redrawShapes(); };
+    video.addEventListener('seeked', restore);
+    video.currentTime = d.t;
+  } else {
+    resizeDrawCanvas();
+  }
+  log('Drawing at ' + fmt(d.t, true) + ' — video frozen for ' + (d.freeze || 3) + 's.');
+  freezeTimer = setTimeout(() => {
+    if (activeFreeze === d){
+      activeFreeze = null;
+      redrawShapes();
+      video.play();
+    }
+  }, Math.max(0.5, d.freeze || 3) * 1000);
+}
+function cancelFreeze(){
+  if (_freezeSeeking) return; // seek disparado pelo próprio freeze para acertar o frame
+  if (!activeFreeze) return;
+  clearTimeout(freezeTimer);
+  activeFreeze = null;
+  redrawShapes();
+}
+video.addEventListener('seeking', cancelFreeze);
+
+$('drawSave').addEventListener('click', () => {
+  if (!state.file){ log('Load a video first.', 'err'); return; }
+  finishPending(true);
+  if (!shapes.length){ log('Draw something before saving.', 'err'); return; }
+  const f = Math.min(60, Math.max(0.5, parseFloat($('freezeSec').value) || 3));
+  if (editingDrawingId != null){
+    const d = state.drawings.find(x => x.id === editingDrawingId);
+    if (d){
+      d.shapes = shapes.slice();
+      d.freeze = f;
+      // remove os outros desenhos do mesmo frame que foram reunidos (consolidação)
+      if (editingDrawingIds.length > 1){
+        state.drawings = state.drawings.filter(x => x.id === d.id || !editingDrawingIds.includes(x.id));
+      }
+      log('Drawing updated (' + fmt(d.t, true) + ').', 'ok');
+    }
+    editingDrawingId = null;
+    editingDrawingIds = [];
+  } else {
+    state.drawings.push({ id: Date.now(), t: video.currentTime, freeze: f, shapes: shapes.slice() });
+    log('Drawing saved at ' + fmt(video.currentTime, true) + ' — on playback the video freezes there for ' + f + 's.', 'ok');
+  }
+  shapes = [];
+  redrawShapes();
+  saveSession();
+  renderDrawList();
+  setDrawMode(false);
+});
+
+function cloneShape(s){
+  return JSON.parse(JSON.stringify(s)); // preserva todas as propriedades (opacity, text, mag, hasBg, etc.)
+}
+
+function editDrawing(d){
+  switchTab('analise');
+  cancelFreeze();
+  // posiciona o vídeo no quadro do desenho (pausado) e carrega TODOS os desenhos desse mesmo tempo
+  const apply = () => {
+    video.removeEventListener('seeked', apply);
+    video.pause();
+    // todos os desenhos no mesmo instante (tolerância de 1 frame)
+    const group = state.drawings.filter(x => Math.abs(x.t - d.t) < 0.04);
+    editingDrawingIds = group.map(x => x.id);
+    editingDrawingId = d.id; // principal (mantém compatibilidade)
+    shapes = [];
+    group.forEach(g => g.shapes.forEach(s => shapes.push(cloneShape(s))));
+    $('freezeSec').value = d.freeze || 3;
+    setDrawMode(true);
+    redrawShapes();
+    const extra = group.length > 1 ? ' (' + group.length + ' drawings from this frame were merged for editing)' : '';
+    log('Editing drawing from ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
+  };
+  video.addEventListener('seeked', apply);
+  video.currentTime = d.t;
+}
+
+function renderDrawList(){
+  const box = $('drawList');
+  box.innerHTML = '';
+  const ds = (state.drawings || []).slice().sort((a, b) => a.t - b.t);
+  if (!ds.length){
+    box.innerHTML = '<div class="empty">No drawings saved on the video timeline.</div>';
+    return;
+  }
+  ds.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'erow';
+
+    const tEl = document.createElement('span');
+    tEl.className = 'et';
+    tEl.textContent = fmt(d.t, true);
+    tEl.title = 'Play zooming into this drawing';
+    tEl.addEventListener('click', () => {
+      switchTab('analise');
+      exitClip();
+      cancelFreeze();
+      video.currentTime = Math.max(0, d.t - 3);
+      video.play();
+    });
+
+    const info = document.createElement('span');
+    info.className = 'er';
+    info.textContent = d.shapes.length + ' stroke' + (d.shapes.length > 1 ? 's' : '');
+
+    const sp = document.createElement('span');
+    sp.className = 'spacer';
+
+    const lb = document.createElement('span');
+    lb.className = 'er';
+    lb.textContent = 'freezes';
+
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = '1'; inp.max = '60'; inp.step = '1';
+    inp.value = d.freeze;
+    inp.style.cssText = 'width:52px;padding:3px 5px;border:1px solid var(--line);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:11px';
+    inp.addEventListener('change', () => {
+      d.freeze = Math.min(60, Math.max(0.5, parseFloat(inp.value) || 3));
+      inp.value = d.freeze;
+      saveSession();
+    });
+
+    const sEl = document.createElement('span');
+    sEl.className = 'er';
+    sEl.textContent = 's';
+
+    const bEdit = document.createElement('button');
+    bEdit.className = 'mini ghost';
+    bEdit.textContent = '✎';
+    bEdit.title = 'Edit this drawing\'s strokes';
+    bEdit.addEventListener('click', () => editDrawing(d));
+
+    const bDel = document.createElement('button');
+    bDel.className = 'mini ghost';
+    bDel.textContent = '✕';
+    bDel.title = 'Delete drawing';
+    bDel.addEventListener('click', () => {
+      state.drawings = state.drawings.filter(x => x !== d);
+      if (editingDrawingId === d.id || editingDrawingIds.includes(d.id)){
+        editingDrawingId = null;
+        editingDrawingIds = [];
+        shapes = [];
+        if (drawMode) setDrawMode(false);
+        redrawShapes();
+      }
+      saveSession();
+      renderDrawList();
+    });
+
+    row.appendChild(tEl); row.appendChild(info); row.appendChild(sp);
+    row.appendChild(lb); row.appendChild(inp); row.appendChild(sEl); row.appendChild(bEdit); row.appendChild(bDel);
+    box.appendChild(row);
+  });
+}
+
+$('drawSnap').addEventListener('click', () => {
+  if (!state.file || !video.videoWidth){ log('Load a video before saving the frame.', 'err'); return; }
+  const r = stage.getBoundingClientRect();
+  const dpr = 2;
+  const c = document.createElement('canvas');
+  c.width = Math.round(r.width * dpr);
+  c.height = Math.round(r.height * dpr);
+  const x = c.getContext('2d');
+  x.fillStyle = '#000';
+  x.fillRect(0, 0, c.width, c.height);
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const sc = Math.min(r.width / vw, r.height / vh);
+  const dw = vw * sc, dh = vh * sc;
+  x.save();
+  x.scale(dpr, dpr);
+  x.translate(r.width / 2 + state.panX, r.height / 2 + state.panY);
+  x.scale(state.zoom, state.zoom);
+  x.drawImage(video, -dw / 2, -dh / 2, dw, dh);
+  x.restore();
+  x.drawImage(drawCanvas, 0, 0, c.width, c.height);
+  c.toBlob((b) => {
+    if (!b){ log('Failed to generate the image.', 'err'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'fluxgk_quadro_' + fmt(video.currentTime).replace(':', '-') + '.png';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+    log('Frame saved as a PNG image.', 'ok');
+  }, 'image/png');
+});
+
+/* =====================================================================
+   ABA DASHBOARDS — editor completo (estilo LongoMatch)
+   ===================================================================== */
+let dashEdit = { dashId: null, tagId: null };
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function refreshDashEverywhere(){
+  persistDashboards();
+  renderDashboards();
+  renderTags();
+  renderPlaylists();
+  renderDashTab();
+  if (dockedLayout){
+    const d = currentDash();
+    const el = $('lmDashName');
+    if (el) el.textContent = d ? '· ' + d.name : '';
+  }
+}
+
+function renderDashTab(){
+  const list = $('dashList');
+  if (!list) return;
+  if (!state.dashboards.find(d => d.id === dashEdit.dashId)){
+    dashEdit = { dashId: state.currentDashId, tagId: null };
+  }
+  list.innerHTML = '';
+  state.dashboards.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'dlrow' + (d.id === dashEdit.dashId ? ' sel' : '');
+    row.innerHTML = '<div class="dlname">' + escapeHtml(d.name) +
+      (d.id === state.currentDashId ? ' <span class="badge">ATIVO</span>' : '') + '</div>' +
+      '<div class="dlmeta">' + d.tags.length + ' tag' + (d.tags.length === 1 ? '' : 's') + '</div>';
+    row.addEventListener('click', () => { dashEdit = { dashId: d.id, tagId: null }; renderDashTab(); });
+    list.appendChild(row);
+  });
+  const bNew = document.createElement('button');
+  bNew.textContent = '+ Novo dashboard';
+  bNew.style.width = '100%';
+  bNew.addEventListener('click', async () => {
+    const name = await askText('Name of the new dashboard (e.g. Coming-out drills, Play with feet)');
+    if (!name || !name.trim()) return;
+    const d = { id: 'd' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), tags: [] };
+    state.dashboards.push(d);
+    dashEdit = { dashId: d.id, tagId: null };
+    refreshDashEverywhere();
+  });
+  list.appendChild(bNew);
+  renderDashEditor();
+}
+
+function renderDashEditor(){
+  const box = $('dashEditor');
+  box.innerHTML = '';
+  const d = state.dashboards.find(x => x.id === dashEdit.dashId);
+  if (!d){
+    box.innerHTML = '<div class="empty">Select a dashboard on the left.</div>';
+    return;
+  }
+
+  /* ----- cabeçalho: nome, ativar, duplicar, excluir ----- */
+  const head = document.createElement('div');
+  head.className = 'deheader';
+
+  const nameInp = document.createElement('input');
+  nameInp.value = d.name;
+  nameInp.maxLength = 40;
+  nameInp.title = 'Dashboard name';
+  nameInp.addEventListener('input', () => {
+    if (nameInp.value.trim()) d.name = nameInp.value.trim();
+    persistDashboards();
+    renderDashboards();
+  });
+  nameInp.addEventListener('change', () => renderDashTab());
+  head.appendChild(nameInp);
+
+  if (d.id === state.currentDashId){
+    const act = document.createElement('span');
+    act.className = 'badge';
+    act.textContent = 'ACTIVE IN ANALYSIS';
+    head.appendChild(act);
+  } else {
+    const bAct = document.createElement('button');
+    bAct.className = 'mini primary';
+    bAct.textContent = 'Use in analysis';
+    bAct.title = 'Makes this the active dashboard in the tags panel';
+    bAct.addEventListener('click', () => {
+      state.currentDashId = d.id;
+      refreshDashEverywhere();
+    });
+    head.appendChild(bAct);
+  }
+
+  const bDup = document.createElement('button');
+  bDup.className = 'mini ghost';
+  bDup.textContent = 'Duplicate';
+  bDup.title = 'Creates a copy — a good base for objective-based variations';
+  bDup.addEventListener('click', () => {
+    const copy = {
+      id: 'd' + Math.random().toString(36).slice(2, 9),
+      name: (d.name + ' (copy)').slice(0, 40),
+      tags: d.tags.map(t => {
+        const nt = { id: 't' + Math.random().toString(36).slice(2, 9), name: t.name, color: t.color };
+        if (typeof t.pre === 'number') nt.pre = t.pre;
+        if (typeof t.post === 'number') nt.post = t.post;
+        return nt;
+      }),
+    };
+    state.dashboards.push(copy);
+    dashEdit = { dashId: copy.id, tagId: null };
+    refreshDashEverywhere();
+  });
+  head.appendChild(bDup);
+
+  const bDel = document.createElement('button');
+  bDel.className = 'mini ghost danger';
+  bDel.textContent = 'Delete';
+  bDel.addEventListener('click', async () => {
+    if (state.dashboards.length <= 1){ log('You must keep at least one dashboard.', 'err'); return; }
+    if (!(await askConfirm('Delete dashboard', 'Delete the dashboard "' + d.name + '"? Already-tagged clips stay in the playlists.', 'Delete'))) return;
+    state.dashboards = state.dashboards.filter(x => x.id !== d.id);
+    if (state.currentDashId === d.id) state.currentDashId = state.dashboards[0].id;
+    dashEdit = { dashId: state.dashboards[0].id, tagId: null };
+    refreshDashEverywhere();
+  });
+  head.appendChild(bDel);
+  box.appendChild(head);
+
+  /* ----- grade de etiquetas ----- */
+  const grid = document.createElement('div');
+  grid.className = 'degrid';
+  const gPre = parseFloat($('preSec').value) || 0;
+  const gPost = parseFloat($('postSec').value) || 0;
+  d.tags.forEach(tag => {
+    const b = document.createElement('button');
+    b.className = 'tagbtn' + (dashEdit.tagId === tag.id ? ' sel' : '');
+    b.style.background = tag.color;
+    const ePre = (typeof tag.pre === 'number') ? tag.pre : gPre;
+    const ePos = (typeof tag.post === 'number') ? tag.post : gPost;
+    b.innerHTML = escapeHtml(tag.name) + '<div class="tbadge">pre ' + ePre + 's · post ' + ePos + 's</div>';
+    b.title = 'Click to edit this tag';
+    b.addEventListener('click', () => {
+      dashEdit.tagId = (dashEdit.tagId === tag.id) ? null : tag.id;
+      renderDashTab();
+    });
+    grid.appendChild(b);
+  });
+  if (!d.tags.length){
+    const em = document.createElement('div');
+    em.className = 'empty';
+    em.textContent = 'Dashboard with no tags — add some below.';
+    grid.appendChild(em);
+  }
+  box.appendChild(grid);
+
+  /* ----- propriedades da etiqueta selecionada ----- */
+  const tag = d.tags.find(t => t.id === dashEdit.tagId);
+  if (tag){
+    const props = document.createElement('div');
+    props.className = 'deprops';
+
+    const lbN = document.createElement('label'); lbN.textContent = 'nome';
+    const inN = document.createElement('input');
+    inN.type = 'text';
+    inN.value = tag.name;
+    inN.maxLength = 28;
+    inN.addEventListener('input', () => {
+      tag.name = inN.value;
+      persistDashboards();
+      renderTags();
+      renderPlaylists();
+    });
+    inN.addEventListener('change', () => renderDashTab());
+
+    const lbC = document.createElement('label'); lbC.textContent = 'cor';
+    const sw = document.createElement('div');
+    sw.className = 'swrow';
+    TAG_COLORS.forEach(c => {
+      const s = document.createElement('button');
+      s.style.background = c;
+      if (tag.color === c) s.className = 'sel';
+      s.title = c;
+      s.addEventListener('click', () => { tag.color = c; refreshDashEverywhere(); });
+      sw.appendChild(s);
+    });
+
+    const mkNum = (key, ph) => {
+      const n = document.createElement('input');
+      n.type = 'number';
+      n.min = '0'; n.max = '120'; n.step = '1';
+      n.value = (typeof tag[key] === 'number') ? tag[key] : '';
+      n.placeholder = ph;
+      n.title = 'Segundos ' + (key === 'pre' ? 'antes' : 'depois') + ' from the click — empty uses the default (' + ph + 's)';
+      n.addEventListener('change', () => {
+        const v = parseFloat(n.value);
+        if (isFinite(v) && v >= 0) tag[key] = Math.min(120, v);
+        else { delete tag[key]; n.value = ''; }
+        persistDashboards();
+        renderTags();
+        renderDashTab();
+      });
+      return n;
+    };
+    const lbP = document.createElement('label'); lbP.textContent = 'pre (s)';
+    const inP = mkNum('pre', String(gPre));
+    const lbQ = document.createElement('label'); lbQ.textContent = 'post (s)';
+    const inQ = mkNum('post', String(gPost));
+
+    const idx = d.tags.indexOf(tag);
+    const bL = document.createElement('button');
+    bL.className = 'mini ghost';
+    bL.textContent = '◀';
+    bL.title = 'Move left';
+    bL.disabled = idx === 0;
+    bL.addEventListener('click', () => {
+      d.tags.splice(idx, 1);
+      d.tags.splice(idx - 1, 0, tag);
+      refreshDashEverywhere();
+    });
+    const bR = document.createElement('button');
+    bR.className = 'mini ghost';
+    bR.textContent = '▶';
+    bR.title = 'Move right';
+    bR.disabled = idx === d.tags.length - 1;
+    bR.addEventListener('click', () => {
+      d.tags.splice(idx, 1);
+      d.tags.splice(idx + 1, 0, tag);
+      refreshDashEverywhere();
+    });
+
+    const bX = document.createElement('button');
+    bX.className = 'mini ghost danger';
+    bX.textContent = 'Delete tag';
+    bX.addEventListener('click', () => {
+      d.tags = d.tags.filter(t => t.id !== tag.id);
+      dashEdit.tagId = null;
+      refreshDashEverywhere();
+    });
+
+    props.appendChild(lbN); props.appendChild(inN);
+    props.appendChild(lbC); props.appendChild(sw);
+    props.appendChild(lbP); props.appendChild(inP);
+    props.appendChild(lbQ); props.appendChild(inQ);
+    props.appendChild(bL); props.appendChild(bR);
+    props.appendChild(bX);
+    box.appendChild(props);
+  } else if (d.tags.length){
+    const hint = document.createElement('div');
+    hint.className = 'empty';
+    hint.textContent = 'Click a tag above to edit its name, color, pre/post times, order, or delete it.';
+    box.appendChild(hint);
+  }
+
+  /* ----- nova etiqueta ----- */
+  const add = document.createElement('div');
+  add.className = 'addtag';
+  const addInp = document.createElement('input');
+  addInp.type = 'text';
+  addInp.placeholder = 'New tag (e.g. Back pass)';
+  addInp.maxLength = 28;
+  const addBtn = document.createElement('button');
+  addBtn.textContent = 'Add';
+  const doAdd = () => {
+    const name = addInp.value.trim();
+    if (!name) return;
+    const t = makeTag(name);
+    d.tags.push(t);
+    addInp.value = '';
+    dashEdit.tagId = t.id;
+    refreshDashEverywhere();
+  };
+  addBtn.addEventListener('click', doAdd);
+  addInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
+  add.appendChild(addInp);
+  add.appendChild(addBtn);
+  box.appendChild(add);
+}
+
+/* =====================================================================
+   ABA EXPORTAÇÃO — diálogo estilo LongoMatch
+   Dois caminhos:
+   (1) Original/sem sobreposições  -> mp4box (corte em keyframe, instantâneo)
+   (2) Com título/marca/resolução  -> recodificação via canvas + MediaRecorder
+   ===================================================================== */
+const expSel = {};   // id do lance -> selecionado (bool)
+let _expWithDraw = true;
+
+function allEvents(){
+  return state.events.slice().sort((a, b) => a.start - b.start);
+}
+function expHasDrawings(){
+  return $('expDraw').checked && state.drawings && state.drawings.length > 0;
+}
+function expHasFraming(){
+  return selectedEvents().some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
+}
+function expNeedsReencode(){
+  return $('expTitle').checked || $('expWatermark').checked || parseInt($('expRes').value, 10) > 0
+    || $('expFormat').value === 'webm' || $('expQuality').value !== 'high' || expHasDrawings() || expHasFraming();
+}
+
+function renderExportTab(){
+  const box = $('expList');
+  box.innerHTML = '';
+  const seen = [];
+  state.events.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
+
+  if (!state.events.length){
+    box.innerHTML = '<div class="empty">No clips tagged. Tag clips in the Analysis tab to export.</div>';
+  } else {
+    const top = document.createElement('div');
+    top.className = 'exprow';
+    const bAll = document.createElement('button');
+    bAll.className = 'mini';
+    bAll.textContent = 'Marcar todos';
+    bAll.addEventListener('click', () => { state.events.forEach(e => expSel[e.id] = true); renderExportTab(); });
+    const bNone = document.createElement('button');
+    bNone.className = 'mini ghost';
+    bNone.textContent = 'Desmarcar todos';
+    bNone.addEventListener('click', () => { state.events.forEach(e => expSel[e.id] = false); renderExportTab(); });
+    top.appendChild(bAll); top.appendChild(bNone);
+    box.appendChild(top);
+
+    seen.forEach(tagId => {
+      const tag = findTag(tagId);
+      const evs = state.events.filter(e => e.tagId === tagId).sort((a, b) => a.start - b.start);
+      const grp = document.createElement('div');
+      grp.className = 'expgrp';
+
+      const head = document.createElement('div');
+      head.className = 'ghead';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = evs.every(e => expSel[e.id]);
+      cb.addEventListener('change', () => { evs.forEach(e => expSel[e.id] = cb.checked); renderExportTab(); });
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = tag.color;
+      const nm = document.createElement('span');
+      nm.textContent = tag.name + ' (' + evs.length + ')';
+      head.appendChild(cb); head.appendChild(dot); head.appendChild(nm);
+      grp.appendChild(head);
+
+      evs.forEach((ev, i) => {
+        const it = document.createElement('div');
+        it.className = 'expitem';
+        const c = document.createElement('input');
+        c.type = 'checkbox';
+        c.checked = !!expSel[ev.id];
+        c.addEventListener('change', () => { expSel[ev.id] = c.checked; });
+        const nm2 = document.createElement('span');
+        nm2.textContent = ev.name || (tag.name + ' ' + (i + 1));
+        const rg = document.createElement('span');
+        rg.className = 'er';
+        rg.textContent = fmt(ev.start) + '→' + fmt(ev.end);
+        it.appendChild(c); it.appendChild(nm2); it.appendChild(rg);
+        grp.appendChild(it);
+      });
+      box.appendChild(grp);
+    });
+  }
+  updateExpNote();
+}
+
+function selectedEvents(){
+  return allEvents().filter(e => expSel[e.id]);
+}
+function updateExpNote(){
+  const note = $('expNote');
+  const n = selectedEvents().length;
+  const reenc = expNeedsReencode();
+  let txt = n + ' clip(s) selected. ';
+  if (!n){ txt = 'Select at least one clip.'; }
+  else if (reenc){
+    const motivos = [];
+    if (expHasDrawings()) motivos.push('burn drawings');
+    if ($('expTitle').checked) motivos.push('title');
+    if ($('expWatermark').checked) motivos.push('marca d\'watermark');
+    if (parseInt($('expRes').value,10) > 0) motivos.push('change resolution');
+    if ($('expFormat').value === 'webm') motivos.push('WebM');
+    if ($('expQuality').value !== 'high') motivos.push('qualidade reduzida');
+    txt += 'Re-encoded mode (required for: ' + motivos.join(', ') + '). ' +
+      "Runs in real time (a 30s clip takes ~30s). For drawings to appear, they must be saved at the time (💾) and the clip range must cover the drawing's moment.";
+  } else {
+    txt += 'Fast mode: cut without re-encoding (instant, original quality). ' +
+      ($('expPerFile').checked ? 'One .mp4 file per clip.' : 'A single .mp4 with all clips in sequence.');
+  }
+  note.textContent = txt;
+  note.classList.toggle('warn', reenc && n > 0);
+}
+['expQuality','expRes','expFormat','expTitle','expWatermark','expAudio','expPerFile','expDraw'].forEach(id => {
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === id) updateExpNote(); });
+});
+
+$('expRun').addEventListener('click', async () => {
+  const evs = selectedEvents();
+  if (!evs.length){ log('Select at least one clip to export.', 'err'); return; }
+  if (!state.file){ log('Load the match video first.', 'err'); return; }
+
+  const perFile = $('expPerFile').checked && evs.length > 1;
+  const fmtExt = ($('expFormat').value === 'webm') ? 'webm' : 'mp4';
+
+  // dentro do hub (iframe sandbox) o seletor de pasta é bloqueado pelo navegador;
+  // nesse caso baixamos direto na pasta de downloads, sem tentativa frustrada.
+  const inHub = (window.parent && window.parent !== window);
+
+  // PASSO 1: pergunta o local de salvamento JÁ no clique (um arquivo só; por-arquivo usa pasta padrão)
+  if (!perFile && !inHub){
+    const suggested = (evs.length === 1
+      ? (evs[0].name ? safeName(evs[0].name) : safeName(findTag(evs[0].tagId).name) + '_lance')
+      : 'fluxgk_compilado') + '.' + fmtExt;
+    const handle = await pickSaveLocation(suggested, fmtExt === 'webm' ? 'video/webm' : 'video/mp4');
+    if (handle === 'cancel'){ log('Export canceled — no location chosen.'); return; }
+    _pendingSaveHandle = handle; // pode ser um handle ou null (sem suporte → download)
+  } else {
+    _pendingSaveHandle = null; // múltiplos arquivos ou dentro do hub: vão para a pasta de downloads
+    if (inHub) log('The exported video will be saved to your browser\'s downloads folder.');
+    else log("Multiple files will be saved to the browser's downloads folder.");
+  }
+
+  // PASSO 2: processa e grava no destino escolhido
+  if (!expNeedsReencode()){
+    if (perFile){
+      for (let i = 0; i < evs.length; i++){
+        const ev = evs[i];
+        const tag = findTag(ev.tagId);
+        const base = ev.name ? safeName(ev.name) : (safeName(tag.name) + '_lance' + (i + 1));
+        await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)));
+      }
+    } else {
+      await exportEvents(evs, 'fluxgk_compilado.mp4', 'Compilation (' + evs.length + ' clips)');
+    }
+    _pendingSaveHandle = undefined;
+    return;
+  }
+  await exportReencoded(evs);
+  _pendingSaveHandle = undefined;
+});
+
+/* ---------------- exportação recodificada (canvas + MediaRecorder) ---------------- */
+async function exportReencodedDirect(evs, outName){
+  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  exporting = true;
+  cancelRequested = false;
+  try {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw){ log('Could not read the video dimensions.', 'err'); exporting = false; return; }
+    const mime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : 'video/webm';
+    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+    const base = (outName || 'fluxgk_lance.mp4').replace(/\.(mp4|webm)$/i, '');
+    log('Exporting with framing/drawings (re-encoded, in real time)…');
+    await recordGroup(evs.slice().sort((a, b) => a.start - b.start), vw, vh, mime, ext, 8e6,
+      false, false, '', true, base, 1, 1);
+  } catch (err) {
+    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    else { log('Export failed: ' + (err && err.message ? err.message : err), 'err'); console.error(err); }
+  } finally {
+    exporting = false;
+    hideProgress();
+  }
+}
+
+async function exportReencoded(evs){
+  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  exporting = true;
+  cancelRequested = false;
+  try {
+    const resH = parseInt($('expRes').value, 10);
+    const withTitle = $('expTitle').checked;
+    _expWithDraw = $('expDraw').checked;
+    const withWm = $('expWatermark').checked;
+    const wmText = ($('expWmText').value || '@e.pimentagoleiros').trim();
+    const withAudio = $('expAudio').checked;
+    const fmtSel = $('expFormat').value;
+    const qual = $('expQuality').value;
+    const perFile = $('expPerFile').checked;
+
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw){ log('Could not read the video dimensions.', 'err'); exporting = false; return; }
+    const outW = resH ? Math.round(resH * vw / vh / 2) * 2 : vw;
+    const outH = resH || vh;
+
+    const mime = fmtSel === 'webm'
+      ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm')
+      : (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : 'video/webm');
+    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+    const bitrate = qual === 'high' ? 8e6 : qual === 'medium' ? 4e6 : 2e6;
+
+    const groups = perFile ? evs.map(e => [e]) : [evs];
+    for (let gi = 0; gi < groups.length; gi++){
+      if (cancelRequested) throw new Error('CANCELLED');
+      const group = groups[gi];
+      const tag = findTag(group[0].tagId);
+      const name = perFile
+        ? (group[0].name ? safeName(group[0].name) : safeName(tag.name) + '_lance' + (gi + 1))
+        : 'fluxgk_compilado';
+      await recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, gi + 1, groups.length);
+    }
+  } catch (err) {
+    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    else { log('Re-encoded export failed: ' + (err && err.message ? err.message : err), 'err'); console.error(err); }
+  } finally {
+    exporting = false;
+    hideProgress();
+  }
+}
+
+function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, idx, total){
+  return new Promise((resolve, reject) => {
+    const c = document.createElement('canvas');
+    c.width = outW; c.height = outH;
+    const cx = c.getContext('2d');
+    const cstream = c.captureStream(30);
+
+    let audioStream = null;
+    if (withAudio){
+      try {
+        const src = video.captureStream ? video.captureStream() : (video.mozCaptureStream && video.mozCaptureStream());
+        if (src && src.getAudioTracks().length) audioStream = src;
+      } catch (e) { /* sem áudio */ }
+    }
+    if (audioStream) audioStream.getAudioTracks().forEach(t => cstream.addTrack(t));
+
+    let rec;
+    try { rec = new MediaRecorder(cstream, { mimeType: mime, videoBitsPerSecond: bitrate }); }
+    catch (e) { reject(new Error('Browser does not support recording in ' + mime)); return; }
+
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: mime });
+      saveBlob(blob, name + '.' + ext, mime).then((saved) => {
+        if (saved === null) log('Export canceled (no file saved).');
+        else log('Exported (re-encoded): ' + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)', 'ok');
+        resolve();
+      });
+    };
+
+    let gi = 0;
+    const wasMuted = video.muted, wasRate = video.playbackRate;
+    video.muted = !withAudio;
+    video.playbackRate = 1;
+
+    function drawFrameWith(activeDraw){
+      const ev = group[gi];
+      const sc = Math.min(outW / video.videoWidth, outH / video.videoHeight);
+      const dw = video.videoWidth * sc, dh = video.videoHeight * sc;
+      const ox = (outW - dw) / 2, oy = (outH - dh) / 2; // canto do vídeo (letterbox)
+      cx.fillStyle = '#000';
+      cx.fillRect(0, 0, outW, outH);
+
+      const ez = ev.exportZoom;
+      const zoomed = ez && ez.zoom > 1.001;
+
+      // aplica o MESMO enquadramento ao vídeo e ao desenho, em torno do centro do canvas
+      const applyFraming = () => {
+        if (!zoomed) return;
+        const refW = ez.stageW || outW, refH = ez.stageH || outH;
+        const px = ez.panX * (outW / refW);
+        const py = ez.panY * (outH / refH);
+        cx.translate(outW / 2 + px, outH / 2 + py);
+        cx.scale(ez.zoom, ez.zoom);
+        cx.translate(-outW / 2, -outH / 2);
+      };
+
+      // 1) vídeo (com enquadramento)
+      cx.save();
+      applyFraming();
+      cx.drawImage(video, ox, oy, dw, dh);
+      cx.restore();
+
+      // 2) desenho — recebe o MESMO enquadramento do vídeo (ao vivo a camada de
+      //    desenho também dá zoom junto com o vídeo, então fica consistente).
+      if (_expWithDraw && activeDraw){
+        cx.save();
+        applyFraming();
+        cx.translate(ox, oy);
+        activeDraw.shapes.forEach(s => drawShape(cx, s, dw, dh));
+        cx.restore();
+      }
+
+      if (withTitle && ev){
+        const tag = findTag(ev.tagId);
+        const label = ev.name || tag.name;
+        cx.font = '600 ' + Math.round(outH * 0.04) + 'px "Space Grotesk", sans-serif';
+        const pad = outH * 0.02;
+        const tw = cx.measureText(label).width;
+        cx.fillStyle = 'rgba(10,10,10,.6)';
+        cx.fillRect(pad, pad, tw + pad * 1.4, outH * 0.07);
+        cx.fillStyle = tag.color;
+        cx.fillRect(pad, pad, outW * 0.008, outH * 0.07);
+        cx.fillStyle = '#fff';
+        cx.textBaseline = 'middle';
+        cx.fillText(label, pad * 1.7, pad + outH * 0.035);
+      }
+      if (withWm){
+        cx.font = '600 ' + Math.round(outH * 0.03) + 'px "Space Grotesk", sans-serif';
+        cx.textAlign = 'right';
+        cx.textBaseline = 'bottom';
+        cx.fillStyle = 'rgba(255,255,255,.7)';
+        cx.fillText(wmText, outW - outH * 0.02, outH - outH * 0.02);
+        cx.textAlign = 'left';
+      }
+    }
+
+    let raf = null;
+    let frozenUntil = 0;        // timestamp (ms) até quando segurar o quadro congelado
+    let frozenDrawing = null;   // desenho sendo exibido durante o congelamento
+    const playedDrawings = new Set(); // desenhos já exibidos (não repetir)
+
+    function activeDrawingAt(t){
+      if (!_expWithDraw || !state.drawings) return null;
+      for (const d of state.drawings){
+        if (playedDrawings.has(d.id)) continue;
+        if (t >= d.t - 0.06 && t <= d.t + 0.5){ // chegou no instante do desenho
+          return d;
+        }
+      }
+      return null;
+    }
+
+    function tick(){
+      if (cancelRequested){ cleanup(); reject(new Error('CANCELLED')); return; }
+      const ev = group[gi];
+
+      // está num congelamento de desenho?
+      if (frozenDrawing){
+        drawFrameWith(frozenDrawing);
+        if (performance.now() >= frozenUntil){
+          playedDrawings.add(frozenDrawing.id);
+          frozenDrawing = null;
+          video.play();
+        }
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      // chegou num desenho? congela aqui
+      const d = activeDrawingAt(video.currentTime);
+      if (d){
+        video.pause();
+        frozenDrawing = d;
+        frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
+        drawFrameWith(d);
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      drawFrameWith(null);
+      setProgress((gi + (video.currentTime - ev.start) / Math.max(0.1, ev.end - ev.start)) / group.length,
+        'Recodificando ' + idx + '/' + total + ' · clip ' + (gi + 1) + '/' + group.length);
+      if (video.currentTime >= ev.end - 0.03 || video.ended){
+        gi++;
+        if (gi >= group.length){ finish(); return; }
+        video.currentTime = group[gi].start;
+        video.play();
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    function startSeqAt(t, cb){
+      const onSeek = () => { video.removeEventListener('seeked', onSeek); cb(); };
+      video.addEventListener('seeked', onSeek);
+      video.currentTime = t;
+    }
+    function finish(){
+      cancelAnimationFrame(raf);
+      video.pause();
+      try { rec.stop(); } catch (e) { /* já parado */ }
+      restore();
+    }
+    function cleanup(){ cancelAnimationFrame(raf); try { rec.stop(); } catch (e) {} restore(); }
+    function restore(){ video.muted = wasMuted; video.playbackRate = wasRate; }
+
+    setProgress(0, 'Preparing re-encode ' + idx + '/' + total);
+    startSeqAt(group[0].start, () => {
+      rec.start(200);
+      video.play();
+      raf = requestAnimationFrame(tick);
+    });
+  });
+}
+
+/* ---------------- biblioteca de jogos ---------------- */
+const LIB_KEY = 'fluxgk_videolab_library_v1';
+
+function libAll(){
+  try {
+    const raw = localStorage.getItem(LIB_KEY);
+    const d = raw ? JSON.parse(raw) : null;
+    return (d && typeof d === 'object') ? d : {};
+  } catch (e) { return {}; }
+}
+function libWrite(all){
+  try { localStorage.setItem(LIB_KEY, JSON.stringify(all)); }
+  catch (e) { log('Could not save the session in the browser (storage full?).', 'err'); }
+  if (typeof pushToCloud === 'function') pushToCloud();
+}
+function sessionKey(){ return state.file ? state.file.name + '|' + state.file.size : null; }
+
+let saveTimer = null;
+function saveSession(){
+  if (!state.file) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const all = libAll();
+    all[sessionKey()] = {
+      name: state.file.name,
+      size: state.file.size,
+      savedAt: Date.now(),
+      events: state.events,
+      nextEventId: state.nextEventId,
+      drawings: state.drawings,
+      measureScale: state.measureScale,
+      namedPlaylists: state.namedPlaylists,
+    };
+    libWrite(all);
+  }, 250);
+}
+function restoreSession(){
+  const s = libAll()[sessionKey()];
+  const hasEvents = s && Array.isArray(s.events) && s.events.length;
+  const hasDrawings = s && Array.isArray(s.drawings) && s.drawings.length;
+  if (hasEvents || hasDrawings){
+    state.events = s.events || [];
+    state.nextEventId = s.nextEventId || (state.events.length ? Math.max.apply(null, state.events.map(e => e.id)) + 1 : 1);
+    state.drawings = s.drawings || [];
+    state.measureScale = (typeof s.measureScale === 'number') ? s.measureScale : null;
+    state.namedPlaylists = s.namedPlaylists || [];
+    log('Session restored from the library: ' + state.events.length + ' clip(s), ' + state.drawings.length + ' drawing(s).', 'ok');
+  } else {
+    state.events = [];
+    state.nextEventId = 1;
+    state.drawings = [];
+    state.measureScale = null;
+    state.namedPlaylists = [];
+  }
+  exitClip();
+  cancelFreeze();
+  saveSession();
+  renderPlaylists();
+  renderDrawList();
+  updateBadge();
+}
+function updateBadge(){ $('plCount').textContent = state.events.length; }
+
+function renderLibrary(){
+  const box = $('library');
+  box.innerHTML = '';
+  const entries = Object.entries(libAll()).map(([key, v]) => Object.assign({ key: key }, v)).sort((a, b) => b.savedAt - a.savedAt);
+  if (!entries.length){
+    box.innerHTML = '<div class="empty">No matches saved yet. Each loaded video and its tagged clips are stored here automatically.</div>';
+    return;
+  }
+  entries.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'librow';
+
+    const info = document.createElement('div');
+    info.style.flex = '1';
+    info.innerHTML = '<div class="lname">' + s.name + '</div>' +
+      '<div class="lmeta">' + new Date(s.savedAt).toLocaleString('pt-BR') + ' · ' +
+      (s.events ? s.events.length : 0) + ' clip(s) · ' + (s.drawings ? s.drawings.length : 0) + ' drawing(s) · ' + (s.size / 1048576).toFixed(0) + ' MB</div>';
+
+    const bOpen = document.createElement('button');
+    bOpen.className = 'mini primary';
+    bOpen.textContent = 'Open';
+    bOpen.title = 'The browser cannot reopen the file by itself — select the video and the clips come back automatically';
+    bOpen.addEventListener('click', () => {
+      if (state.file && sessionKey() === s.key){ switchTab('analise'); return; }
+      log('Select the file "' + s.name + '" on your computer — this match\'s clips will be restored automatically.');
+      switchTab('analise');
+      openFilePicker();
+    });
+
+    const bDel = document.createElement('button');
+    bDel.className = 'mini ghost danger';
+    bDel.textContent = 'Delete';
+    bDel.addEventListener('click', async () => {
+      if (!(await askConfirm('Remove from library', 'Remove "' + s.name + '" from the library, with all its tagged clips?', 'Delete'))) return;
+      const all = libAll();
+      delete all[s.key];
+      libWrite(all);
+      renderLibrary();
+      if (state.file && sessionKey() === s.key){
+        state.events = [];
+        state.nextEventId = 1;
+        renderPlaylists();
+        updateBadge();
+      }
+    });
+
+    row.appendChild(info);
+    row.appendChild(bOpen);
+    row.appendChild(bDel);
+    box.appendChild(row);
+  });
+}
+
+/* =====================================================================
+   EXPORT ENGINE (mp4box.js — corte em keyframes, sem re-encoding)
+   ===================================================================== */
+const CHUNK = 4 * 1024 * 1024;
+let exporting = false;
+let _pendingSaveHandle; // destino escolhido no clique de Exportar (undefined = perguntar; null = download)
+let cancelRequested = false;
+
+$('cancelExport').addEventListener('click', () => { cancelRequested = true; });
+
+function setProgress(frac, label){
+  $('progressWrap').classList.add('on');
+  $('progressFill').style.width = Math.min(100, Math.round(frac * 100)) + '%';
+  $('progressLabel').textContent = label;
+}
+function hideProgress(){
+  $('progressWrap').classList.remove('on');
+  $('progressFill').style.width = '0%';
+}
+const microYield = () => new Promise(r => setTimeout(r, 0));
+
+/* ---------------- salvar arquivo (escolher local + renomear) ---------------- */
+// pede o local de salvamento IMEDIATAMENTE no clique (exige gesto do usuário)
+async function pickSaveLocation(suggestedName, mime){
+  if (window.showSaveFilePicker){
+    try {
+      const ext = (suggestedName.split('.').pop() || 'mp4').toLowerCase();
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'Video', accept: { [mime || 'video/mp4']: ['.' + ext] } }],
+      });
+      return handle;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return 'cancel'; // usuário fechou a janela
+      return null; // navegador não permitiu — cai no download tradicional depois
+    }
+  }
+  return null; // navegador sem suporte — usa download tradicional
+}
+
+// grava um blob num handle já escolhido; se não houver handle, faz download tradicional
+async function writeBlob(blob, handle, suggestedName){
+  if (handle && handle !== 'cancel'){
+    try {
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      return handle.name || suggestedName;
+    } catch (e) { /* falhou: cai no download */ }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 8000);
+  return suggestedName;
+}
+
+async function saveBlob(blob, suggestedName, mime){
+  // se um destino já foi escolhido no clique de Exportar, grava direto nele
+  if (typeof _pendingSaveHandle !== 'undefined'){
+    return await writeBlob(blob, _pendingSaveHandle, suggestedName);
+  }
+  // Chrome/Edge: diálogo nativo de salvar — escolhe pasta e nome
+  if (window.showSaveFilePicker){
+    try {
+      const ext = (suggestedName.split('.').pop() || 'mp4').toLowerCase();
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'Video', accept: { [mime || 'video/mp4']: ['.' + ext] } }],
+      });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      return handle.name || suggestedName;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return null; // usuário cancelou
+      // qualquer outro erro: cai no download tradicional
+    }
+  }
+  // fallback: download para a pasta padrão do navegador
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 8000);
+  return suggestedName;
+}
+
+async function readSlice(file, start, end){
+  const ab = await file.slice(start, Math.min(end, file.size)).arrayBuffer();
+  ab.fileStart = start;
+  return ab;
+}
+
+async function exportEvents(events, outName, label){
+  if (!state.file){ log('Load a video before exporting.', 'err'); return; }
+  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  // se algum lance tem enquadramento (zoom) ou há desenhos a gravar, usa o caminho recodificado
+  const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
+  const needsDraw = state.drawings && state.drawings.length > 0;
+  if (needsZoom || needsDraw){
+    _expWithDraw = needsDraw;
+    await exportReencodedDirect(events, outName);
+    return;
+  }
+  if (typeof MP4Box === 'undefined'){
+    log('The mp4box.js library did not load. Check your internet connection and reload the page.', 'err');
+    return;
+  }
+  exporting = true;
+  cancelRequested = false;
+  const t0 = performance.now();
+  log('Starting export: ' + label + ' (' + events.length + ' clip' + (events.length > 1 ? 's' : '') + ')…');
+
+  try {
+    const ranges = events
+      .map(e => ({ start: Math.max(0, e.start), end: Math.max(e.start + 0.5, e.end) }))
+      .sort((a, b) => a.start - b.start);
+
+    const buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label));
+    const blob = new Blob([buffer], { type: 'video/mp4' });
+    const saved = await saveBlob(blob, outName, 'video/mp4');
+    if (saved === null){ log('Export canceled (no file saved).'); return; }
+
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    log('Exported: ' + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB em ' + secs + 's)', 'ok');
+  } catch (err) {
+    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    else {
+      log('Export failed: ' + (err && err.message ? err.message : err), 'err');
+      console.error(err);
+    }
+  } finally {
+    exporting = false;
+    hideProgress();
+  }
+}
+
+function buildClips(file, ranges, progress){
+  return new Promise((resolve, reject) => {
+    (async () => {
+      const mp4 = MP4Box.createFile();
+      let ready = false, info = null, failed = null;
+      mp4.onError = (e) => { failed = new Error('mp4box: ' + e); };
+      mp4.onReady = (i) => { ready = true; info = i; };
+
+      /* ---- fase 1: mapear os boxes de topo do arquivo e alimentar a estrutura ---- */
+      progress(0, 'Lendo estrutura do arquivo');
+
+      const readBytes = async (start, len) => new DataView(await file.slice(start, Math.min(file.size, start + len)).arrayBuffer());
+
+      // Caminha pela estrutura de topo do MP4: cada box declara seu tamanho e tipo.
+      const boxes = [];
+      let bpos = 0;
+      while (bpos + 8 <= file.size){
+        const dv = await readBytes(bpos, 16);
+        if (dv.byteLength < 8) break;
+        let bsize = dv.getUint32(0);
+        const btype = String.fromCharCode(dv.getUint8(4), dv.getUint8(5), dv.getUint8(6), dv.getUint8(7));
+        let hdr = 8;
+        if (bsize === 1){
+          if (dv.byteLength < 16) break;
+          bsize = dv.getUint32(8) * 4294967296 + dv.getUint32(12); // tamanho de 64 bits
+          hdr = 16;
+        } else if (bsize === 0){
+          bsize = file.size - bpos; // box vai até o fim do arquivo
+        }
+        if (bsize < hdr){ boxes.length = 0; break; } // estrutura inválida
+        boxes.push({ type: btype, start: bpos, size: bsize, hdr });
+        bpos += bsize;
+      }
+
+      if (boxes.length){
+        log('File structure: ' + boxes.map(b => b.type + ' (' + (b.size / 1048576).toFixed(1) + ' MB)').join(' · '));
+      }
+
+      if (boxes.find(b => b.type === 'moov')){
+        // Alimenta os boxes na ordem do arquivo: os grandes (mdat) só o cabeçalho,
+        // os demais (incluindo o moov, onde quer que esteja) por inteiro.
+        const BIG = 8 * 1024 * 1024;
+        for (const b of boxes){
+          if (ready || failed) break;
+          if (cancelRequested) throw new Error('CANCELLED');
+          if (b.type === 'mdat' || b.size > BIG){
+            mp4.appendBuffer(await readSlice(file, b.start, b.start + b.hdr));
+          } else {
+            let p = b.start;
+            const endB = b.start + b.size;
+            while (p < endB && !ready){
+              const ab = await readSlice(file, p, Math.min(endB, p + CHUNK));
+              mp4.appendBuffer(ab);
+              p += ab.byteLength;
+            }
+          }
+        }
+        if (failed) throw failed;
+      }
+
+      if (!ready){
+        // Último recurso: varredura sequencial do arquivo inteiro.
+        log('Direct structure failed — trying a full file scan…');
+        let pos = 0;
+        while (!ready && pos < file.size){
+          if (failed) throw failed;
+          if (cancelRequested) throw new Error('CANCELLED');
+          const ab = await readSlice(file, pos, pos + CHUNK);
+          const next = mp4.appendBuffer(ab);
+          pos = (typeof next === 'number' && next > pos) ? next : pos + ab.byteLength;
+          await microYield();
+        }
+      }
+
+      if (!ready){
+        throw new Error('Could not parse this MP4 structure. Copy the "File structure" line from the log and send it to me so I can adjust the engine.');
+      }
+
+      const vInfo = info.videoTracks && info.videoTracks[0];
+      if (!vInfo) throw new Error('No video track found in the file.');
+      const aInfo = (info.audioTracks && info.audioTracks[0]) || null;
+      const vts = vInfo.timescale;
+      const ats = aInfo ? aInfo.timescale : 0;
+
+      /* ---- estado por clipe ---- */
+      const jobs = ranges.map(r => ({
+        start: r.start, end: r.end,
+        vActive: false, vDone: false, vSamples: [],
+        videoStartSec: null,
+        aDone: !aInfo, aRaw: [],
+      }));
+      let doneAll = false;
+      let gop = [];
+
+      const copySample = (s) => ({
+        data: new Uint8Array(s.data),
+        duration: s.duration, dts: s.dts, cts: s.cts,
+        is_sync: !!s.is_sync, number: s.number,
+      });
+
+      mp4.onSamples = (id, user, samples) => {
+        if (!samples || !samples.length) return;
+        if (id === vInfo.id){
+          for (const s of samples){
+            if (!s.data) continue;
+            const t = s.cts / s.timescale;
+            if (s.is_sync) gop = [];
+            const c = copySample(s);
+            gop.push(c);
+            for (const j of jobs){
+              if (j.vDone) continue;
+              if (!j.vActive){
+                if (t >= j.start){
+                  j.vActive = true;
+                  j.vSamples = gop.slice();
+                  j.videoStartSec = j.vSamples[0].cts / vts;
+                }
+              } else {
+                if (t > j.end) j.vDone = true;
+                else j.vSamples.push(c);
+              }
+            }
+          }
+          mp4.releaseUsedSamples(id, samples[samples.length - 1].number);
+        } else if (aInfo && id === aInfo.id){
+          for (const s of samples){
+            if (!s.data) continue;
+            const t = s.cts / s.timescale;
+            for (const j of jobs){
+              if (j.aDone) continue;
+              if (t > j.end){ j.aDone = true; continue; }
+              if (t >= j.start - 12) j.aRaw.push(copySample(s));
+            }
+          }
+          mp4.releaseUsedSamples(id, samples[samples.length - 1].number);
+        }
+        if (jobs.every(j => j.vDone && j.aDone)) doneAll = true;
+      };
+
+      /* ---- fase 2: extração a partir do ponto mais cedo necessário ---- */
+      mp4.setExtractionOptions(vInfo.id, null, { nbSamples: 100 });
+      if (aInfo) mp4.setExtractionOptions(aInfo.id, null, { nbSamples: 100 });
+      mp4.start();
+
+      let feedPos = 0;
+      try {
+        const earliest = Math.max(0, Math.min(...ranges.map(r => r.start)) - 12);
+        const sk = mp4.seek(earliest, true);
+        if (sk && typeof sk.offset === 'number' && sk.offset > 0 && sk.offset < file.size) feedPos = sk.offset;
+      } catch (e) { feedPos = 0; }
+
+      const totalToFeed = Math.max(1, file.size - feedPos);
+      let fed = 0;
+      while (!doneAll && feedPos < file.size){
+        if (failed) throw failed;
+        if (cancelRequested) throw new Error('CANCELLED');
+        const ab = await readSlice(file, feedPos, feedPos + CHUNK);
+        mp4.appendBuffer(ab);
+        feedPos += ab.byteLength;
+        fed += ab.byteLength;
+        progress(Math.min(0.95, fed / totalToFeed), 'Extracting clips');
+        await microYield();
+      }
+      try { mp4.flush(); } catch (e) { /* fim de arquivo */ }
+      try { mp4.stop(); } catch (e) { /* extração já parada */ }
+
+      const valid = jobs.filter(j => j.vSamples.length);
+      if (!valid.length) throw new Error('No video frames were found in the tagged ranges.');
+      const skipped = jobs.length - valid.length;
+      if (skipped) log(skipped + ' clip(s) outside the video duration were ignored.', 'err');
+
+      /* ---- fase 3: remontar o MP4 de saída ---- */
+      progress(0.97, 'Montando arquivo final');
+      await microYield();
+
+      const out = MP4Box.createFile();
+      const srcVEntry = mp4.getTrackById(vInfo.id).mdia.minf.stbl.stsd.entries[0];
+
+      let vOutId;
+      try {
+        vOutId = out.addTrack({ timescale: vts, width: vInfo.video.width, height: vInfo.video.height, type: srcVEntry.type, language: 'und' });
+      } catch (e) {
+        vOutId = out.addTrack({ timescale: vts, width: vInfo.video.width, height: vInfo.video.height, language: 'und' });
+      }
+      out.getTrackById(vOutId).mdia.minf.stbl.stsd.entries = [srcVEntry];
+
+      let aOutId = null;
+      if (aInfo){
+        try {
+          const srcAEntry = mp4.getTrackById(aInfo.id).mdia.minf.stbl.stsd.entries[0];
+          aOutId = out.addTrack({
+            timescale: ats, type: srcAEntry.type, hdlr: 'soun', name: 'Audio',
+            samplerate: aInfo.audio.sample_rate, channel_count: aInfo.audio.channel_count,
+            samplesize: aInfo.audio.sample_size || 16, language: 'und',
+          });
+          out.getTrackById(aOutId).mdia.minf.stbl.stsd.entries = [srcAEntry];
+        } catch (e) {
+          aOutId = null;
+          log('Could not include audio in this format — exporting video only.', 'err');
+        }
+      }
+
+      let vOff = 0, aOff = 0;
+      for (const j of valid){
+        const v0 = j.vSamples[0].dts;
+        let lastV = null;
+        for (const s of j.vSamples){
+          out.addSample(vOutId, s.data, {
+            duration: s.duration,
+            dts: s.dts - v0 + vOff,
+            cts: Math.max(0, s.cts - v0 + vOff),
+            is_sync: s.is_sync,
+          });
+          lastV = s;
+        }
+        let clipSec = (lastV.dts + lastV.duration - v0) / vts;
+
+        if (aOutId){
+          const base = Math.round(j.videoStartSec * ats);
+          let lastA = null;
+          for (const s of j.aRaw){
+            const rel = s.dts - base;
+            if (rel < 0) continue;
+            if (s.cts / ats > j.end) continue;
+            out.addSample(aOutId, s.data, { duration: s.duration, dts: rel + aOff, cts: rel + aOff, is_sync: true });
+            lastA = s;
+          }
+          if (lastA) clipSec = Math.max(clipSec, (lastA.dts + lastA.duration - base) / ats);
+        }
+        vOff += Math.ceil(clipSec * vts);
+        aOff += Math.ceil(clipSec * ats);
+        j.vSamples = null;
+        j.aRaw = null;
+        await microYield();
+      }
+
+      /* ---- serializar ---- */
+      let buffer = null;
+      if (typeof out.getBuffer === 'function'){
+        try { buffer = out.getBuffer(); } catch (e) { buffer = null; }
+      }
+      if (!buffer){
+        const DS = (typeof DataStream !== 'undefined') ? DataStream : (MP4Box && MP4Box.DataStream) ? MP4Box.DataStream : null;
+        if (!DS) throw new Error('Could not serialize the MP4 (DataStream unavailable).');
+        const ds = new DS();
+        ds.endianness = DS.BIG_ENDIAN;
+        out.write(ds);
+        buffer = ds.buffer;
+      }
+      progress(1, 'Done');
+      resolve(buffer);
+    })().catch(reject);
+  });
+}
+
+/* ================= INTEGRAÇÃO COM O HUB FLUXGK ================= */
+/* Branding via postMessage (cor, nome, badge do clube) — igual aos outros módulos */
+let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba isolada
+(function setupHubBranding(){
+  function applyContext(ctx){
+    if (!ctx) return;
+    try {
+      // o hub envia { type, uid, firebaseConfig, profile:{ clubColor, clubName, clubBadge, coachName } }
+      const prof = ctx.profile || ctx;
+      _lastContext = { profile: prof, uid: ctx.uid || (_lastContext && _lastContext.uid) };
+      if (prof.clubColor){
+        document.documentElement.style.setProperty('--blue', prof.clubColor);
+      }
+      if (prof.clubName){
+        const el = document.getElementById('brandName');
+        if (el) el.textContent = prof.clubName;
+      }
+      if (prof.clubBadge){
+        const b = document.getElementById('brandBadge');
+        if (b){ b.style.display = 'inline-block'; b.style.cssText += ';width:18px;height:18px;border-radius:4px;margin-right:7px;vertical-align:-3px;background-size:cover;background-position:center'; b.style.backgroundImage = 'url(' + prof.clubBadge + ')'; }
+      }
+      if (prof.coachName) window._fluxgkCoach = prof.coachName;
+      if (ctx.uid) { window._fluxgkUid = ctx.uid; pullFromCloud(); }
+    } catch (e) { /* invalid context — ignore */ }
+  }
+  window.addEventListener('message', (ev) => {
+    const d = ev.data;
+    if (d && d.type === 'FLUXGK_CONTEXT') applyContext(d);
+  });
+  // o hub envia o contexto ~600ms após carregar o iframe; também pedimos ativamente
+  const inHub = (window.parent && window.parent !== window);
+  try { if (inHub) window.parent.postMessage({ type: 'FLUXGK_MODULE_READY', module: 'video' }, '*'); } catch (e) {}
+
+  // quando aberto em aba isolada, o branding vem pela URL (?club=..&color=..&coach=..)
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('club') || q.get('color')){
+      applyContext({ profile: {
+        clubName: q.get('club') || '',
+        clubColor: q.get('color') || '',
+        coachName: q.get('coach') || '',
+        clubBadge: q.get('badge') || '',
+      }});
+    }
+  } catch (e) {}
+
+  // botão "Abrir em nova aba" — só faz sentido dentro do hub (iframe)
+  const tabBtn = document.getElementById('openTab');
+  if (tabBtn){
+    if (inHub){
+      tabBtn.style.display = '';
+      tabBtn.addEventListener('click', () => {
+        const p = (_lastContext && _lastContext.profile) || {};
+        const params = new URLSearchParams();
+        if (p.clubName) params.set('club', p.clubName);
+        if (p.clubColor) params.set('color', p.clubColor);
+        if (p.coachName) params.set('coach', p.coachName);
+        if (p.clubBadge) params.set('badge', p.clubBadge);
+        const url = location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.open(url, '_blank');
+      });
+    } else {
+      tabBtn.style.display = 'none';  // já está em aba própria
+    }
+  }
+})();
+
+/* Firebase: Auth + Realtime Database — espelha os dados leves (vídeo fica local) */
+const FB_CONFIG = {
+  apiKey: "AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",
+  authDomain: "fluxgk-statistics.firebaseapp.com",
+  databaseURL: "https://fluxgk-statistics-default-rtdb.firebaseio.com",
+  projectId: "fluxgk-statistics",
+  storageBucket: "fluxgk-statistics.firebasestorage.app",
+  messagingSenderId: "605696462663",
+  appId: "1:605696462663:web:1df401a86ba7f9e753c662"
+};
+const FB_PATH = 'fluxgk-video';   // this module's own path in the Realtime DB
+let fbDB = null, fbUser = null, _fbReady = false;
+
+function ldScript(src){
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function initFirebase(){
+  try {
+    await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+    await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js');
+    await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
+    if (!window.firebase) return;
+    firebase.initializeApp(FB_CONFIG);
+    fbDB = firebase.database();
+    _fbReady = true;
+    firebase.auth().onAuthStateChanged((u) => {
+      fbUser = u;
+      if (u){
+        log('Connected to the FluxGK cloud as ' + (u.email || u.uid) + '. Syncing…');
+        pullFromCloud();
+      }
+    });
+    log('Module connected to FluxGK (cloud ready).');
+  } catch (e) {
+    log('Cloud unavailable — working locally in this browser.', 'err');
+  }
+}
+
+function cloudUid(){ return (fbUser && fbUser.uid) || window._fluxgkUid || null; }
+
+/* envia a biblioteca local + dashboards para o DB do usuário (debounced) */
+let _pushTimer = null;
+function pushToCloud(){
+  const uid = cloudUid();
+  if (!_fbReady || !fbDB || !uid) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(() => {
+    try {
+      const payload = {
+        library: libAll(),
+        dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
+        updatedAt: Date.now(),
+      };
+      fbDB.ref(FB_PATH + '/users/' + uid).set(payload);
+    } catch (e) { /* falha de rede — fica local */ }
+  }, 600);
+}
+
+/* puxa do DB e mescla com o local (a nuvem é a fonte da verdade se mais recente) */
+function pullFromCloud(){
+  const uid = cloudUid();
+  if (!_fbReady || !fbDB || !uid) return;
+  fbDB.ref(FB_PATH + '/users/' + uid).once('value').then((snap) => {
+    const data = snap.val();
+    if (!data) { pushToCloud(); return; } // primeira vez: sobe o que já existe local
+    try {
+      if (data.library && typeof data.library === 'object'){
+        libWrite(data.library);
+      }
+      if (data.dashboards && Array.isArray(data.dashboards.dashboards) && data.dashboards.dashboards.length){
+        state.dashboards = data.dashboards.dashboards;
+        state.currentDashId = data.dashboards.currentId || state.dashboards[0].id;
+        persistDashboards();
+        renderDashboards(); renderTags();
+      }
+      log('Data synced from the FluxGK cloud.');
+      renderLibrary && renderLibrary();
+    } catch (e) { /* dados inesperados — mantém local */ }
+  }).catch(() => {});
+}
+
+/* ================= /INTEGRAÇÃO COM O HUB ================= */
+
+/* ---------------- init ---------------- */
+loadDashboards();
+renderDashboards();
+renderTags();
+renderSpeeds();
+updateBadge();
+renderDrawList();
+applyDock();
+syncPanels();
+initFirebase();
+log('FluxGK Video Lab ready. Load an MP4 video to get started.');
+</script>
+</body>
+</html>
