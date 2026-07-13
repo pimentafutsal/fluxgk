@@ -2354,6 +2354,9 @@ function today2(){return new Date().toISOString().split("T")[0];}
     if(typeof applyTheme==="function")applyTheme();
     fbInit().then(function(ok){if(!ok){showToast("Firebase unavailable","err");return;}loadUserState();rtPushAll().then(function(){rtListen();});renderAll();});
   });
+/* avisa o hub que ja esta pronto - nao depende do timing de 600ms */
+try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'data'},'*');}catch(e){}
+
 })();
 
 

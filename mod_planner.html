@@ -492,6 +492,32 @@ let _editingSessionId = null; // id of session being re-edited
 let _editPostState = null;    // post-training state when re-editing
 let _clubBadge = null; // base64 badge image
 let _clubColor = '#0A0A0A'; // club primary color
+
+/* ---- Contexto do hub (FLUXGK_CONTEXT) ---- */
+function _hexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(c.trim());}
+let _hubLocked = false; // hub tem prioridade sobre a config local do Planner
+window.addEventListener('message', function(e){
+  const d = e.data;
+  if(!d || d.type !== 'FLUXGK_CONTEXT' || !d.profile) return;
+  if(window.parent !== window && e.source !== window.parent) return;
+  const p = d.profile;
+  _hubLocked = true; // a partir daqui, a config local do Planner nao sobrescreve mais
+  if(_hexOk(p.clubColor)){
+    _clubColor = p.clubColor.trim();
+    try{ _applyClubColor(_clubColor); }catch(err){}
+    try{ localStorage.setItem('fluxgk_color', _clubColor); }catch(err){}
+  }
+  if(p.clubBadge){
+    _clubBadge = p.clubBadge;
+    try{ _updateNavBadge(); }catch(err){}
+    try{ localStorage.setItem('fluxgk_badge', p.clubBadge); }catch(err){}
+  }
+  if(p.clubName)  _sessionFormState._clubName  = p.clubName;
+  if(p.coachName) _sessionFormState._coachName = p.coachName;
+  if(p.methodology) _sessionFormState._methLabel = p.methodology;
+});
+/* avisa o hub que ja esta pronto - nao depende do timing de 600ms */
+try{ if(window.parent && window.parent !== window) window.parent.postMessage({type:'FLUXGK_MODULE_READY', module:'planner'}, '*'); }catch(e){}
 let _currentPage      = 'session';
 let _sessionOpen      = false;
 let savedSessions   = JSON.parse(localStorage.getItem('fluxgk_sessions') || '[]');
@@ -1364,12 +1390,12 @@ function _initFirebase(cfg){
       if(data.methLabel)  _sessionFormState._methLabel  = data.methLabel;
       if(data.seasonLabel)_sessionFormState._seasonLabel= data.seasonLabel;
       if(data.clubAbbr)   _sessionFormState._clubAbbr   = data.clubAbbr;
-      if(data.clubColor){
+      if(data.clubColor && !_hubLocked){
         _clubColor = data.clubColor;
         _applyClubColor(data.clubColor);
         localStorage.setItem('fluxgk_color', data.clubColor);
       }
-      if(data.badge){
+      if(data.badge && !_hubLocked){
         _clubBadge = data.badge;
         _updateNavBadge();
         localStorage.setItem('fluxgk_badge', data.badge);

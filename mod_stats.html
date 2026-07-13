@@ -1731,6 +1731,9 @@ window.addEventListener('message',function(e){
   }
   if(p.clubName){ST.clubName=p.clubName;}
 });
+/* avisa o hub que ja esta pronto - nao depende do timing de 600ms */
+try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'stats'},'*');}catch(e){}
+
 </script>
 </body>
 </html>
