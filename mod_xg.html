@@ -22,7 +22,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-h);overflow:hidden;}
-#app{display:grid;grid-template-rows:auto 1fr auto;height:100dvh;height:100vh;max-width:1200px;margin:0 auto;}
+#app{display:grid;grid-template-rows:auto auto 1fr auto;height:100dvh;height:100vh;max-width:1200px;margin:0 auto;}
 
 /* HEADER */
 header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);background:var(--bg);z-index:10;gap:8px;}
@@ -227,9 +227,11 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
 .ntab{padding:9px 14px;border:none;background:none;color:var(--text3);font-family:var(--font-h);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
 .ntab:hover{color:var(--text2);}
 .ntab.active{color:var(--text);border-bottom-color:var(--alfa);}
-.pg-ov{position:fixed;inset:0;z-index:150;background:var(--bg);display:flex;flex-direction:column;transform:translateX(110%);transition:transform .25s cubic-bezier(.4,0,.2,1);will-change:transform;}
+.pg-ov{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;}
+.pg-ov.open{display:flex;}
+#app.has-overlay #court-wrap,#app.has-overlay .court-section{visibility:hidden;}
 .pg-ov.open{transform:translateX(0);}
-.pov-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;max-width:1200px;width:100%;margin:0 auto;}
+.pov-hdr{display:none;}
 .pov-ttl{font-size:14px;font-weight:800;flex:1;}
 .pov-bk{padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font-h);font-size:11px;font-weight:600;cursor:pointer;}
 .pov-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;max-width:1200px;width:100%;margin:0 auto;align-self:center;}
@@ -288,7 +290,6 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
     <button class="ntab" id="ntab-history" onclick="navTab('history')">📋 History</button>
     <button class="ntab" id="ntab-clubs" onclick="navTab('clubs')">🛡 Clubs</button>
     <button class="ntab" id="ntab-report" onclick="navTab('report')">&#128196; Report</button>
-    <button class="ntab" id="ntab-xgsettings" onclick="navTab('xgsettings')">&#9881; Settings</button>
   </div>
   <div class="header-right">
     <div class="minute-wrap">
@@ -301,6 +302,12 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
     <button class="hbtn primary" onclick="exportPDF()">⬇ PDF</button>
   </div>
 </header>
+<div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--border);font-family:var(--font-m,ui-monospace,monospace);font-size:11px;letter-spacing:.04em;color:var(--text3,#888);flex-shrink:0">
+  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
+  <span id="ctx-club">—</span><span style="opacity:.4">·</span>
+  <span id="ctx-season">—</span><span style="opacity:.4">·</span>
+  <span id="ctx-coach">—</span>
+</div>
 
 <main>
   <div class="court-section">
@@ -845,7 +852,7 @@ async function loadXGSettings(){
     XGS=Object.assign({defaultTeamA:'',coachName:'',clubBadge:'',seasons:[],competitions:[]},remote);
     localStorage.setItem('xg_settings',JSON.stringify(XGS));
   } else {
-    try{var ls=JSON.parse(localStorage.getItem('xg_settings'));if(ls)XGS=ls;}catch(e){}
+    /* xg_settings NAO vem do localStorage (compartilhado entre contas). Identidade vem do hub. */
   }
   applyXGSettings();
 }
@@ -937,6 +944,17 @@ function navTab(tab){
     const b=document.getElementById('ntab-'+t);if(b)b.classList.toggle('active',t===tab);
     const p=document.getElementById('pg-'+t);if(p)p.classList.toggle('open',t===tab);
   });
+  /* posiciona a pagina aberta logo abaixo do header + faixa de contexto */
+  var app=document.getElementById('app');
+  var isOverlay = (tab!=='match');
+  if(app) app.classList.toggle('has-overlay', isOverlay);
+  if(isOverlay){
+    var hdr=document.querySelector('header');
+    var strip=document.getElementById('ctxStrip');
+    var top=(hdr?hdr.offsetHeight:56)+(strip?strip.offsetHeight:24);
+    var pg=document.getElementById('pg-'+tab);
+    if(pg) pg.style.top=top+'px';
+  }
   if(tab==='history'){populateHistFilters();renderHist();}
   if(tab==='clubs')renderClubs();
   if(tab==='season')renderSeason();
@@ -1325,48 +1343,108 @@ function renderSeason(){
 // Uses the same project as Stats & Minutes (fluxgk-statistics)
 // Data path: fluxgk-xg/
 var _fbXGApp=null,_fbXGDb=null,_fbXGReady=false;
+var _HUB=null;
+var _XPATH={games:null, opponents:null};   /* preenchidos pelo contexto do hub */
 
-(function initFBXG(){
-  function ld(src,cb){var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}
-  ld('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',function(){
-    ld('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',function(){
-      var cfg={apiKey:'AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ',
-        authDomain:'fluxgk-statistics.firebaseapp.com',
-        databaseURL:'https://fluxgk-statistics-default-rtdb.firebaseio.com',
-        projectId:'fluxgk-statistics',storageBucket:'fluxgk-statistics.firebasestorage.app',
-        messagingSenderId:'605696462663',appId:'1:605696462663:web:1df401a86ba7f9e753c662'};
-      // Reuse existing app if already initialized
-      try{_fbXGApp=firebase.app('xg');}catch(e){_fbXGApp=firebase.initializeApp(cfg,'xg');}
+console.log('%c[FluxGK] xG v2.3 — abas persistentes, sem settings','color:#E8901A;font-weight:bold');
+
+function _xHexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim());}
+
+/* ---- contexto do hub: unica fonte de identidade e de caminhos ---- */
+window.addEventListener('message', function(e){
+  var d=e.data;
+  if(!d || d.type!=='FLUXGK_CONTEXT') return;
+  if(window.parent!==window && e.source!==window.parent) return;
+  if(!d.uid || !d.dataPath || !d.firebaseConfig){ console.error('[FluxGK] xG: contexto incompleto', d); return; }
+  _HUB=d;
+  /* jogos por temporada; adversarios por clube */
+  _XPATH.games     = d.dataPath + '/xg/games';
+  _XPATH.opponents = 'users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+  /* LIMPA cache local: pode conter dados de outra conta (localStorage e do navegador, nao da conta).
+     O Firebase, isolado por uid, vai preencher em seguida. */
+  try{ localStorage.removeItem('fxg_games'); localStorage.removeItem('fxg_clubs'); }catch(e){}
+  console.log('[FluxGK] xG: jogos em', _XPATH.games);
+  console.log('[FluxGK] xG: adversarios em', _XPATH.opponents);
+
+  /* identidade (para a faixa de contexto e o PDF) */
+  _hubColor = _xHexOk(d.club&&d.club.color) ? d.club.color.trim() : _hubColor;
+  _hubBadge = (d.club&&d.club.badge) || _hubBadge;
+  _hubClub  = (d.club&&d.club.name)  || _hubClub;
+  _hubCoach = (d.coach&&d.coach.name)|| _hubCoach;
+  _hubSeason= (d.season&&d.season.label) || '';
+  try{_renderCtxStrip();}catch(err){}
+
+  if(!_fbXGReady) _initFBXG(d.firebaseConfig);
+});
+try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'xg'},'*'); }catch(e){}
+
+function _renderCtxStrip(){
+  var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+  set('ctx-club',   _hubClub);
+  set('ctx-season', _hubSeason);
+  set('ctx-coach',  _hubCoach);
+  var strip=document.getElementById('ctxStrip');
+  if(strip && _xHexOk(_hubColor)){
+    strip.style.background=_hubColor+'14';
+    var ic=strip.querySelector('svg'); if(ic) ic.style.color=_hubColor;
+  }
+}
+var _hubSeason='';
+
+function _initFBXG(cfg){
+    function ld(src){
+      return new Promise(function(res,rej){
+        var ex=document.querySelector('script[src="'+src+'"]');
+        if(ex && ex.dataset.loaded==='1'){res();return;}
+        if(ex){ex.addEventListener('load',function(){res();});return;}
+        var s=document.createElement('script');s.src=src;
+        s.onload=function(){s.dataset.loaded='1';res();};
+        s.onerror=function(){rej(new Error('falhou: '+src));};
+        document.head.appendChild(s);
+      });
+    }
+    var B='https://www.gstatic.com/firebasejs/9.23.0/';
+    ld(B+'firebase-app-compat.js')
+      .then(function(){return ld(B+'firebase-auth-compat.js');})
+      .then(function(){return ld(B+'firebase-database-compat.js');})
+      .then(function(){
+      if(!firebase.apps.length) firebase.initializeApp(cfg);
+      _fbXGApp=firebase.app();
       _fbXGDb=firebase.database(_fbXGApp);
-      _fbXGReady=true;
-      // Pull data from Firebase into localStorage on connect
-      _fbXGDb.ref('fluxgk-xg/main').get().then(function(snap){
-        var d=snap.val();
-        if(d){
-          var rg=d.games||[],rc=d.clubs||[];
-          var lg=DB.games(),lc=DB.clubs();
-          var ag=[...new Map([...rg,...lg].map(function(g){return[g.id,g];}).filter(function(x){return x[0];})).values()];
-          var ac=[...new Map([...rc,...lc].map(function(c){return[c.id,c];}).filter(function(x){return x[0];})).values()];
-          if(ag.length)localStorage.setItem('fxg_games',JSON.stringify(ag));
-          if(ac.length)localStorage.setItem('fxg_clubs',JSON.stringify(ac));
-          renderHist();renderClubs();
-        }
-      }).catch(function(e){console.warn('FB XG pull failed:',e);});
-      updateFBStatus();
-    });
-  });
-})();
+      /* mesma origem + mesmo projeto => a sessao do hub e herdada */
+      firebase.auth().onAuthStateChanged(function(u){
+        if(!u){ console.error('[FluxGK] xG: sem sessao. Abra pelo hub.'); return; }
+        if(_fbXGReady) return;
+        _fbXGReady=true;
+        console.log('[FluxGK] xG: autenticado como', u.uid);
+        /* puxa games e opponents dos caminhos novos */
+        _fbXGDb.ref(_XPATH.games).get().then(function(snap){
+          var g=snap.val(); if(g){ localStorage.setItem('fxg_games',JSON.stringify(Object.values(g))); try{renderHist();}catch(e){} }
+        }).catch(function(e){console.warn('xG games pull:',e);});
+        _fbXGDb.ref(_XPATH.opponents).get().then(function(snap){
+          var c=snap.val(); if(c){ localStorage.setItem('fxg_clubs',JSON.stringify(Object.values(c))); try{renderClubs();}catch(e){} }
+        }).catch(function(e){console.warn('xG opponents pull:',e);});
+        updateFBStatus();
+      });
+    }).catch(function(e){console.error("[FluxGK] falha ao carregar Firebase",e);});
+}
 
 const FB={
   ready(){return _fbXGReady;},
   async get(path){
-    if(!_fbXGDb)return null;
-    try{var snap=await _fbXGDb.ref('fluxgk-xg/'+path).get();return snap.val();}
+    if(!_fbXGDb||!_XPATH.games)return null;
+    try{var ref=path==='games'?_XPATH.games:path==='opponents'?_XPATH.opponents:('users/'+(_HUB&&_HUB.uid)+'/xg-misc/'+path);
+      var snap=await _fbXGDb.ref(ref).get();return snap.val();}
     catch(e){return null;}
   },
-  async set(path,data){
-    if(!_fbXGDb)return false;
-    try{await _fbXGDb.ref('fluxgk-xg/'+path).set(data);return true;}
+  async setGames(arr){
+    if(!_fbXGDb||!_XPATH.games)return false;
+    try{var o={};arr.forEach(function(g){o[g.id]=g;});await _fbXGDb.ref(_XPATH.games).set(o);return true;}
+    catch(e){return false;}
+  },
+  async setOpponents(arr){
+    if(!_fbXGDb||!_XPATH.opponents)return false;
+    try{var o={};arr.forEach(function(c){o[c.id]=c;});await _fbXGDb.ref(_XPATH.opponents).set(o);return true;}
     catch(e){return false;}
   },
   async test(){return _fbXGReady;},
@@ -1392,8 +1470,9 @@ function updateFBStatus(){
 async function syncToCloud(){
   if(!FB.ready())return;
   const games=DB.games(),clubs=DB.clubs();
-  if(!games.length&&!clubs.length)return;
-  await FB.set('main',{games,clubs});updateFBStatus();
+  if(games.length)   await FB.setGames(games);
+  if(clubs.length)   await FB.setOpponents(clubs);
+  updateFBStatus();
 }
 
 async function saveFBConfig(){

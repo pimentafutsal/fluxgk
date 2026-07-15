@@ -9,43 +9,89 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function(){
-  function ldScript(src,cb){
-    var s=document.createElement('script');s.src=src;
-    s.onload=cb;s.onerror=function(){console.error('Failed:',src);};
-    document.head.appendChild(s);
-  }
-  ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',function(){
-    ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',function(){
-      var cfg={apiKey:"AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",authDomain:"fluxgk-statistics.firebaseapp.com",databaseURL:"https://fluxgk-statistics-default-rtdb.firebaseio.com",projectId:"fluxgk-statistics",storageBucket:"fluxgk-statistics.firebasestorage.app",messagingSenderId:"605696462663",appId:"1:605696462663:web:1df401a86ba7f9e753c662"};
-      var fbApp=firebase.initializeApp(cfg,'minutes');
-      var db=firebase.database(fbApp);
+  console.log('%c[FluxGK] minutes v2.2 — consumidor do hub, sem seasons (loader fix)','color:#E8901A;font-weight:bold');
+  window._HUB=null; window._MPATH={games:null,gks:null,comps:null,opponents:null};
+  window._fbReady=false; window._uiBooted=false;
+  function _mHexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim());}
+
+  window.addEventListener('message',function(e){
+    var d=e.data;
+    if(!d||d.type!=='FLUXGK_CONTEXT')return;
+    if(window.parent!==window && e.source!==window.parent)return;
+    if(!d.uid||!d.dataPath||!d.firebaseConfig){console.error('[FluxGK] minutes: contexto incompleto',d);return;}
+    window._HUB=d;
+    _MPATH.games=d.dataPath+'/minutes/games';
+    _MPATH.gks=d.dataPath+'/minutes/gks';
+    _MPATH.comps=d.dataPath+'/minutes/comps';
+    _MPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+    console.log('[FluxGK] minutes: jogos em',_MPATH.games);
+    var c=d.club||{},se=d.season||{},co=d.coach||{};
+    ST.accent=_mHexOk(c.color)?c.color.trim():ST.accent;
+    if(_mHexOk(ST.accent))document.documentElement.style.setProperty('--accent',ST.accent);
+    ST.clubName=c.name||''; ST.clubColor=ST.accent; ST.clubBadge=c.badge||'';
+    ST.coachName=co.name||''; window._hubSeason=se.label||'';
+    /* a temporada ativa vira a unica "season" dos filtros */
+    ST.seasons=[se.label||''];
+    try{_renderCtxStrip();}catch(err){}
+    if(!_fbReady)_initMinFB(d.firebaseConfig);
+  });
+  try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'minutes'},'*'); }catch(e){}
+  window._renderCtxStrip=function(){
+    var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+    set('ctx-club',ST.clubName); set('ctx-season',window._hubSeason); set('ctx-coach',ST.coachName);
+    var strip=document.getElementById('ctxStrip');
+    if(strip&&_mHexOk(ST.accent)){strip.style.background=ST.accent+'14';var ic=strip.querySelector('svg');if(ic)ic.style.color=ST.accent;}
+  };
+
+  function _initMinFB(cfg){
+    /* carrega os SDKs EM SEQUENCIA, esperando cada um DE VERDADE.
+       verificar se a tag existe nao basta: a tag pode existir mas o
+       codigo ainda nao ter rodado (foi o que causava firebase.database is not a function). */
+    function ld(src){
+      return new Promise(function(res,rej){
+        var ex=document.querySelector('script[src="'+src+'"]');
+        if(ex && ex.dataset.loaded==='1'){res();return;}
+        if(ex){ex.addEventListener('load',function(){res();});return;}
+        var s=document.createElement('script');s.src=src;
+        s.onload=function(){s.dataset.loaded='1';res();};
+        s.onerror=function(){rej(new Error('falhou: '+src));};
+        document.head.appendChild(s);
+      });
+    }
+    var B='https://www.gstatic.com/firebasejs/9.23.0/';
+    ld(B+'firebase-app-compat.js')
+      .then(function(){return ld(B+'firebase-auth-compat.js');})
+      .then(function(){return ld(B+'firebase-database-compat.js');})
+      .then(function(){
+      if(!firebase.apps.length) firebase.initializeApp(cfg);
+      var db=firebase.database();
       window.fbSet=function(p,v){return db.ref(p).set(v);};
       window.fbGet=function(p){return db.ref(p).get();};
       window.fbRemove=function(p){return db.ref(p).remove();};
-      window.fbListen=function(){
-        db.ref('fluxgk-minutes').on('value',function(snap){
-          var d=snap.val()||{};
-          if(d.settings){
-            if(d.settings.clubs)ST.clubs=d.settings.clubs;
-            if(d.settings.comps)ST.comps=d.settings.comps;
-            if(d.settings.gks)ST.gks=d.settings.gks;
-            if(d.settings.seasons)ST.seasons=d.settings.seasons;
-          }
-          ST.games=d.games?Object.values(d.games):[];
-          if(!window._fbReady){window._fbReady=true;bootUI();}
-          else{refreshAll();}
+      firebase.auth().onAuthStateChanged(function(u){
+        if(!u){console.error('[FluxGK] minutes: sem sessao. Abra pelo hub.');return;}
+        if(_fbReady)return; _fbReady=true;
+        console.log('[FluxGK] minutes: autenticado como',u.uid);
+        db.ref(_MPATH.games).on('value',function(snap){
+          var g=snap.val(); ST.games=g?Object.values(g):[];
+          if(!window._uiBooted){window._uiBooted=true;bootUI();} else{try{refreshAll();}catch(e){}}
+        });
+        db.ref(_MPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=v;try{refreshAll();}catch(e){}});
+        db.ref(_MPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{refreshAll();}catch(e){}});
+        db.ref(_MPATH.opponents).on('value',function(snap){
+          var v=snap.val();
+          if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});}
+          try{refreshAll();}catch(e){}
         });
         db.ref('.info/connected').on('value',function(snap){
-          var dot=document.getElementById('fb-dot'),txt=document.getElementById('fb-status');
+          var dot=document.getElementById('fb-dot'),txt=document.getElementById('fb-status-text');
           if(!dot)return;
           if(snap.val()){dot.style.background='#16a34a';if(txt)txt.textContent='live';}
           else{dot.style.background='#dc2626';if(txt)txt.textContent='offline';}
         });
-      };
-      document.getElementById('fb-loading').style.display='flex';
-      window.fbListen();
-    });
-  });
+      });
+    }).catch(function(e){console.error('[FluxGK] minutes: falha ao carregar Firebase',e);});
+  }
 })();
 </script>
 <style>
@@ -191,12 +237,13 @@ tr:hover td{background:var(--surface2);}
         <div class="logo-name">FluxGK</div>
         <div class="logo-tag">MINUTES TRACKER</div>
       </div>
+<div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--border,#e5e5e5);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#888"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg><span id="ctx-club">—</span><span style="opacity:.4">·</span><span id="ctx-season">—</span><span style="opacity:.4">·</span><span id="ctx-coach">—</span></div>
     </div>
     <nav class="nav">
       <button class="nav-btn active" onclick="navTo('collect')">Record</button>
       <button class="nav-btn" onclick="navTo('history')">History</button>
       <button class="nav-btn" onclick="navTo('report')">Report</button>
-      <button class="nav-btn" onclick="navTo('settings')">Settings</button>
+      <button class="nav-btn" onclick="navTo('settings')">Setup</button>
     </nav>
     <div class="nav-right">
       <span id="nav-club-name" class="nav-club">—</span>
@@ -369,7 +416,7 @@ tr:hover td{background:var(--surface2);}
 
 <!-- ═══ PAGE: SETTINGS ═══════════════════════════════════════════ -->
 <div id="page-settings" class="page">
-  <div class="page-title">Settings</div>
+  <div class="page-title">Setup</div>
   <div class="page-sub">Manage goalkeepers, opponents, competitions and seasons.</div>
 
   <div class="g2">
@@ -397,14 +444,7 @@ tr:hover td{background:var(--surface2);}
         <button class="btn btn-accent btn-sm" onclick="addItem('comps')">+ Add</button>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Seasons</div>
-      <div id="seasons-list" class="mb16"></div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="seasons-input" placeholder="e.g. 2025-26…" onkeydown="if(event.key==='Enter')addItem('seasons')">
-        <button class="btn btn-accent btn-sm" onclick="addItem('seasons')">+ Add</button>
-      </div>
-    </div>
+    
   </div>
 </div>
 
@@ -434,8 +474,15 @@ function navTo(page){
 
 // ── SETTINGS LISTS ────────────────────────────────────────────────
 function persist(){
-  window.fbSet('fluxgk-minutes/settings',{clubs:ST.clubs,comps:ST.comps,gks:ST.gks,seasons:ST.seasons})
-    .catch(e=>console.error('FB write error:',e));
+  if(!window._MPATH||!_MPATH.games){console.warn('[FluxGK] minutes: sem contexto do hub');return;}
+  window.fbSet(_MPATH.gks, ST.gks||[]).catch(e=>console.error('FB gks:',e));
+  window.fbSet(_MPATH.comps, ST.comps||[]).catch(e=>console.error('FB comps:',e));
+  var opp={};
+  (ST.clubs||[]).forEach(function(name){
+    var id=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    opp[id]={id:id,name:name};
+  });
+  window.fbSet(_MPATH.opponents, opp).catch(e=>console.error('FB opponents:',e));
 }
 function renderList(key){
   const ids={gks:'gks-list',clubs:'clubs-list',comps:'comps-list',seasons:'seasons-list'};
@@ -471,16 +518,16 @@ function fillSelect(id,items,all){
 function populateAllSelects(){
   fillSelect('g-opp',ST.clubs,'Select opponent…');
   fillSelect('g-comp',ST.comps,'Select competition…');
-  fillSelect('g-season',ST.seasons,'Select season…');
-  fillSelect('h-season',ST.seasons,'All');
+  /* season filter removido — contexto define a temporada */
+  /* season filter removido — contexto define a temporada */
   fillSelect('h-comp',ST.comps,'All');
   fillSelect('h-opp',ST.clubs,'All');
   fillSelect('h-gk',ST.gks,'All');
-  fillSelect('r-season',ST.seasons,'All');
+  /* season filter removido — contexto define a temporada */
   fillSelect('r-comp',ST.comps,'All');
   fillSelect('r-opp',ST.clubs,'All');
   fillSelect('r-gk',ST.gks,'All');
-  ['gks','clubs','comps','seasons'].forEach(renderList);
+  ['gks','clubs','comps'].forEach(renderList);
 }
 
 // ── TIME HELPERS ──────────────────────────────────────────────────
@@ -697,7 +744,7 @@ function saveGame(){
   if(!g.opp){alert('Please select an opponent.');return;}
   // If editing, use the original id
   if(ST.editingGameId){g.id=ST.editingGameId;}
-  window.fbSet('fluxgk-minutes/games/'+g.id,g)
+  window.fbSet(_MPATH.games+'/'+g.id,g)
     .then(()=>{
       const wasEditing=!!ST.editingGameId;
       ST.editingGameId=null;
@@ -953,7 +1000,7 @@ function renderCharts(prefix,games,allGks){
 
 function deleteGame(id){
   if(!confirm('Delete this game?'))return;
-  window.fbRemove('fluxgk-minutes/games/'+id).catch(e=>console.error(e));
+  window.fbRemove(_MPATH.games+'/'+id).catch(e=>console.error(e));
 }
 
 // ── REPORT ────────────────────────────────────────────────────────
@@ -1193,7 +1240,7 @@ function refreshAll(){
 
 // ── BOOT ──────────────────────────────────────────────────────────
 function bootUI(){
-  document.getElementById('fb-loading').style.display='none';
+  /* fb-loading eliminado */
   document.documentElement.style.setProperty('--accent',ST.accent);
   document.getElementById('nav-club-name').textContent=ST.clubName;
   populateAllSelects();

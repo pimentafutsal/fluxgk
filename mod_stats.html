@@ -9,49 +9,91 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function(){
-  function ldScript(src,cb){
-    var s=document.createElement('script');s.src=src;
-    s.onload=cb;s.onerror=function(){console.error('Failed to load:',src);};
-    document.head.appendChild(s);
-  }
-  ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',function(){
-    ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',function(){
-      var cfg={apiKey:"AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",authDomain:"fluxgk-statistics.firebaseapp.com",databaseURL:"https://fluxgk-statistics-default-rtdb.firebaseio.com",projectId:"fluxgk-statistics",storageBucket:"fluxgk-statistics.firebasestorage.app",messagingSenderId:"605696462663",appId:"1:605696462663:web:1df401a86ba7f9e753c662"};
-      var fbApp=firebase.initializeApp(cfg,'stats');
-      var db=firebase.database(fbApp);
-      window._fbReady=false;
+  console.log('%c[FluxGK] stats v2.2 — consumidor do hub (aba Setup)','color:#E8901A;font-weight:bold');
+  window._HUB=null; window._SPATH={games:null,gks:null,comps:null,opponents:null};
+  window._fbReady=false; window._uiBooted=false;
+  function _sHexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim());}
+
+  window.addEventListener('message',function(e){
+    var d=e.data;
+    if(!d||d.type!=='FLUXGK_CONTEXT')return;
+    if(window.parent!==window && e.source!==window.parent)return;
+    if(!d.uid||!d.dataPath||!d.firebaseConfig){console.error('[FluxGK] stats: contexto incompleto',d);return;}
+    window._HUB=d;
+    _SPATH.games=d.dataPath+'/stats/games';
+    _SPATH.gks=d.dataPath+'/stats/gks';
+    _SPATH.comps=d.dataPath+'/stats/comps';
+    _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+    console.log('[FluxGK] stats: jogos em',_SPATH.games);
+    var c=d.club||{},se=d.season||{},co=d.coach||{};
+    ST.accent=_sHexOk(c.color)?c.color.trim():ST.accent;
+    if(_sHexOk(ST.accent))document.documentElement.style.setProperty('--accent',ST.accent);
+    ST.clubName=c.name||'';
+    window._hubSeason=se.label||''; window._hubCoach=co.name||'';
+    try{_renderCtxStrip();}catch(err){}
+    if(!_fbReady)_initStatsFB(d.firebaseConfig);
+  });
+  try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'stats'},'*'); }catch(e){}
+  window._renderCtxStrip=function(){
+    var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+    set('ctx-club',ST.clubName); set('ctx-season',window._hubSeason); set('ctx-coach',window._hubCoach);
+    var strip=document.getElementById('ctxStrip');
+    if(strip&&_sHexOk(ST.accent)){strip.style.background=ST.accent+'14';var ic=strip.querySelector('svg');if(ic)ic.style.color=ST.accent;}
+  };
+
+  function _initStatsFB(cfg){
+    function ld(src){
+      return new Promise(function(res,rej){
+        var ex=document.querySelector('script[src="'+src+'"]');
+        if(ex && ex.dataset.loaded==='1'){res();return;}
+        if(ex){ex.addEventListener('load',function(){res();});return;}
+        var s=document.createElement('script');s.src=src;
+        s.onload=function(){s.dataset.loaded='1';res();};
+        s.onerror=function(){rej(new Error('falhou: '+src));};
+        document.head.appendChild(s);
+      });
+    }
+    var B='https://www.gstatic.com/firebasejs/9.23.0/';
+    ld(B+'firebase-app-compat.js')
+      .then(function(){return ld(B+'firebase-auth-compat.js');})
+      .then(function(){return ld(B+'firebase-database-compat.js');})
+      .then(function(){
+      if(!firebase.apps.length) firebase.initializeApp(cfg);
+      var db=firebase.database();
       window.fbSet=function(p,v){return db.ref(p).set(v);};
       window.fbRemove=function(p){return db.ref(p).remove();};
       window.fbUpdate=function(p,v){return db.ref(p).update(v);};
       window.fbGet=function(p){return db.ref(p).get();};
-      window.fbListen=function(){
-        db.ref('fluxgk').on('value',function(snapshot){
-          var data=snapshot.val();
-          if(!data){window._fbReady=true;bootUI();return;}
-          if(data.settings){
-            if(data.settings.clubs)ST.clubs=data.settings.clubs;
-            if(data.settings.clubBadges)ST.clubBadges=data.settings.clubBadges;
-            if(data.settings.comps)ST.comps=data.settings.comps;
-            if(data.settings.gks)ST.gks=data.settings.gks;
-            if(data.settings.accent){ST.accent=data.settings.accent;document.documentElement.style.setProperty('--accent',ST.accent);var inp=document.getElementById('set-accent');if(inp)inp.value=ST.accent;var hex=document.getElementById('set-accent-hex');if(hex)hex.textContent=ST.accent;}
-            if(data.settings.clubName){ST.clubName=data.settings.clubName;document.getElementById('nav-club-name').textContent=ST.clubName;var inp2=document.getElementById('set-club-name');if(inp2)inp2.value=ST.clubName;}
-          }
-          if(data.games){ST.games=Object.values(data.games).map(function(g){return Object.assign({},g,{shots:g.shots?(Array.isArray(g.shots)?g.shots:Object.values(g.shots)):[]});});}
-          else{ST.games=[];}
-          if(!window._fbReady){window._fbReady=true;bootUI();}
-          else{populateAllSelects();var active=document.querySelector('.page.active');if(active){var id=active.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();if(id==='reports'){populateReportFilters();buildReport();}}}
-        });
+      firebase.auth().onAuthStateChanged(function(u){
+        if(!u){console.error('[FluxGK] stats: sem sessao. Abra pelo hub.');return;}
+        if(_fbReady)return; _fbReady=true;
+        console.log('[FluxGK] stats: autenticado como',u.uid);
+        _statsLoadAll(db);
         db.ref('.info/connected').on('value',function(snap){
-          var dot=document.getElementById('fb-dot');var txt=document.getElementById('fb-status-text');if(!dot||!txt)return;
-          if(snap.val()===true){dot.style.background='#16a34a';txt.textContent='live';txt.style.color='#16a34a';}
-          else{dot.style.background='#dc2626';txt.textContent='offline';txt.style.color='#dc2626';}
+          var dot=document.getElementById('fb-dot');var txt=document.getElementById('fb-status-text');
+          if(!dot)return;
+          if(snap.val()===true){dot.style.background='#16a34a';if(txt){txt.textContent='live';txt.style.color='#16a34a';}}
+          else{dot.style.background='#dc2626';if(txt){txt.textContent='offline';txt.style.color='#dc2626';}}
         });
-      };
-      // Start listening - DOM is ready by the time scripts load in iframe
-      document.getElementById('fb-loading').style.display='flex';
-      window.fbListen();
+      });
+    }).catch(function(e){console.error("[FluxGK] falha ao carregar Firebase",e);});
+  }
+  function _statsLoadAll(db){
+    db.ref(_SPATH.games).on('value',function(snap){
+      var g=snap.val();
+      ST.games=g?Object.values(g).map(function(x){return Object.assign({},x);}):[];
+      if(!window._uiBooted){window._uiBooted=true;bootUI();}
+      else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
-  });
+    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=v;try{populateAllSelects();}catch(e){}});
+    db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{populateAllSelects();}catch(e){}});
+    db.ref(_SPATH.opponents).on('value',function(snap){
+      var v=snap.val();
+      if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});
+            ST.clubBadges={};Object.values(v).forEach(function(c){if(c.name&&c.badge)ST.clubBadges[c.name]=c.badge;});}
+      try{populateAllSelects();}catch(e){}
+    });
+  }
 })();
 </script>
 <style>
@@ -192,13 +234,16 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="logo">
       <div class="logo-box"><span>GK</span></div>
       <div><div class="logo-name">FluxGK</div><div class="logo-tag">DATA-DRIVEN GK</div></div>
+<div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--border,#e5e5e5);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#888"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg><span id="ctx-club">—</span><span style="opacity:.4">·</span><span id="ctx-season">—</span><span style="opacity:.4">·</span><span id="ctx-coach">—</span></div>
+
     </div>
     <nav class="nav">
       <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="navToRecord()">Record Game</button>
       <button class="nav-btn" onclick="showPage('history')">History</button>
       <button class="nav-btn" onclick="showPage('reports')">Reports</button>
-      <button class="nav-btn" onclick="showPage('settings')">Settings</button>
+      <button class="nav-btn" onclick="showPage('settings')">Setup</button>
+      
     </nav>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
   <div id="fb-status" title="Firebase connection" style="display:flex;align-items:center;gap:5px;font-size:10px;color:#555;font-family:var(--mono);">
@@ -467,20 +512,10 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 
 <!-- SETTINGS -->
 <div id="page-settings" class="page">
-  <div class="page-title">Settings</div>
-  <div class="page-sub">Configure your club identity and manage data lists.</div>
+  <div class="page-title">Setup</div>
+  <div class="page-sub">Manage opponents, competitions and goalkeepers for this context.</div>
   <div class="g2" style="gap:16px;">
-    <div class="card">
-      <div class="card-title">Club Identity</div>
-      <div style="margin-bottom:14px;"><div class="label">Club / Organization Name</div><input type="text" id="set-club-name" placeholder="My Club" oninput="saveSettings()"></div>
-      <div><div class="label">Accent Color</div>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:5px;">
-          <input type="color" id="set-accent" oninput="applyAccent(this.value)">
-          <span id="set-accent-hex" style="font-family:var(--mono);font-size:11px;color:var(--mute);">#e8ff00</span>
-        </div>
-      </div>
-    </div>
-    <div class="card">
+<div class="card">
       <div class="card-title">Opponents / Clubs</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="add-club-input" placeholder="Add club name…" onkeydown="if(event.key==='Enter')addItem('clubs','add-club-input','clubs-list')">
@@ -537,23 +572,25 @@ function newGame(){
 // ═══ STORAGE ══════════════════════════════════════════════════════
 // ═══ FIREBASE PERSISTENCE ════════════════════════════════════════
 function persist(){
-  // Settings
-  window.fbSet('fluxgk/settings', {
-    clubs: ST.clubs,
-    comps: ST.comps,
-    gks:   ST.gks,
-    accent: ST.accent,
-    clubName: ST.clubName,
-    clubBadges: ST.clubBadges
-  }).catch(e=>console.error('FB settings write error:',e));
+  if(!window._SPATH||!_SPATH.games){console.warn('[FluxGK] stats: sem contexto do hub');return;}
+  /* elenco e competicoes: por temporada */
+  window.fbSet(_SPATH.gks, ST.gks||[]).catch(e=>console.error('FB gks:',e));
+  window.fbSet(_SPATH.comps, ST.comps||[]).catch(e=>console.error('FB comps:',e));
+  /* adversarios: por clube (compartilhado com o xG) */
+  var opp={};
+  (ST.clubs||[]).forEach(function(name){
+    var id=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    opp[id]={id:id,name:name,badge:(ST.clubBadges&&ST.clubBadges[name])||''};
+  });
+  window.fbSet(_SPATH.opponents, opp).catch(e=>console.error('FB opponents:',e));
 }
 function persistGame(game){
   // Write single game (used after save/update)
   const g = {...game, shots: game.shots||[]};
-  window.fbSet('fluxgk/games/'+g.id, g).catch(e=>console.error('FB game write error:',e));
+  window.fbSet(_SPATH.games+'/'+g.id, g).catch(e=>console.error('FB game write error:',e));
 }
 function deleteGameFB(id){
-  window.fbRemove('fluxgk/games/'+id).catch(e=>console.error('FB game delete error:',e));
+  window.fbRemove(_SPATH.games+'/'+id).catch(e=>console.error('FB game delete error:',e));
 }
 function hydrate(){
   // No-op: hydration is handled by fbListen real-time listener
@@ -587,13 +624,12 @@ function saveSettings(){
 function applyAccent(color){
   ST.accent=color;
   document.documentElement.style.setProperty('--accent',color);
-  document.getElementById('set-accent-hex').textContent=color;
+  var _h=document.getElementById('set-accent-hex');if(_h)_h.textContent=color;
   persist();
 }
 function renderSettings(){
-  document.getElementById('set-club-name').value=ST.clubName;
-  document.getElementById('set-accent').value=ST.accent;
-  document.getElementById('set-accent-hex').textContent=ST.accent;
+  /* identidade (nome, cor) vem do hub — nao se edita aqui.
+     esta pagina agora e so cadastro de adversarios, competicoes e goleiros. */
   ['clubs','comps','gks'].forEach(k=>renderList(k));
 }
 function renderList(key){
@@ -1691,7 +1727,7 @@ function exportReport(){
 // ═══ BOOT ═════════════════════════════════════════════════════════
 function bootUI(){
   // Called after Firebase delivers first snapshot
-  document.getElementById('fb-loading').style.display='none';
+  /* fb-loading eliminado */
   document.documentElement.style.setProperty('--accent',ST.accent);
   document.getElementById('nav-club-name').textContent=ST.clubName;
   // rep-filter-gk-wrap shown only for 'By GK' report type

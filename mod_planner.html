@@ -157,12 +157,17 @@ select.fi option{background:var(--paper)}
     <button class="ntab" onclick="showPage('post',this)">Post-Training</button>
     <button class="ntab" onclick="showPage('library',this)">Sessions Library</button>
     <button class="ntab" onclick="showPage('exlib',this)">Exercise Library</button>
-    <button class="ntab" onclick="showPage('settings',this)">Club Settings</button>
   </div>
   <div id="navBadge" style="margin-left:8px;display:flex;align-items:center"></div>
   <div id="syncDot" title="Sync status"></div>
   <div class="nver" style="margin-left:8px">V1.0 · 2026</div>
 </nav>
+<div id="ctxStrip" style="display:flex;align-items:center;gap:8px;padding:6px 20px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--line,#e5e5e5);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:var(--mute,#737373)">
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
+  <span id="ctx-club">—</span><span style="opacity:.4">·</span>
+  <span id="ctx-season">—</span><span style="opacity:.4">·</span>
+  <span id="ctx-coach">—</span>
+</div>
 
 <!-- SESSION -->
 
@@ -281,7 +286,7 @@ const PAGES = {
       <div class="row">
         <span class="bdg b-dk">Planning</span>
         <button class="btn btn-o" onclick="exportCurrentSession()" style="background:rgba(250,250,247,.1);border-color:rgba(250,250,247,.3);color:#FAFAF7">↗ Export Session</button>
-        <button class="btn btn-p" style="background:#FAFAF7;color:#0A0A0A" onclick="saveCurrentSession()">Save Session</button>
+        <button class="btn btn-p" style="background:#FAFAF7;color:#0A0A0A" onclick="saveCurrentSession()">Save to Library</button>
       </div>
     </div>
     <div class="sh-meta">
@@ -310,14 +315,13 @@ const PAGES = {
     <div class="empty"><div style="font-size:36px;opacity:.22;margin-bottom:12px">▭</div><div style="font-weight:600;margin-bottom:5px">No exercises yet</div><div style="font-size:13px;color:var(--mute)">Click "Add Exercise" to start building your session</div></div>
   </div>`,
   post: `<!-- Header with session link -->
-  <div id="postHeader" style="background:var(--ink);border-radius:6px;padding:20px 26px;margin-bottom:20px;color:#FAFAF7;position:relative;overflow:hidden">
-    <svg style="position:absolute;bottom:0;right:0;width:45%;opacity:.05;pointer-events:none" viewBox="0 0 500 70" fill="none"><path d="M0 35C50 10,80 60,140 35C200 10,230 60,290 35C350 10,380 60,440 35C470 22,490 42,500 35" stroke="#FAFAF7" stroke-width="1.8" fill="none"/></svg>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:rgba(250,250,247,.38);text-transform:uppercase;margin-bottom:5px" id="postHeaderDate">—</div>
-    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.03em;color:#FAFAF7;margin-bottom:4px" id="postHeaderTitle">No active session</div>
-    <div style="font-size:13px;color:rgba(250,250,247,.55)" id="postHeaderSub">Open the Session tab to start planning</div>
+  <div id="postHeader" class="card" style="margin-bottom:16px;position:relative;overflow:hidden">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--mute);text-transform:uppercase" id="postHeaderDate">Post-Training</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--ink);margin-top:2px" id="postHeaderTitle">Session Review</div>
+    <div style="font-size:13px;color:var(--mute);margin-top:2px" id="postHeaderSub">Open a session from the Session tab, or a saved one from the Library, to review it here.</div>
     <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <span id="postStatusBadge" style="display:none;padding:3px 10px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:rgba(22,163,74,.2);color:#4ade80">Active</span>
-      <button id="closeSessionBtn" onclick="closeSession()" class="btn" style="display:none;background:#FAFAF7;color:#0A0A0A;font-size:10px;padding:7px 16px">✓ Close &amp; Save Session</button>
+      <span id="postStatusBadge" style="display:none;padding:3px 10px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:var(--ink);color:var(--paper)"></span>
+      <button id="closeSessionBtn" onclick="closeSession()" class="btn" style="display:none;background:var(--ink);color:var(--paper);font-size:10px;padding:7px 16px">✓ Update session</button>
     </div>
   </div>
 
@@ -393,17 +397,6 @@ const PAGES = {
     </div>
   </div>
   <!-- Firebase config banner -->
-  <div id="firebaseBanner" style="background:var(--paper);border:1px solid var(--faint);border-radius:6px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
-    <div style="font-size:22px;flex-shrink:0">🔥</div>
-    <div>
-      <div style="font-weight:600;font-size:14px;margin-bottom:4px">Connect Firebase for cross-device sync</div>
-      <div style="font-size:13px;color:var(--mute);margin-bottom:10px">Sessions sync automatically across all your devices in real time.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <span id="fbStatus" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);padding:6px 12px;background:var(--faint);border-radius:4px">Connecting...</span>
-        <button class="btn btn-o btn-sm" onclick="connectFirebase()" style="font-size:9px">Reconnect</button>
-      </div>
-    </div>
-  </div>
   <div id="libraryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
     <div class="empty" style="grid-column:1/-1">
       <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
@@ -425,55 +418,24 @@ const PAGES = {
       <div style="font-size:13px;color:var(--mute)">Click "+ New Exercise" to build one on the Tactical Court</div>
     </div>
   </div>`,
-  settings: `<div class="disp" style="font-size:20px;margin-bottom:3px">Club Settings</div>
-  <div class="lbl mb20">Personalise for your current club</div>
-  <div class="set-grid">
-    <div>
-      <div class="card mb12">
-        <div class="lbl mb12">Club Identity</div>
-        <div class="fg mb12"><div class="fl">Club Name</div><input class="fi" id="clubName" placeholder="Your current club name" oninput="updatePreview()"></div>
-        <div class="fg mb12"><div class="fl">Abbreviation (2–3 letters)</div><input class="fi" id="clubAbbr" maxlength="3" placeholder="e.g. QSC" oninput="updatePreview()"></div>
-        <div class="fg mb12">
-          <div class="fl">Club Badge / Crest</div>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
-            <div id="badgePreviewWrap" style="width:56px;height:56px;border-radius:10px;background:var(--faint);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-              <img id="badgePreviewImg" style="width:100%;height:100%;object-fit:contain;display:none"/>
-              <span id="badgePreviewText" style="font-size:22px;opacity:.3">🛡</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <button class="btn btn-o btn-sm" onclick="document.getElementById('badgeFileInput').click()">Upload Badge</button>
-              <button class="btn btn-o btn-sm" id="badgeClearBtn" onclick="clearBadge()" style="display:none;color:var(--risk);border-color:var(--risk)">Remove</button>
-            </div>
-            <input type="file" id="badgeFileInput" accept="image/*" style="display:none" onchange="handleBadgeUpload(this)">
-          </div>
-        </div>
-        <div class="fg mb12"><div class="fl">Coach Name</div><input class="fi" id="coachName" placeholder="Your name"></div>
-        <div class="fg"><div class="fl">Country / League</div><input class="fi" id="clubLeague" placeholder="e.g. Kuwait — Premier League"></div>
-      </div>
-      <div class="card mb12">
-        <div class="lbl mb8">Club Color (goals &amp; accents)</div>
-        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:9px">
-          <div class="cdot active" style="background:#0A0A0A" data-c="#0A0A0A" onclick="pickColor(this)"></div>
-          <div class="cdot" style="background:#DC2626" data-c="#DC2626" onclick="pickColor(this)"></div>
-          <div class="cdot" style="background:#2563EB" data-c="#2563EB" onclick="pickColor(this)"></div>
-          <div class="cdot" style="background:#16A34A" data-c="#16A34A" onclick="pickColor(this)"></div>
-          <div class="cdot" style="background:#D97706" data-c="#D97706" onclick="pickColor(this)"></div>
-          <div class="cdot" style="background:#7C3AED" data-c="#7C3AED" onclick="pickColor(this)"></div>
-          <input type="color" value="#0A0A0A" style="width:34px;height:34px;border:none;cursor:pointer;border-radius:50%;padding:0" oninput="_clubColor=this.value;_applyClubColor(this.value);localStorage.setItem('fluxgk_color',this.value)">
-        </div>
-      </div>
-      <div class="card"><div class="lbl mb8">Default Goalkeepers</div><textarea class="fi fta" id="defGKs" placeholder="One name per line"></textarea></div>
-    </div>
-    <div>
-      <div class="card mb12"><div class="lbl mb12">Preview</div>
-        <div class="cprev"><div class="cp-ab" id="prevAbbr" style="color:#FAFAF7">—</div><div class="cp-nm" id="prevName">Your Club</div></div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mute);text-align:center;letter-spacing:.1em">FluxGK · Training Planner</div>
-      </div>
-      <div class="card mb12"><div class="lbl mb8">Methodology Label</div><input class="fi" id="methLabel" value="Constraints-Led Approach (CLA) · Ecological Dynamics"></div>
-      <div class="card"><div class="lbl mb8">Season</div><input class="fi" id="seasonLabel" value="2025/26"></div>
-    </div>
+  settings: `<div class="disp" style="font-size:20px;margin-bottom:3px">Club Identity</div>
+  <div class="lbl mb20">Managed in the FluxGK hub — this module only reads it</div>
+  <div class="card mb12">
+    <div class="lbl mb12">Current context</div>
+    <div class="fg mb12"><div class="fl">Club</div><div class="fi" style="background:var(--bg2);cursor:default" id="hi-club">—</div></div>
+    <div class="fg mb12"><div class="fl">Season</div><div class="fi" style="background:var(--bg2);cursor:default" id="hi-season">—</div></div>
+    <div class="fg mb12"><div class="fl">Coach</div><div class="fi" style="background:var(--bg2);cursor:default" id="hi-coach">—</div></div>
+    <div class="fg mb12"><div class="fl">Methodology</div><div class="fi" style="background:var(--bg2);cursor:default" id="hi-meth">—</div></div>
+    <div class="fg"><div class="fl">Data branch</div><div class="fi" style="background:var(--bg2);cursor:default;font-family:monospace;font-size:11px" id="hi-path">—</div></div>
   </div>
-  <div class="mt20"><button class="btn btn-p" onclick="saveSettings()">Save Settings</button></div>`,
+  <div class="card">
+    <div class="lbl mb8">Where things live</div>
+    <div style="font-size:13px;color:var(--mute);line-height:1.7">
+      <b>Sessions</b> belong to the active club and season. Switching context in the hub shows a different set.<br>
+      <b>Exercise library</b> is permanent and yours — it follows you across clubs and seasons.<br><br>
+      To change the club name, colour, badge or season, use <b>SWITCH</b> in the hub.
+    </div>
+  </div>`,
 };
 
 
@@ -491,37 +453,77 @@ let _sessionFormState = {};
 let _editingSessionId = null; // id of session being re-edited
 let _editPostState = null;    // post-training state when re-editing
 let _clubBadge = null; // base64 badge image
-let _clubColor = '#0A0A0A'; // club primary color
+let _clubColor = '#0A0A0A'; // vem do HUB
 
-/* ---- Contexto do hub (FLUXGK_CONTEXT) ---- */
+console.log('%c[FluxGK] planner v2.5 (fluxo save-to-library + post claro) — consumidor do hub (faixa de contexto)','color:#E8901A;font-weight:bold');
+
+/* ============================================================
+   O Planner nao tem mais identidade propria: nem cor, nem escudo,
+   nem config de Firebase. Ele RECEBE do hub e obedece.
+
+   sessoes    -> users/{uid}/data/{clube}/{temporada}/planner/sessions
+   biblioteca -> users/{uid}/library/exercises
+                 ACERVO PERMANENTE: atravessa clubes e temporadas.
+                 E seu, nao do clube.
+   ============================================================ */
+var _HUB=null, _PATH={sessions:null,exercises:null}, _fbReady=false;
 function _hexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(c.trim());}
-let _hubLocked = false; // hub tem prioridade sobre a config local do Planner
+
 window.addEventListener('message', function(e){
-  const d = e.data;
-  if(!d || d.type !== 'FLUXGK_CONTEXT' || !d.profile) return;
-  if(window.parent !== window && e.source !== window.parent) return;
-  const p = d.profile;
-  _hubLocked = true; // a partir daqui, a config local do Planner nao sobrescreve mais
-  if(_hexOk(p.clubColor)){
-    _clubColor = p.clubColor.trim();
-    try{ _applyClubColor(_clubColor); }catch(err){}
-    try{ localStorage.setItem('fluxgk_color', _clubColor); }catch(err){}
+  var d=e.data;
+  if(!d || d.type!=='FLUXGK_CONTEXT') return;
+  if(window.parent!==window && e.source!==window.parent) return;
+  if(!d.uid || !d.dataPath || !d.firebaseConfig){
+    console.error('[FluxGK] planner: contexto incompleto do hub', d); return;
   }
-  if(p.clubBadge){
-    _clubBadge = p.clubBadge;
-    try{ _updateNavBadge(); }catch(err){}
-    try{ localStorage.setItem('fluxgk_badge', p.clubBadge); }catch(err){}
-  }
-  if(p.clubName)  _sessionFormState._clubName  = p.clubName;
-  if(p.coachName) _sessionFormState._coachName = p.coachName;
-  if(p.methodology) _sessionFormState._methLabel = p.methodology;
+  _HUB=d;
+  _PATH.sessions  = d.dataPath + '/planner/sessions';
+  _PATH.exercises = 'users/' + d.uid + '/library/exercises';
+  console.log('[FluxGK] planner: sessoes em', _PATH.sessions);
+
+  var c=d.club||{}, se=d.season||{}, co=d.coach||{};
+  if(_hexOk(c.color)){ _clubColor=c.color.trim(); try{_applyClubColor(_clubColor);}catch(err){} }
+  _clubBadge = c.badge || null;   /* vazio limpa o escudo antigo */
+  try{_updateNavBadge();}catch(err){}
+  _sessionFormState._clubName    = c.name||'';
+  _sessionFormState._hdrClub     = (c.name||'')+' · Season '+(se.label||'');
+  _sessionFormState._hdrTitle    = (c.name||'Club')+' · Training Session';
+  _sessionFormState._clubAbbr    = c.abbr||'';
+  _sessionFormState._coachName   = co.name||'';
+  _sessionFormState._methLabel   = co.methodology||'';
+  _sessionFormState._seasonLabel = se.label||'';
+
+  try{_renderHubIdentity();}catch(err){}
+  try{_renderContextStrip();}catch(err){}
+  if(!_fbReady) _loadFirebase(d.firebaseConfig);
 });
-/* avisa o hub que ja esta pronto - nao depende do timing de 600ms */
-try{ if(window.parent && window.parent !== window) window.parent.postMessage({type:'FLUXGK_MODULE_READY', module:'planner'}, '*'); }catch(e){}
+try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'planner'},'*'); }catch(e){}
+
+function _renderContextStrip(){
+  var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+  set('ctx-club',   _sessionFormState._clubName);
+  set('ctx-season', _sessionFormState._seasonLabel);
+  set('ctx-coach',  _sessionFormState._coachName);
+  var strip=document.getElementById('ctxStrip');
+  if(strip && _hexOk(_clubColor)){
+    strip.style.background=_clubColor+'14';   /* 8% da cor do clube */
+    var ic=strip.querySelector('svg'); if(ic) ic.style.color=_clubColor;
+  }
+}
+
+function _renderHubIdentity(){
+  var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+  set('hi-club',   _sessionFormState._clubName);
+  set('hi-season', _sessionFormState._seasonLabel);
+  set('hi-coach',  _sessionFormState._coachName);
+  set('hi-meth',   _sessionFormState._methLabel);
+  set('hi-path',   _PATH.sessions||'—');
+}
+
 let _currentPage      = 'session';
 let _sessionOpen      = false;
-let savedSessions   = JSON.parse(localStorage.getItem('fluxgk_sessions') || '[]');
-let savedExercises  = JSON.parse(localStorage.getItem('fluxgk_exercises') || '[]');
+let savedSessions   = [];   /* NAO carrega do localStorage: e compartilhado entre contas no mesmo navegador. O Firebase (isolado por uid) e a unica fonte. */
+let savedExercises  = [];
 let _wizMode        = 'session';   // 'session' | 'lib'
 let _libEditId      = null;        // id do exercício da biblioteca em edição
 let selectedSessions= new Set();
@@ -555,30 +557,9 @@ const FIREBASE_CONFIG = {
   if(st) st.value = initDate.toTimeString().slice(0,5);
   // Save initial state so returning to session tab restores correctly
   _saveSessionForm();
-  // Restore badge from localStorage
-  // Restore club color
-  const savedColor = localStorage.getItem('fluxgk_color');
-  if(savedColor){ _clubColor=savedColor; _applyClubColor(savedColor); }
-  const savedBadge = localStorage.getItem('fluxgk_badge');
-  if(savedBadge){ _clubBadge=savedBadge; _updateNavBadge(); }
-  // Restore club settings
-  const savedSettings = localStorage.getItem('fluxgk_settings');
-  if(savedSettings){
-    try{
-      const s = JSON.parse(savedSettings);
-      if(s.clubName){
-        _sessionFormState._hdrTitle  = s.clubName+' · Training Session';
-        _sessionFormState._hdrClub   = s.clubName+' · Season '+(s.seasonLabel||'');
-        _sessionFormState._clubName  = s.clubName;
-      }
-      if(s.coachName) _sessionFormState._coachName = s.coachName;
-      if(s.methLabel) {
-        // store so report can use it
-        _sessionFormState._methLabel = s.methLabel;
-      }
-    }catch(e){}
-  }
-  _loadFirebase(FIREBASE_CONFIG);
+  /* Identidade NAO vem mais do localStorage — vem SO do hub (FLUXGK_CONTEXT).
+     Isto elimina o escudo/cor/clube antigos que ficavam presos no navegador. */
+  /* NAO inicia sozinho: espera o FLUXGK_CONTEXT do hub */
 })();
 
 // ── NAV ───────────────────────────────────────────────────────
@@ -730,7 +711,7 @@ function confirmEx(){
 function _persistExercise(ex){
   localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
   if(fbDatabase){
-    dotY(); fbDatabase.ref('exercises/'+ex.id).set(ex).then(dotG).catch(dotR);
+    dotY(); fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex).then(dotG).catch(dotR);
   }
 }
 function renderExLib(){
@@ -777,7 +758,7 @@ function rmLibEx(i){
   if(!confirm('Delete "'+ex.name+'" from the library?')) return;
   savedExercises.splice(i,1);
   localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
-  if(fbDatabase){dotY();fbDatabase.ref('exercises/'+ex.id).remove().then(dotG).catch(dotR);}
+  if(fbDatabase){dotY();fbDatabase.ref(_PATH.exercises+'/'+ex.id).remove().then(dotG).catch(dotR);}
   renderExLib();
 }
 
@@ -947,68 +928,11 @@ function setRating(n){
 
 // ── CLOSE SESSION ─────────────────────────────────────────────
 function closeSession(){
-  const objMet = document.querySelector('input[name="obj"]:checked')?.value || null;
-  const g = id => document.getElementById(id)?.value || _sessionFormState[id] || '';
-  const session = {
-    id:        Date.now(),
-    date:      g('sDate'),
-    time:      g('sTime'),
-    duration:  g('sDur'),
-    type:      g('sType'),
-    players:   g('sPlayers'),
-    objective: g('sObj'),
-    method:    g('sMeth'),
-    clubName:  _sessionFormState._hdrTitle || 'Training Session',
-    exercises: exercises.map(e=>({...e})),
-    rating,
-    objMet,
-    postPositive:   g('postPos'),
-    postImprovement:g('postImp'),
-    postAffordances:g('postAff'),
-    postConstraints:g('postCon'),
-    postEmergent:   g('postEme'),
-    postNext:       g('postNxt'),
-    closedAt: new Date().toISOString(),
-  };
-
-  // If re-editing an existing session, update it instead of creating new
-  if(_editingSessionId){
-    session.id = _editingSessionId;
-    const idx = savedSessions.findIndex(s=>s.id===_editingSessionId);
-    if(idx>=0) savedSessions[idx]=session;
-    else savedSessions.unshift(session);
-    _editingSessionId = null;
-  } else {
-    savedSessions.unshift(session);
-  }
-  localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
-
-  // Save to Firebase (source of truth)
-  if(fbDatabase){
-    dotY(); fbDatabase.ref('sessions/'+session.id).set(session)
-      .then(()=>{dotG();toast('Session saved & synced ☁️');})
-      .catch(e=>{dotR();toast('Saved locally');console.error(e);});
-  } else {
-    toast('Session saved locally — sync when connected');
-  }
-
-  // Reset session
-  _sessionOpen = false;
-  exercises = [];
-  rating = 0;
-  document.getElementById('postPos').value='';
-  document.getElementById('postImp').value='';
-  document.getElementById('postAff').value='';
-  document.getElementById('postCon').value='';
-  document.getElementById('postEme').value='';
-  document.getElementById('postNxt').value='';
-  document.querySelectorAll('input[name="obj"]').forEach(r=>r.checked=false);
-  renderExercises();
-  refreshPost();
-  renderLibrary();
-
-  // Switch to library
-  showPage('library', document.querySelectorAll('.ntab')[2]);
+  /* usado pelo Post-Training: atualiza a MESMA sessao (nao duplica) */
+  if(!_editingSessionId && !_sessionOpen){ toast('Open or save a session first'); return; }
+  _persistSessionToLibrary();
+  toast('Session updated ✓');
+  showPage('library');
 }
 
 // ── SESSIONS LIBRARY ─────────────────────────────────────────
@@ -1071,7 +995,7 @@ function saveEditedSession(id){
   savedSessions[idx] = s;
   localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
   if(fbDatabase){
-    dotY(); fbDatabase.ref('sessions/'+id).set(s)
+    dotY(); fbDatabase.ref(_PATH.sessions+'/'+id).set(s)
       .then(()=>{dotG();toast('Session updated & synced ☁️');})
       .catch(e=>{dotR();toast('Updated locally');console.error(e);});
   } else {
@@ -1133,7 +1057,7 @@ function deleteSession(id){
   if(!confirm('Delete this session?')) return;
   savedSessions=savedSessions.filter(s=>s.id!=id);
   localStorage.setItem('fluxgk_sessions',JSON.stringify(savedSessions));
-  if(fbDatabase){dotY();fbDatabase.ref('sessions/'+id).remove().then(dotG).catch(dotR);}
+  if(fbDatabase){dotY();fbDatabase.ref(_PATH.sessions+'/'+id).remove().then(dotG).catch(dotR);}
   selectedSessions.delete(id);
   renderLibrary();
   toast('Session deleted');
@@ -1143,7 +1067,7 @@ function deleteSession(id){
 function buildReportHTML(sessions){
   const P   = _clubColor || '#0A0A0A';   // primary colour — same var name as load report
   // Read from in-memory state (populated by Firebase listener) with localStorage fallback
-  const _ssCached = JSON.parse(localStorage.getItem('fluxgk_settings')||'{}');
+  const _ssCached = JSON.parse('{}'  /* settings vem do hub, nao do localStorage */ && localStorage.getItem('_disabled_fluxgk_settings')||'{}');
   const coa = (_sessionFormState._coachName || _ssCached.coachName || '').trim();
   const cn  = (_sessionFormState._clubName  || _ss.clubName  || 'FluxGK').trim();
   const meth= (document.getElementById('methLabel')?.value || _sessionFormState._methLabel || 'Constraints-Led Approach · Ecological Dynamics').trim();
@@ -1356,8 +1280,9 @@ function _loadFirebase(cfg){
   const status=document.getElementById('fbStatus');
   if(status) status.textContent='Connecting...';
   const scripts=[
-    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js'
   ];
   let loaded=0;
   scripts.forEach(src=>{
@@ -1377,73 +1302,39 @@ function _initFirebase(cfg){
     if(!window.firebase){ setTimeout(()=>_initFirebase(cfg),200); return; }
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     fbDatabase=firebase.database();
+    firebase.auth().onAuthStateChanged(function(u){
+      if(!u){ console.error('[FluxGK] planner: sem sessao. Faca login pelo hub.'); return; }
+      if(!_fbReady){ _fbReady=true; console.log('[FluxGK] planner: autenticado como', u.uid); }
+    });
     if(status){ status.textContent='☁️ Connected'; status.style.color='var(--ok)'; }
     _updateFirebaseBanner(true);
 
-    // ── SETTINGS listener — source of truth for ALL config ──────
-    fbDatabase.ref('settings').on('value', snap=>{
-      const data = snap.val();
-      if(!data) return;
-      // Apply every setting globally
-      if(data.clubName)   _sessionFormState._clubName   = data.clubName;
-      if(data.coachName)  _sessionFormState._coachName  = data.coachName;
-      if(data.methLabel)  _sessionFormState._methLabel  = data.methLabel;
-      if(data.seasonLabel)_sessionFormState._seasonLabel= data.seasonLabel;
-      if(data.clubAbbr)   _sessionFormState._clubAbbr   = data.clubAbbr;
-      if(data.clubColor && !_hubLocked){
-        _clubColor = data.clubColor;
-        _applyClubColor(data.clubColor);
-        localStorage.setItem('fluxgk_color', data.clubColor);
-      }
-      if(data.badge && !_hubLocked){
-        _clubBadge = data.badge;
-        _updateNavBadge();
-        localStorage.setItem('fluxgk_badge', data.badge);
-      }
-      // Cache locally for offline fallback
-      localStorage.setItem('fluxgk_settings', JSON.stringify(data));
-      // Update header display
-      if(data.clubName){
-        _sessionFormState._hdrTitle = data.clubName+' · Training Session';
-        _sessionFormState._hdrClub  = data.clubName+' · Season '+(data.seasonLabel||'');
-        const ht=document.getElementById('hdrTitle');
-        const hc=document.getElementById('hdrClub');
-        if(ht) ht.textContent=_sessionFormState._hdrTitle;
-        if(hc) hc.textContent=_sessionFormState._hdrClub;
-      }
-      // If settings page is open, refresh it
-      if(_currentPage==='settings') _loadBadgeState();
-    });
+    /* listener de 'settings' REMOVIDO — identidade vem do hub */
 
     // ── SESSIONS listener — real-time sync ───────────────────────
-    fbDatabase.ref('sessions').on('value', snap=>{
+    fbDatabase.ref(_PATH.sessions).on('value', snap=>{
       const data = snap.val();
       // Full replace from Firebase (Firebase is source of truth)
       if(data){
         savedSessions = Object.values(data).sort((a,b)=>b.id-a.id);
       } else {
-        // No sessions in Firebase yet — push local ones up
-        const local = JSON.parse(localStorage.getItem('fluxgk_sessions')||'[]');
-        if(local.length){
-          local.forEach(s=>fbDatabase.ref('sessions/'+s.id).set(s));
-          savedSessions = local;
-        } else {
-          savedSessions = [];
-        }
+        /* Firebase vazio = esta conta nao tem sessoes. Fica vazio.
+           NAO sobe localStorage: seria dado de outra conta vazando. */
+        savedSessions = [];
       }
-      localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
       if(_currentPage==='library') renderLibrary();
     });
 
     // ── EXERCISES listener — real-time sync (same pattern) ──────
-    fbDatabase.ref('exercises').on('value', snap=>{
+    fbDatabase.ref(_PATH.exercises).on('value', snap=>{
       const data = snap.val();
       if(data){
         savedExercises = Object.values(data).sort((a,b)=>b.id-a.id);
       } else {
-        const local = JSON.parse(localStorage.getItem('fluxgk_exercises')||'[]');
-        if(local.length){
-          local.forEach(ex=>fbDatabase.ref('exercises/'+ex.id).set(ex));
+        savedExercises = [];
+        if(false){
+          const local=[];
+          local.forEach(ex=>fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex));
           savedExercises = local;
         } else {
           savedExercises = [];
@@ -1506,7 +1397,7 @@ function pickColor(el){
   _applyClubColor(_clubColor);
   localStorage.setItem('fluxgk_color', _clubColor);
   // Push colour to Firebase immediately
-  if(fbDatabase){dotY();fbDatabase.ref('settings/clubColor').set(_clubColor).then(dotG).catch(dotR);}
+  /* cor: definida no HUB */
 }
 
 function _applyClubColor(color){
@@ -1541,7 +1432,7 @@ function handleBadgeUpload(input){
     _updateNavBadge();
     localStorage.setItem('fluxgk_badge', _clubBadge);
     // Also push to Firebase immediately (don't wait for Save Settings)
-    if(fbDatabase){dotY();fbDatabase.ref('settings/badge').set(_clubBadge).then(dotG).catch(dotR);}
+    /* escudo: definido no HUB */
   };
   reader.readAsDataURL(file);
 }
@@ -1586,7 +1477,7 @@ function _loadBadgeState(){
       seasonLabel: _sessionFormState._seasonLabel||'',
     };
     // Fallback to localStorage
-    try{ return JSON.parse(localStorage.getItem('fluxgk_settings')||'{}'); }
+    try{ return JSON.parse('{}'  /* settings vem do hub, nao do localStorage */ && localStorage.getItem('_disabled_fluxgk_settings')||'{}'); }
     catch(e){ return {}; }
   })();
 
@@ -1630,7 +1521,38 @@ function _loadBadgeState(){
 
 function saveCurrentSession(){
   _saveSessionForm();
-  toast('Session saved locally');
+  /* arquiva DIRETO na biblioteca (Firebase). reusa closeSession, que ja
+     grava e sincroniza. a sessao passa a existir na Library na hora. */
+  _persistSessionToLibrary();
+  toast('Saved to library ✓');
+  /* vai para a Library para o usuario ver que arquivou */
+  showPage('library');
+}
+
+/* nucleo unico de gravacao — usado por 'Salvar na biblioteca' e por 'Atualizar' */
+function _persistSessionToLibrary(){
+  const objMet = document.querySelector('input[name="obj"]:checked')?.value || null;
+  const g = id => document.getElementById(id)?.value || _sessionFormState[id] || '';
+  const session = {
+    id:        _editingSessionId || Date.now(),
+    date:      g('sDate'), time: g('sTime'), duration: g('sDur'), type: g('sType'),
+    players:   g('sPlayers'), objective: g('sObj'), method: g('sMeth'),
+    clubName:  _sessionFormState._hdrTitle || 'Training Session',
+    exercises: exercises.map(e=>({...e})),
+    rating, objMet,
+    postPositive:   g('postPos'), postImprovement:g('postImp'),
+    postAffordances:g('postAff'), postConstraints:g('postCon'),
+    postEmergent:   g('postEme'), postNext: g('postNxt'),
+    closedAt: new Date().toISOString(),
+  };
+  const idx = savedSessions.findIndex(x=>x.id===session.id);
+  if(idx>=0) savedSessions[idx]=session; else savedSessions.unshift(session);
+  _editingSessionId = session.id;   /* a partir daqui, Post-Training atualiza ESTA */
+  if(fbDatabase){
+    dotY(); fbDatabase.ref(_PATH.sessions+'/'+session.id).set(session)
+      .then(()=>{dotG();}).catch(e=>{dotR();console.error(e);});
+  }
+  return session;
 }
 
 function exportCurrentSession(){

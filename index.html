@@ -2,298 +2,304 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>FluxGK</title>
-<!-- PWA -->
-<link rel="manifest" href="/manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#0a0a0a">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FluxGK">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>FluxGK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--ink:#0a0a0a;--paper:#fafaf7;--mute:#737373;--faint:#e5e5e5;--green:#16a34a;--red:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0a0a0a;--paper:#fafaf7;--mute:#737373;--faint:#e5e5e5;--green:#16a34a;--red:#dc2626;--amber:#E8901A}
 html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;overflow:hidden}
-.screen{position:fixed;inset:0;display:none;flex-direction:column;z-index:10}
+.screen{display:none;height:100%;flex-direction:column}
 .screen.active{display:flex}
-#scr-loading{background:#0a0a0a;align-items:center;justify-content:center;display:flex;z-index:9999}
-#scr-login{background:#0a0a0a;align-items:center;justify-content:center;padding:24px;color:#fafaf7}
-#scr-hub{background:var(--paper);color:var(--ink)}
-#scr-module{background:var(--paper)}
-.ldots{display:flex;gap:6px;margin-top:18px}
-.ldot{width:5px;height:5px;border-radius:50%;background:#fafaf7;animation:lp 1.2s ease-in-out infinite}
-.ldot:nth-child(2){animation-delay:.2s}.ldot:nth-child(3){animation-delay:.4s}
-@keyframes lp{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
-.lwrap{width:100%;max-width:356px;display:flex;flex-direction:column;align-items:center}
-.lcard{width:100%;background:#111;border:1px solid #222;border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:18px}
-.ltitle{font-size:17px;font-weight:700;letter-spacing:-.03em}
+
+/* ---------- LOADING ---------- */
+#scr-loading{background:#0a0a0a;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999}
+#scr-loading.active{display:flex}
+.ldots{display:flex;gap:6px}
+.ldots i{width:7px;height:7px;border-radius:50%;background:#3a3a3a;animation:bl 1.2s infinite}
+.ldots i:nth-child(2){animation-delay:.2s}.ldots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+/* ---------- LOGIN ---------- */
+#scr-login{background:#0a0a0a;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.lwrap{width:100%;max-width:380px}
+.llogo{text-align:center;margin-bottom:28px}
+.lbrand{font-size:30px;font-weight:700;color:#fafaf7;letter-spacing:-.02em}
 .lsub{font-size:11px;color:#8a8a8a;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
-.lg{display:flex;flex-direction:column;gap:5px}
-.ll{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a}
-.li{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:11px 13px;color:#fafaf7;font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;transition:border .15s;width:100%}
-.li:focus{border-color:#E8901A}.li::placeholder{color:#878787}
-.lrem{display:flex;align-items:center;gap:8px;cursor:pointer}
-.lrem input{width:14px;height:14px;accent-color:#fafaf7;cursor:pointer}
+.lcard{background:#111;border:1px solid #1f1f1f;border-radius:14px;padding:26px}
+.lt{font-size:17px;font-weight:700;color:#fafaf7;margin-bottom:2px}
+.lts{font-size:11px;color:#8a8a8a;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px}
+.lf{margin-bottom:14px}
+.ll{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a;display:block;margin-bottom:6px}
+.li{width:100%;padding:12px 13px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:9px;color:#fafaf7;font-size:14px;font-family:'Space Grotesk',sans-serif}
+.li:focus{outline:none;border-color:#E8901A}
+.li::placeholder{color:#878787}
+.lrem{display:flex;align-items:center;gap:8px;margin:16px 0}
+.lrem input{width:15px;height:15px;accent-color:#fafaf7}
 .lrem span{font-size:12px;color:#8a8a8a;font-family:'JetBrains Mono',monospace}
-.lbtn{background:#fafaf7;color:#0a0a0a;border:none;border-radius:8px;padding:13px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:opacity .15s}
-.lbtn:hover{opacity:.88}.lbtn:disabled{opacity:.3;cursor:not-allowed}
-.lerr{font-size:12px;font-family:'JetBrains Mono',monospace;color:#f87171;text-align:center;min-height:16px}
+.lerr{font-size:12px;font-family:'JetBrains Mono',monospace;color:#f87171;text-align:center;min-height:16px;margin-bottom:8px}
+.lbtn{width:100%;padding:13px;background:#fafaf7;color:#0a0a0a;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.lbtn:disabled{opacity:.5;cursor:default}
 .lfooter{margin-top:24px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#7d7d7d;text-align:center;letter-spacing:.06em}
-.hnav{height:52px;display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;transition:background .3s}
-.hbph{width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.8);flex-shrink:0;font-family:'Space Grotesk',sans-serif}
-.hbimg{width:27px;height:27px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.2);flex-shrink:0;display:none}
-.hcname{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+
+/* ---------- HOME ---------- */
+#scr-home{background:var(--paper)}
+.hnav{height:56px;display:flex;align-items:center;padding:0 16px;gap:11px;background:#0a0a0a;flex-shrink:0}
+.hbadge{width:32px;height:32px;border-radius:7px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12)}
+.hbadge img{width:100%;height:100%;object-fit:contain}
+.hbph{font-size:11px;font-weight:700;color:rgba(255,255,255,.85);font-family:'JetBrains Mono',monospace}
+.hct{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.hcname{font-size:14px;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcseas{font-size:10px;color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 .hnr{display:flex;align-items:center;gap:10px;margin-left:auto}
-.hnbtn{width:40px;height:40px;border:none;background:rgba(255,255,255,.08);border-radius:10px;cursor:pointer;color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;transition:background .15s;position:relative}
+.hswap{height:40px;padding:0 12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);border-radius:10px;color:rgba(255,255,255,.85);font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:6px;position:relative}
+.hswap::after{content:'';position:absolute;inset:-2px}
+.hswap:hover{background:rgba(255,255,255,.12)}
+.hnbtn{width:40px;height:40px;border:none;background:rgba(255,255,255,.08);border-radius:10px;cursor:pointer;color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;position:relative}
 .hnbtn::after{content:'';position:absolute;inset:-2px}
 .hnbtn svg{width:19px;height:19px}
-.hnbtn:hover{background:rgba(255,255,255,.16);color:#fff}
 .hudot{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(255,255,255,.85);cursor:pointer;font-family:'Space Grotesk',sans-serif;position:relative}
 .hudot::after{content:'';position:absolute;inset:-2px}
-.hbody{flex:1;overflow-y:auto;background:var(--paper)}
-.hcont{max-width:640px;margin:0 auto;padding:24px 16px 48px}
-.hgreet{margin-bottom:26px}
-.htime{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--mute);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px}
-.hname{font-size:23px;font-weight:700;letter-spacing:-.04em;line-height:1.1;color:var(--ink)}
-.hname span{color:var(--mute);font-weight:400}
-.slabel{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
-.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:26px}
-@media(max-width:420px){.mgrid{grid-template-columns:1fr}}
-.mcard{background:#fff;border:1px solid var(--faint);border-radius:16px;padding:18px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;min-height:128px}
-.mcard:hover{border-color:#bbb;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-.mcard:active{transform:scale(.98)}
-.mbar{position:absolute;top:0;left:0;right:0;height:3px}
-.mico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center}
-.mico svg{width:17px;height:17px}
-.mname{font-size:14px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px;color:var(--ink)}
-.mdesc{font-size:11px;color:var(--mute);line-height:1.5;font-family:'JetBrains Mono',monospace}
-.marr{position:absolute;bottom:13px;right:13px;width:20px;height:20px;border-radius:50%;background:var(--faint);display:flex;align-items:center;justify-content:center}
-.marr svg{width:9px;height:9px;color:var(--mute)}
-.m-xg .mbar{background:#3B82F6}.m-xg .mico{background:rgba(59,130,246,.08)}.m-xg .mico svg{color:#3B82F6}
-.m-pl .mbar{background:#0a0a0a}.m-pl .mico{background:rgba(10,10,10,.07)}.m-pl .mico svg{color:#0a0a0a}
-.m-da .mbar{background:#16a34a}.m-da .mico{background:rgba(22,163,74,.08)}.m-da .mico svg{color:#16a34a}
-.m-stats .mbar{background:#8b5cf6}.m-stats .mico{background:rgba(139,92,246,.08)}.m-stats .mico svg{color:#8b5cf6}
-.m-min .mbar{background:#ea580c}.m-min .mico{background:rgba(234,88,12,.08)}.m-min .mico svg{color:#ea580c}
-.m-vid .mbar{background:#1E4FFF}.m-vid .mico{background:rgba(30,79,255,.08)}.m-vid .mico svg{color:#1E4FFF}
-.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:26px}
-.scard{background:#fff;border:1px solid var(--faint);border-radius:8px;padding:13px 10px;text-align:center}
-.sval{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em;line-height:1;color:var(--ink)}
-.slbl{font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-top:3px}
-.mtbar{height:44px;display:flex;align-items:center;padding:0 13px;gap:9px;flex-shrink:0;transition:background .3s}
-.mbck{height:29px;padding:0 10px;border:none;background:rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.85);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s}
-.mbck:hover{background:rgba(255,255,255,.2)}.mbck svg{width:11px;height:11px}
-.mtnm{font-size:11px;font-weight:600;color:rgba(255,255,255,.8);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
-.mfrm{flex:1;border:none;width:100%;display:block}
-.ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}
-.ov.open{display:flex}
-.sht{background:var(--paper);border-radius:18px 18px 0 0;border:1px solid var(--faint);width:100%;max-width:500px;max-height:86vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
-.ov.open .sht{transform:translateY(0)}
-.shdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 13px;border-bottom:1px solid var(--faint);flex-shrink:0}
-.shtitle{font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
-.shclose{width:26px;height:26px;border-radius:50%;background:var(--faint);border:none;cursor:pointer;font-size:12px;color:var(--mute);display:flex;align-items:center;justify-content:center}
-.sbody{flex:1;overflow-y:auto;padding:18px}
-.ssec{margin-bottom:22px}
-.ssect{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--faint)}
-.sgrp{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
-.slbl2{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
-.sinp{background:var(--paper);border:1px solid var(--faint);border-radius:8px;padding:9px 11px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;width:100%;transition:border .15s}
-.sinp:focus{border-color:#999}
-.bdrow{display:flex;align-items:center;gap:11px}
-.bdprev{width:48px;height:48px;border-radius:50%;border:1px solid var(--faint);background:var(--faint);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative;flex-shrink:0}
-.bdprev input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
-.crow{display:flex;align-items:center;gap:9px}
-.csw{width:40px;height:40px;border-radius:9px;border:1px solid var(--faint);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0}
-.csw::after{content:'';position:absolute;inset:-2px;pointer-events:none}
-.csw input[type=color]{position:absolute;inset:-4px;opacity:0;cursor:pointer;width:calc(100% + 8px);height:calc(100% + 8px)}
-.cpre{display:flex;gap:10px;flex-wrap:wrap;flex:1}
-.cp{width:36px;height:36px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:border-color .12s,transform .1s;position:relative}
-.cp::after{content:'';position:absolute;inset:-4px}
-.cp:hover{transform:scale(1.1)}.cp.active{border-color:var(--ink)}
-.btsave{width:100%;padding:12px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
-.btsave:hover{opacity:.85}
-.btlogout{width:100%;padding:10px;background:transparent;color:#dc2626;border:1px solid rgba(220,38,38,.3);border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px}
-.toastEl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;z-index:999;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
-.toastEl.show{opacity:1}
-/* --- a11y: respeita a preferencia de movimento reduzido do sistema --- */
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
-}
-/* --- a11y: area de toque de 44px em controles isolados (visual inalterado) --- */
-.shclose{position:relative}
-.shclose::after{content:'';position:absolute;inset:-9px}
-.mbck{position:relative}
+.hbody{flex:1;overflow-y:auto;padding:22px 16px 40px}
+.hgreet{font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.02em}
+.hgsub{font-size:12px;color:var(--mute);font-family:'JetBrains Mono',monospace;margin-top:3px;margin-bottom:20px}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:24px}
+.hst{background:#fff;border:1px solid var(--faint);border-radius:11px;padding:13px}
+.hsv{font-size:21px;font-weight:700;color:var(--ink);font-family:'JetBrains Mono',monospace}
+.hsl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.mgrid{display:grid;gap:9px}
+.mcard{background:#fff;border:1px solid var(--faint);border-radius:12px;padding:16px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:transform .12s,border-color .12s}
+.mcard:hover{transform:translateY(-1px);border-color:#d4d4d4}
+.mico{width:38px;height:38px;border-radius:9px;background:#f4f4f2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mico svg{width:18px;height:18px;stroke:var(--ink)}
+.mtx{flex:1;min-width:0}
+.mnm{font-size:14px;font-weight:700;color:var(--ink)}
+.mdesc{font-size:11px;color:var(--mute);margin-top:1px}
+.marr{color:var(--mute);flex-shrink:0}
+.mcard:focus-visible,.hudot:focus-visible,.hnbtn:focus-visible,.hswap:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---------- MODULE ---------- */
+#scr-module{background:#fff}
+.mtbar{height:44px;display:flex;align-items:center;gap:11px;padding:0 13px;background:#0a0a0a;flex-shrink:0}
+.mbck{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);padding:6px 11px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;position:relative}
 .mbck::after{content:'';position:absolute;top:-8px;bottom:-8px;left:0;right:0}
-/* --- a11y: anel de foco visivel para navegacao por teclado --- */
-.mcard:focus-visible,.hudot:focus-visible,.hnbtn:focus-visible,.shclose:focus-visible,.mbck:focus-visible,.lbtn:focus-visible,.btsave:focus-visible,.btlogout:focus-visible{outline:2px solid #E8901A;outline-offset:2px}
+.mtnm{font-size:11px;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;letter-spacing:.1em}
+.mfrm{flex:1;border:none;width:100%}
+
+/* ---------- SHEET ---------- */
+.sh{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:100}
+.sh.open{display:flex}
+.shc{background:var(--paper);width:100%;max-height:88vh;border-radius:18px 18px 0 0;padding:20px 18px 30px;overflow-y:auto;animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sht{font-size:17px;font-weight:700;color:var(--ink)}
+.shclose{width:26px;height:26px;border-radius:50%;border:1px solid var(--faint);background:#fff;color:var(--mute);cursor:pointer;font-size:13px;line-height:1;position:relative}
+.shclose::after{content:'';position:absolute;inset:-9px}
+.fl{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.11em;text-transform:uppercase;color:var(--mute);display:block;margin-bottom:6px}
+.fi{width:100%;padding:11px 12px;background:#fff;border:1px solid var(--faint);border-radius:9px;font-size:14px;font-family:'Space Grotesk',sans-serif;color:var(--ink);margin-bottom:14px}
+.fi:focus{outline:none;border-color:var(--amber)}
+.crow{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.csw{width:40px;height:40px;border-radius:9px;border:1px solid var(--faint);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0}
+.csw input{position:absolute;inset:-6px;width:150%;height:150%;border:none;padding:0;cursor:pointer}
+.cpre{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.cp{width:36px;height:36px;border-radius:7px;cursor:pointer;border:2px solid transparent;position:relative}
+.cp::after{content:'';position:absolute;inset:-4px}
+.cp.active{border-color:var(--ink)}
+.bup{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.bprev{width:52px;height:52px;border-radius:10px;border:1px dashed var(--faint);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.bprev img{width:100%;height:100%;object-fit:contain}
+.bbtn{padding:9px 14px;background:#fff;border:1px solid var(--faint);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.btn{width:100%;padding:13px;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;margin-top:4px}
+.btp{background:var(--ink);color:var(--paper)}
+.btg{background:#fff;border:1px solid var(--faint);color:var(--ink)}
+.btd{background:#fff;border:1px solid var(--faint);color:var(--red);margin-top:10px}
+.sec{border-top:1px solid var(--faint);margin:20px 0 16px;padding-top:16px}
+.sect{font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.11em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.lrow{display:flex;align-items:center;gap:11px;padding:11px;background:#fff;border:1px solid var(--faint);border-radius:10px;margin-bottom:8px;cursor:pointer;position:relative}
+.lrow.on{border-color:var(--ink);border-width:2px;padding:10px}
+.lrow:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.ldot{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ldot img{width:100%;height:100%;object-fit:contain}
+.ldot span{font-size:10px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace}
+.ltx{flex:1;min-width:0}
+.lnm{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lsb{font-size:10px;color:var(--mute);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.ltag{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--green);flex-shrink:0}
+.ledit{width:32px;height:32px;border-radius:7px;border:1px solid var(--faint);background:#fff;color:var(--mute);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative}
+.ledit::after{content:'';position:absolute;inset:-6px}
+.empty{text-align:center;padding:26px 14px;color:var(--mute);font-size:13px}
+.toastEl{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;max-width:88vw;text-align:center}
+.toastEl.show{opacity:1}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
 
-<div id="scr-loading">
-  <div style="display:flex;flex-direction:column;align-items:center">
-    <svg viewBox="0 0 256 256" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
-      <rect width="256" height="256" rx="48" fill="#111"/>
-      <g transform="translate(128,128)" stroke="#fafaf7" stroke-linecap="round" fill="none">
-        <path d="M -82 -28 C -54 -52,-26 -4,2 -28 S 54 -52,82 -28" stroke-width="6" opacity=".4"/>
-        <path d="M -82 0 C -54 -24,-26 24,2 0 S 54 -24,82 0" stroke-width="8"/>
-        <path d="M -82 28 C -54 4,-26 52,2 28 S 54 4,82 28" stroke-width="6" opacity=".4"/>
-      </g>
-    </svg>
-    <div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>
-  </div>
-</div>
+<div class="screen active" id="scr-loading"><div class="ldots"><i></i><i></i><i></i></div></div>
 
 <div class="screen" id="scr-login">
   <div class="lwrap">
-    <svg viewBox="0 0 420 80" width="190" style="margin-bottom:40px" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(210,52)">
-        <text x="0" y="0" text-anchor="middle" fill="#fafaf7" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="48" letter-spacing="-2">FluxGK</text>
-        <path d="M -112 4 C -88 -6,-64 14,-42 4 S 6 -6,30 4 S 78 14,112 4" fill="none" stroke="#fafaf7" stroke-width="2" stroke-linecap="round" opacity=".2"/>
-      </g>
-    </svg>
+    <div class="llogo"><div class="lbrand">FluxGK</div><div class="lsub">Data-Driven GK</div></div>
     <div class="lcard">
-      <div><div class="ltitle">Sign in</div><div class="lsub">Goalkeeper Coach Platform</div></div>
-      <div class="lg"><div class="ll">Email</div><input type="email" id="inp-email" class="li" placeholder="coach@club.com" autocomplete="email"></div>
-      <div class="lg"><div class="ll">Password</div><input type="password" id="inp-pass" class="li" placeholder="password" autocomplete="current-password"></div>
+      <div class="lt">Sign in</div>
+      <div class="lts">Goalkeeper Coach Platform</div>
+      <div class="lf"><label class="ll" for="inp-email">Email</label><input class="li" id="inp-email" type="email" placeholder="coach@club.com" autocomplete="username"></div>
+      <div class="lf"><label class="ll" for="inp-pass">Password</label><input class="li" id="inp-pass" type="password" placeholder="password" autocomplete="current-password"></div>
       <label class="lrem"><input type="checkbox" id="inp-rem" checked><span>Stay signed in</span></label>
       <div class="lerr" id="lerr" role="alert" aria-live="assertive"></div>
       <button class="lbtn" id="lbtn" onclick="doLogin()">Sign in</button>
     </div>
-    <div class="lfooter">FluxGK &middot; Data-Driven GK &middot; v2.0</div>
+    <div class="lfooter">FluxGK · Data-Driven GK · v3.0</div>
   </div>
 </div>
 
-<div class="screen" id="scr-hub">
-  <div class="hnav" id="hnav" style="background:#0a0a0a">
-    <div class="hbph" id="hbph">GK</div>
-    <img class="hbimg" id="hbimg" src="" alt="Club badge">
-    <span class="hcname" id="hcname">FluxGK</span>
+<div class="screen" id="scr-home">
+  <div class="hnav" id="hnav">
+    <div class="hbadge" id="hbadge"><span class="hbph" id="hbph">GK</span><img id="hbimg" src="" alt="Club badge" style="display:none"></div>
+    <div class="hct"><span class="hcname" id="hcname">FluxGK</span><span class="hcseas" id="hcseas">—</span></div>
     <div class="hnr">
+      <button class="hswap" onclick="openSwitch()" aria-label="Switch club or season">SWITCH</button>
       <button class="hnbtn" onclick="openSettings()" title="Settings" aria-label="Open settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
       <div class="hudot" id="hudot" onclick="openSettings()" role="button" tabindex="0" aria-label="Profile and settings" onkeydown="kbAct(event,openSettings)">GK</div>
     </div>
   </div>
   <div class="hbody">
-    <div class="hcont">
-      <div class="hgreet">
-        <div class="htime" id="htime">Good morning</div>
-        <div class="hname">Welcome back, <span id="hcoach">Coach</span></div>
-      </div>
-      <div class="slabel">Modules</div>
-      <div class="mgrid">
-        <div class="mcard m-xg" onclick="openModule('xg')" role="button" tabindex="0" aria-label="Open xG System" onkeydown="kbAct(event,function(){openModule('xg')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-          <div><div class="mname">xG System</div><div class="mdesc">Shot map &middot; xG tracker<br>Match analysis</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-        <div class="mcard m-pl" onclick="openModule('planner')" role="button" tabindex="0" aria-label="Open GK Planner" onkeydown="kbAct(event,function(){openModule('planner')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-          <div><div class="mname">GK Planner</div><div class="mdesc">Session design<br>Exercise library &middot; PDF</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-        <div class="mcard m-da" onclick="openModule('data')" role="button" tabindex="0" aria-label="Open Data-Driven" onkeydown="kbAct(event,function(){openModule('data')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-          <div><div class="mname">Data-Driven</div><div class="mdesc">GK stats &middot; Workload<br>Performance reports</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-        <div class="mcard m-stats" onclick="openModule('stats')" role="button" tabindex="0" aria-label="Open GK Statistics" onkeydown="kbAct(event,function(){openModule('stats')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div><div class="mname">GK Statistics</div><div class="mdesc">Match recording<br>Shot analysis &middot; Reports</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-        <div class="mcard m-min" onclick="openModule('minutes')" role="button" tabindex="0" aria-label="Open GK Minutes" onkeydown="kbAct(event,function(){openModule('minutes')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div><div class="mname">GK Minutes</div><div class="mdesc">Playing time tracker<br>Minutes &middot; Reports</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-        <div class="mcard m-vid" onclick="openModule('video')" role="button" tabindex="0" aria-label="Open Video Lab" onkeydown="kbAct(event,function(){openModule('video')})">
-          <div class="mbar"></div>
-          <div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
-          <div><div class="mname">Video Lab</div><div class="mdesc">Match video analysis<br>Tagging &middot; Drawings &middot; Export</div></div>
-          <div class="marr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
-        </div>
-      </div>
-      <div class="slabel">Quick stats</div>
-      <div class="srow">
-        <div class="scard"><div class="sval" id="st-sess">-</div><div class="slbl">Sessions</div></div>
-        <div class="scard"><div class="sval" id="st-match">-</div><div class="slbl">Matches</div></div>
-        <div class="scard"><div class="sval" id="st-gk">-</div><div class="slbl">Goalkeepers</div></div>
-      </div>
+    <div class="hgreet" id="htime">Welcome</div>
+    <div class="hgsub"><span id="hcoach">Coach</span> · <span id="hmeth">—</span></div>
+    <div class="hstats">
+      <div class="hst"><div class="hsv" id="st-sess">-</div><div class="hsl">Sessions</div></div>
+      <div class="hst"><div class="hsv" id="st-match">-</div><div class="hsl">Matches</div></div>
+      <div class="hst"><div class="hsv" id="st-gk">-</div><div class="hsl">Keepers</div></div>
     </div>
+    <div class="mgrid" id="mgrid"></div>
   </div>
 </div>
 
 <div class="screen" id="scr-module">
-  <div class="mtbar" id="mtbar" style="background:#0a0a0a">
-    <button class="mbck" onclick="closeModule()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Hub
-    </button>
+  <div class="mtbar" id="mtbar">
+    <button class="mbck" onclick="closeModule()">‹ HUB</button>
     <span class="mtnm" id="mtnm"></span>
   </div>
-  <iframe class="mfrm" id="mfrm" src="about:blank" allow="fullscreen; encrypted-media; autoplay" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals allow-top-navigation"></iframe>
+  <iframe class="mfrm" id="mfrm" src="about:blank" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
 </div>
 
-<div class="ov" id="ov-set" onclick="if(event.target===this)closeSettings()">
-  <div class="sht">
-    <div class="shdr"><span class="shtitle">Settings</span><button class="shclose" onclick="closeSettings()" aria-label="Close settings">x</button></div>
-    <div class="sbody">
-      <div class="ssec">
-        <div class="ssect">Coach profile</div>
-        <div class="sgrp"><div class="slbl2">Your name</div><input type="text" class="sinp" id="s-coach" placeholder="Your name"></div>
-      </div>
-      <div class="ssec">
-        <div class="ssect">Club</div>
-        <div class="sgrp"><div class="slbl2">Club name</div><input type="text" class="sinp" id="s-club" placeholder="Club name"></div>
-        <div class="sgrp">
-          <div class="slbl2">Club badge</div>
-          <div class="bdrow">
-            <div class="bdprev" id="bdprev"><span style="font-size:20px">S</span><input type="file" accept="image/*" onchange="onBadge(event)"></div>
-            <span style="font-size:11px;color:var(--mute);font-family:'JetBrains Mono',monospace;line-height:1.6">Tap to upload<br>PNG or JPG</span>
-          </div>
-        </div>
-        <div class="sgrp">
-          <div class="slbl2">Club color</div>
-          <div class="crow">
-            <div class="csw"><div id="csw-prev" style="width:100%;height:100%;background:#0a0a0a"></div><input type="color" id="s-color" value="#0a0a0a" oninput="onColor(this.value)"></div>
-            <div class="cpre" id="cpre"></div>
-          </div>
-        </div>
-      </div>
-      <div class="ssec">
-        <div class="ssect">Methodology</div>
-        <div class="sgrp"><div class="slbl2">Approach label</div><input type="text" class="sinp" id="s-meth" placeholder="Constraints-Led Approach"></div>
-      </div>
-      <button class="btsave" onclick="saveSettings()">Save changes</button>
-      <button class="btlogout" onclick="doLogout()">Sign out</button>
+<!-- SWITCH: clube + temporada -->
+<div class="sh" id="sh-switch">
+  <div class="shc">
+    <div class="shh"><span class="sht">Club &amp; Season</span><button class="shclose" onclick="closeSwitch()" aria-label="Close">✕</button></div>
+    <div class="sect">Clubs</div>
+    <div id="club-list"></div>
+    <button class="btn btg" onclick="editClub(null)">+ New club</button>
+    <div class="sec"></div>
+    <div class="sect" id="season-head">Seasons</div>
+    <div id="season-list"></div>
+    <button class="btn btg" onclick="addSeason()">+ New season</button>
+  </div>
+</div>
+
+<!-- EDITOR DE CLUBE -->
+<div class="sh" id="sh-club">
+  <div class="shc">
+    <div class="shh"><span class="sht" id="club-title">New club</span><button class="shclose" onclick="closeClub()" aria-label="Close">✕</button></div>
+    <label class="fl" for="c-name">Club name</label>
+    <input class="fi" id="c-name" placeholder="Semey FC">
+    <label class="fl" for="c-abbr">Abbreviation</label>
+    <input class="fi" id="c-abbr" placeholder="SEM" maxlength="4">
+    <label class="fl">Club color</label>
+    <div class="crow">
+      <div class="csw" id="csw-prev"><input type="color" id="c-color" value="#0a0a0a" onchange="onColor(this.value)" oninput="onColor(this.value)" aria-label="Custom club color"></div>
+      <div class="cpre" id="cpre"></div>
     </div>
+    <label class="fl">Badge</label>
+    <div class="bup">
+      <div class="bprev" id="c-bprev"><span style="font-size:10px;color:#a3a3a3">—</span></div>
+      <button class="bbtn" onclick="document.getElementById('c-badge').click()">Upload</button>
+      <input type="file" id="c-badge" accept="image/*" style="display:none" onchange="onBadge(this)">
+    </div>
+    <button class="btn btp" onclick="saveClub()">Save club</button>
+    <button class="btn btd" id="c-del" onclick="deleteClub()" style="display:none">Delete club</button>
+  </div>
+</div>
+
+<!-- SETTINGS: perfil do treinador -->
+<div class="sh" id="sh-set">
+  <div class="shc">
+    <div class="shh"><span class="sht">Settings</span><button class="shclose" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
+    <label class="fl" for="s-coach">Coach name</label>
+    <input class="fi" id="s-coach" placeholder="Lucas Pimenta">
+    <label class="fl" for="s-meth">Methodology</label>
+    <input class="fi" id="s-meth" placeholder="Constraints-Led Approach">
+    <button class="btn btp" onclick="saveSettings()">Save</button>
+    <div class="sec"></div>
+    <button class="btn btd" onclick="doLogout()">Sign out</button>
   </div>
 </div>
 
 <div class="toastEl" id="toastEl" role="status" aria-live="polite"></div>
 
 <script>
-var FBC={apiKey:"AIzaSyAJcwMEwbpUvf2mrY9ej1xz6e0Ma_z65yY",authDomain:"fluxgksystem.firebaseapp.com",projectId:"fluxgksystem",storageBucket:"fluxgksystem.firebasestorage.app",messagingSenderId:"663122789948",appId:"1:663122789948:web:f5a8f9b19fc33870df6539"};
-var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed8','#0e7490','#374151','#713f12'];
-var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html'};
-var _auth,_db;
-var APP={uid:null,profile:{coachName:'',clubName:'',clubColor:'#0a0a0a',clubBadge:'',methodology:'Constraints-Led Approach'}};
+/* ============================================================
+   >>>>>>>>>>  CONFIRA ESTA URL  <<<<<<<<<<
+   Console do Firebase > fluxgksystem > Realtime Database.
+   A URL aparece no topo da arvore de dados. Cole aqui exatamente.
+   ============================================================ */
+console.log('%c[FluxGK] hub v3.1 — clubes, temporadas (rename+delete)','color:#E8901A;font-weight:bold');
+var DB_URL = "https://fluxgksystem-default-rtdb.firebaseio.com";
 
+var FBC={
+  apiKey:"AIzaSyAJcwMEwbpUvf2mrY9ej1xz6e0Ma_z65yY",
+  authDomain:"fluxgksystem.firebaseapp.com",
+  databaseURL:DB_URL,
+  projectId:"fluxgksystem",
+  storageBucket:"fluxgksystem.firebasestorage.app",
+  messagingSenderId:"663122789948",
+  appId:"1:663122789948:web:f5a8f9b19fc33870df6539"
+};
+
+var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed8','#0e7490','#374151','#713f12'];
+var MODS=[
+  {k:'planner',n:'GK Planner',d:'Plan and log training sessions',t:'GK PLANNER',i:'<path d="M3 5h18M3 12h18M3 19h18"/>'},
+  {k:'xg',     n:'xG System', d:'Expected goals and shot maps',   t:'XG SYSTEM',  i:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>'},
+  {k:'stats',  n:'GK Statistics',d:'Match and season analytics',  t:'GK STATISTICS',i:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
+  {k:'minutes',n:'GK Minutes',d:'Playing time and rotation',      t:'GK MINUTES', i:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
+  {k:'video',  n:'Video Lab', d:'Clip analysis and tagging',      t:'VIDEO LAB',  i:'<rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/>'},
+  {k:'data',   n:'Load Control',d:'Training load and wellness',   t:'DATA-DRIVEN',i:'<path d="M3 17l5-6 4 4 5-8 4 5"/>'}
+];
+var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html'};
+
+var _auth,_rtdb;
+var APP={
+  uid:null,
+  profile:{coachName:'',methodology:'Constraints-Led Approach'},
+  clubs:{},          /* {id: {meta:{name,abbr,color}, badge:'', seasons:{id:{label}}}} */
+  active:{clubId:null,seasonId:null},
+  editingClub:null
+};
+
+/* ---------- helpers ---------- */
+function U(p){return _rtdb.ref('users/'+APP.uid+(p?'/'+p:''));}
+function club(){return APP.clubs[APP.active.clubId]||null;}
+function season(){var c=club();if(!c||!c.seasons)return null;return c.seasons[APP.active.seasonId]||null;}
+function dataPath(){
+  if(!APP.active.clubId||!APP.active.seasonId)return null;
+  return 'users/'+APP.uid+'/data/'+APP.active.clubId+'/'+APP.active.seasonId;
+}
+function slug(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,28)||('c'+Date.now());}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById('scr-'+id);if(el)el.classList.add('active');if(id!=='module'){var fr=document.getElementById('mfrm');if(fr)fr.src='about:blank';}}
 function kbAct(e,fn){if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();fn();}}
 var _toastT=null;
 function showToast(msg,ms){var el=document.getElementById('toastEl');el.textContent=msg;el.classList.add('show');if(_toastT)clearTimeout(_toastT);_toastT=setTimeout(function(){el.classList.remove('show');},ms||2500);}
+function raceTimeout(p,ms){return new Promise(function(res){var done=false;var t=setTimeout(function(){if(!done){done=true;res('pending');}},ms);p.then(function(){if(!done){done=true;clearTimeout(t);res('saved');}}).catch(function(e){if(!done){done=true;clearTimeout(t);console.error('[FluxGK] write failed:',e);res('error');}});});}
+function saveMsg(r){return r==='saved'?'Saved':r==='pending'?'Saved on device — will sync when back online':'Could not save — please try again';}
+
+/* ---------- AUTH ---------- */
 function doLogin(){
   var em=document.getElementById('inp-email').value.trim();
   var pw=document.getElementById('inp-pass').value;
@@ -307,85 +313,401 @@ function doLogin(){
 }
 document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 function doLogout(){closeSettings();_auth.signOut();APP.uid=null;showToast('Signed out');}
-async function loadProfile(){try{var d=await _db.collection('users').doc(APP.uid).collection('profile').doc('settings').get();if(d.exists)APP.profile=Object.assign(APP.profile,d.data());}catch(e){console.error('[FluxGK] loadProfile failed:',e);}}
-function raceTimeout(p,ms){return new Promise(function(res){var done=false;var t=setTimeout(function(){if(!done){done=true;res('pending');}},ms);p.then(function(){if(!done){done=true;clearTimeout(t);res('saved');}}).catch(function(e){if(!done){done=true;clearTimeout(t);console.error('[FluxGK] saveProfile failed:',e);res('error');}});});}
-async function saveProfileToDB(){if(!APP.uid)return 'error';return raceTimeout(_db.collection('users').doc(APP.uid).collection('profile').doc('settings').set(APP.profile,{merge:true}),4000);}
-function applyProfile(){
-  var p=APP.profile,c=p.clubColor||'#0a0a0a';
-  document.getElementById('hnav').style.background=c;
-  document.getElementById('mtbar').style.background=c;
+
+/* ---------- LOAD ---------- */
+function withTimeout(p,ms,label){
+  return Promise.race([
+    p,
+    new Promise(function(_,rej){setTimeout(function(){rej(new Error('TIMEOUT: '+label+' nao respondeu em '+ms+'ms'));},ms);})
+  ]);
+}
+async function loadAll(){
+  try{
+    var snap=await withTimeout(U().get(),8000,'Realtime Database');
+    var d=snap.val()||{};
+    APP.profile=Object.assign({coachName:'',methodology:'Constraints-Led Approach'},d.profile||{});
+    APP.clubs=d.clubs||{};
+    APP.active=Object.assign({clubId:null,seasonId:null},d.active||{});
+    /* se o clube/temporada ativos sumiram, escolhe o primeiro que existir */
+    if(!APP.clubs[APP.active.clubId]){
+      var ids=Object.keys(APP.clubs);
+      APP.active.clubId=ids[0]||null;
+      APP.active.seasonId=null;
+    }
+    var c=club();
+    if(c&&(!c.seasons||!c.seasons[APP.active.seasonId])){
+      var sids=Object.keys(c.seasons||{});
+      APP.active.seasonId=sids[sids.length-1]||null;
+    }
+  }catch(e){
+    console.error('[FluxGK] loadAll failed:',e);
+    var msg=String(e.message||e);
+    if(msg.indexOf('TIMEOUT')===0){
+      showToast('Database not responding. Check the DB_URL and the security rules.',7000);
+    }else if(msg.toLowerCase().indexOf('permission')>-1){
+      showToast('Permission denied. Did you publish the security rules?',7000);
+    }else{
+      showToast('Could not load your data — check connection',6000);
+    }
+    /* o app ABRE mesmo assim, vazio, em vez de travar nas bolinhas */
+  }
+}
+
+/* ---------- RENDER ---------- */
+function applyIdentity(){
+  var c=club(),s=season();
+  var color=(c&&c.meta&&c.meta.color)||'#0a0a0a';
+  document.getElementById('hnav').style.background=color;
+  document.getElementById('mtbar').style.background=color;
   var ph=document.getElementById('hbph'),img=document.getElementById('hbimg');
-  if(p.clubBadge){img.src=p.clubBadge;img.style.display='block';ph.style.display='none';}
-  else{img.style.display='none';ph.style.display='flex';ph.textContent=(p.clubName||'GK').slice(0,2).toUpperCase();}
-  document.getElementById('hcname').textContent=p.clubName||'FluxGK';
-  document.getElementById('hcoach').textContent=(p.coachName||'Coach').split(' ')[0];
-  document.getElementById('hudot').textContent=(p.coachName||'GK').slice(0,2).toUpperCase();
+  if(c&&c.badge){img.src=c.badge;img.style.display='block';ph.style.display='none';}
+  else{img.style.display='none';ph.style.display='block';ph.textContent=(c&&c.meta&&(c.meta.abbr||c.meta.name)||'GK').slice(0,2).toUpperCase();}
+  document.getElementById('hcname').textContent=(c&&c.meta&&c.meta.name)||'No club';
+  document.getElementById('hcseas').textContent=(s&&s.label)||'No season';
+  document.getElementById('hcoach').textContent=(APP.profile.coachName||'Coach').split(' ')[0];
+  document.getElementById('hmeth').textContent=APP.profile.methodology||'—';
+  document.getElementById('hudot').textContent=(APP.profile.coachName||'GK').slice(0,2).toUpperCase();
   var h=new Date().getHours();
   document.getElementById('htime').textContent=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
 }
+function renderMods(){
+  var g=document.getElementById('mgrid');g.innerHTML='';
+  MODS.forEach(function(m){
+    var d=document.createElement('div');
+    d.className='mcard';d.setAttribute('role','button');d.setAttribute('tabindex','0');
+    d.setAttribute('aria-label','Open '+m.n);
+    d.onclick=function(){openModule(m.k);};
+    d.onkeydown=function(e){kbAct(e,function(){openModule(m.k);});};
+    d.innerHTML='<div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+m.i+'</svg></div>'
+      +'<div class="mtx"><div class="mnm">'+m.n+'</div><div class="mdesc">'+m.d+'</div></div>'
+      +'<span class="marr">›</span>';
+    g.appendChild(d);
+  });
+}
 function loadStats(){
-  if(!APP.uid)return;
-  _db.collection('users').doc(APP.uid).collection('sessions').get().then(function(s){document.getElementById('st-sess').textContent=s.size||0;}).catch(function(){});
-  _db.collection('users').doc(APP.uid).collection('xg_games').get().then(function(s){document.getElementById('st-match').textContent=s.size||0;}).catch(function(){});
-  _db.collection('users').doc(APP.uid).collection('gk_players').get().then(function(s){document.getElementById('st-gk').textContent=s.size||0;}).catch(function(){});
+  var p=dataPath();
+  ['st-sess','st-match','st-gk'].forEach(function(i){document.getElementById(i).textContent=p?'-':'0';});
+  if(!p)return;
+  _rtdb.ref(p+'/planner/sessions').get().then(function(s){document.getElementById('st-sess').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+  _rtdb.ref(p+'/xg/games').get().then(function(s){document.getElementById('st-match').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+  _rtdb.ref(p+'/roster').get().then(function(s){document.getElementById('st-gk').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+}
+function refresh(){applyIdentity();loadStats();}
+
+/* ---------- SWITCH (clube + temporada) ---------- */
+function openSwitch(){renderSwitch();document.getElementById('sh-switch').classList.add('open');}
+function closeSwitch(){document.getElementById('sh-switch').classList.remove('open');}
+function renderSwitch(){
+  var cl=document.getElementById('club-list');cl.innerHTML='';
+  var ids=Object.keys(APP.clubs);
+  if(!ids.length){cl.innerHTML='<div class="empty">No clubs yet. Create your first one below.</div>';}
+  ids.forEach(function(id){
+    var c=APP.clubs[id],m=c.meta||{};
+    var r=document.createElement('div');
+    r.className='lrow'+(id===APP.active.clubId?' on':'');
+    r.setAttribute('role','button');r.setAttribute('tabindex','0');
+    r.setAttribute('aria-label','Select '+(m.name||id));
+    var badge=c.badge?'<img src="'+c.badge+'" alt="">':'<span>'+((m.abbr||m.name||'--').slice(0,2).toUpperCase())+'</span>';
+    var ns=Object.keys(c.seasons||{}).length;
+    r.innerHTML='<div class="ldot" style="background:'+(m.color||'#0a0a0a')+'">'+badge+'</div>'
+      +'<div class="ltx"><div class="lnm">'+(m.name||id)+'</div><div class="lsb">'+ns+' season'+(ns===1?'':'s')+'</div></div>'
+      +(id===APP.active.clubId?'<span class="ltag">ACTIVE</span>':'')
+      +'<button class="ledit" aria-label="Edit '+(m.name||id)+'">✎</button>';
+    r.querySelector('.ledit').onclick=function(e){e.stopPropagation();editClub(id);};
+    var pick=function(){selectClub(id);};
+    r.onclick=pick;r.onkeydown=function(e){kbAct(e,pick);};
+    cl.appendChild(r);
+  });
+
+  var sl=document.getElementById('season-list');sl.innerHTML='';
+  var c=club();
+  document.getElementById('season-head').textContent=c?('Seasons · '+(c.meta&&c.meta.name||'')):'Seasons';
+  if(!c){sl.innerHTML='<div class="empty">Select a club first.</div>';return;}
+  var sids=Object.keys(c.seasons||{});
+  if(!sids.length){sl.innerHTML='<div class="empty">No seasons yet.</div>';}
+  sids.forEach(function(sid){
+    var s=c.seasons[sid];
+    var r=document.createElement('div');
+    r.className='lrow'+(sid===APP.active.seasonId?' on':'');
+    r.setAttribute('role','button');r.setAttribute('tabindex','0');
+    r.setAttribute('aria-label','Select season '+(s.label||sid));
+    r.innerHTML='<div class="ldot" style="background:#f4f4f2"><span style="color:#0a0a0a">'+(s.label||sid).slice(0,2)+'</span></div>'
+      +'<div class="ltx"><div class="lnm">'+(s.label||sid)+'</div></div>'
+      +(sid===APP.active.seasonId?'<span class="ltag">ACTIVE</span>':'')
+      +'<button class="ledit" aria-label="Rename season '+(s.label||sid)+'">\u270E</button>'
+      +'<button class="ledit" aria-label="Delete season '+(s.label||sid)+'" style="color:#dc2626">\u2715</button>';
+    var btns=r.querySelectorAll('.ledit');
+    btns[0].onclick=function(e){e.stopPropagation();renameSeason(sid);};
+    btns[1].onclick=function(e){e.stopPropagation();deleteSeason(sid);};
+    var pick=function(){selectSeason(sid);};
+    r.onclick=pick;r.onkeydown=function(e){kbAct(e,pick);};
+    sl.appendChild(r);
+  });
+}
+async function selectClub(id){
+  APP.active.clubId=id;
+  var c=APP.clubs[id];
+  var sids=Object.keys((c&&c.seasons)||{});
+  APP.active.seasonId=sids[sids.length-1]||null;
+  await U('active').set(APP.active);
+  refresh();renderSwitch();
+}
+async function selectSeason(sid){
+  APP.active.seasonId=sid;
+  await U('active').set(APP.active);
+  refresh();renderSwitch();
+  closeSwitch();
+  showToast('Switched to '+((season()||{}).label||sid));
+}
+async function addSeason(){
+  var c=club();
+  if(!c){showToast('Create a club first');return;}
+  var y=new Date().getFullYear();
+  var label=prompt('Season label',y+'/'+String(y+1).slice(2));
+  if(!label)return;
+  var sid=slug(label);
+  var r=await raceTimeout(U('clubs/'+APP.active.clubId+'/seasons/'+sid).set({label:label,createdAt:Date.now()}),4000);
+  if(r==='error'){showToast(saveMsg(r));return;}
+  c.seasons=c.seasons||{};c.seasons[sid]={label:label};
+  await selectSeason(sid);
+  renderSwitch();
 }
 
-function openModule(key){
-  var names={xg:'XG SYSTEM',planner:'GK PLANNER',data:'DATA-DRIVEN',stats:'GK STATISTICS',minutes:'GK MINUTES',video:'VIDEO LAB'};
-  document.getElementById('mtnm').textContent=names[key]||key.toUpperCase();
-  document.getElementById('mtbar').style.background=APP.profile.clubColor||'#0a0a0a';
-  var fr=document.getElementById('mfrm');
-  fr.onload=function(){
-    if(fr.src==='about:blank')return;
-    setTimeout(function(){pushContext(fr.contentWindow);},600);
-  };
-  fr.src=MOD_FILES[key];
-  showScreen('module');
+async function renameSeason(sid){
+  var c=club();if(!c||!c.seasons||!c.seasons[sid])return;
+  var cur=c.seasons[sid].label||sid;
+  var nl=prompt('Season label',cur);
+  if(!nl||nl===cur)return;
+  var r=await raceTimeout(U('clubs/'+APP.active.clubId+'/seasons/'+sid+'/label').set(nl),4000);
+  if(r==='error'){showToast(saveMsg(r));return;}
+  c.seasons[sid].label=nl;
+  showToast('Season renamed');
+  refresh();renderSwitch();
 }
-function closeModule(){loadStats();showScreen('hub');}
+async function deleteSeason(sid){
+  var c=club();if(!c||!c.seasons||!c.seasons[sid])return;
+  var lb=c.seasons[sid].label||sid;
+  var cid=APP.active.clubId;
+  /* checa se a temporada tem dados antes de avisar */
+  var hasData=false;
+  try{
+    var snap=await withTimeout(_rtdb.ref('users/'+APP.uid+'/data/'+cid+'/'+sid).get(),5000,'data check');
+    hasData=snap.exists();
+  }catch(e){console.error(e);}
+  var msg=hasData
+    ? 'Delete season "'+lb+'"?\n\nTHIS SEASON HAS DATA. Sessions, matches and stats\nwill be permanently deleted. This cannot be undone.'
+    : 'Delete season "'+lb+'"?\n\nThis season is empty. Nothing will be lost.';
+  if(!confirm(msg))return;
+  await U('clubs/'+cid+'/seasons/'+sid).remove();
+  await _rtdb.ref('users/'+APP.uid+'/data/'+cid+'/'+sid).remove();
+  delete c.seasons[sid];
+  if(APP.active.seasonId===sid){
+    var left=Object.keys(c.seasons||{});
+    APP.active.seasonId=left[left.length-1]||null;
+    await U('active').set(APP.active);
+  }
+  showToast('Season deleted');
+  refresh();renderSwitch();
+}
+
+/* ---------- EDITOR DE CLUBE ---------- */
+function editClub(id){
+  APP.editingClub=id;
+  var c=id?APP.clubs[id]:null,m=(c&&c.meta)||{};
+  document.getElementById('club-title').textContent=id?'Edit club':'New club';
+  document.getElementById('c-name').value=m.name||'';
+  document.getElementById('c-abbr').value=m.abbr||'';
+  document.getElementById('c-color').value=m.color||'#0a0a0a';
+  document.getElementById('csw-prev').style.background=m.color||'#0a0a0a';
+  var bp=document.getElementById('c-bprev');
+  bp.innerHTML=(c&&c.badge)?'<img src="'+c.badge+'" alt="Club badge">':'<span style="font-size:10px;color:#a3a3a3">—</span>';
+  bp.dataset.badge=(c&&c.badge)||'';
+  document.getElementById('c-del').style.display=id?'block':'none';
+  renderPresets(m.color||'#0a0a0a');
+  closeSwitch();
+  document.getElementById('sh-club').classList.add('open');
+}
+function closeClub(){document.getElementById('sh-club').classList.remove('open');openSwitch();}
+function renderPresets(cur){
+  var pc=document.getElementById('cpre');pc.innerHTML='';
+  PRESETS.forEach(function(c){
+    var d=document.createElement('div');
+    d.className='cp'+(c===cur?' active':'');
+    d.style.background=c;
+    d.setAttribute('role','button');d.setAttribute('tabindex','0');
+    d.setAttribute('aria-label','Color '+c);
+    var pick=function(){onColor(c);};
+    d.onclick=pick;d.onkeydown=function(e){kbAct(e,pick);};
+    pc.appendChild(d);
+  });
+}
+function onColor(c){
+  document.getElementById('c-color').value=c;
+  document.getElementById('csw-prev').style.background=c;
+  renderPresets(c);
+}
+function onBadge(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.size>500*1024){showToast('Badge too large — use an image under 500KB');inp.value='';return;}
+  var r=new FileReader();
+  r.onload=function(e){
+    var bp=document.getElementById('c-bprev');
+    bp.innerHTML='<img src="'+e.target.result+'" alt="Club badge">';
+    bp.dataset.badge=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+async function saveClub(){
+  var name=document.getElementById('c-name').value.trim();
+  if(!name){showToast('Club name is required');return;}
+  var id=APP.editingClub||slug(name);
+  var meta={
+    name:name,
+    abbr:(document.getElementById('c-abbr').value.trim()||name.slice(0,3)).toUpperCase(),
+    color:document.getElementById('c-color').value
+  };
+  var badge=document.getElementById('c-bprev').dataset.badge||'';
+  showToast('Saving…',8000);
+  var r=await raceTimeout(U('clubs/'+id+'/meta').set(meta),4000);
+  if(badge)await U('clubs/'+id+'/badge').set(badge);
+  APP.clubs[id]=APP.clubs[id]||{};
+  APP.clubs[id].meta=meta;
+  if(badge)APP.clubs[id].badge=badge;
+  showToast(saveMsg(r));
+  if(r==='error')return;
+  /* primeiro clube: vira ativo e ganha uma temporada */
+  if(!APP.active.clubId){
+    APP.active.clubId=id;
+    await U('active').set(APP.active);
+  }
+  document.getElementById('sh-club').classList.remove('open');
+  refresh();
+  var c=APP.clubs[id];
+  if(!c.seasons||!Object.keys(c.seasons).length){
+    APP.active.clubId=id;
+    await addSeason();
+  }else{
+    openSwitch();
+  }
+}
+async function deleteClub(){
+  var id=APP.editingClub;if(!id)return;
+  var c=APP.clubs[id],nm=(c.meta&&c.meta.name)||id;
+  if(!confirm('Delete "'+nm+'"?\n\nThis removes the club and ALL its seasons and data.\nThis cannot be undone.'))return;
+  await U('clubs/'+id).remove();
+  await U('data/'+id).remove();
+  delete APP.clubs[id];
+  if(APP.active.clubId===id){
+    var ids=Object.keys(APP.clubs);
+    APP.active.clubId=ids[0]||null;
+    APP.active.seasonId=null;
+    var nc=club();
+    if(nc&&nc.seasons)APP.active.seasonId=Object.keys(nc.seasons)[0]||null;
+    await U('active').set(APP.active);
+  }
+  document.getElementById('sh-club').classList.remove('open');
+  showToast('Club deleted');
+  refresh();openSwitch();
+}
+
+/* ---------- SETTINGS (perfil) ---------- */
+function openSettings(){
+  document.getElementById('s-coach').value=APP.profile.coachName||'';
+  document.getElementById('s-meth').value=APP.profile.methodology||'';
+  document.getElementById('sh-set').classList.add('open');
+}
+function closeSettings(){document.getElementById('sh-set').classList.remove('open');}
+async function saveSettings(){
+  APP.profile.coachName=document.getElementById('s-coach').value.trim();
+  APP.profile.methodology=document.getElementById('s-meth').value.trim();
+  closeSettings();
+  showToast('Saving…',8000);
+  var r=await raceTimeout(U('profile').set(APP.profile),4000);
+  showToast(saveMsg(r));
+  refresh();
+  var fr=document.getElementById('mfrm');
+  if(fr&&fr.src&&fr.src.indexOf('about:blank')===-1)pushContext(fr.contentWindow);
+}
+
+/* ---------- MODULOS ---------- */
+function ctxPayload(){
+  var c=club()||{},m=c.meta||{},s=season()||{};
+  return {
+    type:'FLUXGK_CONTEXT',
+    uid:APP.uid,
+    firebaseConfig:FBC,
+    dataPath:dataPath(),                     /* onde o modulo grava */
+    club:{id:APP.active.clubId,name:m.name||'',abbr:m.abbr||'',color:m.color||'#0a0a0a',badge:c.badge||''},
+    season:{id:APP.active.seasonId,label:s.label||''},
+    coach:{name:APP.profile.coachName||'',methodology:APP.profile.methodology||''},
+    /* formato ANTIGO — mantido para os modulos ainda nao migrados nao quebrarem */
+    profile:{
+      coachName:APP.profile.coachName||'',
+      clubName:m.name||'',
+      clubColor:m.color||'#0a0a0a',
+      clubBadge:c.badge||'',
+      methodology:APP.profile.methodology||'',
+      seasonLabel:s.label||''
+    }
+  };
+}
 function pushContext(win){
   if(!win)return;
-  try{win.postMessage({type:'FLUXGK_CONTEXT',uid:APP.uid,firebaseConfig:FBC,profile:APP.profile},'*');}catch(e){console.error('[FluxGK] pushContext failed:',e);}
+  try{win.postMessage(ctxPayload(),'*');}catch(e){console.error('[FluxGK] pushContext failed:',e);}
 }
 window.addEventListener('message',function(e){
   if(!e.data)return;
   if(e.data.type==='FLUXGK_STAT_UPDATE')loadStats();
-  // o modulo avisa que esta pronto -> responde na hora, sem depender de timing
   if(e.data.type==='FLUXGK_MODULE_READY')pushContext(e.source);
 });
-
-function openSettings(){
-  var p=APP.profile;
-  document.getElementById('s-coach').value=p.coachName||'';
-  document.getElementById('s-club').value=p.clubName||'';
-  document.getElementById('s-meth').value=p.methodology||'';
-  document.getElementById('s-color').value=p.clubColor||'#0a0a0a';
-  document.getElementById('csw-prev').style.background=p.clubColor||'#0a0a0a';
-  var pr=document.getElementById('bdprev');
-  if(p.clubBadge)pr.innerHTML='<img src="'+p.clubBadge+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><input type="file" accept="image/*" onchange="onBadge(event)">';
-  else pr.innerHTML='<span style="font-size:20px">S</span><input type="file" accept="image/*" onchange="onBadge(event)">';
-  var pc=document.getElementById('cpre');pc.innerHTML='';
-  PRESETS.forEach(function(c){var d=document.createElement('div');d.className='cp'+(c===(p.clubColor||'#0a0a0a')?' active':'');d.style.background=c;d.onclick=function(){selectColor(c);};pc.appendChild(d);});
-  document.getElementById('ov-set').classList.add('open');
+function openModule(key){
+  if(!dataPath()){showToast('Create a club and a season first');openSwitch();return;}
+  var m=MODS.filter(function(x){return x.k===key;})[0];
+  document.getElementById('mtnm').textContent=(m&&m.t)||key.toUpperCase();
+  document.getElementById('mtbar').style.background=(club()&&club().meta&&club().meta.color)||'#0a0a0a';
+  var fr=document.getElementById('mfrm');
+  fr.onload=function(){
+    if(fr.src==='about:blank')return;
+    setTimeout(function(){pushContext(fr.contentWindow);},600);  /* rede de seguranca */
+  };
+  fr.src=MOD_FILES[key];
+  showScreen('module');
 }
-function closeSettings(){document.getElementById('ov-set').classList.remove('open');}
-function onColor(v){document.getElementById('csw-prev').style.background=v;APP.profile.clubColor=v;document.querySelectorAll('.cp').forEach(function(el){el.classList.remove('active');});}
-function selectColor(c){APP.profile.clubColor=c;document.getElementById('s-color').value=c;document.getElementById('csw-prev').style.background=c;document.querySelectorAll('.cp').forEach(function(el){el.classList.toggle('active',el.style.background===c||el.style.backgroundColor===c);});}
-function onBadge(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){APP.profile.clubBadge=ev.target.result;document.getElementById('bdprev').innerHTML='<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><input type="file" accept="image/*" onchange="onBadge(event)">';};r.readAsDataURL(f);}
-async function saveSettings(){APP.profile.coachName=document.getElementById('s-coach').value.trim();APP.profile.clubName=document.getElementById('s-club').value.trim();APP.profile.methodology=document.getElementById('s-meth').value.trim();APP.profile.clubColor=document.getElementById('s-color').value;applyProfile();closeSettings();var _fr=document.getElementById('mfrm');if(_fr&&_fr.src&&_fr.src!=='about:blank')pushContext(_fr.contentWindow);showToast('Saving\u2026',8000);var r=await saveProfileToDB();showToast(r==='saved'?'Settings saved':r==='pending'?'Saved on device \u2014 will sync when back online':'Could not save \u2014 please try again');}
+function closeModule(){showScreen('home');loadStats();}
+
+/* ---------- BOOT ---------- */
 function ldScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 async function boot(){
   try{
     await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-    await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js');
-    await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js');
+    await Promise.all([
+      ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js'),
+      ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js')
+    ]);
     firebase.initializeApp(FBC);
-    _auth=firebase.auth();_db=firebase.firestore();
-    _auth.onAuthStateChanged(async function(user){
-      if(user){APP.uid=user.uid;await loadProfile();applyProfile();loadStats();showScreen('hub');}
-      else{showScreen('login');}
+    _auth=firebase.auth();
+    _rtdb=firebase.database();
+    _auth.onAuthStateChanged(async function(u){
+      if(u){
+        APP.uid=u.uid;
+        await loadAll();
+        renderMods();
+        refresh();
+        showScreen('home');
+        if(!Object.keys(APP.clubs).length){
+          showToast('Welcome — create your first club to get started',5000);
+          openSwitch();
+        }
+      }else{
+        document.getElementById('lbtn').disabled=false;
+        document.getElementById('lbtn').textContent='Sign in';
+        showScreen('login');
+      }
     });
-  }catch(e){console.error(e);showScreen('login');document.getElementById('lerr').textContent='Connection error - check internet and reload.';}
+  }catch(e){
+    console.error('[FluxGK] boot failed:',e);
+    document.getElementById('scr-loading').innerHTML='<div style="color:#f87171;font-family:monospace;font-size:13px;text-align:center;padding:20px">Could not load FluxGK.<br>Check your connection and reload.</div>';
+  }
 }
 boot();
 </script>
