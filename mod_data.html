@@ -817,7 +817,7 @@ const ADMIN_EMAIL = "pimentafutsal@gmail.com";
 
 let _db=null, _rf=null, _auth=null, _af=null;
 let chartQueue=[];
-let _uid=null, _userRole="coach", _listening=false;
+let _uid=null, _base=null, _userRole="coach", _listening=false;
 
 // ── SYNC DOT ──────────────────────────────────────────────
 function dotY(){const d=document.getElementById("syncDot");if(d)d.style.background="rgba(255,220,80,.95)";}
@@ -826,7 +826,10 @@ function dotR(){const d=document.getElementById("syncDot");if(d){d.style.backgro
 
 // ── USER DATA PATH ────────────────────────────────────────
 // All data is scoped to the authenticated user's UID
-function uPath(p){ return "users/"+_uid+"/"+p; }
+// Scoped path sent by the hub: users/{uid}/data/{clubId}/{seasonId}
+// Falls back to a per-user default so data never lands on the shared root.
+function uPath(p){ return (_base||("users/"+_uid+"/data/_default"))+"/"+p; }
+function lsKey(){ return "glc_"+(_base||("users/"+_uid+"/data/_default")); }
 
 // ── INIT FIREBASE ─────────────────────────────────────────
 async function fbInit(){
@@ -846,13 +849,15 @@ async function fbInit(){
 // ── USER-SCOPED STATE ─────────────────────────────────────
 function loadUserState(){
   try{
-    const raw=localStorage.getItem("glc_"+_uid);
+    const raw=localStorage.getItem(lsKey());
     if(raw){
       const d=JSON.parse(raw);Object.assign(ST,d);
     } else {
       // ── MIGRATION: import data from pre-auth version (glcv5) ──
+      // Runs only ONCE (first club opened); the flag stops it re-importing
+      // the same legacy data into every other club.
       const legacy=localStorage.getItem("glcv5");
-      if(legacy){
+      if(legacy&&!localStorage.getItem("glcv5_migrated")){
         const d=JSON.parse(legacy);
         if(d.players)ST.players=d.players;
         if(d.sessions)ST.sessions=d.sessions;
@@ -885,7 +890,7 @@ function loadUserState(){
 }
 function save(){
   if(!_uid)return;
-  try{localStorage.setItem("glc_"+_uid,JSON.stringify(ST));}catch(e){}
+  try{localStorage.setItem(lsKey(),JSON.stringify(ST));}catch(e){}
 }
 
 // ── RTDB WRITE HELPERS ────────────────────────────────────
@@ -923,7 +928,7 @@ async function rtPushAll(){
 function rtListen(){
   if(!_db||!_rf||!_uid||_listening)return;
   _listening=true;
-  _rf.onValue(_rf.ref(_db,"users/"+_uid),snap=>{
+  _rf.onValue(_rf.ref(_db,uPath("").replace(/\/$/,"")),snap=>{
     const rem=snap.val();if(!rem)return;
     let changed=false;
     if(rem.config&&rem.config.branding){
@@ -1611,9 +1616,9 @@ window.addTrainingType=function(){
   ST.trainingTypes.push(t);
   save();renderTypeSelects();
   showToast('"'+t+'" added!');
-  // Sync to Firebase
-  if(rtdb&&rtdbRef&&_uid){
-    rtdbRef.set(rtdbRef.ref(rtdb,"users/"+_uid+"/trainingTypes"),ST.trainingTypes).catch(function(){});
+  // Sync to Firebase (scoped to the active club+season)
+  if(_db&&_rf&&_uid){
+    _rf.set(_rf.ref(_db,uPath("trainingTypes")),ST.trainingTypes).catch(function(){});
   }
 };
 
@@ -2232,6 +2237,10 @@ function today2(){return new Date().toISOString().split("T")[0];}
   window.addEventListener("message",function(ev){
     if(!ev.data||ev.data.type!=="FLUXGK_CONTEXT")return;
     _uid=ev.data.uid;
+    // Scope every read/write to the active club+season sent by the hub
+    // (users/{uid}/data/{clubId}/{seasonId}). Without this the module wrote
+    // to the shared user root and data leaked across clubs.
+    _base=ev.data.dataPath||null;
     var p=ev.data.profile||{};
     if(typeof ST!=="undefined"&&ST.brand){if(p.clubName)ST.brand.name=p.clubName;if(p.clubColor)ST.brand.color=p.clubColor;if(p.clubBadge)ST.brand.logo=p.clubBadge;}
     if(typeof applyTheme==="function")applyTheme();
