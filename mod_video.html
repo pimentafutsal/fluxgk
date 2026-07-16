@@ -472,6 +472,12 @@
   <button class="mini" id="appFullscreen" title="Fullscreen the whole app">⛶ Fullscreen</button>
   <button class="mini" id="openTab" title="Open this module in its own tab — enables the Save-as dialog and full screen" style="display:none">⤢ New tab</button>
 </header>
+<div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#9aa">
+  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
+  <span id="vctx-club">—</span><span style="opacity:.4">·</span>
+  <span id="vctx-season">—</span><span style="opacity:.4">·</span>
+  <span id="vctx-coach">—</span>
+</div>
 
 <main>
   <!-- ================= ABA: ANÁLISE ================= -->
@@ -4381,6 +4387,8 @@ function buildClips(file, ranges, progress){
   });
 }
 
+var _videoDataPath = null;  /* declarado cedo: applyContext usa antes da secao Firebase */
+var FB_CONFIG_HUB = null;
 /* ================= INTEGRAÇÃO COM O HUB FLUXGK ================= */
 /* Branding via postMessage (cor, nome, badge do clube) — igual aos outros módulos */
 let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba isolada
@@ -4403,7 +4411,18 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
         if (b){ b.style.display = 'inline-block'; b.style.cssText += ';width:18px;height:18px;border-radius:4px;margin-right:7px;vertical-align:-3px;background-size:cover;background-position:center'; b.style.backgroundImage = 'url(' + prof.clubBadge + ')'; }
       }
       if (prof.coachName) window._fluxgkCoach = prof.coachName;
-      if (ctx.uid) { window._fluxgkUid = ctx.uid; pullFromCloud(); }
+      if (ctx.coach && ctx.coach.name) window._fluxgkCoach = ctx.coach.name;
+      /* caminho por temporada (formato novo do hub) */
+      if (ctx.dataPath) _videoDataPath = ctx.dataPath + '/video';
+      if (ctx.firebaseConfig) FB_CONFIG_HUB = ctx.firebaseConfig;
+      if (ctx.season) window._fluxgkSeason = ctx.season.label || '';
+      if (ctx.club) window._fluxgkClub = ctx.club.name || '';
+      try { _renderVideoCtxStrip(); } catch(e){}
+      if (ctx.uid) {
+        window._fluxgkUid = ctx.uid;
+        if (!_fbReady) initFirebase();   /* inicia com a config do hub */
+        else pullFromCloud();
+      }
     } catch (e) { /* invalid context — ignore */ }
   }
   window.addEventListener('message', (ev) => {
@@ -4413,6 +4432,18 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
   // o hub envia o contexto ~600ms após carregar o iframe; também pedimos ativamente
   const inHub = (window.parent && window.parent !== window);
   try { if (inHub) window.parent.postMessage({ type: 'FLUXGK_MODULE_READY', module: 'video' }, '*'); } catch (e) {}
+  window._renderVideoCtxStrip = function(){
+    var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+    set('vctx-club', window._fluxgkClub);
+    set('vctx-season', window._fluxgkSeason);
+    set('vctx-coach', window._fluxgkCoach);
+    var strip=document.getElementById('ctxStrip');
+    var col=getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+    if(strip && /^#[0-9a-fA-F]{3,8}$/.test(col)){
+      strip.style.background=col+'14';
+      var ic=strip.querySelector('svg'); if(ic) ic.style.color=col;
+    }
+  };
 
   // quando aberto em aba isolada, o branding vem pela URL (?club=..&color=..&coach=..)
   try {
@@ -4467,7 +4498,8 @@ const FB_CONFIG = {
   messagingSenderId: "605696462663",
   appId: "1:605696462663:web:1df401a86ba7f9e753c662"
 };
-const FB_PATH = 'fluxgk-video';   // this module's own path in the Realtime DB
+console.log('%c[FluxGK] video v2.0 — consumidor do hub','color:#E8901A;font-weight:bold');
+/* FB_CONFIG_HUB e _videoDataPath ja declarados no topo */
 let fbDB = null, fbUser = null, _fbReady = false;
 
 function ldScript(src){
@@ -4484,7 +4516,8 @@ async function initFirebase(){
     await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js');
     await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
     if (!window.firebase) return;
-    firebase.initializeApp(FB_CONFIG);
+    var cfg = FB_CONFIG_HUB || FB_CONFIG;   /* prioriza a config do hub */
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
     fbDB = firebase.database();
     _fbReady = true;
     firebase.auth().onAuthStateChanged((u) => {
@@ -4515,7 +4548,8 @@ function pushToCloud(){
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
         updatedAt: Date.now(),
       };
-      fbDB.ref(FB_PATH + '/users/' + uid).set(payload);
+      var _p = _videoDataPath || (FB_PATH + '/users/' + uid);
+      fbDB.ref(_p).set(payload);
     } catch (e) { /* falha de rede — fica local */ }
   }, 600);
 }
@@ -4524,7 +4558,8 @@ function pushToCloud(){
 function pullFromCloud(){
   const uid = cloudUid();
   if (!_fbReady || !fbDB || !uid) return;
-  fbDB.ref(FB_PATH + '/users/' + uid).once('value').then((snap) => {
+  var _pp = _videoDataPath || (FB_PATH + '/users/' + uid);
+  fbDB.ref(_pp).once('value').then((snap) => {
     const data = snap.val();
     if (!data) { pushToCloud(); return; } // primeira vez: sobe o que já existe local
     try {
