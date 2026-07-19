@@ -793,7 +793,37 @@
     'vid.f.newPlaylistBtn2':'+ New playlist','vid.f.createWith':'Create a playlist with the ',
     'vid.f.createdWith':'" created with ','vid.f.movedTo':' clip(s) moved to "',
     'vid.f.addedToPl':' clip(s) added to playlist "','vid.f.exportOpenedSp':'Export tab opened with ',
-    'vid.f.adjustExportSp':' clip(s) selected. Adjust the options and click Export.'
+    'vid.f.adjustExportSp':' clip(s) selected. Adjust the options and click Export.',
+
+    /* ═══ QUADRA TÁTICA 3D (tatica3d) ═══ */
+    'tat.title':'TACTICS 3D',
+    'tat.select':'SELECT','tat.draw':'DRAW','tat.eraser':'ERASER','tat.camera':'CAMERA',
+    'tat.half':'HALF','tat.free':'FREE','tat.top':'TOP','tat.goal':'GOAL','tat.side':'SIDE',
+    'tat.undo':'UNDO','tat.clear':'CLEAR','tat.open':'OPEN','tat.save':'SAVE','tat.photo':'📷 PHOTO',
+    /* paleta */
+    'tat.players':'Players','tat.gk':'Goalkeeper','tat.player':'Player','tat.opponent':'Opponent',
+    'tat.ball':'Ball','tat.equipment':'Equipment','tat.cone':'Cone','tat.discCone':'Disc cone',
+    'tat.auxGoal':'Aux. goal','tat.mannequin':'Mannequin','tat.hurdle':'Hurdle','tat.ladder':'Ladder',
+    'tat.hoop':'Hoop','tat.pole':'Pole',
+    /* desenho */
+    'tat.stroke':'STROKE','tat.line':'LINE','tat.arrow':'ARROW','tat.dashed':'DASHED',
+    'tat.straight':'STRAIGHT (TAB)','tat.smaller':'− SMALLER','tat.larger':'+ LARGER',
+    'tat.rotL':'⟲ ROTATE','tat.rotR':'ROTATE ⟳','tat.duplicate':'DUPLICATE','tat.delete':'DELETE',
+    /* rodape de ajuda */
+    'tat.h.click':'Click','tat.h.clickTxt':'a palette item, then click the court to place it ·',
+    'tat.h.drag':'Drag','tat.h.dragTxt':'to move ·',
+    'tat.h.rdrag':'Right-drag','tat.h.rdragTxt':'(or CAMERA mode) orbits the view ·',
+    'tat.h.scroll':'Scroll','tat.h.scrollTxt':'zooms where the mouse points ·',
+    'tat.h.keeps':'keeps the drill ·','tat.h.tab':'TAB','tat.h.tabTxt':'toggles straight line ·',
+    'tat.h.rotates':'rotates ·','tat.h.resizes':'resizes ·',
+    'tat.h.del':'Delete','tat.h.delTxt':'removes',
+    /* avisos */
+    'tat.msg.straightOn':'Straight line ON (TAB toggles off)','tat.msg.straightOff':'Straight line OFF',
+    'tat.msg.nothingUndo':'Nothing to undo','tat.msg.clearQ':'Clear the entire court?',
+    'tat.msg.cleared':'Court cleared','tat.msg.imgSent':'Image sent to exercise',
+    'tat.msg.imgSaved':'Image saved','tat.msg.projSaved':'Project saved (.json)',
+    'tat.msg.projLoaded':'Project loaded','tat.msg.invalidFile':'Invalid file',
+    'tat.floor':'FLOOR','tat.useInExercise':'✓ USE IN EXERCISE'
   },
 
   /* ══════════════ PT-BR ══════════════ */
@@ -1569,7 +1599,37 @@
     'vid.f.newPlaylistBtn2':'+ Nova playlist','vid.f.createWith':'Criar uma playlist com os ',
     'vid.f.createdWith':'" criada com ','vid.f.movedTo':' clipe(s) movido(s) para "',
     'vid.f.addedToPl':' clipe(s) adicionado(s) à playlist "','vid.f.exportOpenedSp':'Aba de exportação aberta com ',
-    'vid.f.adjustExportSp':' clipe(s) selecionado(s). Ajuste as opções e clique em Exportar.'
+    'vid.f.adjustExportSp':' clipe(s) selecionado(s). Ajuste as opções e clique em Exportar.',
+
+    /* ═══ QUADRA TÁTICA 3D (tatica3d) ═══ */
+    'tat.title':'QUADRA TÁTICA 3D',
+    'tat.select':'SELECIONAR','tat.draw':'DESENHAR','tat.eraser':'BORRACHA','tat.camera':'CÂMERA',
+    'tat.half':'MEIA','tat.free':'LIVRE','tat.top':'DE CIMA','tat.goal':'GOL','tat.side':'LATERAL',
+    'tat.undo':'DESFAZER','tat.clear':'LIMPAR','tat.open':'ABRIR','tat.save':'SALVAR','tat.photo':'📷 FOTO',
+    /* paleta */
+    'tat.players':'Jogadores','tat.gk':'Goleiro','tat.player':'Jogador','tat.opponent':'Adversário',
+    'tat.ball':'Bola','tat.equipment':'Materiais','tat.cone':'Cone','tat.discCone':'Chapéu chinês',
+    'tat.auxGoal':'Baliza aux.','tat.mannequin':'Boneco','tat.hurdle':'Barreira','tat.ladder':'Escada',
+    'tat.hoop':'Arco','tat.pole':'Estaca',
+    /* desenho */
+    'tat.stroke':'TRAÇO','tat.line':'LINHA','tat.arrow':'SETA','tat.dashed':'TRACEJADO',
+    'tat.straight':'RETA (TAB)','tat.smaller':'− MENOR','tat.larger':'+ MAIOR',
+    'tat.rotL':'⟲ GIRAR','tat.rotR':'GIRAR ⟳','tat.duplicate':'DUPLICAR','tat.delete':'EXCLUIR',
+    /* rodape de ajuda */
+    'tat.h.click':'Clique','tat.h.clickTxt':'num item da paleta e depois na quadra para posicionar ·',
+    'tat.h.drag':'Arraste','tat.h.dragTxt':'para mover ·',
+    'tat.h.rdrag':'Arraste com o botão direito','tat.h.rdragTxt':'(ou modo CÂMERA) gira a visão ·',
+    'tat.h.scroll':'Rolar','tat.h.scrollTxt':'dá zoom onde o mouse aponta ·',
+    'tat.h.keeps':'mantém o exercício ·','tat.h.tab':'TAB','tat.h.tabTxt':'alterna linha reta ·',
+    'tat.h.rotates':'gira ·','tat.h.resizes':'redimensiona ·',
+    'tat.h.del':'Delete','tat.h.delTxt':'remove',
+    /* avisos */
+    'tat.msg.straightOn':'Linha reta LIGADA (TAB desliga)','tat.msg.straightOff':'Linha reta DESLIGADA',
+    'tat.msg.nothingUndo':'Nada para desfazer','tat.msg.clearQ':'Limpar a quadra inteira?',
+    'tat.msg.cleared':'Quadra limpa','tat.msg.imgSent':'Imagem enviada para o exercício',
+    'tat.msg.imgSaved':'Imagem salva','tat.msg.projSaved':'Projeto salvo (.json)',
+    'tat.msg.projLoaded':'Projeto carregado','tat.msg.invalidFile':'Arquivo inválido',
+    'tat.floor':'PISO','tat.useInExercise':'✓ USAR NO EXERCÍCIO'
   }
 
   };

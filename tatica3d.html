@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK · Tactics 3D</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<script src="fluxgk-i18n.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -104,55 +106,55 @@
 <div id="app">
 
   <div id="topbar">
-    <div id="brand">FLUXGK <b>·</b> TACTICS 3D</div>
+    <div id="brand">FLUXGK <b>·</b> <span data-i18n="tat.title">TACTICS 3D</span></div>
     <div class="sep"></div>
-    <button class="tbtn on" id="m-select">SELECT</button>
-    <button class="tbtn" id="m-draw">DRAW</button>
-    <button class="tbtn" id="m-erase">ERASER</button>
-    <button class="tbtn" id="m-camera">CAMERA</button>
+    <button data-i18n="tat.select" class="tbtn on" id="m-select">SELECT</button>
+    <button data-i18n="tat.draw" class="tbtn" id="m-draw">DRAW</button>
+    <button data-i18n="tat.eraser" class="tbtn" id="m-erase">ERASER</button>
+    <button data-i18n="tat.camera" class="tbtn" id="m-camera">CAMERA</button>
     <div class="sep"></div>
     <button class="tbtn" data-cam="2d">2D</button>
-    <button class="tbtn" data-cam="meia">HALF</button>
-    <button class="tbtn" data-cam="livre">FREE</button>
-    <button class="tbtn" data-cam="tatica">TOP</button>
-    <button class="tbtn" data-cam="gol">GOAL</button>
-    <button class="tbtn" data-cam="lateral">SIDE</button>
+    <button data-i18n="tat.half" class="tbtn" data-cam="meia">HALF</button>
+    <button data-i18n="tat.free" class="tbtn" data-cam="livre">FREE</button>
+    <button data-i18n="tat.top" class="tbtn" data-cam="tatica">TOP</button>
+    <button data-i18n="tat.goal" class="tbtn" data-cam="gol">GOAL</button>
+    <button data-i18n="tat.side" class="tbtn" data-cam="lateral">SIDE</button>
     <div class="grow"></div>
-    <button class="tbtn" id="b-undo">UNDO</button>
-    <button class="tbtn" id="b-clear">CLEAR</button>
+    <button data-i18n="tat.undo" class="tbtn" id="b-undo">UNDO</button>
+    <button data-i18n="tat.clear" class="tbtn" id="b-clear">CLEAR</button>
     <div class="sep"></div>
-    <button class="tbtn" id="b-open">OPEN</button>
-    <button class="tbtn" id="b-save">SAVE</button>
-    <button class="tbtn primary" id="b-photo">📷 PHOTO</button>
+    <button data-i18n="tat.open" class="tbtn" id="b-open">OPEN</button>
+    <button data-i18n="tat.save" class="tbtn" id="b-save">SAVE</button>
+    <button data-i18n="tat.photo" class="tbtn primary" id="b-photo">📷 PHOTO</button>
   </div>
 
   <div id="palette">
-    <h4>Players</h4>
-    <button class="pitem" data-kind="goleiro"><span class="dot" style="background:#11224f"></span>Goalkeeper</button>
-    <button class="pitem" data-kind="jogador"><span class="dot" style="background:#1E4FFF"></span>Player</button>
-    <button class="pitem" data-kind="adversario"><span class="dot" style="background:#E03131"></span>Opponent</button>
-    <h4>Ball</h4>
-    <button class="pitem" data-kind="bola"><span class="dot" style="background:#fff"></span>Ball</button>
-    <h4>Equipment</h4>
-    <button class="pitem" data-kind="cone"><span class="dot" style="background:#ff7a1a"></span>Cone</button>
-    <button class="pitem" data-kind="chapeu"><span class="dot" style="background:#1E4FFF"></span>Disc cone</button>
-    <button class="pitem" data-kind="minitrave"><span class="dot" style="background:#eee"></span>Aux. goal</button>
-    <button class="pitem" data-kind="boneco"><span class="dot" style="background:#11224f"></span>Mannequin</button>
-    <button class="pitem" data-kind="barreira"><span class="dot" style="background:#E03131"></span>Hurdle</button>
-    <button class="pitem" data-kind="escada"><span class="dot" style="background:#f5c518"></span>Ladder</button>
-    <button class="pitem" data-kind="arco"><span class="dot" style="background:#1E4FFF"></span>Hoop</button>
-    <button class="pitem" data-kind="vara"><span class="dot" style="background:#f5c518"></span>Pole</button>
+    <h4 data-i18n="tat.players">Players</h4>
+    <button class="pitem" data-kind="goleiro"><span class="dot" style="background:#11224f"></span><span data-i18n="tat.gk">Goalkeeper</span></button>
+    <button class="pitem" data-kind="jogador"><span class="dot" style="background:#1E4FFF"></span><span data-i18n="tat.player">Player</span></button>
+    <button class="pitem" data-kind="adversario"><span class="dot" style="background:#E03131"></span><span data-i18n="tat.opponent">Opponent</span></button>
+    <h4 data-i18n="tat.ball">Ball</h4>
+    <button class="pitem" data-kind="bola"><span class="dot" style="background:#fff"></span><span data-i18n="tat.ball">Ball</span></button>
+    <h4 data-i18n="tat.equipment">Equipment</h4>
+    <button class="pitem" data-kind="cone"><span class="dot" style="background:#ff7a1a"></span><span data-i18n="tat.cone">Cone</span></button>
+    <button class="pitem" data-kind="chapeu"><span class="dot" style="background:#1E4FFF"></span><span data-i18n="tat.discCone">Disc cone</span></button>
+    <button class="pitem" data-kind="minitrave"><span class="dot" style="background:#eee"></span><span data-i18n="tat.auxGoal">Aux. goal</span></button>
+    <button class="pitem" data-kind="boneco"><span class="dot" style="background:#11224f"></span><span data-i18n="tat.mannequin">Mannequin</span></button>
+    <button class="pitem" data-kind="barreira"><span class="dot" style="background:#E03131"></span><span data-i18n="tat.hurdle">Hurdle</span></button>
+    <button class="pitem" data-kind="escada"><span class="dot" style="background:#f5c518"></span><span data-i18n="tat.ladder">Ladder</span></button>
+    <button class="pitem" data-kind="arco"><span class="dot" style="background:#1E4FFF"></span><span data-i18n="tat.hoop">Hoop</span></button>
+    <button class="pitem" data-kind="vara"><span class="dot" style="background:#f5c518"></span><span data-i18n="tat.pole">Pole</span></button>
   </div>
 
   <div id="drawpanel">
-    <h4 style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted)">STROKE</h4>
+    <h4 data-i18n="tat.stroke" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted)">STROKE</h4>
     <div class="row">
-      <button class="style-btn on" data-style="linha">LINE</button>
-      <button class="style-btn" data-style="seta">ARROW</button>
-      <button class="style-btn" data-style="tracejada">DASHED</button>
+      <button data-i18n="tat.line" class="style-btn on" data-style="linha">LINE</button>
+      <button data-i18n="tat.arrow" class="style-btn" data-style="seta">ARROW</button>
+      <button data-i18n="tat.dashed" class="style-btn" data-style="tracejada">DASHED</button>
     </div>
     <div class="row">
-      <button class="style-btn" id="d-reta">STRAIGHT (TAB)</button>
+      <button data-i18n="tat.straight" class="style-btn" id="d-reta">STRAIGHT (TAB)</button>
     </div>
     <div class="row">
       <div class="swatch on" data-color="#1E4FFF" style="background:#1E4FFF"></div>
@@ -164,17 +166,17 @@
   </div>
 
   <div id="selpanel">
-    <button class="tbtn" id="s-menor">− SMALLER</button>
-    <button class="tbtn" id="s-maior">+ LARGER</button>
-    <button class="tbtn" id="s-rotl">⟲ ROTATE</button>
-    <button class="tbtn" id="s-rotr">ROTATE ⟳</button>
-    <button class="tbtn" id="s-dup">DUPLICATE</button>
-    <button class="tbtn danger" id="s-del">DELETE</button>
+    <button data-i18n="tat.smaller" class="tbtn" id="s-menor">− SMALLER</button>
+    <button data-i18n="tat.larger" class="tbtn" id="s-maior">+ LARGER</button>
+    <button data-i18n="tat.rotL" class="tbtn" id="s-rotl">⟲ ROTATE</button>
+    <button data-i18n="tat.rotR" class="tbtn" id="s-rotr">ROTATE ⟳</button>
+    <button data-i18n="tat.duplicate" class="tbtn" id="s-dup">DUPLICATE</button>
+    <button data-i18n="tat.delete" class="tbtn danger" id="s-del">DELETE</button>
   </div>
 
   <div id="hint">
-    <b>Click</b> a palette item, then click the court to place it · <b>Drag</b> to move ·
-    <b>Right-drag</b> (or CAMERA mode) orbits the view · <b>Scroll</b> zooms where the mouse points · <b>2D⇄3D</b> keeps the drill · <b>TAB</b> toggles straight line · <b>Q/E</b> rotates · <b>+/−</b> resizes · <b>Delete</b> removes
+    <b data-i18n="tat.h.click">Click</b> <span data-i18n="tat.h.clickTxt">a palette item, then click the court to place it ·</span> <b data-i18n="tat.h.drag">Drag</b> <span data-i18n="tat.h.dragTxt">to move ·</span>
+    <b data-i18n="tat.h.rdrag">Right-drag</b> <span data-i18n="tat.h.rdragTxt">(or CAMERA mode) orbits the view ·</span> <b data-i18n="tat.h.scroll">Scroll</b> <span data-i18n="tat.h.scrollTxt">zooms where the mouse points ·</span> <b>2D⇄3D</b> <span data-i18n="tat.h.keeps">keeps the drill ·</span> <b data-i18n="tat.h.tab">TAB</b> <span data-i18n="tat.h.tabTxt">toggles straight line ·</span> <b>Q/E</b> <span data-i18n="tat.h.rotates">rotates ·</span> <b>+/−</b> <span data-i18n="tat.h.resizes">resizes ·</span> <b data-i18n="tat.h.del">Delete</b> <span data-i18n="tat.h.delTxt">removes</span>
   </div>
 
   <div id="toast"></div>
@@ -280,7 +282,7 @@ const floor = new THREE.Mesh(
 );
 floor.rotation.x = -Math.PI/2;
 floor.receiveShadow = true;
-floor.name = 'FLOOR';
+floor.name = TX('tat.floor');
 scene.add(floor);
 
 /* piso externo escuro ao redor */
@@ -1255,7 +1257,7 @@ function toggleStraight(){
   straightStroke = !straightStroke;
   const b = document.getElementById('d-reta');
   if(b) b.classList.toggle('on', straightStroke);
-  toast(straightStroke ? 'Straight line ON (TAB toggles off)' : 'Straight line OFF');
+  toast(straightStroke ? TX('tat.msg.straightOn') : TX('tat.msg.straightOff'));
 }
 window.addEventListener('keydown', e=>{
   if(e.key==='Tab'){
@@ -1506,18 +1508,18 @@ $('s-del').onclick = ()=>{ if(selected) removeObject(selected); };
 $('b-undo').onclick = doUndo;
 function doUndo(){
   const a = undoStack.pop();
-  if(!a) return toast('Nothing to undo');
+  if(!a) return toast(TX('tat.msg.nothingUndo'));
   if(a.type==='obj') removeObject(a.ref);
   if(a.type==='draw') removeDrawing(a.ref);
 }
 $('b-clear').onclick = ()=>{
   if(!placeables.length && !drawings.length) return;
-  if(!confirm('Clear the entire court?')) return;
+  if(!confirm(TX('tat.msg.clearQ'))) return;
   [...placeables].forEach(removeObject);
   [...drawings].forEach(removeDrawing);
   undoStack.length = 0;
   teamCount.jogador = 1; teamCount.adversario = 1;
-  toast('Court cleared');
+  toast(TX('tat.msg.cleared'));
 };
 
 /* teclado */
@@ -1565,11 +1567,11 @@ function captureReport(){
 if(EMBED){
   const useBtn = document.createElement('button');
   useBtn.className = 'tbtn primary';
-  useBtn.textContent = '✓ USE IN EXERCISE';
+  useBtn.textContent = TX('tat.useInExercise');
   useBtn.onclick = ()=>{
     const url = captureReport();
     window.parent.postMessage({type:'fluxgk-tatica-image', dataUrl:url}, '*');
-    toast('Image sent to exercise');
+    toast(TX('tat.msg.imgSent'));
   };
   document.getElementById('topbar').appendChild(useBtn);
   const closeBtn = document.createElement('button');
@@ -1589,7 +1591,7 @@ $('b-photo').onclick = ()=>{
   a.download = 'fluxgk-tatica-' + stamp() + '.png';
   a.href = renderer.domElement.toDataURL('image/png');
   a.click();
-  toast('Image saved');
+  toast(TX('tat.msg.imgSaved'));
 };
 $('b-save').onclick = ()=>{
   const data = {
@@ -1602,7 +1604,7 @@ $('b-save').onclick = ()=>{
   a.download = 'fluxgk-tatica-' + stamp() + '.json';
   a.href = URL.createObjectURL(blob);
   a.click();
-  toast('Project saved (.json)');
+  toast(TX('tat.msg.projSaved'));
 };
 $('b-open').onclick = ()=>$('fileinput').click();
 $('fileinput').addEventListener('change', e=>{
@@ -1628,8 +1630,8 @@ $('fileinput').addEventListener('change', e=>{
         });
       });
       undoStack.length = 0;
-      toast('Project loaded');
-    }catch(err){ toast('Invalid file'); }
+      toast(TX('tat.msg.projLoaded'));
+    }catch(err){ toast(TX('tat.msg.invalidFile')); }
     e.target.value = '';
   };
   r.readAsText(f);
