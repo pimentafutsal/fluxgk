@@ -452,25 +452,26 @@
   #log .err{color:var(--red)}
   #log .ok{color:var(--blue)}
 </style>
+<script src="fluxgk-i18n.js"></script>
 </head>
 <body>
 
 <header>
-  <div class="brand" id="brandBox"><span id="brandBadge" style="display:none"></span>FLUX<span>GK</span> · <span id="brandName">VIDEO LAB</span></div>
-  <div class="tag">HUB MODULE — v1.0</div>
+  <div class="brand" id="brandBox"><span id="brandBadge" style="display:none"></span>FLUX<span>GK</span> · <span data-i18n="vid.title" id="brandName">VIDEO LAB</span></div>
+  <div data-i18n="vid.module" class="tag">HUB MODULE — v1.0</div>
   <nav id="tabs">
-    <button class="tabbtn active" data-tab="analise">Analysis</button>
-    <button class="tabbtn" data-tab="dash">Dashboards</button>
-    <button class="tabbtn" data-tab="export">Export</button>
-    <button class="tabbtn" data-tab="library">Library</button>
+    <button data-i18n="vid.nav.analysis" class="tabbtn active" data-tab="analise">Analysis</button>
+    <button data-i18n="vid.nav.dashboards" class="tabbtn" data-tab="dash">Dashboards</button>
+    <button data-i18n="vid.exportWord" class="tabbtn" data-tab="export">Export</button>
+    <button data-i18n="vid.nav.library" class="tabbtn" data-tab="library">Library</button>
   </nav>
   <div class="spacer"></div>
-  <button class="mini" id="togglePanel" title="Show/hide the tags panel">Tags</button>
-  <button class="mini" id="togglePl" title="Show/hide the playlists panel">Playlists <span class="badge" id="plCount">0</span></button>
-  <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels">▦ Layout</button>
-  <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" style="display:none">▱ Header</button>
-  <button class="mini" id="appFullscreen" title="Fullscreen the whole app">⛶ Fullscreen</button>
-  <button class="mini" id="openTab" title="Open this module in its own tab — enables the Save-as dialog and full screen" style="display:none">⤢ New tab</button>
+  <button class="mini" id="togglePanel" title="Show/hide the tags panel" data-i18n-title="vid.tt.tagsPanel">Tags</button>
+  <button class="mini" id="togglePl" title="Show/hide the playlists panel" data-i18n-title="vid.tt.playlistsPanel">Playlists <span class="badge" id="plCount">0</span></button>
+  <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels" data-i18n-title="vid.tt.layout">▦ Layout</button>
+  <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" data-i18n-title="vid.tt.header" style="display:none">▱ Header</button>
+  <button class="mini" id="appFullscreen" title="Fullscreen the whole app" data-i18n-title="vid.tt.fullscreen">⛶ Fullscreen</button>
+  <button class="mini" id="openTab" title="Open this module in its own tab — enables the Save-as dialog and full screen" data-i18n-title="vid.tt.newTab" style="display:none">⤢ New tab</button>
 </header>
 <div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#9aa">
   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
@@ -484,14 +485,14 @@
   <section id="tab-analise" class="tabpane active">
     <div id="lmLayout">
     <aside id="lmLeft">
-      <div class="zhead">CLIPS</div>
+      <div data-i18n="vid.clips" class="zhead">CLIPS</div>
       <div id="lmLeftSlot"></div>
     </aside>
     <div id="lmCenter">
     <div id="dropzone">
-      <div class="big">Load match video</div>
-      <div class="small">Click here or drag the file · formats: <code>.mp4 / .m4v / .mov</code> (H.264 or HEVC)</div>
-      <div class="small" style="margin-top:6px">The video stays on your computer — nothing is uploaded to the internet.</div>
+      <div data-i18n="vid.loadVideo" class="big">Load match video</div>
+      <div class="small"><span data-i18n="vid.dropHint">Click here or drag the file · formats:</span> <code data-i18n="vid.formats">.mp4 / .m4v / .mov</code> <span data-i18n="vid.codecs">(H.264 or HEVC)</span></div>
+      <div data-i18n="vid.privacy" class="small" style="margin-top:6px">The video stays on your computer — nothing is uploaded to the internet.</div>
       <input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mp4,.m4v,.mov" style="display:none">
     </div>
 
@@ -499,87 +500,87 @@
       <div id="stage">
         <video id="video" playsinline preload="metadata"></video>
         <canvas id="drawCanvas"></canvas>
-        <button id="clipBack" title="Back to the full match video">← Back to match</button>
+        <button id="clipBack" title="Back to the full match video" data-i18n-title="vid.tt.backMatch">← Back to match</button>
         <div class="zoomctl">
-          <button id="drawBtn" title="Draw over the video">✎</button>
-          <button id="zoomOut" title="Zoom out">−</button>
+          <button id="drawBtn" title="Draw over the video" data-i18n-title="vid.tt.draw">✎</button>
+          <button id="zoomOut" title="Zoom out" data-i18n-title="vid.tt.zoomOut">−</button>
           <div class="zlevel" id="zoomLevel">100%</div>
-          <button id="zoomIn" title="Zoom in">+</button>
-          <button id="zoomReset" title="Reset to 100%">⟲</button>
-          <button id="fsBtn" title="Fullscreen">⛶</button>
+          <button id="zoomIn" title="Zoom in" data-i18n-title="vid.tt.zoomIn">+</button>
+          <button id="zoomReset" title="Reset to 100%" data-i18n-title="vid.tt.reset100">⟲</button>
+          <button id="fsBtn" title="Fullscreen" data-i18n-title="vid.tt.fs">⛶</button>
         </div>
         <div id="drawbar">
-          <button data-tool="move" class="dtool" title="Move / Select — click a drawing to select it and edit its properties; drag to reposition">✥</button>
-          <button data-tool="erase" class="dtool" title="Eraser — click a drawing to delete just that one">⌫</button>
-          <button data-tool="pen" class="dtool active" title="Freehand pen">✎</button>
-          <button data-tool="line" class="dtool" title="Line">╱</button>
-          <button data-tool="arrow" class="dtool" title="Arrow">➔</button>
-          <button data-tool="rect" class="dtool" title="Rectangle">▭</button>
-          <button data-tool="ellipse" class="dtool" title="Ellipse">◯</button>
-          <button data-tool="text" class="dtool" title="Text — click a point and type">T</button>
-          <button data-tool="spot" class="dtool" title="Spotlight — drag from the top down to the player's feet">▼</button>
-          <button data-tool="measure" class="dtool" title="Measure — drag between two points (calibrate first)">↔</button>
-          <button data-tool="poly" class="dtool" title="Polygon — click to add vertices; click the 1st point to close and form the shape">⬠</button>
-          <button data-tool="link" class="dtool" title="Linking — click players to connect; click the 1st point again to close, or double-click to finish open">🔗</button>
-          <button data-tool="angle" class="dtool" title="Angle — click 3 points: end, vertex, end">∠</button>
-          <button data-tool="lens" class="dtool" title="Magnifier — drag from the center outward">🔍</button>
+          <button data-tool="move" class="dtool" title="Move / Select — click a drawing to select it and edit its properties; drag to reposition" data-i18n-title="vid.tt.move">✥</button>
+          <button data-tool="erase" class="dtool" title="Eraser — click a drawing to delete just that one" data-i18n-title="vid.tt.eraser">⌫</button>
+          <button data-tool="pen" class="dtool active" title="Freehand pen" data-i18n-title="vid.tt.pen">✎</button>
+          <button data-tool="line" class="dtool" title="Line" data-i18n-title="vid.tt.line">╱</button>
+          <button data-tool="arrow" class="dtool" title="Arrow" data-i18n-title="vid.tt.arrow">➔</button>
+          <button data-tool="rect" class="dtool" title="Rectangle" data-i18n-title="vid.tt.rect">▭</button>
+          <button data-tool="ellipse" class="dtool" title="Ellipse" data-i18n-title="vid.tt.ellipse">◯</button>
+          <button data-tool="text" class="dtool" title="Text — click a point and type" data-i18n-title="vid.tt.text">T</button>
+          <button data-tool="spot" class="dtool" title="Spotlight — drag from the top down to the player's feet" data-i18n-title="vid.tt.spotlight">▼</button>
+          <button data-tool="measure" class="dtool" title="Measure — drag between two points (calibrate first)" data-i18n-title="vid.tt.measure">↔</button>
+          <button data-tool="poly" class="dtool" title="Polygon — click to add vertices; click the 1st point to close and form the shape" data-i18n-title="vid.tt.polygon">⬠</button>
+          <button data-tool="link" class="dtool" title="Linking — click players to connect; click the 1st point again to close, or double-click to finish open" data-i18n-title="vid.tt.linking">🔗</button>
+          <button data-tool="angle" class="dtool" title="Angle — click 3 points: end, vertex, end" data-i18n-title="vid.tt.angle">∠</button>
+          <button data-tool="lens" class="dtool" title="Magnifier — drag from the center outward" data-i18n-title="vid.tt.magnifier">🔍</button>
           <span class="sep"></span>
-          <button class="dcolor active" data-color="#FFD400" style="background:#FFD400" title="Yellow"></button>
-          <button class="dcolor" data-color="#1E4FFF" style="background:#1E4FFF" title="Blue"></button>
-          <button class="dcolor" data-color="#C8102E" style="background:#C8102E" title="Red"></button>
-          <button class="dcolor" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-          <button class="dcolor" data-color="#0a0a0a" style="background:#0a0a0a" title="Black"></button>
-          <label class="dcolorpick" title="Pick a custom color">
+          <button class="dcolor active" data-color="#FFD400" style="background:#FFD400" title="Yellow" data-i18n-title="vid.tt.yellow"></button>
+          <button class="dcolor" data-color="#1E4FFF" style="background:#1E4FFF" title="Blue" data-i18n-title="vid.tt.blue"></button>
+          <button class="dcolor" data-color="#C8102E" style="background:#C8102E" title="Red" data-i18n-title="vid.tt.red"></button>
+          <button class="dcolor" data-color="#ffffff" style="background:#ffffff" title="White" data-i18n-title="vid.tt.white"></button>
+          <button class="dcolor" data-color="#0a0a0a" style="background:#0a0a0a" title="Black" data-i18n-title="vid.tt.black"></button>
+          <label class="dcolorpick" title="Pick a custom color" data-i18n-title="vid.tt.customColor">
             <input type="color" id="drawColorPick" value="#FFD400">
           </label>
           <span class="sep"></span>
-          <label class="dlabel" for="drawOpacity" title="Stroke opacity">opac.</label>
+          <label class="dlabel" for="drawOpacity" title="Stroke opacity" data-i18n-title="vid.tt.strokeOpacity">opac.</label>
           <input type="range" id="drawOpacity" min="10" max="100" step="5" value="100" style="width:80px">
           <span class="dlabel" id="drawOpacityVal">100%</span>
           <span class="sep"></span>
-          <label class="dlabel" for="drawWidth" title="Line thickness">esp.</label>
+          <label class="dlabel" for="drawWidth" title="Line thickness" data-i18n-title="vid.tt.thickness">esp.</label>
           <input type="range" id="drawWidth" min="0.5" max="4" step="0.25" value="1" style="width:80px">
           <span class="dlabel" id="drawWidthVal">1,0×</span>
           <span class="sep"></span>
-          <button id="drawCalib" title="Calibrate measurement: draw a line over a known distance (e.g. goal width = 3m)">Calibrate</button>
-          <button id="drawUndo" title="Undo last stroke">↩</button>
-          <button id="drawClear" title="Erase all strokes on screen">Clear</button>
+          <button id="drawCalib" title="Calibrate measurement: draw a line over a known distance (e.g. goal width = 3m)" data-i18n-title="vid.tt.calibrate">Calibrate</button>
+          <button id="drawUndo" title="Undo last stroke" data-i18n-title="vid.tt.undo">↩</button>
+          <button id="drawClear" title="Erase all strokes on screen" data-i18n-title="vid.tt.eraseAll">Clear</button>
           <span class="sep"></span>
-          <label class="dlabel" for="freezeSec">freeze</label>
+          <label data-i18n="vid.freeze" class="dlabel" for="freezeSec">freeze</label>
           <input type="number" id="freezeSec" value="3" min="1" max="60" step="1">
           <span class="dlabel">s</span>
-          <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration">💾 Save at time</button>
-          <button id="drawSnap" title="Save current frame + drawing as a PNG image">⤓ PNG</button>
-          <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)">✕</button>
+          <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration" data-i18n-title="vid.tt.saveAtTime">💾 Save at time</button>
+          <button id="drawSnap" title="Save current frame + drawing as a PNG image" data-i18n-title="vid.tt.savePng">⤓ PNG</button>
+          <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)" data-i18n-title="vid.tt.exitDraw">✕</button>
         <div id="drawProps" style="display:none">
           <div id="lensProps" class="dprops" style="display:none">
-            <span class="dlabel">Magnifier — zoom</span>
+            <span data-i18n="vid.magnifier" class="dlabel">Magnifier — zoom</span>
             <input type="range" id="lensMag" min="1.5" max="6" step="0.1" value="2.2" style="width:110px">
             <span class="dlabel" id="lensMagVal">2,2×</span>
           </div>
           <div id="textProps" class="dprops" style="display:none">
-            <span class="dlabel">Text</span>
-            <input type="range" id="textSize" min="2" max="12" step="0.5" value="4.5" style="width:90px" title="Size">
+            <span data-i18n="vid.text" class="dlabel">Text</span>
+            <input type="range" id="textSize" min="2" max="12" step="0.5" value="4.5" style="width:90px" title="Size" data-i18n-title="vid.size">
             <span class="dlabel" id="textSizeVal">4,5</span>
             <span class="sep"></span>
-            <label class="dlabel"><input type="checkbox" id="textBg" checked> background</label>
-            <span class="dlabel">bg opacity</span>
+            <label class="dlabel"><input type="checkbox" id="textBg" checked> <span data-i18n="vid.background">background</span></label>
+            <span data-i18n="vid.bgOpacity" class="dlabel">bg opacity</span>
             <input type="range" id="textBgOpacity" min="0" max="100" step="5" value="45" style="width:80px">
             <span class="dlabel" id="textBgOpacityVal">45%</span>
             <span class="sep"></span>
-            <span class="dlabel">text opacity</span>
+            <span data-i18n="vid.textOpacity" class="dlabel">text opacity</span>
             <input type="range" id="textInkOpacity" min="20" max="100" step="5" value="100" style="width:80px">
             <span class="dlabel" id="textInkOpacityVal">100%</span>
           </div>
           <div id="polyProps" class="dprops" style="display:none">
-            <span class="dlabel">Fill</span>
+            <span data-i18n="vid.fill" class="dlabel">Fill</span>
             <select id="polyFill" style="font-size:11px">
-              <option value="none">None</option>
-              <option value="solid">Solid color</option>
-              <option value="hatch" selected>Lines</option>
+              <option data-i18n="vid.none" value="none">None</option>
+              <option data-i18n="vid.solidColor" value="solid">Solid color</option>
+              <option data-i18n="vid.lines" value="hatch" selected>Lines</option>
             </select>
             <span class="sep"></span>
-            <span class="dlabel">fill opacity</span>
+            <span data-i18n="vid.fillOpacity" class="dlabel">fill opacity</span>
             <input type="range" id="polyFillOpacity" min="5" max="100" step="5" value="50" style="width:90px">
             <span class="dlabel" id="polyFillOpacityVal">50%</span>
           </div>
@@ -587,10 +588,10 @@
         </div>
       </div>
       <div class="pbar">
-        <button id="playBtn" title="Play/pause (space)">▶</button>
-        <button class="ghost mini" id="back5" title="Back 5s (←)">−5s</button>
-        <button class="ghost mini" id="fwd5" title="Forward 5s (→)">+5s</button>
-        <button class="ghost mini" id="muteBtn" title="Sound on/off">🔊</button>
+        <button id="playBtn" title="Play/pause (space)" data-i18n-title="vid.tt.playPause">▶</button>
+        <button class="ghost mini" id="back5" title="Back 5s (←)" data-i18n-title="vid.tt.back5">−5s</button>
+        <button class="ghost mini" id="fwd5" title="Forward 5s (→)" data-i18n-title="vid.tt.fwd5">+5s</button>
+        <button class="ghost mini" id="muteBtn" title="Sound on/off" data-i18n-title="vid.tt.sound">🔊</button>
         <input type="range" id="seek" min="0" max="100" step="0.05" value="0">
         <div class="speeds" id="speeds"></div>
       </div>
@@ -598,38 +599,38 @@
         <div class="cdot" id="clipDot"></div>
         <div class="cinfo"><span id="clipName"></span><span class="crange" id="clipRange"></span></div>
         <div class="spacer"></div>
-        <button class="mini" id="clipReplay" title="Play the clip from the start">↺ Replay</button>
-        <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins">✎ Edit time</button>
-        <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing">🔍 Frame</button>
-        <button class="mini" id="clipExport" title="Export this clip (.mp4)">⤓ Export</button>
-        <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video">✕ Exit clip</button>
+        <button class="mini" id="clipReplay" title="Play the clip from the start" data-i18n-title="vid.tt.playClip">↺ Replay</button>
+        <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins" data-i18n-title="vid.tt.editMargins">✎ Edit time</button>
+        <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing" data-i18n-title="vid.tt.saveFraming">🔍 Frame</button>
+        <button class="mini" id="clipExport" title="Export this clip (.mp4)" data-i18n-title="vid.tt.exportClip">⤓ Export</button>
+        <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video" data-i18n-title="vid.tt.exitClip">✕ Exit clip</button>
       </div>
       <div id="trimWrap">
         <span class="ttime" id="trimInLbl">00:00.0</span>
         <div id="trimTrack">
           <div id="trimRegion"></div>
           <div id="trimPlayhead"></div>
-          <div class="thandle" id="trimIn" title="Drag to adjust the start"></div>
-          <div class="thandle" id="trimOut" title="Drag to adjust the end"></div>
+          <div class="thandle" id="trimIn" title="Drag to adjust the start" data-i18n-title="vid.tt.dragStart"></div>
+          <div class="thandle" id="trimOut" title="Drag to adjust the end" data-i18n-title="vid.tt.dragEnd"></div>
         </div>
         <span class="ttime" id="trimOutLbl">00:00.0</span>
-        <button class="mini primary" id="trimSave">Save</button>
-        <button class="mini ghost" id="trimCancel">Cancel</button>
+        <button class="mini primary" id="trimSave" data-i18n="common.save">Save</button>
+        <button class="mini ghost" id="trimCancel"><span data-i18n="common.cancel">Cancel</span></button>
       </div>
       <div class="vbar">
         <div class="clock"><span id="curTime">00:00.0</span> <span class="dur">/ <span id="durTime">00:00</span></span></div>
         <div class="filename" id="fileName"></div>
         <div class="spacer"></div>
-        <div class="prepost" title="Default times — tags with their own times (set in Edit tags) ignore these values">
-          <label for="preSec">pre default</label><input type="number" id="preSec" value="5" min="0" max="60" step="1">s
-          <label for="postSec" style="margin-left:6px">post default</label><input type="number" id="postSec" value="3" min="0" max="60" step="1">s
+        <div class="prepost" title="Default times — tags with their own times (set in Edit tags) ignore these values" data-i18n-title="vid.tt.defaultTimes">
+          <label data-i18n="vid.preDefault" for="preSec">pre default</label><input type="number" id="preSec" value="5" min="0" max="60" step="1">s
+          <label data-i18n="vid.postDefault" for="postSec" style="margin-left:6px">post default</label><input type="number" id="postSec" value="3" min="0" max="60" step="1">s
         </div>
-        <button class="ghost" id="changeVideo">Change video</button>
+        <button data-i18n="vid.changeVideo" class="ghost" id="changeVideo">Change video</button>
       </div>
       <div id="nowPlaying">
         <div class="dotpulse"></div>
         <div id="nowPlayingLabel" style="flex:1"></div>
-        <button class="mini" id="stopPlaylist">Stop</button>
+        <button data-i18n="vid.stop" class="mini" id="stopPlaylist">Stop</button>
       </div>
     </div>
     </div><!-- /lmCenter -->
@@ -641,11 +642,11 @@
   <section id="tab-dash" class="tabpane">
     <div class="dashwrap">
       <div class="card">
-        <h2>My dashboards</h2>
+        <h2 data-i18n="vid.myDashboards">My dashboards</h2>
         <div class="body" id="dashList"></div>
       </div>
       <div class="card">
-        <h2>Dashboard editor <span style="font-weight:400;text-transform:none;letter-spacing:0">click a tag to edit</span></h2>
+        <h2><span data-i18n="vid.dashEditor">Dashboard editor</span> <span data-i18n="vid.clickTagEdit" style="font-weight:400;text-transform:none;letter-spacing:0">click a tag to edit</span></h2>
         <div class="body" id="dashEditor"></div>
       </div>
     </div>
@@ -655,56 +656,56 @@
   <section id="tab-export" class="tabpane">
     <div class="dashwrap">
       <div class="card">
-        <h2>Clips to export <span style="font-weight:400;text-transform:none;letter-spacing:0">check what to include</span></h2>
+        <h2><span data-i18n="vid.clipsToExport">Clips to export</span> <span data-i18n="vid.checkInclude" style="font-weight:400;text-transform:none;letter-spacing:0">check what to include</span></h2>
         <div class="body" id="expList"></div>
       </div>
       <div class="card">
-        <h2>Video properties</h2>
+        <h2 data-i18n="vid.videoProps">Video properties</h2>
         <div class="body">
           <div id="expProps">
             <div class="exprow">
-              <label>Quality</label>
+              <label data-i18n="vid.quality">Quality</label>
               <select id="expQuality">
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low (smaller file)</option>
+                <option data-i18n="vid.high" value="high">High</option>
+                <option data-i18n="vid.medium" value="medium">Medium</option>
+                <option data-i18n="vid.low" value="low">Low (smaller file)</option>
               </select>
             </div>
             <div class="exprow">
-              <label>Resolution</label>
+              <label data-i18n="vid.resolution">Resolution</label>
               <select id="expRes">
-                <option value="0">Original (no re-encode)</option>
+                <option data-i18n="vid.original" value="0">Original (no re-encode)</option>
                 <option value="1080">1080p</option>
                 <option value="720">720p</option>
                 <option value="480">480p</option>
               </select>
             </div>
             <div class="exprow">
-              <label>Format</label>
+              <label data-i18n="vid.format">Format</label>
               <select id="expFormat">
                 <option value="mp4">MP4 (H.264)</option>
-                <option value="webm">WebM (VP8/9)</option>
+                <option data-i18n="vid.webm" value="webm">WebM (VP8/9)</option>
               </select>
             </div>
             <div class="exprow check">
-              <label><input type="checkbox" id="expTitle"> Overlay the clip name on the video</label>
+              <label><input type="checkbox" id="expTitle"> <span data-i18n="vid.overlayName">Overlay the clip name on the video</span></label>
             </div>
             <div class="exprow check">
-              <label><input type="checkbox" id="expDraw" checked> Burn the drawings into the video</label>
+              <label><input type="checkbox" id="expDraw" checked> <span data-i18n="vid.burnDrawings">Burn the drawings into the video</span></label>
             </div>
             <div class="exprow check">
-              <label><input type="checkbox" id="expWatermark"> Watermark</label>
-              <input type="text" id="expWmText" placeholder="@e.pimentagoleiros" maxlength="40" style="flex:1;min-width:120px">
+              <label><input type="checkbox" id="expWatermark"> <span data-i18n="vid.watermark">Watermark</span></label>
+              <input type="text" id="expWmText" placeholder="@e.pimentagoleiros" data-i18n-placeholder="vid.ph.handle" maxlength="40" style="flex:1;min-width:120px">
             </div>
             <div class="exprow check">
-              <label><input type="checkbox" id="expAudio" checked> Include audio</label>
+              <label><input type="checkbox" id="expAudio" checked> <span data-i18n="vid.includeAudio">Include audio</span></label>
             </div>
             <div class="exprow check">
-              <label><input type="checkbox" id="expPerFile"> One file per clip (instead of a single compilation)</label>
+              <label><input type="checkbox" id="expPerFile"> <span data-i18n="vid.onePerClip">One file per clip (instead of a single compilation)</span></label>
             </div>
             <div id="expNote" class="expnote"></div>
             <div class="exprow" style="margin-top:14px">
-              <button class="primary" id="expRun" style="flex:1">⤓ Export</button>
+              <button data-i18n="vid.export" class="primary" id="expRun" style="flex:1">⤓ Export</button>
             </div>
           </div>
         </div>
@@ -715,9 +716,9 @@
   <!-- ================= ABA: BIBLIOTECA ================= -->
   <section id="tab-library" class="tabpane">
     <div class="card">
-      <h2>Match library</h2>
+      <h2 data-i18n="vid.matchLibrary">Match library</h2>
       <div class="body" id="library">
-        <div class="empty">No matches saved yet.</div>
+        <div data-i18n="vid.noMatches" class="empty">No matches saved yet.</div>
       </div>
     </div>
   </section>
@@ -726,42 +727,42 @@
 <!-- ================= PAINÉIS FLUTUANTES ================= -->
 <div id="tagPanel" class="fpanel on">
   <div class="fphead" id="tagPanelHandle">
-    <span>TAGS</span>
-    <span style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
+    <span data-i18n="vid.tags">TAGS</span>
+    <span data-i18n="vid.dragMove" style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
     <span class="spacer"></span>
-    <button class="mini ghost" id="panelMin" title="Minimize/expand">—</button>
+    <button class="mini ghost" id="panelMin" title="Minimize/expand" data-i18n-title="vid.tt.minimize">—</button>
   </div>
   <div class="fpbody" id="tagPanelBody">
     <div class="dashbar">
-      <select id="dashSelect" title="Active dashboard"></select>
-      <button class="mini" id="dashEditGo" title="Open the dashboards editor">⚙ Dashboards</button>
+      <select id="dashSelect" title="Active dashboard" data-i18n-title="vid.tt.activeDash"></select>
+      <button class="mini" id="dashEditGo" title="Open the dashboards editor" data-i18n-title="vid.tt.openDashEditor">⚙ Dashboards</button>
     </div>
     <div id="tagGrid"></div>
     <div class="addtag">
-      <input type="text" id="newTagName" placeholder="New tag (e.g. Back pass)" maxlength="28">
-      <button id="addTagBtn">Add</button>
+      <input type="text" id="newTagName" placeholder="New tag (e.g. Back pass)" data-i18n-placeholder="vid.ph.newTag" maxlength="28">
+      <button data-i18n="vid.add" id="addTagBtn">Add</button>
     </div>
   </div>
-  <div class="fpresize" id="tagGrip" title="Drag to resize">◢</div>
+  <div class="fpresize" id="tagGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
 </div>
 
 <div id="plPanel" class="fpanel">
   <div class="fphead" id="plPanelHandle">
-    <span>PLAYLISTS</span>
-    <span style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
+    <span data-i18n="vid.playlists">PLAYLISTS</span>
+    <span data-i18n="vid.dragMove" style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
     <span class="spacer"></span>
-    <button class="mini ghost" id="plMin" title="Minimize/expand">—</button>
+    <button class="mini ghost" id="plMin" title="Minimize/expand" data-i18n-title="vid.tt.minimize">—</button>
   </div>
   <div class="fpbody" id="plPanelBody">
     <div id="playlists">
-      <div class="empty">No clips tagged yet. Load a video and click a tag during playback.</div>
+      <div data-i18n="vid.noClipsTagged" class="empty">No clips tagged yet. Load a video and click a tag during playback.</div>
     </div>
-    <div class="fpsection">TIMED DRAWINGS</div>
+    <div data-i18n="vid.timedDrawings" class="fpsection">TIMED DRAWINGS</div>
     <div id="drawList">
-      <div class="empty">No drawings saved on the video timeline.</div>
+      <div data-i18n="vid.noDrawings" class="empty">No drawings saved on the video timeline.</div>
     </div>
   </div>
-  <div class="fpresize" id="plGrip" title="Drag to resize">◢</div>
+  <div class="fpresize" id="plGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
 </div>
 
 <div id="askModal">
@@ -774,7 +775,7 @@
       <div id="askMsg" class="nmrange" style="display:none"></div>
     </div>
     <div class="nmfoot">
-      <button class="ghost" id="askCancel">Cancel</button>
+      <button class="ghost" id="askCancel"><span data-i18n="common.cancel">Cancel</span></button>
       <span class="spacer"></span>
       <button class="primary" id="askOk">OK</button>
     </div>
@@ -783,31 +784,31 @@
 
 <div id="nameModal">
   <div class="nmcard">
-    <div class="nmhead" id="nmHead">Clip details</div>
+    <div data-i18n="vid.clipDetails" class="nmhead" id="nmHead">Clip details</div>
     <div class="nmbody">
-      <label class="nmlabel" for="nameInput">Name</label>
+      <label data-i18n="vid.name" class="nmlabel" for="nameInput">Name</label>
       <input type="text" id="nameInput" maxlength="60" autocomplete="off">
-      <label class="nmlabel" for="noteInput">Notes</label>
-      <textarea id="noteInput" rows="3" placeholder="Notes about the clip (optional)"></textarea>
+      <label data-i18n="vid.notes" class="nmlabel" for="noteInput">Notes</label>
+      <textarea id="noteInput" rows="3" placeholder="Notes about the clip (optional)" data-i18n-placeholder="vid.ph.notes"></textarea>
       <div class="nmrange" id="nmRange"></div>
     </div>
     <div class="nmfoot">
-      <button class="ghost" id="nameDiscard" title="Discard this clip">Discard</button>
+      <button class="ghost" id="nameDiscard" title="Discard this clip" data-i18n-title="vid.tt.discardClip">Discard</button>
       <span class="spacer"></span>
-      <button class="primary" id="nameOk">OK &amp; continue</button>
+      <button class="primary" id="nameOk" data-i18n="vid.okContinue">OK &amp; continue</button>
     </div>
   </div>
 </div>
 
-<button id="fsShow" title="Show the header">▾ Menu</button>
+<button id="fsShow" title="Show the header" data-i18n-title="vid.tt.showHeader">▾ Menu</button>
 <div id="ctxMenu"></div>
 
 <div id="statusBar">
   <div class="inner">
     <div id="progressWrap">
-      <div id="progressLabel">Exporting…</div>
+      <div data-i18n="vid.exporting" id="progressLabel">Exporting…</div>
       <div id="progressTrack"><div id="progressFill"></div></div>
-      <button class="mini danger" id="cancelExport">Cancel</button>
+      <button class="mini danger" id="cancelExport"><span data-i18n="common.cancel">Cancel</span></button>
     </div>
     <div id="log"></div>
   </div>
@@ -850,7 +851,7 @@ function askConfirm(title, message, okLabel){
     $('askTextWrap').style.display = 'none';
     $('askMsg').style.display = '';
     $('askMsg').textContent = message || '';
-    $('askOk').textContent = okLabel || 'Confirmar';
+    $('askOk').textContent = okLabel || TX('vid.f.confirm');
     $('askModal').classList.add('on');
     setTimeout(() => $('askOk').focus(), 30);
   });
@@ -919,14 +920,14 @@ function findTag(tagId){
     const t = d.tags.find(x => x.id === tagId);
     if (t) return t;
   }
-  return { id: tagId, name: '(tag removed)', color: '#6b6b66' };
+  return { id: tagId, name: TX('vid.f.tagRemoved'), color: '#6b6b66' };
 }
 
 function persistDashboards(){
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({ dashboards: state.dashboards, currentId: state.currentDashId }));
   } catch (e) {
-    log('Could not save dashboards in this browser.', 'err');
+    log(TX('vid.msg.dashSaveFail'), 'err');
   }
   if (typeof pushToCloud === 'function') pushToCloud();
 }
@@ -939,15 +940,15 @@ function loadDashboards(){
       if (d && Array.isArray(d.dashboards) && d.dashboards.length){
         state.dashboards = d.dashboards;
         state.currentDashId = d.currentId || d.dashboards[0].id;
-        log('Dashboards loaded: ' + state.dashboards.map(x => x.name).join(' · '));
+        log(TX('vid.f.dashLoadedSp') + state.dashboards.map(x => x.name).join(' · '));
         return;
       }
     }
   } catch (e) { /* primeiro uso ou armazenamento indisponível */ }
   const def = {
     id: 'd' + Math.random().toString(36).slice(2, 9),
-    name: 'Goalkeeper — Default',
-    tags: ['Hand save', 'Foot save', 'Goal conceded', 'Coming out', '1v1', 'Play with feet'].map(n => makeTag(n)),
+    name: TX('vid.tag.default'),
+    tags: [TX('vid.tag.handSave'), TX('vid.tag.footSave'), TX('vid.tag.goalConceded'), TX('vid.tag.comingOut'), '1v1', TX('vid.tag.playFeet')].map(n => makeTag(n)),
   };
   state.dashboards = [def];
   state.currentDashId = def.id;
@@ -975,7 +976,7 @@ const video = $('video');
 function loadFile(file){
   if (!file) return;
   const okExt = /\.(mp4|m4v|mov)$/i.test(file.name);
-  if (!okExt) log('Note: "' + file.name + '" does not look like MP4/MOV. Playback may work, but export requires MP4 (H.264/HEVC).', 'err');
+  if (!okExt) log('Note: "' + file.name + TX('vid.f.notMp4'), 'err');
   if (state.url) URL.revokeObjectURL(state.url);
   state.file = file;
   state.url = URL.createObjectURL(file);
@@ -986,7 +987,7 @@ function loadFile(file){
   renderTags();
   exitClip();
   restoreSession();
-  log('Video loaded: ' + file.name, 'ok');
+  log(TX('vid.f.videoLoadedSp') + file.name, 'ok');
 }
 
 let _wasAppFsBeforePick = false;
@@ -1063,7 +1064,7 @@ function renderSpeeds(){
   SPEEDS.forEach(s => {
     const b = document.createElement('button');
     b.textContent = String(s).replace('.', ',') + 'x';
-    b.title = 'Velocidade ' + String(s).replace('.', ',') + 'x';
+    b.title = TX('vid.f.speedSp') + String(s).replace('.', ',') + 'x';
     if (Math.abs(video.playbackRate - s) < 0.001) b.classList.add('active');
     b.addEventListener('click', () => { video.playbackRate = s; });
     box.appendChild(b);
@@ -1101,7 +1102,7 @@ $('fsBtn').addEventListener('click', () => {
   if (document.fullscreenElement) { document.exitFullscreen(); return; }
   if (stage.requestFullscreen){
     const r = stage.requestFullscreen();
-    if (r && r.catch) r.catch(() => log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err'));
+    if (r && r.catch) r.catch(() => log(TX('vid.f.fsBlocked'), 'err'));
   }
 });
 
@@ -1116,9 +1117,9 @@ $('appFullscreen').addEventListener('click', () => {
     const el = document.body;
     try {
       const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
-      if (r && r.catch) r.catch(() => log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err'));
+      if (r && r.catch) r.catch(() => log(TX('vid.f.fsBlocked'), 'err'));
     } catch (err) {
-      log('Fullscreen is blocked in this view — open the module in its own tab for fullscreen.', 'err');
+      log(TX('vid.f.fsBlocked'), 'err');
     }
   }
 });
@@ -1132,7 +1133,7 @@ function syncAppFs(){
   const on = isAppFs();
   document.body.classList.toggle('app-fs', on);
   $('toggleHeader').style.display = on ? '' : 'none';
-  $('appFullscreen').textContent = on ? '⛶ Exit' : '⛶ Fullscreen';
+  $('appFullscreen').textContent = on ? TX('vid.f.exit') : TX('vid.fullscreen');
   if (!on) document.body.classList.remove('hide-header');
   setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
 }
@@ -1305,36 +1306,36 @@ $('clipFrame').addEventListener('click', async () => {
   if (!c) return;
   if (c.ev.exportZoom){
     // já tem enquadramento salvo — pergunta se quer atualizar ou remover
-    const keep = await askConfirm('Export framing',
-      'This clip already has a saved framing (zoom ' + Math.round(c.ev.exportZoom.zoom * 100) + '%). Atualizar para o zoom atual? (Cancelar remove o enquadramento.)',
-      'Atualizar');
+    const keep = await askConfirm(TX('vid.f.framing'),
+      TX('vid.f.framingExistsSp') + Math.round(c.ev.exportZoom.zoom * 100) + TX('vid.f.updateZoomQ'),
+      TX('vid.f.update'));
     if (!keep){
       delete c.ev.exportZoom;
       saveSession();
       updateClipFrameBtn();
-      log('Export framing removed — the clip exports without zoom.');
+      log(TX('vid.f.framingRemoved'));
       return;
     }
   }
   if (state.zoom <= 1.001){
-    log('Zoom into the video first (mouse wheel or + buttons), then save the framing.', 'err');
+    log(TX('vid.f.zoomFirst'), 'err');
     return;
   }
   c.ev.exportZoom = { zoom: state.zoom, panX: state.panX, panY: state.panY,
     stageW: stage.getBoundingClientRect().width, stageH: stage.getBoundingClientRect().height };
   saveSession();
   updateClipFrameBtn();
-  log('Framing saved: the clip will export with a zoom of ' + Math.round(state.zoom * 100) + '%.', 'ok');
+  log(TX('vid.f.framingSavedSp') + Math.round(state.zoom * 100) + '%.', 'ok');
 });
 function updateClipFrameBtn(){
   const c = state.clip;
   const btn = $('clipFrame');
   if (!btn) return;
   if (c && c.ev.exportZoom){
-    btn.textContent = '🔍 Framed (' + Math.round(c.ev.exportZoom.zoom * 100) + '%)';
+    btn.textContent = TX('vid.f.framed') + Math.round(c.ev.exportZoom.zoom * 100) + '%)';
     btn.classList.add('primary');
   } else {
-    btn.textContent = '🔍 Frame';
+    btn.textContent = TX('vid.frame');
     btn.classList.remove('primary');
   }
 }
@@ -1358,7 +1359,7 @@ function startTrimEdit(){
   applySeekRange();
   video.currentTime = c.trimIn;
   renderTrim();
-  log('Time editing: the timeline shows ' + CLIP_MARGIN + 's before and after the clip. Drag the blue handles.');
+  log(TX('vid.f.timeEditingSp') + CLIP_MARGIN + TX('vid.f.beforeAfter'));
 }
 function stopTrimEdit(save){
   const c = state.clip;
@@ -1369,7 +1370,7 @@ function stopTrimEdit(save){
     c.ev.t = Math.min(Math.max(c.ev.t, c.ev.start), c.ev.end);
     saveSession();
     renderPlaylists();
-    log('Clip updated: ' + fmt(c.ev.start, true) + ' → ' + fmt(c.ev.end, true), 'ok');
+    log(TX('vid.f.clipUpdatedSp') + fmt(c.ev.start, true) + ' → ' + fmt(c.ev.end, true), 'ok');
   }
   c.editing = false;
   c.viewStart = c.ev.start;
@@ -1479,8 +1480,8 @@ function renderTags(){
     const ePre = (typeof tag.pre === 'number') ? tag.pre : gPre;
     const ePos = (typeof tag.post === 'number') ? tag.post : gPost;
     b.title = state.file
-      ? 'Marcar "' + tag.name + '" — pre ' + ePre + 's · post ' + ePos + 's' + ((typeof tag.pre === 'number' || typeof tag.post === 'number') ? ' (own times)' : ' (default)')
-      : 'Load a video first';
+      ? 'Marcar "' + tag.name + '" — pre ' + ePre + 's · post ' + ePos + 's' + ((typeof tag.pre === 'number' || typeof tag.post === 'number') ? TX('vid.f.ownTimesSp') : ' (default)')
+      : TX('vid.msg.loadFirst');
     b.addEventListener('click', () => addEvent(tag));
     grid.appendChild(b);
   });
@@ -1537,7 +1538,7 @@ function addEvent(tag){
   updateBadge();
   renderPlaylists();
   openNameModal(ev, tag, wasPlaying);
-  log(tag.name + ' marcada em ' + fmt(t, true) + '  (clipe ' + fmt(ev.start) + ' → ' + fmt(ev.end) + ')');
+  log(tag.name + TX('vid.f.markedAtSp') + fmt(t, true) + '  (clipe ' + fmt(ev.start) + ' → ' + fmt(ev.end) + ')');
 }
 
 /* ---------------- modal: nomear o lance ao marcar ---------------- */
@@ -1546,10 +1547,10 @@ function openNameModal(ev, tag, resume){
   namingEv = ev;
   namingResume = resume;
   $('nmHead').innerHTML = '<span class="nmdot" style="background:' + tag.color + '"></span>' +
-    'Clip details — ' + escapeHtml(tag.name) + ' · ' + fmt(ev.t, true);
+    TX('vid.f.clipDetailsSp') + escapeHtml(tag.name) + ' · ' + fmt(ev.t, true);
   $('nameInput').value = ev.name || '';
   $('noteInput').value = ev.note || '';
-  $('nmRange').textContent = 'Trecho: ' + fmt(ev.start) + ' → ' + fmt(ev.end) + '  ·  edite o tempo depois pelo ✎ na playlist';
+  $('nmRange').textContent = TX('vid.f.rangeLbl') + fmt(ev.start) + ' → ' + fmt(ev.end) + TX('vid.f.editTimeHint');
   $('nameModal').classList.add('on');
   setTimeout(() => { $('nameInput').focus(); $('nameInput').select(); }, 30);
 }
@@ -1575,7 +1576,7 @@ function discardEvent(){
     saveSession();
     updateBadge();
     renderPlaylists();
-    log('Clip discarded.');
+    log(TX('vid.msg.clipDiscarded'));
   }
   closeNameModal(true);
 }
@@ -1647,7 +1648,7 @@ function renderPlaylists(){
   selectedIds.forEach(id => { if (!ids.has(id)) selectedIds.delete(id); });
 
   if (!groups.length){
-    box.innerHTML = '<div class="empty">No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.</div>';
+    box.innerHTML = '<div class="empty">'+TX('vid.f.noClipsAnalysis')+'</div>';
   }
 
   groups.forEach(g => {
@@ -1663,14 +1664,14 @@ function renderPlaylists(){
 
     const playAll = document.createElement('button');
     playAll.className = 'mini ghost';
-    playAll.textContent = '▶ View all';
-    playAll.title = "Plays this tag's clips in sequence";
+    playAll.textContent = TX('vid.f.viewAll');
+    playAll.title = TX('vid.tt.playTagClips');
     playAll.addEventListener('click', () => startPlaylist(g.evs, g.tag.name));
 
     const selAll = document.createElement('button');
     selAll.className = 'mini ghost';
-    selAll.textContent = '☑ Select';
-    selAll.title = 'Select all clips for this tag (to create a playlist later)';
+    selAll.textContent = TX('vid.f.select');
+    selAll.title = TX('vid.tt.selectTagClips');
     selAll.addEventListener('click', () => {
       g.evs.forEach(e => selectedIds.add(e.id));
       lastClickedId = g.evs.length ? g.evs[g.evs.length - 1].id : null;
@@ -1694,7 +1695,7 @@ function renderPlaylists(){
         if (e.target.closest('button') || e.target.classList.contains('ename')) return;
         openClip(ev, g.tag);
       });
-      row.title = 'Double-click opens the clip in the player';
+      row.title = TX('vid.tt.dblOpen');
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         if (!selectedIds.has(ev.id)){ selectedIds = new Set([ev.id]); lastClickedId = ev.id; updateRowSelection(); }
@@ -1704,15 +1705,15 @@ function renderPlaylists(){
       const tEl = document.createElement('span');
       tEl.className = 'et';
       tEl.textContent = fmt(ev.t, true);
-      tEl.title = 'Open this trimmed clip in the viewer';
+      tEl.title = TX('vid.tt.openTrimmed');
       tEl.addEventListener('click', () => openClip(ev, g.tag));
 
       const nEl = document.createElement('span');
       nEl.className = 'ename';
       nEl.textContent = ev.name || (g.tag.name + ' ' + (i + 1));
-      nEl.title = 'Click to rename the clip';
+      nEl.title = TX('vid.tt.rename');
       nEl.addEventListener('click', async () => {
-        const nv = await askText('Clip name', ev.name || '');
+        const nv = await askText(TX('vid.tt.clipName'), ev.name || '');
         if (nv === null) return;
         ev.name = nv.trim();
         saveSession();
@@ -1729,7 +1730,7 @@ function renderPlaylists(){
       const bMenu = document.createElement('button');
       bMenu.className = 'mini ghost';
       bMenu.textContent = '⋯';
-      bMenu.title = 'More actions (or right-click the clip)';
+      bMenu.title = TX('vid.tt.moreActions');
       bMenu.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!selectedIds.has(ev.id)){ selectedIds = new Set([ev.id]); lastClickedId = ev.id; updateRowSelection(); }
@@ -1740,7 +1741,7 @@ function renderPlaylists(){
       const bEdit = document.createElement('button');
       bEdit.className = 'mini ghost';
       bEdit.textContent = '✎';
-      bEdit.title = 'Edit start/end on the timeline (10s before and after)';
+      bEdit.title = TX('vid.tt.editStartEnd');
       bEdit.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, g.tag, true); });
 
       row.appendChild(tEl); row.appendChild(nEl); row.appendChild(rEl); row.appendChild(sp);
@@ -1755,22 +1756,22 @@ function renderPlaylists(){
   const sec = document.createElement('div');
   sec.className = 'fpsection plsection';
   const selCount = selectedIds.size;
-  sec.innerHTML = '<span>PLAYLISTS</span>';
+  sec.innerHTML = '<span data-i18n="vid.playlists">PLAYLISTS</span>';
   const bCreate = document.createElement('button');
   bCreate.className = 'mini' + (selCount ? ' primary' : ' ghost');
-  bCreate.textContent = selCount ? '+ Nova (' + selCount + ' selec.)' : '+ Nova playlist';
+  bCreate.textContent = selCount ? '+ Nova (' + selCount + ' selec.)' : TX('vid.f.newPlaylistBtn2');
   bCreate.title = selCount
-    ? 'Criar uma playlist com os ' + selCount + ' clip(s) selected'
-    : 'Select clips (click / Cmd+click) and create a playlist with them';
+    ? TX('vid.f.createWith') + selCount + ' clip(s) selected'
+    : TX('vid.f.selectClipsHint');
   bCreate.addEventListener('click', async () => {
     const sel = selectedEventObjs();
     if (!sel.length){ log('Select clips first (click clips; Cmd+click for multiple).'); return; }
-    const name = await askText('Nome da nova playlist');
+    const name = await askText(TX('vid.f.playlistNamePrompt'));
     if (!name || !name.trim()) return;
     const pl = { id: 'p' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), evIds: sel.map(e => e.id) };
     state.namedPlaylists.push(pl);
     saveSession(); renderPlaylists();
-    log('Playlist "' + pl.name + '" created with ' + sel.length + ' clip(s).', 'ok');
+    log('Playlist "' + pl.name + TX('vid.f.createdWith') + sel.length + ' clip(s).', 'ok');
   });
   sec.appendChild(bCreate);
   box.appendChild(sec);
@@ -1779,7 +1780,7 @@ function renderPlaylists(){
     const em = document.createElement('div');
     em.className = 'empty';
     em.style.cssText = 'padding:12px;font-size:12px';
-    em.textContent = 'No playlists yet. Select edited clips and click "+ New playlist".';
+    em.textContent = TX('vid.f.noPlaylists');
     box.appendChild(em);
   } else {
     state.namedPlaylists.forEach(pl => {
@@ -1794,19 +1795,19 @@ function renderPlaylists(){
         '<div class="spacer"></div>';
       const bPlay = document.createElement('button');
       bPlay.className = 'mini';
-      bPlay.textContent = '▶ Playlist';
+      bPlay.textContent = TX('vid.f.playlistBtn');
       bPlay.disabled = !evs.length;
       bPlay.addEventListener('click', () => startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name));
       const bExp = document.createElement('button');
       bExp.className = 'mini primary';
       bExp.textContent = '⤓';
-      bExp.title = 'Export this playlist as a single .mp4';
+      bExp.title = TX('vid.tt.exportPlaylist');
       bExp.disabled = !evs.length;
       bExp.addEventListener('click', () => exportEvents(evs.slice().sort((a,b)=>a.start-b.start), safeName(pl.name) + '.mp4', 'Playlist "' + pl.name + '"'));
       const bDel = document.createElement('button');
       bDel.className = 'mini ghost danger';
       bDel.textContent = '✕';
-      bDel.title = 'Delete this playlist (clips stay under their tags)';
+      bDel.title = TX('vid.tt.deletePlaylist');
       bDel.addEventListener('click', () => {
         state.namedPlaylists = state.namedPlaylists.filter(x => x.id !== pl.id);
         saveSession();
@@ -1855,16 +1856,16 @@ function openCtxMenu(x, y){
 
   const head = document.createElement('div');
   head.className = 'ctxhead';
-  head.textContent = n > 1 ? n + ' clips selected' : (sel[0].name || findTag(sel[0].tagId).name);
+  head.textContent = n > 1 ? n + TX('vid.f.clipsSelectedSp') : (sel[0].name || findTag(sel[0].tagId).name);
   menu.appendChild(head);
 
   // abrir / editar — só para 1 lance
   if (n === 1){
     const ev = sel[0], tag = findTag(ev.tagId);
-    menu.appendChild(ctxItem('Open in viewer', () => openClip(ev, tag)));
-    menu.appendChild(ctxItem('Edit time (timeline)', () => openClip(ev, tag, true)));
-    menu.appendChild(ctxItem('Rename / notes', () => openNameModal(ev, tag, false)));
-    menu.appendChild(ctxItem('Duplicate', () => {
+    menu.appendChild(ctxItem(TX('vid.openViewer'), () => openClip(ev, tag)));
+    menu.appendChild(ctxItem(TX('vid.editTimeline'), () => openClip(ev, tag, true)));
+    menu.appendChild(ctxItem(TX('vid.renameNotes'), () => openNameModal(ev, tag, false)));
+    menu.appendChild(ctxItem(TX('vid.duplicate'), () => {
       const copy = Object.assign({}, ev, { id: state.nextEventId++, name: (ev.name || tag.name) + ' (copy)' });
       state.events.push(copy);
       saveSession(); updateBadge(); renderPlaylists();
@@ -1882,14 +1883,14 @@ function openCtxMenu(x, y){
     const c = ctxItem(t.name, () => {
       sel.forEach(ev => ev.tagId = t.id);
       saveSession(); renderPlaylists();
-      log(n + ' clip(s) moved to "' + t.name + '".', 'ok');
+      log(n + TX('vid.f.movedTo') + t.name + '".', 'ok');
     });
     const dot = document.createElement('span');
     dot.style.cssText = 'width:10px;height:10px;border-radius:3px;flex:none;order:-1;background:' + t.color;
     c.prepend(dot);
     return c;
   });
-  menu.appendChild(ctxItem('Move to' + plural, null, { sub: moveSubs }));
+  menu.appendChild(ctxItem(TX('vid.moveTo') + plural, null, { sub: moveSubs }));
 
   // adicionar a playlist (submenu: playlists existentes + criar nova)
   const plSubs = [];
@@ -1897,53 +1898,53 @@ function openCtxMenu(x, y){
     plSubs.push(ctxItem(pl.name, () => {
       sel.forEach(ev => { if (!pl.evIds.includes(ev.id)) pl.evIds.push(ev.id); });
       saveSession(); renderPlaylists();
-      log(n + ' clip(s) added to playlist "' + pl.name + '".', 'ok');
+      log(n + TX('vid.f.addedToPl') + pl.name + '".', 'ok');
     }));
   });
   if (plSubs.length) plSubs.push(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
-  plSubs.push(ctxItem('Criar nova playlist…', async () => {
-    const name = await askText('Nome da nova playlist');
+  plSubs.push(ctxItem(TX('vid.f.newPlaylistOpt'), async () => {
+    const name = await askText(TX('vid.f.playlistNamePrompt'));
     if (!name || !name.trim()) return;
     const pl = { id: 'p' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), evIds: sel.map(e => e.id) };
     state.namedPlaylists.push(pl);
     saveSession(); renderPlaylists();
-    log('Playlist "' + pl.name + '" created with ' + n + ' clip(s).', 'ok');
+    log('Playlist "' + pl.name + TX('vid.f.createdWith') + n + ' clip(s).', 'ok');
   }));
-  menu.appendChild(ctxItem('Add to playlist' + plural, null, { sub: plSubs }));
+  menu.appendChild(ctxItem(TX('vid.addToPlaylist') + plural, null, { sub: plSubs }));
 
   menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
 
   // exportar vídeo
-  menu.appendChild(ctxItem('Exportar' + plural + '…', () => {
+  menu.appendChild(ctxItem(TX('vid.f.export') + plural + '…', () => {
     // abre a aba Exportar já com estes lances marcados, com todas as opções
     const ids = new Set(sel.map(e => e.id));
     state.events.forEach(e => { expSel[e.id] = ids.has(e.id); });
     switchTab('export');
-    log('Export tab opened with ' + n + ' clip(s) selected. Adjust the options and click Export.');
+    log(TX('vid.f.exportOpenedSp') + n + TX('vid.f.adjustExportSp'));
   }));
 
   // exportar PNG do quadro (1 lance) — abre no visualizador e o usuário usa ⤓ PNG
   if (n === 1){
-    menu.appendChild(ctxItem('Export PNG image', () => {
+    menu.appendChild(ctxItem(TX('vid.exportPng'), () => {
       const ev = sel[0], tag = findTag(ev.tagId);
       openClip(ev, tag);
-      setTimeout(() => log('Pause on the desired frame and use ✎ → ⤓ PNG to save the image.'), 200);
+      setTimeout(() => log(TX('vid.f.pausePng')), 200);
     }));
   }
 
   // desenhos: ir para o desenho mais próximo do lance, se houver; senão, abrir e desenhar
-  menu.appendChild(ctxItem('Drawings', () => {
+  menu.appendChild(ctxItem(TX('vid.drawings'), () => {
     const ev = sel[0];
     const tag = findTag(ev.tagId);
     openClip(ev, tag);
-    setTimeout(() => { setDrawMode(true); log('Draw mode active on this clip. Save with 💾 to pin it to the time.'); }, 250);
+    setTimeout(() => { setDrawMode(true); log(TX('vid.f.drawModeOn')); }, 250);
   }));
 
   menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
 
   // excluir
-  menu.appendChild(ctxItem('Delete' + plural, async () => {
-    if (!(await askConfirm('Delete clip(s)', 'Delete ' + n + ' clip(s)?', 'Delete'))) return;
+  menu.appendChild(ctxItem(TX('vid.delete') + plural, async () => {
+    if (!(await askConfirm(TX('vid.deleteClips'), TX('vid.f.deleteN') + n + TX('vid.f.clipsQ'), TX('vid.delete')))) return;
     const delIds = new Set(sel.map(e => e.id));
     state.events = state.events.filter(e => !delIds.has(e.id));
     (state.namedPlaylists || []).forEach(pl => { pl.evIds = pl.evIds.filter(id => !delIds.has(id)); });
@@ -2049,7 +2050,7 @@ $('toggleLayout').addEventListener('click', () => {
   if (dockedLayout && currentTab !== 'analise') switchTab('analise');
   applyDock();
   syncPanels();
-  log('Layout: ' + (dockedLayout ? 'clips docked on the left' : 'clips in a floating panel') + '.');
+  log(TX('vid.f.layoutLbl') + (dockedLayout ? TX('vid.f.dockedLeft') : TX('vid.f.floating')) + '.');
 });
 $('togglePanel').addEventListener('click', () => {
   tagsVisible = !tagsVisible;
@@ -2057,7 +2058,7 @@ $('togglePanel').addEventListener('click', () => {
   syncPanels();
 });
 $('togglePl').addEventListener('click', () => {
-  if (dockedLayout){ log('Clips stay docked on the left. Use ▦ Layout to detach them into a floating panel.'); return; }
+  if (dockedLayout){ log(TX('vid.f.dockedHint')); return; }
   plVisible = !plVisible;
   if (plVisible && currentTab !== 'analise') switchTab('analise');
   syncPanels();
@@ -2372,7 +2373,7 @@ function _drawShapeImpl(ctx, s, W, H){
     ctx.stroke();
     if (s.tool === 'measure'){
       const dn = normDist(s.points[0], s.points[s.points.length - 1], H / W);
-      const txt = state.measureScale ? (dn * state.measureScale).toFixed(1).replace('.', ',') + ' m' : 'sem calibra\u00e7\u00e3o';
+      const txt = state.measureScale ? (dn * state.measureScale).toFixed(1).replace('.', ',') + ' m' : TX('vid.f.noCalib');
       labelBox(ctx, (a.x + b.x) / 2, (a.y + b.y) / 2 - lw * 6, txt);
     }
     return;
@@ -2580,7 +2581,7 @@ $('drawCalib').addEventListener('click', () => {
   finishPending(true);
   drawTool = 'calib';
   document.querySelectorAll('#drawbar .dtool').forEach(x => x.classList.remove('active'));
-  log('Calibration: draw a line over a known distance in the image (e.g. the goal width) and enter the meters.');
+  log(TX('vid.f.calibHint'));
 });
 
 document.querySelectorAll('#drawbar .dtool').forEach(b => {
@@ -2667,7 +2668,7 @@ function normPt(e){
   return { x: ux / r.width, y: uy / r.height };
 }
 async function placeText(np){
-  const txt = await askText('Texto a exibir no v\u00eddeo', '');
+  const txt = await askText(TX('vid.f.textToShow'), '');
   if (txt === null || !txt.trim()) return;
   shapes.push({
     tool: 'text', color: drawColor, opacity: drawOpacity, text: txt.trim(),
@@ -2934,14 +2935,14 @@ drawCanvas.addEventListener('pointerup', async (e) => {
       const dn = normDist(a, b, r.height / Math.max(1, r.width));
       curShape = null;
       redrawShapes();
-      const ans = await askText('Real length of this line in meters (e.g. 3 for the goal width)');
+      const ans = await askText(TX('vid.f.realLength'));
       const m = parseFloat(String(ans || '').replace(',', '.'));
       if (isFinite(m) && m > 0 && dn > 0.005){
         state.measureScale = m / dn;
         saveSession();
-        log('Measurement calibrated for this match. Note: it is measured on the screen plane — with a tilted camera it is an approximation.', 'ok');
+        log(TX('vid.f.calibDone'),'ok');
       } else {
-        log('Calibration canceled.', 'err');
+        log(TX('vid.msg.calibCanceled'), 'err');
       }
       setTool('measure');
       return;
@@ -2960,7 +2961,7 @@ drawCanvas.addEventListener('dblclick', async (e) => {
   if (hit){
     setTool('text');
     selectShape(hit);
-    const nv = await askText('Edit text', hit.text || '');
+    const nv = await askText(TX('vid.msg.editText'), hit.text || '');
     if (nv !== null){
       if (!nv.trim()){
         shapes = shapes.filter(s => s !== hit);
@@ -3007,7 +3008,7 @@ function startFreeze(d){
   } else {
     resizeDrawCanvas();
   }
-  log('Drawing at ' + fmt(d.t, true) + ' — video frozen for ' + (d.freeze || 3) + 's.');
+  log(TX('vid.f.drawingAt')+' ' + fmt(d.t, true) + ' '+TX('vid.f.frozenFor')+' ' + (d.freeze || 3) + 's.');
   freezeTimer = setTimeout(() => {
     if (activeFreeze === d){
       activeFreeze = null;
@@ -3026,9 +3027,9 @@ function cancelFreeze(){
 video.addEventListener('seeking', cancelFreeze);
 
 $('drawSave').addEventListener('click', () => {
-  if (!state.file){ log('Load a video first.', 'err'); return; }
+  if (!state.file){ log(TX('vid.msg.loadFirstDot'), 'err'); return; }
   finishPending(true);
-  if (!shapes.length){ log('Draw something before saving.', 'err'); return; }
+  if (!shapes.length){ log(TX('vid.msg.drawFirst'), 'err'); return; }
   const f = Math.min(60, Math.max(0.5, parseFloat($('freezeSec').value) || 3));
   if (editingDrawingId != null){
     const d = state.drawings.find(x => x.id === editingDrawingId);
@@ -3039,13 +3040,13 @@ $('drawSave').addEventListener('click', () => {
       if (editingDrawingIds.length > 1){
         state.drawings = state.drawings.filter(x => x.id === d.id || !editingDrawingIds.includes(x.id));
       }
-      log('Drawing updated (' + fmt(d.t, true) + ').', 'ok');
+      log(TX('vid.f.drawingUpdated') + fmt(d.t, true) + ').', 'ok');
     }
     editingDrawingId = null;
     editingDrawingIds = [];
   } else {
     state.drawings.push({ id: Date.now(), t: video.currentTime, freeze: f, shapes: shapes.slice() });
-    log('Drawing saved at ' + fmt(video.currentTime, true) + ' — on playback the video freezes there for ' + f + 's.', 'ok');
+    log(TX('vid.f.drawingSaved')+' ' + fmt(video.currentTime, true) + ' '+TX('vid.f.freezesFor')+' ' + f + 's.', 'ok');
   }
   shapes = [];
   redrawShapes();
@@ -3074,8 +3075,8 @@ function editDrawing(d){
     $('freezeSec').value = d.freeze || 3;
     setDrawMode(true);
     redrawShapes();
-    const extra = group.length > 1 ? ' (' + group.length + ' drawings from this frame were merged for editing)' : '';
-    log('Editing drawing from ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
+    const extra = group.length > 1 ? ' (' + group.length + TX('vid.f.mergedForEdit') : '';
+    log(TX('vid.f.editingDrawing')+' ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
   };
   video.addEventListener('seeked', apply);
   video.currentTime = d.t;
@@ -3096,7 +3097,7 @@ function renderDrawList(){
     const tEl = document.createElement('span');
     tEl.className = 'et';
     tEl.textContent = fmt(d.t, true);
-    tEl.title = 'Play zooming into this drawing';
+    tEl.title = TX('vid.tt.playZoom');
     tEl.addEventListener('click', () => {
       switchTab('analise');
       exitClip();
@@ -3134,13 +3135,13 @@ function renderDrawList(){
     const bEdit = document.createElement('button');
     bEdit.className = 'mini ghost';
     bEdit.textContent = '✎';
-    bEdit.title = 'Edit this drawing\'s strokes';
+    bEdit.title = TX('vid.tt.editDrawing');
     bEdit.addEventListener('click', () => editDrawing(d));
 
     const bDel = document.createElement('button');
     bDel.className = 'mini ghost';
     bDel.textContent = '✕';
-    bDel.title = 'Delete drawing';
+    bDel.title = TX('vid.tt.deleteDrawing');
     bDel.addEventListener('click', () => {
       state.drawings = state.drawings.filter(x => x !== d);
       if (editingDrawingId === d.id || editingDrawingIds.includes(d.id)){
@@ -3161,7 +3162,7 @@ function renderDrawList(){
 }
 
 $('drawSnap').addEventListener('click', () => {
-  if (!state.file || !video.videoWidth){ log('Load a video before saving the frame.', 'err'); return; }
+  if (!state.file || !video.videoWidth){ log(TX('vid.msg.loadBeforeFrame'), 'err'); return; }
   const r = stage.getBoundingClientRect();
   const dpr = 2;
   const c = document.createElement('canvas');
@@ -3181,14 +3182,14 @@ $('drawSnap').addEventListener('click', () => {
   x.restore();
   x.drawImage(drawCanvas, 0, 0, c.width, c.height);
   c.toBlob((b) => {
-    if (!b){ log('Failed to generate the image.', 'err'); return; }
+    if (!b){ log(TX('vid.msg.imgFail'), 'err'); return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b);
     a.download = 'fluxgk_quadro_' + fmt(video.currentTime).replace(':', '-') + '.png';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
-    log('Frame saved as a PNG image.', 'ok');
+    log(TX('vid.msg.frameSaved'), 'ok');
   }, 'image/png');
 });
 
@@ -3224,7 +3225,7 @@ function renderDashTab(){
     const row = document.createElement('div');
     row.className = 'dlrow' + (d.id === dashEdit.dashId ? ' sel' : '');
     row.innerHTML = '<div class="dlname">' + escapeHtml(d.name) +
-      (d.id === state.currentDashId ? ' <span class="badge">ACTIVE</span>' : '') + '</div>' +
+      (d.id === state.currentDashId ? ' <span class="badge">'+TX('vid.active')+'</span>' : '') + '</div>' +
       '<div class="dlmeta">' + d.tags.length + ' tag' + (d.tags.length === 1 ? '' : 's') + '</div>';
     row.addEventListener('click', () => { dashEdit = { dashId: d.id, tagId: null }; renderDashTab(); });
     list.appendChild(row);
@@ -3233,7 +3234,7 @@ function renderDashTab(){
   bNew.textContent = '+ Novo dashboard';
   bNew.style.width = '100%';
   bNew.addEventListener('click', async () => {
-    const name = await askText('Name of the new dashboard (e.g. Coming-out drills, Play with feet)');
+    const name = await askText(TX('vid.f.dashNamePrompt'));
     if (!name || !name.trim()) return;
     const d = { id: 'd' + Math.random().toString(36).slice(2, 9), name: name.trim().slice(0, 40), tags: [] };
     state.dashboards.push(d);
@@ -3260,7 +3261,7 @@ function renderDashEditor(){
   const nameInp = document.createElement('input');
   nameInp.value = d.name;
   nameInp.maxLength = 40;
-  nameInp.title = 'Dashboard name';
+  nameInp.title = TX('vid.dashName');
   nameInp.addEventListener('input', () => {
     if (nameInp.value.trim()) d.name = nameInp.value.trim();
     persistDashboards();
@@ -3272,13 +3273,13 @@ function renderDashEditor(){
   if (d.id === state.currentDashId){
     const act = document.createElement('span');
     act.className = 'badge';
-    act.textContent = 'ACTIVE IN ANALYSIS';
+    act.textContent = TX('vid.activeInAnalysis');
     head.appendChild(act);
   } else {
     const bAct = document.createElement('button');
     bAct.className = 'mini primary';
-    bAct.textContent = 'Use in analysis';
-    bAct.title = 'Makes this the active dashboard in the tags panel';
+    bAct.textContent = TX('vid.useInAnalysis');
+    bAct.title = TX('vid.makesActive');
     bAct.addEventListener('click', () => {
       state.currentDashId = d.id;
       refreshDashEverywhere();
@@ -3288,8 +3289,8 @@ function renderDashEditor(){
 
   const bDup = document.createElement('button');
   bDup.className = 'mini ghost';
-  bDup.textContent = 'Duplicate';
-  bDup.title = 'Creates a copy — a good base for objective-based variations';
+  bDup.textContent = TX('vid.duplicate');
+  bDup.title = TX('vid.duplicateHint');
   bDup.addEventListener('click', () => {
     const copy = {
       id: 'd' + Math.random().toString(36).slice(2, 9),
@@ -3309,10 +3310,10 @@ function renderDashEditor(){
 
   const bDel = document.createElement('button');
   bDel.className = 'mini ghost danger';
-  bDel.textContent = 'Delete';
+  bDel.textContent = TX('vid.delete');
   bDel.addEventListener('click', async () => {
-    if (state.dashboards.length <= 1){ log('You must keep at least one dashboard.', 'err'); return; }
-    if (!(await askConfirm('Delete dashboard', 'Delete the dashboard "' + d.name + '"? Already-tagged clips stay in the playlists.', 'Delete'))) return;
+    if (state.dashboards.length <= 1){ log(TX('vid.keepOne'), 'err'); return; }
+    if (!(await askConfirm(TX('vid.deleteDash'), TX('vid.deleteDashQ') + d.name + TX('vid.f.tagsStay'), TX('vid.delete')))) return;
     state.dashboards = state.dashboards.filter(x => x.id !== d.id);
     if (state.currentDashId === d.id) state.currentDashId = state.dashboards[0].id;
     dashEdit = { dashId: state.dashboards[0].id, tagId: null };
@@ -3333,7 +3334,7 @@ function renderDashEditor(){
     const ePre = (typeof tag.pre === 'number') ? tag.pre : gPre;
     const ePos = (typeof tag.post === 'number') ? tag.post : gPost;
     b.innerHTML = escapeHtml(tag.name) + '<div class="tbadge">pre ' + ePre + 's · post ' + ePos + 's</div>';
-    b.title = 'Click to edit this tag';
+    b.title = TX('vid.clickEditTag');
     b.addEventListener('click', () => {
       dashEdit.tagId = (dashEdit.tagId === tag.id) ? null : tag.id;
       renderDashTab();
@@ -3343,7 +3344,7 @@ function renderDashEditor(){
   if (!d.tags.length){
     const em = document.createElement('div');
     em.className = 'empty';
-    em.textContent = 'Dashboard with no tags — add some below.';
+    em.textContent = TX('vid.noTagsDash');
     grid.appendChild(em);
   }
   box.appendChild(grid);
@@ -3398,14 +3399,14 @@ function renderDashEditor(){
     };
     const lbP = document.createElement('label'); lbP.textContent = 'pre (s)';
     const inP = mkNum('pre', String(gPre));
-    const lbQ = document.createElement('label'); lbQ.textContent = 'post (s)';
+    const lbQ = document.createElement('label'); lbQ.textContent = TX('vid.f.postS');
     const inQ = mkNum('post', String(gPost));
 
     const idx = d.tags.indexOf(tag);
     const bL = document.createElement('button');
     bL.className = 'mini ghost';
     bL.textContent = '◀';
-    bL.title = 'Move left';
+    bL.title = TX('vid.moveLeft');
     bL.disabled = idx === 0;
     bL.addEventListener('click', () => {
       d.tags.splice(idx, 1);
@@ -3415,7 +3416,7 @@ function renderDashEditor(){
     const bR = document.createElement('button');
     bR.className = 'mini ghost';
     bR.textContent = '▶';
-    bR.title = 'Move right';
+    bR.title = TX('vid.moveRight');
     bR.disabled = idx === d.tags.length - 1;
     bR.addEventListener('click', () => {
       d.tags.splice(idx, 1);
@@ -3425,7 +3426,7 @@ function renderDashEditor(){
 
     const bX = document.createElement('button');
     bX.className = 'mini ghost danger';
-    bX.textContent = 'Delete tag';
+    bX.textContent = TX('vid.deleteTag');
     bX.addEventListener('click', () => {
       d.tags = d.tags.filter(t => t.id !== tag.id);
       dashEdit.tagId = null;
@@ -3442,7 +3443,7 @@ function renderDashEditor(){
   } else if (d.tags.length){
     const hint = document.createElement('div');
     hint.className = 'empty';
-    hint.textContent = 'Click a tag above to edit its name, color, pre/post times, order, or delete it.';
+    hint.textContent = TX('vid.f.clickTagHint');
     box.appendChild(hint);
   }
 
@@ -3451,7 +3452,7 @@ function renderDashEditor(){
   add.className = 'addtag';
   const addInp = document.createElement('input');
   addInp.type = 'text';
-  addInp.placeholder = 'New tag (e.g. Back pass)';
+  addInp.placeholder = TX('vid.ph.newTag');
   addInp.maxLength = 28;
   const addBtn = document.createElement('button');
   addBtn.textContent = 'Add';
@@ -3501,7 +3502,7 @@ function renderExportTab(){
   state.events.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
 
   if (!state.events.length){
-    box.innerHTML = '<div class="empty">No clips tagged. Tag clips in the Analysis tab to export.</div>';
+    box.innerHTML = '<div class="empty">'+TX('vid.f.noClipsExport')+'</div>';
   } else {
     const top = document.createElement('div');
     top.className = 'exprow';
@@ -3565,20 +3566,20 @@ function updateExpNote(){
   const n = selectedEvents().length;
   const reenc = expNeedsReencode();
   let txt = n + ' clip(s) selected. ';
-  if (!n){ txt = 'Select at least one clip.'; }
+  if (!n){ txt = TX('vid.msg.pickClip'); }
   else if (reenc){
     const motivos = [];
-    if (expHasDrawings()) motivos.push('burn drawings');
+    if (expHasDrawings()) motivos.push(TX('vid.f.burnDrawings'));
     if ($('expTitle').checked) motivos.push('title');
     if ($('expWatermark').checked) motivos.push('marca d\'watermark');
-    if (parseInt($('expRes').value,10) > 0) motivos.push('change resolution');
+    if (parseInt($('expRes').value,10) > 0) motivos.push(TX('vid.f.changeRes'));
     if ($('expFormat').value === 'webm') motivos.push('WebM');
     if ($('expQuality').value !== 'high') motivos.push('qualidade reduzida');
     txt += 'Re-encoded mode (required for: ' + motivos.join(', ') + '). ' +
-      "Runs in real time (a 30s clip takes ~30s). For drawings to appear, they must be saved at the time (💾) and the clip range must cover the drawing's moment.";
+      TX('vid.f.realTime');
   } else {
     txt += 'Fast mode: cut without re-encoding (instant, original quality). ' +
-      ($('expPerFile').checked ? 'One .mp4 file per clip.' : 'A single .mp4 with all clips in sequence.');
+      ($('expPerFile').checked ? TX('vid.f.onePerFile') : TX('vid.f.singleFile'));
   }
   note.textContent = txt;
   note.classList.toggle('warn', reenc && n > 0);
@@ -3589,8 +3590,8 @@ function updateExpNote(){
 
 $('expRun').addEventListener('click', async () => {
   const evs = selectedEvents();
-  if (!evs.length){ log('Select at least one clip to export.', 'err'); return; }
-  if (!state.file){ log('Load the match video first.', 'err'); return; }
+  if (!evs.length){ log(TX('vid.msg.pickClipExport'), 'err'); return; }
+  if (!state.file){ log(TX('vid.msg.loadMatchFirst'), 'err'); return; }
 
   const perFile = $('expPerFile').checked && evs.length > 1;
   const fmtExt = ($('expFormat').value === 'webm') ? 'webm' : 'mp4';
@@ -3605,12 +3606,12 @@ $('expRun').addEventListener('click', async () => {
       ? (evs[0].name ? safeName(evs[0].name) : safeName(findTag(evs[0].tagId).name) + '_lance')
       : 'fluxgk_compilado') + '.' + fmtExt;
     const handle = await pickSaveLocation(suggested, fmtExt === 'webm' ? 'video/webm' : 'video/mp4');
-    if (handle === 'cancel'){ log('Export canceled — no location chosen.'); return; }
+    if (handle === 'cancel'){ log(TX('vid.msg.exportCanceled')); return; }
     _pendingSaveHandle = handle; // pode ser um handle ou null (sem suporte → download)
   } else {
     _pendingSaveHandle = null; // múltiplos arquivos ou dentro do hub: vão para a pasta de downloads
-    if (inHub) log('The exported video will be saved to your browser\'s downloads folder.');
-    else log("Multiple files will be saved to the browser's downloads folder.");
+    if (inHub) log(TX('vid.f.savedDownloads'));
+    else log(TX('vid.f.multiDownloads'));
   }
 
   // PASSO 2: processa e grava no destino escolhido
@@ -3623,7 +3624,7 @@ $('expRun').addEventListener('click', async () => {
         await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)));
       }
     } else {
-      await exportEvents(evs, 'fluxgk_compilado.mp4', 'Compilation (' + evs.length + ' clips)');
+      await exportEvents(evs, 'fluxgk_compilado.mp4', TX('vid.f.compilation') + evs.length + ' clips)');
     }
     _pendingSaveHandle = undefined;
     return;
@@ -3634,20 +3635,20 @@ $('expRun').addEventListener('click', async () => {
 
 /* ---------------- exportação recodificada (canvas + MediaRecorder) ---------------- */
 async function exportReencodedDirect(evs, outName){
-  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   exporting = true;
   cancelRequested = false;
   try {
     const vw = video.videoWidth, vh = video.videoHeight;
-    if (!vw){ log('Could not read the video dimensions.', 'err'); exporting = false; return; }
+    if (!vw){ log(TX('vid.msg.dimFail'), 'err'); exporting = false; return; }
     const mime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : 'video/webm';
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
     const base = (outName || 'fluxgk_lance.mp4').replace(/\.(mp4|webm)$/i, '');
-    log('Exporting with framing/drawings (re-encoded, in real time)…');
+    log(TX('vid.f.exportingFraming'));
     await recordGroup(evs.slice().sort((a, b) => a.start - b.start), vw, vh, mime, ext, 8e6,
       false, false, '', true, base, 1, 1);
   } catch (err) {
-    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    if (err && err.message === 'CANCELLED') log(TX('vid.msg.exportCanceled2'), 'err');
     else { log('Export failed: ' + (err && err.message ? err.message : err), 'err'); console.error(err); }
   } finally {
     exporting = false;
@@ -3656,7 +3657,7 @@ async function exportReencodedDirect(evs, outName){
 }
 
 async function exportReencoded(evs){
-  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   exporting = true;
   cancelRequested = false;
   try {
@@ -3664,14 +3665,14 @@ async function exportReencoded(evs){
     const withTitle = $('expTitle').checked;
     _expWithDraw = $('expDraw').checked;
     const withWm = $('expWatermark').checked;
-    const wmText = ($('expWmText').value || '@e.pimentagoleiros').trim();
+    const wmText = ($('expWmText').value || TX('vid.ph.handle')).trim();
     const withAudio = $('expAudio').checked;
     const fmtSel = $('expFormat').value;
     const qual = $('expQuality').value;
     const perFile = $('expPerFile').checked;
 
     const vw = video.videoWidth, vh = video.videoHeight;
-    if (!vw){ log('Could not read the video dimensions.', 'err'); exporting = false; return; }
+    if (!vw){ log(TX('vid.msg.dimFail'), 'err'); exporting = false; return; }
     const outW = resH ? Math.round(resH * vw / vh / 2) * 2 : vw;
     const outH = resH || vh;
 
@@ -3692,7 +3693,7 @@ async function exportReencoded(evs){
       await recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, gi + 1, groups.length);
     }
   } catch (err) {
-    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    if (err && err.message === 'CANCELLED') log(TX('vid.msg.exportCanceled2'), 'err');
     else { log('Re-encoded export failed: ' + (err && err.message ? err.message : err), 'err'); console.error(err); }
   } finally {
     exporting = false;
@@ -3725,7 +3726,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     rec.onstop = () => {
       const blob = new Blob(chunks, { type: mime });
       saveBlob(blob, name + '.' + ext, mime).then((saved) => {
-        if (saved === null) log('Export canceled (no file saved).');
+        if (saved === null) log(TX('vid.msg.noFileSaved'));
         else log('Exported (re-encoded): ' + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)', 'ok');
         resolve();
       });
@@ -3887,7 +3888,7 @@ function libAll(){
 }
 function libWrite(all){
   try { localStorage.setItem(LIB_KEY, JSON.stringify(all)); }
-  catch (e) { log('Could not save the session in the browser (storage full?).', 'err'); }
+  catch (e) { log(TX('vid.msg.storageFull'), 'err'); }
   if (typeof pushToCloud === 'function') pushToCloud();
 }
 function sessionKey(){ return state.file ? state.file.name + '|' + state.file.size : null; }
@@ -3921,7 +3922,7 @@ function restoreSession(){
     state.drawings = s.drawings || [];
     state.measureScale = (typeof s.measureScale === 'number') ? s.measureScale : null;
     state.namedPlaylists = s.namedPlaylists || [];
-    log('Session restored from the library: ' + state.events.length + ' clip(s), ' + state.drawings.length + ' drawing(s).', 'ok');
+    log('Session restored from the library: ' + state.events.length + ' '+TX('vid.f.clips')+', ' + state.drawings.length + ' '+TX('vid.f.drawings')+'.', 'ok');
   } else {
     state.events = [];
     state.nextEventId = 1;
@@ -3954,24 +3955,24 @@ function renderLibrary(){
     info.style.flex = '1';
     info.innerHTML = '<div class="lname">' + s.name + '</div>' +
       '<div class="lmeta">' + new Date(s.savedAt).toLocaleString('pt-BR') + ' · ' +
-      (s.events ? s.events.length : 0) + ' clip(s) · ' + (s.drawings ? s.drawings.length : 0) + ' drawing(s) · ' + (s.size / 1048576).toFixed(0) + ' MB</div>';
+      (s.events ? s.events.length : 0) + ' '+TX('vid.f.clips')+' · ' + (s.drawings ? s.drawings.length : 0) + ' '+TX('vid.f.drawings')+' · ' + (s.size / 1048576).toFixed(0) + ' MB</div>';
 
     const bOpen = document.createElement('button');
     bOpen.className = 'mini primary';
-    bOpen.textContent = 'Open';
+    bOpen.textContent = TX('vid.open');
     bOpen.title = 'The browser cannot reopen the file by itself — select the video and the clips come back automatically';
     bOpen.addEventListener('click', () => {
       if (state.file && sessionKey() === s.key){ switchTab('analise'); return; }
-      log('Select the file "' + s.name + '" on your computer — this match\'s clips will be restored automatically.');
+      log(TX('vid.f.selectFile') + s.name + TX('vid.f.clipsRestored'));
       switchTab('analise');
       openFilePicker();
     });
 
     const bDel = document.createElement('button');
     bDel.className = 'mini ghost danger';
-    bDel.textContent = 'Delete';
+    bDel.textContent = TX('vid.delete');
     bDel.addEventListener('click', async () => {
-      if (!(await askConfirm('Remove from library', 'Remove "' + s.name + '" from the library, with all its tagged clips?', 'Delete'))) return;
+      if (!(await askConfirm(TX('vid.removeLib'), TX('vid.f.remove') + s.name + TX('vid.f.fromLibrary'), TX('vid.delete')))) return;
       const all = libAll();
       delete all[s.key];
       libWrite(all);
@@ -4089,8 +4090,8 @@ async function readSlice(file, start, end){
 }
 
 async function exportEvents(events, outName, label){
-  if (!state.file){ log('Load a video before exporting.', 'err'); return; }
-  if (exporting){ log('An export is already in progress.', 'err'); return; }
+  if (!state.file){ log(TX('vid.msg.loadBeforeExport'), 'err'); return; }
+  if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   // se algum lance tem enquadramento (zoom) ou há desenhos a gravar, usa o caminho recodificado
   const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
   const needsDraw = state.drawings && state.drawings.length > 0;
@@ -4116,12 +4117,12 @@ async function exportEvents(events, outName, label){
     const buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label));
     const blob = new Blob([buffer], { type: 'video/mp4' });
     const saved = await saveBlob(blob, outName, 'video/mp4');
-    if (saved === null){ log('Export canceled (no file saved).'); return; }
+    if (saved === null){ log(TX('vid.msg.noFileSaved')); return; }
 
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     log('Exported: ' + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB em ' + secs + 's)', 'ok');
   } catch (err) {
-    if (err && err.message === 'CANCELLED') log('Export canceled.', 'err');
+    if (err && err.message === 'CANCELLED') log(TX('vid.msg.exportCanceled2'), 'err');
     else {
       log('Export failed: ' + (err && err.message ? err.message : err), 'err');
       console.error(err);
@@ -4194,7 +4195,7 @@ function buildClips(file, ranges, progress){
 
       if (!ready){
         // Último recurso: varredura sequencial do arquivo inteiro.
-        log('Direct structure failed — trying a full file scan…');
+        log(TX('vid.f.directFailed'));
         let pos = 0;
         while (!ready && pos < file.size){
           if (failed) throw failed;
@@ -4207,11 +4208,11 @@ function buildClips(file, ranges, progress){
       }
 
       if (!ready){
-        throw new Error('Could not parse this MP4 structure. Copy the "File structure" line from the log and send it to me so I can adjust the engine.');
+        throw new Error(TX('vid.f.mp4ParseFail'));
       }
 
       const vInfo = info.videoTracks && info.videoTracks[0];
-      if (!vInfo) throw new Error('No video track found in the file.');
+      if (!vInfo) throw new Error(TX('vid.msg.noTrack'));
       const aInfo = (info.audioTracks && info.audioTracks[0]) || null;
       const vts = vInfo.timescale;
       const ats = aInfo ? aInfo.timescale : 0;
@@ -4292,14 +4293,14 @@ function buildClips(file, ranges, progress){
         mp4.appendBuffer(ab);
         feedPos += ab.byteLength;
         fed += ab.byteLength;
-        progress(Math.min(0.95, fed / totalToFeed), 'Extracting clips');
+        progress(Math.min(0.95, fed / totalToFeed), TX('vid.msg.extracting'));
         await microYield();
       }
       try { mp4.flush(); } catch (e) { /* fim de arquivo */ }
       try { mp4.stop(); } catch (e) { /* extração já parada */ }
 
       const valid = jobs.filter(j => j.vSamples.length);
-      if (!valid.length) throw new Error('No video frames were found in the tagged ranges.');
+      if (!valid.length) throw new Error(TX('vid.msg.noFrames'));
       const skipped = jobs.length - valid.length;
       if (skipped) log(skipped + ' clip(s) outside the video duration were ignored.', 'err');
 
@@ -4330,7 +4331,7 @@ function buildClips(file, ranges, progress){
           out.getTrackById(aOutId).mdia.minf.stbl.stsd.entries = [srcAEntry];
         } catch (e) {
           aOutId = null;
-          log('Could not include audio in this format — exporting video only.', 'err');
+          log(TX('vid.f.audioFail'), 'err');
         }
       }
 
@@ -4375,13 +4376,13 @@ function buildClips(file, ranges, progress){
       }
       if (!buffer){
         const DS = (typeof DataStream !== 'undefined') ? DataStream : (MP4Box && MP4Box.DataStream) ? MP4Box.DataStream : null;
-        if (!DS) throw new Error('Could not serialize the MP4 (DataStream unavailable).');
+        if (!DS) throw new Error(TX('vid.f.mp4Fail'));
         const ds = new DS();
         ds.endianness = DS.BIG_ENDIAN;
         out.write(ds);
         buffer = ds.buffer;
       }
-      progress(1, 'Done');
+      progress(1, TX('vid.msg.done'));
       resolve(buffer);
     })().catch(reject);
   });
@@ -4415,6 +4416,8 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
       /* caminho por temporada (formato novo do hub) */
       if (ctx.dataPath) _videoDataPath = ctx.dataPath + '/video';
       if (ctx.firebaseConfig) FB_CONFIG_HUB = ctx.firebaseConfig;
+      /* idioma definido no hub (persist=false: a escolha e do hub) */
+      if (ctx.lang) FluxGKI18n.setLang(ctx.lang, false);
       if (ctx.season) window._fluxgkSeason = ctx.season.label || '';
       if (ctx.club) window._fluxgkClub = ctx.club.name || '';
       try { _renderVideoCtxStrip(); } catch(e){}
@@ -4488,16 +4491,8 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
   }
 })();
 
-/* Firebase: Auth + Realtime Database — espelha os dados leves (vídeo fica local) */
-const FB_CONFIG = {
-  apiKey: "AIzaSyCiRkSaWhEk3MPEPuQMIM2oQHbVQuI0_gQ",
-  authDomain: "fluxgk-statistics.firebaseapp.com",
-  databaseURL: "https://fluxgk-statistics-default-rtdb.firebaseio.com",
-  projectId: "fluxgk-statistics",
-  storageBucket: "fluxgk-statistics.firebasestorage.app",
-  messagingSenderId: "605696462663",
-  appId: "1:605696462663:web:1df401a86ba7f9e753c662"
-};
+/* Firebase: Auth + Realtime Database — espelha os dados leves (vídeo fica local)
+   Nao ha projeto proprio: a config vem do hub (FB_CONFIG_HUB). */
 console.log('%c[FluxGK] video v2.0 — consumidor do hub','color:#E8901A;font-weight:bold');
 /* FB_CONFIG_HUB e _videoDataPath ja declarados no topo */
 let fbDB = null, fbUser = null, _fbReady = false;
@@ -4516,7 +4511,8 @@ async function initFirebase(){
     await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js');
     await ldScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
     if (!window.firebase) return;
-    var cfg = FB_CONFIG_HUB || FB_CONFIG;   /* prioriza a config do hub */
+    var cfg = FB_CONFIG_HUB;   /* config exclusiva do hub */
+    if (!cfg){ console.error('[FluxGK] video: sem firebaseConfig do hub. Abra pelo hub.'); return; }
     if (!firebase.apps.length) firebase.initializeApp(cfg);
     fbDB = firebase.database();
     _fbReady = true;
@@ -4527,9 +4523,9 @@ async function initFirebase(){
         pullFromCloud();
       }
     });
-    log('Module connected to FluxGK (cloud ready).');
+    log(TX('vid.msg.cloudReady'));
   } catch (e) {
-    log('Cloud unavailable — working locally in this browser.', 'err');
+    log(TX('vid.msg.cloudOff'), 'err');
   }
 }
 
@@ -4548,8 +4544,8 @@ function pushToCloud(){
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
         updatedAt: Date.now(),
       };
-      var _p = _videoDataPath || (FB_PATH + '/users/' + uid);
-      fbDB.ref(_p).set(payload);
+      if (!_videoDataPath) return;   /* sem contexto do hub: nao grava fora de users/{uid} */
+      fbDB.ref(_videoDataPath).set(payload);
     } catch (e) { /* falha de rede — fica local */ }
   }, 600);
 }
@@ -4558,8 +4554,8 @@ function pushToCloud(){
 function pullFromCloud(){
   const uid = cloudUid();
   if (!_fbReady || !fbDB || !uid) return;
-  var _pp = _videoDataPath || (FB_PATH + '/users/' + uid);
-  fbDB.ref(_pp).once('value').then((snap) => {
+  if (!_videoDataPath) return;   /* sem contexto do hub: nada a ler */
+  fbDB.ref(_videoDataPath).once('value').then((snap) => {
     const data = snap.val();
     if (!data) { pushToCloud(); return; } // primeira vez: sobe o que já existe local
     try {
@@ -4572,7 +4568,7 @@ function pullFromCloud(){
         persistDashboards();
         renderDashboards(); renderTags();
       }
-      log('Data synced from the FluxGK cloud.');
+      log(TX('vid.msg.cloudSynced'));
       renderLibrary && renderLibrary();
     } catch (e) { /* dados inesperados — mantém local */ }
   }).catch(() => {});
@@ -4590,7 +4586,7 @@ renderDrawList();
 applyDock();
 syncPanels();
 initFirebase();
-log('FluxGK Video Lab ready. Load an MP4 video to get started.');
+log(TX('vid.msg.ready'));
 </script>
 </body>
 </html>

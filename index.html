@@ -71,6 +71,13 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .hsv{font-size:21px;font-weight:700;color:var(--ink);font-family:'JetBrains Mono',monospace}
 .hsl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .mgrid{display:grid;gap:9px}
+.langrow{display:flex;align-items:center;justify-content:space-between;margin-top:22px;padding-top:16px;border-top:1px solid var(--faint)}
+.langlbl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
+.langsw{display:inline-flex;border:1px solid var(--faint);border-radius:9px;overflow:hidden;background:#fff}
+.langbtn{border:none;background:transparent;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;padding:7px 14px;cursor:pointer;transition:background .15s,color .15s}
+.langbtn+.langbtn{border-left:1px solid var(--faint)}
+.langbtn:hover{background:#fafafa;color:var(--ink)}
+.langbtn.on{background:var(--ink);color:var(--paper)}
 .mcard{background:#fff;border:1px solid var(--faint);border-radius:12px;padding:16px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:transform .12s,border-color .12s}
 .mcard:hover{transform:translateY(-1px);border-color:#d4d4d4}
 .mico{width:38px;height:38px;border-radius:9px;background:#f4f4f2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -137,6 +144,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
+<script src="fluxgk-i18n.js"></script>
 </head>
 <body>
 
@@ -144,47 +152,54 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 
 <div class="screen" id="scr-login">
   <div class="lwrap">
-    <div class="llogo"><div class="lbrand">FluxGK</div><div class="lsub">Data-Driven GK</div></div>
+    <div class="llogo"><div class="lbrand">FluxGK</div><div class="lsub" data-i18n="hub.tagline">Data-Driven GK</div></div>
     <div class="lcard">
-      <div class="lt">Sign in</div>
-      <div class="lts">Goalkeeper Coach Platform</div>
-      <div class="lf"><label class="ll" for="inp-email">Email</label><input class="li" id="inp-email" type="email" placeholder="coach@club.com" autocomplete="username"></div>
-      <div class="lf"><label class="ll" for="inp-pass">Password</label><input class="li" id="inp-pass" type="password" placeholder="password" autocomplete="current-password"></div>
-      <label class="lrem"><input type="checkbox" id="inp-rem" checked><span>Stay signed in</span></label>
+      <div class="lt" data-i18n="common.signIn">Sign in</div>
+      <div class="lts" data-i18n="hub.loginSub">Goalkeeper Coach Platform</div>
+      <div class="lf"><label class="ll" for="inp-email" data-i18n="common.email">Email</label><input class="li" id="inp-email" type="email" placeholder="coach@club.com" autocomplete="username"></div>
+      <div class="lf"><label class="ll" for="inp-pass" data-i18n="common.password">Password</label><input class="li" id="inp-pass" type="password" placeholder="password" data-i18n-placeholder="hub.phPassword" autocomplete="current-password"></div>
+      <label class="lrem"><input type="checkbox" id="inp-rem" checked><span data-i18n="hub.stayIn">Stay signed in</span></label>
       <div class="lerr" id="lerr" role="alert" aria-live="assertive"></div>
-      <button class="lbtn" id="lbtn" onclick="doLogin()">Sign in</button>
+      <button class="lbtn" id="lbtn" onclick="doLogin()" data-i18n="common.signIn">Sign in</button>
     </div>
-    <div class="lfooter">FluxGK · Data-Driven GK · v3.0</div>
+    <div class="lfooter" data-i18n="hub.footer">FluxGK · Data-Driven GK · v3.0</div>
   </div>
 </div>
 
 <div class="screen" id="scr-home">
   <div class="hnav" id="hnav">
-    <div class="hbadge" id="hbadge"><span class="hbph" id="hbph">GK</span><img id="hbimg" src="" alt="Club badge" style="display:none"></div>
+    <div class="hbadge" id="hbadge"><span class="hbph" id="hbph">GK</span><img id="hbimg" src="" alt="Club badge" data-i18n-alt="hub.altBadge" style="display:none"></div>
     <div class="hct"><span class="hcname" id="hcname">FluxGK</span><span class="hcseas" id="hcseas">—</span></div>
     <div class="hnr">
-      <button class="hswap" onclick="openSwitch()" aria-label="Switch club or season">SWITCH</button>
-      <button class="hnbtn" onclick="openSettings()" title="Settings" aria-label="Open settings">
+      <button class="hswap" onclick="openSwitch()" aria-label="Switch club or season" data-i18n-aria="hub.ariaSwitch" data-i18n="hub.switch">SWITCH</button>
+      <button class="hnbtn" onclick="openSettings()" title="Settings" aria-label="Open settings" data-i18n-title="common.settings" data-i18n-aria="hub.ariaOpenSettings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-      <div class="hudot" id="hudot" onclick="openSettings()" role="button" tabindex="0" aria-label="Profile and settings" onkeydown="kbAct(event,openSettings)">GK</div>
+      <div class="hudot" id="hudot" onclick="openSettings()" role="button" tabindex="0" aria-label="Profile and settings" data-i18n-aria="hub.ariaProfile" onkeydown="kbAct(event,openSettings)">GK</div>
     </div>
   </div>
   <div class="hbody">
-    <div class="hgreet" id="htime">Welcome</div>
-    <div class="hgsub"><span id="hcoach">Coach</span> · <span id="hmeth">—</span></div>
+    <div class="hgreet" id="htime" data-i18n="hub.welcome">Welcome</div>
+    <div class="hgsub"><span id="hcoach" data-i18n="common.coach">Coach</span> · <span id="hmeth">—</span></div>
     <div class="hstats">
-      <div class="hst"><div class="hsv" id="st-sess">-</div><div class="hsl">Sessions</div></div>
-      <div class="hst"><div class="hsv" id="st-match">-</div><div class="hsl">Matches</div></div>
-      <div class="hst"><div class="hsv" id="st-gk">-</div><div class="hsl">Keepers</div></div>
+      <div class="hst"><div class="hsv" id="st-sess">-</div><div class="hsl" data-i18n="hub.statSessions">Sessions</div></div>
+      <div class="hst"><div class="hsv" id="st-match">-</div><div class="hsl" data-i18n="hub.statMatches">Matches</div></div>
+      <div class="hst"><div class="hsv" id="st-gk">-</div><div class="hsl" data-i18n="hub.statKeepers">Keepers</div></div>
     </div>
     <div class="mgrid" id="mgrid"></div>
+    <div class="langrow">
+      <span class="langlbl" data-i18n="hub.language">Language</span>
+      <div class="langsw" role="group" aria-label="Language / Idioma">
+        <button type="button" class="langbtn" id="lang-en" onclick="setLang('en')">EN</button>
+        <button type="button" class="langbtn" id="lang-pt" onclick="setLang('pt')">PT</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="screen" id="scr-module">
   <div class="mtbar" id="mtbar">
-    <button class="mbck" onclick="closeModule()">‹ HUB</button>
+    <button class="mbck" onclick="closeModule()" data-i18n="hub.backHub">‹ HUB</button>
     <span class="mtnm" id="mtnm"></span>
   </div>
   <iframe class="mfrm" id="mfrm" src="about:blank" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
@@ -193,52 +208,52 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 <!-- SWITCH: clube + temporada -->
 <div class="sh" id="sh-switch">
   <div class="shc">
-    <div class="shh"><span class="sht">Club &amp; Season</span><button class="shclose" onclick="closeSwitch()" aria-label="Close">✕</button></div>
-    <div class="sect">Clubs</div>
+    <div class="shh"><span class="sht" data-i18n="hub.clubSeason">Club &amp; Season</span><button class="shclose" onclick="closeSwitch()" aria-label="Close" data-i18n-aria="common.close">✕</button></div>
+    <div class="sect" data-i18n="hub.clubs">Clubs</div>
     <div id="club-list"></div>
-    <button class="btn btg" onclick="editClub(null)">+ New club</button>
+    <button class="btn btg" onclick="editClub(null)" data-i18n="hub.newClub">+ New club</button>
     <div class="sec"></div>
-    <div class="sect" id="season-head">Seasons</div>
+    <div class="sect" id="season-head" data-i18n="hub.seasons">Seasons</div>
     <div id="season-list"></div>
-    <button class="btn btg" onclick="addSeason()">+ New season</button>
+    <button class="btn btg" onclick="addSeason()" data-i18n="hub.newSeason">+ New season</button>
   </div>
 </div>
 
 <!-- EDITOR DE CLUBE -->
 <div class="sh" id="sh-club">
   <div class="shc">
-    <div class="shh"><span class="sht" id="club-title">New club</span><button class="shclose" onclick="closeClub()" aria-label="Close">✕</button></div>
-    <label class="fl" for="c-name">Club name</label>
+    <div class="shh"><span class="sht" id="club-title" data-i18n="hub.newClubTitle">New club</span><button class="shclose" onclick="closeClub()" aria-label="Close" data-i18n-aria="common.close">✕</button></div>
+    <label class="fl" for="c-name" data-i18n="hub.clubName">Club name</label>
     <input class="fi" id="c-name" placeholder="Semey FC">
-    <label class="fl" for="c-abbr">Abbreviation</label>
+    <label class="fl" for="c-abbr" data-i18n="hub.abbr">Abbreviation</label>
     <input class="fi" id="c-abbr" placeholder="SEM" maxlength="4">
-    <label class="fl">Club color</label>
+    <label class="fl" data-i18n="hub.clubColor">Club color</label>
     <div class="crow">
-      <div class="csw" id="csw-prev"><input type="color" id="c-color" value="#0a0a0a" onchange="onColor(this.value)" oninput="onColor(this.value)" aria-label="Custom club color"></div>
+      <div class="csw" id="csw-prev"><input type="color" id="c-color" value="#0a0a0a" onchange="onColor(this.value)" oninput="onColor(this.value)" aria-label="Custom club color" data-i18n-aria="hub.ariaCustomColor"></div>
       <div class="cpre" id="cpre"></div>
     </div>
-    <label class="fl">Badge</label>
+    <label class="fl" data-i18n="hub.badge">Badge</label>
     <div class="bup">
       <div class="bprev" id="c-bprev"><span style="font-size:10px;color:#a3a3a3">—</span></div>
-      <button class="bbtn" onclick="document.getElementById('c-badge').click()">Upload</button>
+      <button class="bbtn" onclick="document.getElementById('c-badge').click()" data-i18n="common.upload">Upload</button>
       <input type="file" id="c-badge" accept="image/*" style="display:none" onchange="onBadge(this)">
     </div>
-    <button class="btn btp" onclick="saveClub()">Save club</button>
-    <button class="btn btd" id="c-del" onclick="deleteClub()" style="display:none">Delete club</button>
+    <button class="btn btp" onclick="saveClub()" data-i18n="hub.saveClub">Save club</button>
+    <button class="btn btd" id="c-del" onclick="deleteClub()" style="display:none" data-i18n="hub.deleteClub">Delete club</button>
   </div>
 </div>
 
 <!-- SETTINGS: perfil do treinador -->
 <div class="sh" id="sh-set">
   <div class="shc">
-    <div class="shh"><span class="sht">Settings</span><button class="shclose" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
-    <label class="fl" for="s-coach">Coach name</label>
+    <div class="shh"><span class="sht" data-i18n="common.settings">Settings</span><button class="shclose" onclick="closeSettings()" aria-label="Close settings" data-i18n-aria="hub.ariaCloseSettings">✕</button></div>
+    <label class="fl" for="s-coach" data-i18n="hub.coachName">Coach name</label>
     <input class="fi" id="s-coach" placeholder="Lucas Pimenta">
-    <label class="fl" for="s-meth">Methodology</label>
+    <label class="fl" for="s-meth" data-i18n="hub.methodology">Methodology</label>
     <input class="fi" id="s-meth" placeholder="Constraints-Led Approach">
-    <button class="btn btp" onclick="saveSettings()">Save</button>
+    <button class="btn btp" onclick="saveSettings()" data-i18n="common.save">Save</button>
     <div class="sec"></div>
-    <button class="btn btd" onclick="doLogout()">Sign out</button>
+    <button class="btn btd" onclick="doLogout()" data-i18n="common.signOut">Sign out</button>
   </div>
 </div>
 
@@ -264,14 +279,18 @@ var FBC={
 };
 
 var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed8','#0e7490','#374151','#713f12'];
+/* n/d/t sao resolvidos por TX() a cada render, para trocar com o idioma */
 var MODS=[
-  {k:'planner',n:'GK Planner',d:'Plan and log training sessions',t:'GK PLANNER',i:'<path d="M3 5h18M3 12h18M3 19h18"/>'},
-  {k:'xg',     n:'xG System', d:'Expected goals and shot maps',   t:'XG SYSTEM',  i:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>'},
-  {k:'stats',  n:'GK Statistics',d:'Match and season analytics',  t:'GK STATISTICS',i:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
-  {k:'minutes',n:'GK Minutes',d:'Playing time and rotation',      t:'GK MINUTES', i:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
-  {k:'video',  n:'Video Lab', d:'Clip analysis and tagging',      t:'VIDEO LAB',  i:'<rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/>'},
-  {k:'data',   n:'Load Control',d:'Training load and wellness',   t:'DATA-DRIVEN',i:'<path d="M3 17l5-6 4 4 5-8 4 5"/>'}
+  {k:'planner',i:'<path d="M3 5h18M3 12h18M3 19h18"/>'},
+  {k:'xg',     i:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>'},
+  {k:'stats',  i:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
+  {k:'minutes',i:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
+  {k:'video',  i:'<rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/>'},
+  {k:'data',   i:'<path d="M3 17l5-6 4 4 5-8 4 5"/>'}
 ];
+function modName(k){return TX('hub.mod.'+k,k);}
+function modDesc(k){return TX('hub.mod.'+k+'.d','');}
+function modTag(k){return TX('hub.mod.'+k+'.t',k.toUpperCase());}
 var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html'};
 
 var _auth,_rtdb;
@@ -297,7 +316,7 @@ function kbAct(e,fn){if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.prev
 var _toastT=null;
 function showToast(msg,ms){var el=document.getElementById('toastEl');el.textContent=msg;el.classList.add('show');if(_toastT)clearTimeout(_toastT);_toastT=setTimeout(function(){el.classList.remove('show');},ms||2500);}
 function raceTimeout(p,ms){return new Promise(function(res){var done=false;var t=setTimeout(function(){if(!done){done=true;res('pending');}},ms);p.then(function(){if(!done){done=true;clearTimeout(t);res('saved');}}).catch(function(e){if(!done){done=true;clearTimeout(t);console.error('[FluxGK] write failed:',e);res('error');}});});}
-function saveMsg(r){return r==='saved'?'Saved':r==='pending'?'Saved on device — will sync when back online':'Could not save — please try again';}
+function saveMsg(r){return r==='saved'?TX('hub.msg.saved'):r==='pending'?TX('hub.msg.savedOffline'):TX('hub.msg.saveFail');}
 
 /* ---------- AUTH ---------- */
 function doLogin(){
@@ -305,14 +324,14 @@ function doLogin(){
   var pw=document.getElementById('inp-pass').value;
   var rm=document.getElementById('inp-rem').checked;
   var er=document.getElementById('lerr');var bt=document.getElementById('lbtn');
-  if(!em||!pw){er.textContent='Enter email and password';return;}
-  er.textContent='';bt.disabled=true;bt.textContent='Signing in...';
+  if(!em||!pw){er.textContent=TX('hub.msg.enterCreds');return;}
+  er.textContent='';bt.disabled=true;bt.textContent=TX('hub.signingIn');
   var ps=rm?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION;
   _auth.setPersistence(ps).then(function(){return _auth.signInWithEmailAndPassword(em,pw);})
-  .catch(function(e){bt.disabled=false;bt.textContent='Sign in';var m={'auth/user-not-found':'No account found','auth/wrong-password':'Incorrect password','auth/invalid-email':'Invalid email','auth/too-many-requests':'Too many attempts','auth/invalid-credential':'Invalid email or password'};er.textContent=m[e.code]||e.message;});
+  .catch(function(e){bt.disabled=false;bt.textContent=TX('common.signIn');var m={'auth/user-not-found':TX('hub.msg.noAccount'),'auth/wrong-password':TX('hub.msg.wrongPass'),'auth/invalid-email':TX('hub.msg.invalidEmail'),'auth/too-many-requests':TX('hub.msg.tooMany'),'auth/invalid-credential':TX('hub.msg.invalidCred')};er.textContent=m[e.code]||e.message;});
 }
 document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
-function doLogout(){closeSettings();_auth.signOut();APP.uid=null;showToast('Signed out');}
+function doLogout(){closeSettings();_auth.signOut();APP.uid=null;showToast(TX('hub.msg.signedOut'));}
 
 /* ---------- LOAD ---------- */
 function withTimeout(p,ms,label){
@@ -326,6 +345,8 @@ async function loadAll(){
     var snap=await withTimeout(U().get(),8000,'Realtime Database');
     var d=snap.val()||{};
     APP.profile=Object.assign({coachName:'',methodology:'Constraints-Led Approach'},d.profile||{});
+    /* idioma salvo no perfil vale entre aparelhos (sem sobrescrever escolha local ja feita) */
+    if(APP.profile.lang&&!localStorage.getItem('fluxgk_lang')) FluxGKI18n.setLang(APP.profile.lang);
     APP.clubs=d.clubs||{};
     APP.active=Object.assign({clubId:null,seasonId:null},d.active||{});
     /* se o clube/temporada ativos sumiram, escolhe o primeiro que existir */
@@ -343,11 +364,11 @@ async function loadAll(){
     console.error('[FluxGK] loadAll failed:',e);
     var msg=String(e.message||e);
     if(msg.indexOf('TIMEOUT')===0){
-      showToast('Database not responding. Check the DB_URL and the security rules.',7000);
+      showToast(TX('hub.msg.dbTimeout'),7000);
     }else if(msg.toLowerCase().indexOf('permission')>-1){
-      showToast('Permission denied. Did you publish the security rules?',7000);
+      showToast(TX('hub.msg.permission'),7000);
     }else{
-      showToast('Could not load your data — check connection',6000);
+      showToast(TX('hub.msg.loadFail'),6000);
     }
     /* o app ABRE mesmo assim, vazio, em vez de travar nas bolinhas */
   }
@@ -362,24 +383,24 @@ function applyIdentity(){
   var ph=document.getElementById('hbph'),img=document.getElementById('hbimg');
   if(c&&c.badge){img.src=c.badge;img.style.display='block';ph.style.display='none';}
   else{img.style.display='none';ph.style.display='block';ph.textContent=(c&&c.meta&&(c.meta.abbr||c.meta.name)||'GK').slice(0,2).toUpperCase();}
-  document.getElementById('hcname').textContent=(c&&c.meta&&c.meta.name)||'No club';
-  document.getElementById('hcseas').textContent=(s&&s.label)||'No season';
-  document.getElementById('hcoach').textContent=(APP.profile.coachName||'Coach').split(' ')[0];
+  document.getElementById('hcname').textContent=(c&&c.meta&&c.meta.name)||TX('hub.noClub');
+  document.getElementById('hcseas').textContent=(s&&s.label)||TX('hub.noSeason');
+  document.getElementById('hcoach').textContent=(APP.profile.coachName||TX('common.coach')).split(' ')[0];
   document.getElementById('hmeth').textContent=APP.profile.methodology||'—';
   document.getElementById('hudot').textContent=(APP.profile.coachName||'GK').slice(0,2).toUpperCase();
   var h=new Date().getHours();
-  document.getElementById('htime').textContent=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  document.getElementById('htime').textContent=h<12?TX('hub.morning'):h<18?TX('hub.afternoon'):TX('hub.evening');
 }
 function renderMods(){
   var g=document.getElementById('mgrid');g.innerHTML='';
   MODS.forEach(function(m){
     var d=document.createElement('div');
     d.className='mcard';d.setAttribute('role','button');d.setAttribute('tabindex','0');
-    d.setAttribute('aria-label','Open '+m.n);
+    d.setAttribute('aria-label',TX('hub.ariaOpen')+modName(m.k));
     d.onclick=function(){openModule(m.k);};
     d.onkeydown=function(e){kbAct(e,function(){openModule(m.k);});};
     d.innerHTML='<div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+m.i+'</svg></div>'
-      +'<div class="mtx"><div class="mnm">'+m.n+'</div><div class="mdesc">'+m.d+'</div></div>'
+      +'<div class="mtx"><div class="mnm">'+modName(m.k)+'</div><div class="mdesc">'+modDesc(m.k)+'</div></div>'
       +'<span class="marr">›</span>';
     g.appendChild(d);
   });
@@ -394,6 +415,29 @@ function loadStats(){
 }
 function refresh(){applyIdentity();loadStats();}
 
+/* ---------- IDIOMA (EN / PT) ---------- */
+function markLangButtons(){
+  var l=FluxGKI18n.getLang();
+  ['en','pt'].forEach(function(x){
+    var b=document.getElementById('lang-'+x);
+    if(b){ b.classList.toggle('on',x===l); b.setAttribute('aria-pressed',x===l?'true':'false'); }
+  });
+}
+function setLang(l){
+  FluxGKI18n.setLang(l);                 /* persiste + re-aplica data-i18n */
+  markLangButtons();
+  renderMods();                          /* cards dependem de TX() */
+  applyIdentity();                       /* saudacao e nome do treinador */
+  try{ renderSwitch(); }catch(e){}       /* painel de clubes, se aberto */
+  /* guarda no perfil para acompanhar o usuario em outros aparelhos */
+  if(APP.uid&&_rtdb){ APP.profile.lang=l; U('profile/lang').set(l).catch(function(){}); }
+  /* modulo aberto recebe o novo idioma na hora */
+  var fr=document.getElementById('mfrm');
+  if(fr&&fr.src&&fr.src.indexOf('about:blank')===-1) pushContext(fr.contentWindow);
+  var mt=document.getElementById('mtnm');
+  if(mt&&mt.dataset&&mt.dataset.modkey) mt.textContent=modTag(mt.dataset.modkey);
+}
+
 /* ---------- SWITCH (clube + temporada) ---------- */
 function openSwitch(){renderSwitch();document.getElementById('sh-switch').classList.add('open');}
 function closeSwitch(){document.getElementById('sh-switch').classList.remove('open');}
@@ -406,13 +450,13 @@ function renderSwitch(){
     var r=document.createElement('div');
     r.className='lrow'+(id===APP.active.clubId?' on':'');
     r.setAttribute('role','button');r.setAttribute('tabindex','0');
-    r.setAttribute('aria-label','Select '+(m.name||id));
+    r.setAttribute('aria-label',TX('hub.ariaSelect')+(m.name||id));
     var badge=c.badge?'<img src="'+c.badge+'" alt="">':'<span>'+((m.abbr||m.name||'--').slice(0,2).toUpperCase())+'</span>';
     var ns=Object.keys(c.seasons||{}).length;
     r.innerHTML='<div class="ldot" style="background:'+(m.color||'#0a0a0a')+'">'+badge+'</div>'
       +'<div class="ltx"><div class="lnm">'+(m.name||id)+'</div><div class="lsb">'+ns+' season'+(ns===1?'':'s')+'</div></div>'
       +(id===APP.active.clubId?'<span class="ltag">ACTIVE</span>':'')
-      +'<button class="ledit" aria-label="Edit '+(m.name||id)+'">✎</button>';
+      +'<button class="ledit" aria-label="'+TX('hub.ariaEdit')+(m.name||id)+'">✎</button>';
     r.querySelector('.ledit').onclick=function(e){e.stopPropagation();editClub(id);};
     var pick=function(){selectClub(id);};
     r.onclick=pick;r.onkeydown=function(e){kbAct(e,pick);};
@@ -421,7 +465,7 @@ function renderSwitch(){
 
   var sl=document.getElementById('season-list');sl.innerHTML='';
   var c=club();
-  document.getElementById('season-head').textContent=c?('Seasons · '+(c.meta&&c.meta.name||'')):'Seasons';
+  document.getElementById('season-head').textContent=c?(TX('hub.seasonsOf')+(c.meta&&c.meta.name||'')):TX('hub.seasons');
   if(!c){sl.innerHTML='<div class="empty">Select a club first.</div>';return;}
   var sids=Object.keys(c.seasons||{});
   if(!sids.length){sl.innerHTML='<div class="empty">No seasons yet.</div>';}
@@ -430,12 +474,12 @@ function renderSwitch(){
     var r=document.createElement('div');
     r.className='lrow'+(sid===APP.active.seasonId?' on':'');
     r.setAttribute('role','button');r.setAttribute('tabindex','0');
-    r.setAttribute('aria-label','Select season '+(s.label||sid));
+    r.setAttribute('aria-label',TX('hub.ariaSelectSeason')+(s.label||sid));
     r.innerHTML='<div class="ldot" style="background:#f4f4f2"><span style="color:#0a0a0a">'+(s.label||sid).slice(0,2)+'</span></div>'
       +'<div class="ltx"><div class="lnm">'+(s.label||sid)+'</div></div>'
       +(sid===APP.active.seasonId?'<span class="ltag">ACTIVE</span>':'')
-      +'<button class="ledit" aria-label="Rename season '+(s.label||sid)+'">\u270E</button>'
-      +'<button class="ledit" aria-label="Delete season '+(s.label||sid)+'" style="color:#dc2626">\u2715</button>';
+      +'<button class="ledit" aria-label="'+TX('hub.ariaRenameSeason')+(s.label||sid)+'">\u270E</button>'
+      +'<button class="ledit" aria-label="'+TX('hub.ariaDeleteSeason')+(s.label||sid)+'" style="color:#dc2626">\u2715</button>';
     var btns=r.querySelectorAll('.ledit');
     btns[0].onclick=function(e){e.stopPropagation();renameSeason(sid);};
     btns[1].onclick=function(e){e.stopPropagation();deleteSeason(sid);};
@@ -457,13 +501,13 @@ async function selectSeason(sid){
   await U('active').set(APP.active);
   refresh();renderSwitch();
   closeSwitch();
-  showToast('Switched to '+((season()||{}).label||sid));
+  showToast(TX('hub.msg.switchedTo')+((season()||{}).label||sid));
 }
 async function addSeason(){
   var c=club();
-  if(!c){showToast('Create a club first');return;}
+  if(!c){showToast(TX('hub.msg.clubFirst'));return;}
   var y=new Date().getFullYear();
-  var label=prompt('Season label',y+'/'+String(y+1).slice(2));
+  var label=prompt(TX('hub.seasonLabel'),y+'/'+String(y+1).slice(2));
   if(!label)return;
   var sid=slug(label);
   var r=await raceTimeout(U('clubs/'+APP.active.clubId+'/seasons/'+sid).set({label:label,createdAt:Date.now()}),4000);
@@ -476,12 +520,12 @@ async function addSeason(){
 async function renameSeason(sid){
   var c=club();if(!c||!c.seasons||!c.seasons[sid])return;
   var cur=c.seasons[sid].label||sid;
-  var nl=prompt('Season label',cur);
+  var nl=prompt(TX('hub.seasonLabel'),cur);
   if(!nl||nl===cur)return;
   var r=await raceTimeout(U('clubs/'+APP.active.clubId+'/seasons/'+sid+'/label').set(nl),4000);
   if(r==='error'){showToast(saveMsg(r));return;}
   c.seasons[sid].label=nl;
-  showToast('Season renamed');
+  showToast(TX('hub.msg.seasonRenamed'));
   refresh();renderSwitch();
 }
 async function deleteSeason(sid){
@@ -495,8 +539,8 @@ async function deleteSeason(sid){
     hasData=snap.exists();
   }catch(e){console.error(e);}
   var msg=hasData
-    ? 'Delete season "'+lb+'"?\n\nTHIS SEASON HAS DATA. Sessions, matches and stats\nwill be permanently deleted. This cannot be undone.'
-    : 'Delete season "'+lb+'"?\n\nThis season is empty. Nothing will be lost.';
+    ? TX('hub.msg.deleteSeason')+lb+TX('hub.msg.delSeasonData')
+    : TX('hub.msg.deleteSeason')+lb+TX('hub.msg.delSeasonEmpty');
   if(!confirm(msg))return;
   await U('clubs/'+cid+'/seasons/'+sid).remove();
   await _rtdb.ref('users/'+APP.uid+'/data/'+cid+'/'+sid).remove();
@@ -506,7 +550,7 @@ async function deleteSeason(sid){
     APP.active.seasonId=left[left.length-1]||null;
     await U('active').set(APP.active);
   }
-  showToast('Season deleted');
+  showToast(TX('hub.msg.seasonDeleted'));
   refresh();renderSwitch();
 }
 
@@ -514,7 +558,7 @@ async function deleteSeason(sid){
 function editClub(id){
   APP.editingClub=id;
   var c=id?APP.clubs[id]:null,m=(c&&c.meta)||{};
-  document.getElementById('club-title').textContent=id?'Edit club':'New club';
+  document.getElementById('club-title').textContent=id?TX('hub.editClubTitle'):TX('hub.newClubTitle');
   document.getElementById('c-name').value=m.name||'';
   document.getElementById('c-abbr').value=m.abbr||'';
   document.getElementById('c-color').value=m.color||'#0a0a0a';
@@ -535,7 +579,7 @@ function renderPresets(cur){
     d.className='cp'+(c===cur?' active':'');
     d.style.background=c;
     d.setAttribute('role','button');d.setAttribute('tabindex','0');
-    d.setAttribute('aria-label','Color '+c);
+    d.setAttribute('aria-label',TX('hub.ariaColor')+c);
     var pick=function(){onColor(c);};
     d.onclick=pick;d.onkeydown=function(e){kbAct(e,pick);};
     pc.appendChild(d);
@@ -548,7 +592,7 @@ function onColor(c){
 }
 function onBadge(inp){
   var f=inp.files[0];if(!f)return;
-  if(f.size>500*1024){showToast('Badge too large — use an image under 500KB');inp.value='';return;}
+  if(f.size>500*1024){showToast(TX('hub.msg.badgeTooLarge'));inp.value='';return;}
   var r=new FileReader();
   r.onload=function(e){
     var bp=document.getElementById('c-bprev');
@@ -559,7 +603,7 @@ function onBadge(inp){
 }
 async function saveClub(){
   var name=document.getElementById('c-name').value.trim();
-  if(!name){showToast('Club name is required');return;}
+  if(!name){showToast(TX('hub.msg.clubNameRequired'));return;}
   var id=APP.editingClub||slug(name);
   var meta={
     name:name,
@@ -567,7 +611,7 @@ async function saveClub(){
     color:document.getElementById('c-color').value
   };
   var badge=document.getElementById('c-bprev').dataset.badge||'';
-  showToast('Saving…',8000);
+  showToast(TX('common.saving'),8000);
   var r=await raceTimeout(U('clubs/'+id+'/meta').set(meta),4000);
   if(badge)await U('clubs/'+id+'/badge').set(badge);
   APP.clubs[id]=APP.clubs[id]||{};
@@ -593,7 +637,7 @@ async function saveClub(){
 async function deleteClub(){
   var id=APP.editingClub;if(!id)return;
   var c=APP.clubs[id],nm=(c.meta&&c.meta.name)||id;
-  if(!confirm('Delete "'+nm+'"?\n\nThis removes the club and ALL its seasons and data.\nThis cannot be undone.'))return;
+  if(!confirm(TX('hub.msg.deleteClub')+nm+TX('hub.msg.delClubWarn')))return;
   await U('clubs/'+id).remove();
   await U('data/'+id).remove();
   delete APP.clubs[id];
@@ -606,7 +650,7 @@ async function deleteClub(){
     await U('active').set(APP.active);
   }
   document.getElementById('sh-club').classList.remove('open');
-  showToast('Club deleted');
+  showToast(TX('hub.msg.clubDeleted'));
   refresh();openSwitch();
 }
 
@@ -621,7 +665,7 @@ async function saveSettings(){
   APP.profile.coachName=document.getElementById('s-coach').value.trim();
   APP.profile.methodology=document.getElementById('s-meth').value.trim();
   closeSettings();
-  showToast('Saving…',8000);
+  showToast(TX('common.saving'),8000);
   var r=await raceTimeout(U('profile').set(APP.profile),4000);
   showToast(saveMsg(r));
   refresh();
@@ -637,6 +681,7 @@ function ctxPayload(){
     uid:APP.uid,
     firebaseConfig:FBC,
     dataPath:dataPath(),                     /* onde o modulo grava */
+    lang:FluxGKI18n.getLang(),               /* idioma escolhido no hub */
     club:{id:APP.active.clubId,name:m.name||'',abbr:m.abbr||'',color:m.color||'#0a0a0a',badge:c.badge||''},
     season:{id:APP.active.seasonId,label:s.label||''},
     coach:{name:APP.profile.coachName||'',methodology:APP.profile.methodology||''},
@@ -661,9 +706,10 @@ window.addEventListener('message',function(e){
   if(e.data.type==='FLUXGK_MODULE_READY')pushContext(e.source);
 });
 function openModule(key){
-  if(!dataPath()){showToast('Create a club and a season first');openSwitch();return;}
+  if(!dataPath()){showToast(TX('hub.msg.clubSeasonFirst'));openSwitch();return;}
   var m=MODS.filter(function(x){return x.k===key;})[0];
-  document.getElementById('mtnm').textContent=(m&&m.t)||key.toUpperCase();
+  var mtEl=document.getElementById('mtnm');
+  mtEl.textContent=modTag(key); mtEl.dataset.modkey=key;
   document.getElementById('mtbar').style.background=(club()&&club().meta&&club().meta.color)||'#0a0a0a';
   var fr=document.getElementById('mfrm');
   fr.onload=function(){
@@ -691,22 +737,23 @@ async function boot(){
       if(u){
         APP.uid=u.uid;
         await loadAll();
+        markLangButtons();
         renderMods();
         refresh();
         showScreen('home');
         if(!Object.keys(APP.clubs).length){
-          showToast('Welcome — create your first club to get started',5000);
+          showToast(TX('hub.msg.welcomeNew'),5000);
           openSwitch();
         }
       }else{
         document.getElementById('lbtn').disabled=false;
-        document.getElementById('lbtn').textContent='Sign in';
+        document.getElementById('lbtn').textContent=TX('common.signIn');
         showScreen('login');
       }
     });
   }catch(e){
     console.error('[FluxGK] boot failed:',e);
-    document.getElementById('scr-loading').innerHTML='<div style="color:#f87171;font-family:monospace;font-size:13px;text-align:center;padding:20px">Could not load FluxGK.<br>Check your connection and reload.</div>';
+    document.getElementById('scr-loading').innerHTML='<div style="color:#f87171;font-family:monospace;font-size:13px;text-align:center;padding:20px">'+TX('hub.msg.loadFailBoot')+'</div>';
   }
 }
 boot();

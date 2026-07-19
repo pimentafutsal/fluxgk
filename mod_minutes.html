@@ -20,6 +20,8 @@
     if(window.parent!==window && e.source!==window.parent)return;
     if(!d.uid||!d.dataPath||!d.firebaseConfig){console.error('[FluxGK] minutes: contexto incompleto',d);return;}
     window._HUB=d;
+    /* idioma definido no hub (persist=false: a escolha e do hub) */
+    if(d.lang) FluxGKI18n.setLang(d.lang,false);
     _MPATH.games=d.dataPath+'/minutes/games';
     _MPATH.gks=d.dataPath+'/minutes/gks';
     _MPATH.comps=d.dataPath+'/minutes/comps';
@@ -217,12 +219,13 @@ tr:hover td{background:var(--surface2);}
 /* ── LOADING ── */
 #fb-loading{background:var(--carbon);}
 </style>
+<script src="fluxgk-i18n.js"></script>
 </head>
 <body>
 
 <div id="fb-loading" style="display:none;position:fixed;inset:0;background:#0d0d0d;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <svg viewBox="0 0 36 36" width="48" height="48"><rect width="36" height="36" rx="8" fill="#e8ff00"/><text x="18" y="25" text-anchor="middle" fill="#0a0a0a" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="14">GK</text></svg>
-  <div style="font-family:'Space Grotesk',sans-serif;color:#fafaf7;font-weight:600;font-size:15px;">Loading GK Minutes…</div>
+  <div data-i18n="min.loading" style="font-family:'Space Grotesk',sans-serif;color:#fafaf7;font-weight:600;font-size:15px;">Loading GK Minutes…</div>
   <div style="width:180px;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden;">
     <div style="width:60%;height:100%;background:#fafaf7;border-radius:2px;animation:ldbar 1.2s ease-in-out infinite;"></div>
   </div>
@@ -235,15 +238,15 @@ tr:hover td{background:var(--surface2);}
       <div class="logo-box"><span>GK</span></div>
       <div>
         <div class="logo-name">FluxGK</div>
-        <div class="logo-tag">MINUTES TRACKER</div>
+        <div data-i18n="min.tracker" class="logo-tag">MINUTES TRACKER</div>
       </div>
 <div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--border,#e5e5e5);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#888"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg><span id="ctx-club">—</span><span style="opacity:.4">·</span><span id="ctx-season">—</span><span style="opacity:.4">·</span><span id="ctx-coach">—</span></div>
     </div>
     <nav class="nav">
-      <button class="nav-btn active" onclick="navTo('collect')">Record</button>
-      <button class="nav-btn" onclick="navTo('history')">History</button>
-      <button class="nav-btn" onclick="navTo('report')">Report</button>
-      <button class="nav-btn" onclick="navTo('settings')">Setup</button>
+      <button data-i18n="min.tab.record" class="nav-btn active" onclick="navTo('collect')">Record</button>
+      <button data-i18n="min.tab.history" class="nav-btn" onclick="navTo('history')">History</button>
+      <button data-i18n="min.tab.report" class="nav-btn" onclick="navTo('report')">Report</button>
+      <button data-i18n="min.tab.setup" class="nav-btn" onclick="navTo('settings')">Setup</button>
     </nav>
     <div class="nav-right">
       <span id="nav-club-name" class="nav-club">—</span>
@@ -257,27 +260,27 @@ tr:hover td{background:var(--surface2);}
 
 <!-- ═══ PAGE: COLLECT ═══════════════════════════════════════════ -->
 <div id="page-collect" class="page active">
-  <div class="page-title">Record Minutes</div>
-  <div class="page-sub">Register playing time per goalkeeper for each game.</div>
+  <div data-i18n="min.recordTitle" class="page-title">Record Minutes</div>
+  <div data-i18n="min.recordSub" class="page-sub">Register playing time per goalkeeper for each game.</div>
 
   <!-- Game Info -->
   <div class="card mb20">
-    <div class="section-hdr">Game Information</div>
+    <div data-i18n="min.gameInfo" class="section-hdr">Game Information</div>
     <div class="g3 mb16">
-      <div><div class="label">Date</div><input type="date" id="g-date"></div>
-      <div><div class="label">Opponent</div><select id="g-opp"><option value="">Select opponent…</option></select></div>
-      <div><div class="label">Competition</div><select id="g-comp"><option value="">Select competition…</option></select></div>
+      <div><div data-i18n="min.date" class="label">Date</div><input type="date" id="g-date"></div>
+      <div><div data-i18n="min.opponent" class="label">Opponent</div><select id="g-opp"><option data-i18n="min.selectOpponent" value="">Select opponent…</option></select></div>
+      <div><div data-i18n="min.competition" class="label">Competition</div><select id="g-comp"><option data-i18n="min.selectComp" value="">Select competition…</option></select></div>
     </div>
     <div class="g3 mb16">
-      <div><div class="label">Season</div><select id="g-season"><option value="">Select season…</option></select></div>
-      <div><div class="label">Total Game Minutes</div><input type="number" id="g-total-min" value="40" min="1" max="70" placeholder="e.g. 40 or 50 with OT"></div>
+      <div><div data-i18n="min.season" class="label">Season</div><select id="g-season"><option data-i18n="min.selectSeason" value="">Select season…</option></select></div>
+      <div><div data-i18n="min.totalGameMin" class="label">Total Game Minutes</div><input type="number" id="g-total-min" value="40" min="1" max="70" placeholder="e.g. 40 or 50 with OT" data-i18n-placeholder="min.ph.totalMin"></div>
       <div style="display:flex;flex-direction:column;justify-content:flex-end;">
-        <div class="label">Half Duration</div>
+        <div data-i18n="min.halfDuration" class="label">Half Duration</div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:5px;">
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;color:var(--mute);">Each half:</span>
+            <span data-i18n="min.eachHalf" style="font-size:12px;color:var(--mute);">Each half:</span>
             <input type="number" id="g-half-min" value="20" min="1" max="30" style="width:70px;">
-            <span style="font-size:12px;color:var(--mute);">min</span>
+            <span data-i18n="min.min" style="font-size:12px;color:var(--mute);">min</span>
           </div>
         </div>
       </div>
@@ -286,53 +289,53 @@ tr:hover td{background:var(--surface2);}
 
   <!-- Squad Selection -->
   <div class="card mb20">
-    <div class="section-hdr">Squad — Goalkeeper Selection</div>
-    <div style="font-size:12px;color:var(--mute);margin-bottom:12px;">Mark which GKs are in the squad for this game.</div>
+    <div data-i18n="min.squadSel" class="section-hdr">Squad — Goalkeeper Selection</div>
+    <div data-i18n="min.squadHint" style="font-size:12px;color:var(--mute);margin-bottom:12px;">Mark which GKs are in the squad for this game.</div>
     <div id="squad-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
   <!-- Minutes per Half -->
   <div class="card mb20">
-    <div class="section-hdr">Playing Time — 1st Half</div>
+    <div data-i18n="min.pt1" class="section-hdr">Playing Time — 1st Half</div>
     <div id="gk-rows-h1" style="display:flex;flex-direction:column;gap:12px;"></div>
   </div>
   <div class="card mb20">
-    <div class="section-hdr">Playing Time — 2nd Half</div>
+    <div data-i18n="min.pt2" class="section-hdr">Playing Time — 2nd Half</div>
     <div id="gk-rows-h2" style="display:flex;flex-direction:column;gap:12px;"></div>
   </div>
 
   <!-- Summary & Save -->
   <div class="card mb20" id="game-summary-card" style="display:none;">
-    <div class="section-hdr">Game Summary</div>
+    <div data-i18n="min.gameSummary" class="section-hdr">Game Summary</div>
     <div id="game-summary-content"></div>
   </div>
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
     <button class="btn btn-accent" onclick="saveGame()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      Save Game
+      <span data-i18n="min.saveGame">Save Game</span>
     </button>
-    <button class="btn btn-ghost" onclick="resetGameForm()">Clear Form</button>
+    <button data-i18n="min.clearForm" class="btn btn-ghost" onclick="resetGameForm()">Clear Form</button>
   </div>
 </div>
 
 <!-- ═══ PAGE: HISTORY ═══════════════════════════════════════════ -->
 <div id="page-history" class="page">
-  <div class="page-title">History</div>
-  <div class="page-sub">All recorded games and goalkeeper minutes.</div>
+  <div data-i18n="min.tab.history" class="page-title">History</div>
+  <div data-i18n="min.histSub" class="page-sub">All recorded games and goalkeeper minutes.</div>
 
   <!-- Filters -->
   <div class="card mb20">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:1;min-width:120px;"><div class="label">Season</div><select id="h-season" onchange="renderHistory()"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Competition</div><select id="h-comp" onchange="renderHistory()"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Opponent</div><select id="h-opp" onchange="renderHistory()"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Goalkeeper</div><select id="h-gk" onchange="renderHistory()"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">View</div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.season" class="label">Season</div><select id="h-season" onchange="renderHistory()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.competition" class="label">Competition</div><select id="h-comp" onchange="renderHistory()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.opponent" class="label">Opponent</div><select id="h-opp" onchange="renderHistory()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="data.goalkeeper" class="label">Goalkeeper</div><select id="h-gk" onchange="renderHistory()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.view" class="label">View</div>
         <select id="h-view" onchange="renderHistory()">
-          <option value="games">By Game</option>
-          <option value="gk">By Goalkeeper</option>
-          <option value="opponent">By Opponent</option>
+          <option data-i18n="min.byGame" value="games">By Game</option>
+          <option data-i18n="min.byGk" value="gk">By Goalkeeper</option>
+          <option data-i18n="min.byOpponent" value="opponent">By Opponent</option>
         </select>
       </div>
     </div>
@@ -344,14 +347,14 @@ tr:hover td{background:var(--surface2);}
   <!-- Charts — compact 3-col grid -->
   <div id="hist-charts-wrap" style="display:none;margin-bottom:20px;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
-      <div class="card"><div class="card-title">Minutes by GK</div><canvas id="ch-gk" height="100"></canvas></div>
-      <div class="card"><div class="card-title">% of Club Total</div><canvas id="ch-gk-pct" height="100"></canvas></div>
-      <div class="card"><div class="card-title">% When Selected</div><canvas id="ch-gk-sel" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.minByGk" class="card-title">Minutes by GK</div><canvas id="ch-gk" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.pctClub" class="card-title">% of Club Total</div><canvas id="ch-gk-pct" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.pctSelected" class="card-title">% When Selected</div><canvas id="ch-gk-sel" height="100"></canvas></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-      <div class="card"><div class="card-title">By Season</div><canvas id="ch-season" height="100"></canvas></div>
-      <div class="card"><div class="card-title">By Competition</div><canvas id="ch-comp" height="100"></canvas></div>
-      <div class="card"><div class="card-title">By Opponent</div><canvas id="ch-opp" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.bySeason" class="card-title">By Season</div><canvas id="ch-season" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.byComp" class="card-title">By Competition</div><canvas id="ch-comp" height="100"></canvas></div>
+      <div class="card"><div data-i18n="min.byOpponent" class="card-title">By Opponent</div><canvas id="ch-opp" height="100"></canvas></div>
     </div>
   </div>
   <!-- Table -->
@@ -367,18 +370,18 @@ tr:hover td{background:var(--surface2);}
 
 <!-- ═══ PAGE: REPORT ═══════════════════════════════════════════ -->
 <div id="page-report" class="page">
-  <div class="page-title">Report</div>
-  <div class="page-sub">Goalkeeper minutes analysis and PDF export.</div>
+  <div data-i18n="min.tab.report" class="page-title">Report</div>
+  <div data-i18n="min.rptSub" class="page-sub">Goalkeeper minutes analysis and PDF export.</div>
 
   <div class="card mb20">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:1;min-width:120px;"><div class="label">Season</div><select id="r-season"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Competition</div><select id="r-comp"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Opponent</div><select id="r-opp"><option value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div class="label">Goalkeeper</div><select id="r-gk"><option value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.season" class="label">Season</div><select id="r-season"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.competition" class="label">Competition</div><select id="r-comp"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.opponent" class="label">Opponent</div><select id="r-opp"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="data.goalkeeper" class="label">Goalkeeper</div><select id="r-gk"><option data-i18n="common.all" value="">All</option></select></div>
       <button class="btn btn-accent" onclick="exportReport()" style="flex-shrink:0;margin-top:18px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Export PDF
+        <span data-i18n="min.exportPdf">Export PDF</span>
       </button>
     </div>
   </div>
@@ -386,13 +389,13 @@ tr:hover td{background:var(--surface2);}
   <div class="g4 mb20" id="rep-kpis"></div>
 
   <div class="card mb20">
-    <div class="card-title">Minutes by Goalkeeper</div>
+    <div data-i18n="min.minByGkFull" class="card-title">Minutes by Goalkeeper</div>
     <div class="rep-table-wrap">
       <table id="rep-table">
         <thead><tr>
-          <th>Goalkeeper</th><th>Games</th><th>Games Selected</th>
-          <th>1st Half</th><th>2nd Half</th><th>Total Min</th>
-          <th>% of Club Total</th><th>% When Selected</th>
+          <th data-i18n="data.goalkeeper">Goalkeeper</th><th data-i18n="min.games">Games</th><th data-i18n="min.gamesSelected">Games Selected</th>
+          <th data-i18n="min.h1">1st Half</th><th data-i18n="min.h2">2nd Half</th><th data-i18n="min.totalMin">Total Min</th>
+          <th data-i18n="min.pctClub">% of Club Total</th><th data-i18n="min.pctSelected">% When Selected</th>
         </tr></thead>
         <tbody id="rep-tbody"></tbody>
       </table>
@@ -402,46 +405,46 @@ tr:hover td{background:var(--surface2);}
   <!-- Report Charts -->
   <div id="rep-charts-wrap" style="display:none;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
-      <div class="card"><div class="card-title">Minutes by GK</div><canvas id="rch-gk" height="120"></canvas></div>
-      <div class="card"><div class="card-title">% of Club Total</div><canvas id="rch-gk-pct" height="120"></canvas></div>
-      <div class="card"><div class="card-title">% When Selected</div><canvas id="rch-gk-sel" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.minByGk" class="card-title">Minutes by GK</div><canvas id="rch-gk" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.pctClub" class="card-title">% of Club Total</div><canvas id="rch-gk-pct" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.pctSelected" class="card-title">% When Selected</div><canvas id="rch-gk-sel" height="120"></canvas></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-      <div class="card"><div class="card-title">By Season</div><canvas id="rch-season" height="120"></canvas></div>
-      <div class="card"><div class="card-title">By Competition</div><canvas id="rch-comp" height="120"></canvas></div>
-      <div class="card"><div class="card-title">By Opponent</div><canvas id="rch-opp" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.bySeason" class="card-title">By Season</div><canvas id="rch-season" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.byComp" class="card-title">By Competition</div><canvas id="rch-comp" height="120"></canvas></div>
+      <div class="card"><div data-i18n="min.byOpponent" class="card-title">By Opponent</div><canvas id="rch-opp" height="120"></canvas></div>
     </div>
   </div>
 </div>
 
 <!-- ═══ PAGE: SETTINGS ═══════════════════════════════════════════ -->
 <div id="page-settings" class="page">
-  <div class="page-title">Setup</div>
-  <div class="page-sub">Manage goalkeepers, opponents, competitions and seasons.</div>
+  <div data-i18n="min.tab.setup" class="page-title">Setup</div>
+  <div data-i18n="min.setupSub" class="page-sub">Manage goalkeepers, opponents, competitions and seasons.</div>
 
   <div class="g2">
     <div class="card">
-      <div class="card-title">Goalkeepers</div>
+      <div data-i18n="data.goalkeepers" class="card-title">Goalkeepers</div>
       <div id="gks-list" class="mb16"></div>
       <div style="display:flex;gap:8px;">
-        <input type="text" id="gks-input" placeholder="GK name…" onkeydown="if(event.key==='Enter')addItem('gks')">
-        <button class="btn btn-accent btn-sm" onclick="addItem('gks')">+ Add</button>
+        <input type="text" id="gks-input" placeholder="GK name…" data-i18n-placeholder="min.ph.gkName" onkeydown="if(event.key==='Enter')addItem('gks')">
+        <button data-i18n="data.rpt.add" class="btn btn-accent btn-sm" onclick="addItem('gks')">+ Add</button>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Opponents / Clubs</div>
+      <div data-i18n="min.opponents" class="card-title">Opponents / Clubs</div>
       <div id="clubs-list" class="mb16"></div>
       <div style="display:flex;gap:8px;">
-        <input type="text" id="clubs-input" placeholder="Club name…" onkeydown="if(event.key==='Enter')addItem('clubs')">
-        <button class="btn btn-accent btn-sm" onclick="addItem('clubs')">+ Add</button>
+        <input type="text" id="clubs-input" placeholder="Club name…" data-i18n-placeholder="min.ph.clubName" onkeydown="if(event.key==='Enter')addItem('clubs')">
+        <button data-i18n="data.rpt.add" class="btn btn-accent btn-sm" onclick="addItem('clubs')">+ Add</button>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Competitions</div>
+      <div data-i18n="min.competitions" class="card-title">Competitions</div>
       <div id="comps-list" class="mb16"></div>
       <div style="display:flex;gap:8px;">
-        <input type="text" id="comps-input" placeholder="Competition…" onkeydown="if(event.key==='Enter')addItem('comps')">
-        <button class="btn btn-accent btn-sm" onclick="addItem('comps')">+ Add</button>
+        <input type="text" id="comps-input" placeholder="Competition…" data-i18n-placeholder="min.ph.comp" onkeydown="if(event.key==='Enter')addItem('comps')">
+        <button data-i18n="data.rpt.add" class="btn btn-accent btn-sm" onclick="addItem('comps')">+ Add</button>
       </div>
     </div>
     
@@ -456,7 +459,7 @@ const ST = {
   clubs:[], comps:[], gks:[], seasons:[],
   games:[],
   editingGameId:null,
-  accent:'#0a0a0a', clubName:'My Club',
+  accent:'#0a0a0a', clubName:TX('min.myClub'),
   coachName:'', clubColor:'', clubBadge:''
 };
 
@@ -488,7 +491,7 @@ function renderList(key){
   const ids={gks:'gks-list',clubs:'clubs-list',comps:'comps-list',seasons:'seasons-list'};
   const el=document.getElementById(ids[key]);if(!el)return;
   el.innerHTML='';
-  if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No items yet.</div>';return;}
+  if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX('min.noItems')+'</div>';return;}
   ST[key].forEach((item,i)=>{
     const d=document.createElement('div');d.className='';
     d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;margin-bottom:5px;';
@@ -516,8 +519,8 @@ function fillSelect(id,items,all){
   el.value=cur;
 }
 function populateAllSelects(){
-  fillSelect('g-opp',ST.clubs,'Select opponent…');
-  fillSelect('g-comp',ST.comps,'Select competition…');
+  fillSelect('g-opp',ST.clubs,TX('min.selectOpponent'));
+  fillSelect('g-comp',ST.comps,TX('min.selectComp'));
   /* season filter removido — contexto define a temporada */
   /* season filter removido — contexto define a temporada */
   fillSelect('h-comp',ST.comps,'All');
@@ -570,7 +573,7 @@ function buildSquadList(){
   const el=document.getElementById('squad-list');
   if(!el)return;
   el.innerHTML='';
-  if(ST.gks.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">No GKs in settings.</div>';return;}
+  if(ST.gks.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX('min.noGks')+'</div>';return;}
   ST.gks.forEach(gk=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
@@ -579,7 +582,7 @@ function buildSquadList(){
         <input type="checkbox" id="sel-${gk.replace(/\s/g,'_')}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="updateSummary()">
         <span style="font-weight:600;font-size:13px;">${gk}</span>
       </label>
-      <span class="badge badge-mute" id="squad-badge-${gk.replace(/\s/g,'_')}">Not selected</span>
+      <span class="badge badge-mute" id="squad-badge-${gk.replace(/\s/g,'_')}">${TX("min.notSelected")}</span>
     `;
     el.appendChild(row);
     // update badge on change
@@ -587,7 +590,7 @@ function buildSquadList(){
     const badge=row.querySelector('.badge');
     cb.addEventListener('change',function(){
       badge.className='badge '+(this.checked?'badge-green':'badge-mute');
-      badge.textContent=this.checked?'Selected':'Not selected';
+      badge.textContent=this.checked?TX('min.selectedLbl'):TX('min.notSelected');
     });
   });
 }
@@ -637,12 +640,12 @@ function addInterval(half,gkId,entryVal,exitVal){
   row.innerHTML=`
     <span style="font-size:10px;color:var(--mute);font-family:var(--mono);width:20px;">${idx+1}.</span>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">Entry</span>
+      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">${TX("min.entry")}</span>
       <input type="text" class="time-input iv-entry" placeholder="${halfMin}:00" value="${entryVal||''}" oninput="updateTotals()">
     </div>
     <span style="color:var(--mute);">→</span>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">Exit</span>
+      <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">${TX("min.exit")}</span>
       <input type="text" class="time-input iv-exit" placeholder="0:00" value="${exitVal||''}" oninput="updateTotals()">
     </div>
     <span class="interval-total" id="iv-dur-${half}-${gkId}-${idx}">—</span>
@@ -699,7 +702,7 @@ function updateSummary(){
     const pctTotal=totalGameMin>0?Math.round(total/totalGameMin*100):0;
     html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
       <span style="font-weight:600;min-width:120px;">${gk}</span>
-      <span class="badge ${selected?'badge-green':'badge-mute'}">${selected?'Selected':'Not selected'}</span>
+      <span class="badge ${selected?'badge-green':'badge-mute'}">${selected?TX('min.selectedLbl'):TX('min.notSelected')}</span>
       <span style="font-size:12px;color:var(--mute);">1st: <b>${fmtTime(h1)}</b></span>
       <span style="font-size:12px;color:var(--mute);">2nd: <b>${fmtTime(h2)}</b></span>
       <span style="font-size:12px;font-weight:700;color:var(--ink);">Total: ${fmtTime(total)}</span>
@@ -740,8 +743,8 @@ function collectGameData(){
 
 function saveGame(){
   const g=collectGameData();
-  if(!g.date){alert('Please enter a date.');return;}
-  if(!g.opp){alert('Please select an opponent.');return;}
+  if(!g.date){alert(TX('min.msg.enterDate'));return;}
+  if(!g.opp){alert(TX('min.msg.pickOpponent'));return;}
   // If editing, use the original id
   if(ST.editingGameId){g.id=ST.editingGameId;}
   window.fbSet(_MPATH.games+'/'+g.id,g)
@@ -750,10 +753,10 @@ function saveGame(){
       ST.editingGameId=null;
       const banner=document.getElementById('edit-banner');
       if(banner)banner.style.display='none';
-      alert(wasEditing?'Game updated!':'Game saved!');
+      alert(wasEditing?TX('min.msg.gameUpdated'):TX('min.msg.gameSaved'));
       resetGameForm();
     })
-    .catch(e=>{alert('Error saving: '+e.message);});
+    .catch(e=>{alert(TX('min.errorSaving')+e.message);});
 }
 
 function resetGameForm(){
@@ -791,17 +794,17 @@ function renderHistory(){
   const allGks=ST.gks;
   const kpiEl=document.getElementById('hist-kpis');
   kpiEl.innerHTML=`
-    <div class="kpi"><div class="kpi-n">${totalGames}</div><div class="kpi-l">Games</div></div>
-    <div class="kpi"><div class="kpi-n">${totalClubMin}'</div><div class="kpi-l">Club Total Min</div></div>
-    <div class="kpi"><div class="kpi-n">${allGks.length}</div><div class="kpi-l">Goalkeepers</div></div>
-    <div class="kpi"><div class="kpi-n">${totalGames>0?Math.round(totalClubMin/totalGames):0}'</div><div class="kpi-l">Avg Game Length</div></div>
+    <div class="kpi"><div class="kpi-n">${totalGames}</div><div class="kpi-l">${TX("min.games")}</div></div>
+    <div class="kpi"><div class="kpi-n">${totalClubMin}'</div><div class="kpi-l">${TX("min.clubTotalMin")}</div></div>
+    <div class="kpi"><div class="kpi-n">${allGks.length}</div><div class="kpi-l">${TX("data.goalkeepers")}</div></div>
+    <div class="kpi"><div class="kpi-n">${totalGames>0?Math.round(totalClubMin/totalGames):0}'</div><div class="kpi-l">${TX("min.avgGameLen")}</div></div>
   `;
 
   const thead=document.getElementById('hist-thead');
   const tbody=document.getElementById('hist-tbody');
 
   if(view==='games'){
-    thead.innerHTML='<tr><th>Date</th><th>Opponent</th><th>Competition</th><th>Season</th><th>Duration</th>'+allGks.map(g=>`<th>${g}</th>`).join('')+'<th></th></tr>';
+    thead.innerHTML=`<tr><th>${TX("min.date")}</th><th>${TX("min.opponent")}</th><th>${TX("min.competition")}</th><th>${TX("min.season")}</th><th>${TX("min.duration")}</th>`+allGks.map(g=>`<th>${g}</th>`).join('')+'<th></th></tr>';
     tbody.innerHTML=games.sort((a,b)=>b.date.localeCompare(a.date)).map(g=>{
       const gkCols=allGks.map(gkName=>{
         const d=g.gkData&&g.gkData[gkName];
@@ -814,7 +817,7 @@ function renderHistory(){
       return `<tr><td><span style="font-family:var(--mono);font-size:12px;">${g.date}</span></td><td><b>${g.opp||'—'}</b></td><td>${g.comp||'—'}</td><td>${g.season||'—'}</td><td>${g.totalMin||40}'</td>${gkCols}<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="editGame(${g.id})" style="margin-right:4px;">✎ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})">✕</button></td></tr>`;
     }).join('');
   } else if(view==='gk'){
-    thead.innerHTML='<tr><th>Goalkeeper</th><th>Games</th><th>Games Selected</th><th>1st Half</th><th>2nd Half</th><th>Total Min</th><th>% Club Total</th><th>% When Selected</th></tr>';
+    thead.innerHTML=`<tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.gamesSelected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("min.totalMin")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr>`;
     const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||0)*60,0);
     tbody.innerHTML=allGks.map(gkName=>{
       let gamesCount=0,selectedCount=0,h1=0,h2=0,total=0,selectedSecs=0;
@@ -833,7 +836,7 @@ function renderHistory(){
         <td><span class="pct-pill" style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};">${pctSel}%</span></td></tr>`;
     }).join('');
   } else { // opponent
-    thead.innerHTML='<tr><th>Opponent</th><th>Games</th>'+allGks.map(g=>`<th>${g}</th>`).join('')+'</tr>';
+    thead.innerHTML=`<tr><th>${TX("min.opponent")}</th><th>${TX("min.games")}</th>`+allGks.map(g=>`<th>${g}</th>`).join('')+'</tr>';
     const opps=[...new Set(games.map(g=>g.opp).filter(Boolean))].sort();
     tbody.innerHTML=opps.map(oppName=>{
       const og=games.filter(g=>g.opp===oppName);
@@ -852,7 +855,7 @@ function renderHistory(){
 
 function editGame(id){
   const g=ST.games.find(x=>String(x.id)===String(id));
-  if(!g){alert('Game not found.');return;}
+  if(!g){alert(TX('min.msg.gameNotFound'));return;}
   ST.editingGameId=id;
   // Navigate to collect tab
   navTo('collect');
@@ -876,7 +879,7 @@ function editGame(id){
       if(selCb){
         selCb.checked=!!d.selected;
         const badge=selCb.closest('label').parentElement.querySelector('.badge');
-        if(badge){badge.className='badge '+(d.selected?'badge-green':'badge-mute');badge.textContent=d.selected?'Selected':'Not selected';}
+        if(badge){badge.className='badge '+(d.selected?'badge-green':'badge-mute');badge.textContent=d.selected?TX('min.selectedLbl'):TX('min.notSelected');}
       }
       // Intervals per half
       ['h1','h2'].forEach(half=>{
@@ -898,7 +901,7 @@ function editGame(id){
       banner=document.createElement('div');
       banner.id='edit-banner';
       banner.style.cssText='background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
-      banner.innerHTML='<span style="font-size:13px;color:#92400e;font-weight:600;">✎ Editing game — changes will overwrite the existing record</span><button class="btn btn-ghost btn-sm" onclick="cancelEdit()">Cancel Edit</button>';
+      banner.innerHTML='<span style="font-size:13px;color:#92400e;font-weight:600;">✎ Editing game — changes will overwrite the existing record</span><button class="btn btn-ghost btn-sm" onclick="cancelEdit()">'+TX('min.cancelEdit')+'</button>';
       const main=document.getElementById('page-collect');
       main.insertBefore(banner,main.firstChild);
     }
@@ -949,7 +952,7 @@ function renderCharts(prefix,games,allGks){
 
   // Minutes by GK (bar)
   mkBar(prefix+'-gk',allGks,[{
-    label:'Total min',
+    label:TX('min.totalMinLower'),
     data:allGks.map(gk=>{let t=0;games.forEach(g=>{const d=g.gkData&&g.gkData[gk];if(d)t+=d.totalSecs||0;});return+(t/60).toFixed(1);}),
     backgroundColor:palette,borderRadius:4
   }]);
@@ -962,7 +965,7 @@ function renderCharts(prefix,games,allGks){
 
   // % When Selected (bar)
   mkBar(prefix+'-gk-sel',allGks,[{
-    label:'% when selected',
+    label:TX('min.pctWhenSelected'),
     data:allGks.map(gk=>{let t=0,sel=0;games.forEach(g=>{const d=g.gkData&&g.gkData[gk];if(!d)return;t+=d.totalSecs||0;if(d.selected)sel+=(g.totalMin||40)*60;});return sel>0?Math.round(t/sel*100):0;}),
     backgroundColor:palette,borderRadius:4
   }],{scales:{x:{grid:{display:false},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373'}},y:{max:100,grid:{color:'#f0f0f0'},ticks:{font:{family:'JetBrains Mono',size:9},color:'#737373',callback:v=>v+'%'},beginAtZero:true}}});
@@ -999,7 +1002,7 @@ function renderCharts(prefix,games,allGks){
 }
 
 function deleteGame(id){
-  if(!confirm('Delete this game?'))return;
+  if(!confirm(TX('min.msg.deleteGame')))return;
   window.fbRemove(_MPATH.games+'/'+id).catch(e=>console.error(e));
 }
 
@@ -1024,10 +1027,10 @@ function renderRepTable(){
 
   // KPIs
   document.getElementById('rep-kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">Games</div></div>
-    <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">Club Total Min</div></div>
-    <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">GKs</div></div>
-    <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">Avg Game</div></div>
+    <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">${TX("min.games")}</div></div>
+    <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">${TX("min.clubTotalMin")}</div></div>
+    <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">${TX("min.gks")}</div></div>
+    <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">${TX("min.avgGame")}</div></div>
   `;
 
   const tbody=document.getElementById('rep-tbody');
@@ -1064,7 +1067,7 @@ function exportReport(){
     if(opp&&g.opp!==opp)return false;
     return true;
   });
-  if(games.length===0){alert('No data to export.');return;}
+  if(games.length===0){alert(TX('min.msg.noData'));return;}
   const gks=gkFilter?[gkFilter]:ST.gks;
   const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
@@ -1114,7 +1117,7 @@ function exportReport(){
     return `<tr style="border-bottom:1px solid #eee;"><td style="padding:8px 10px;font-family:monospace;font-size:12px;">${g.date}</td><td style="padding:8px 10px;font-weight:600;">${g.opp||'—'}</td><td style="padding:8px 10px;">${g.comp||'—'}</td><td style="padding:8px 10px;font-family:monospace;">${g.totalMin||40}'</td>${gkCols}</tr>`;
   }).join('');
 
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>FluxGK — Minutes Report</title>
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${TX("min.pdf.docTitle")}</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -1153,65 +1156,65 @@ function exportReport(){
     <div class="cover-top">
       <div class="cover-tag">FluxGK</div>
       <div class="cover-badge">${ST.clubBadge?'<img src="'+ST.clubBadge+'">':(ST.clubName?ST.clubName.slice(0,2).toUpperCase():'GK')}</div>
-      <div class="cover-title">GK Minutes<br>Report</div>
+      <div class="cover-title">${TX("min.pdf.title")}<br>${TX("min.tab.report")}</div>
       <div class="cover-sub">${ST.clubName}</div>
       <div class="cover-games">
-        <div class="cover-games-label">Games in this report</div>
+        <div class="cover-games-label">${TX("min.pdf.gamesIn")}</div>
         <div class="cover-games-list">${games.sort((a,b)=>b.date.localeCompare(a.date)).map(g=>`<span class="game-tag">${g.date} vs ${g.opp||'—'}</span>`).join('')}</div>
       </div>
       <div class="cover-meta">
-        <div class="meta-item"><div class="meta-label">Games</div><div class="meta-value">${games.length}</div></div>
-        <div class="meta-item"><div class="meta-label">Club Total Min</div><div class="meta-value">${Math.round(totalClubSecs/60)}'</div></div>
-        <div class="meta-item"><div class="meta-label">Generated</div><div class="meta-value">${now}</div></div>
-        ${ST.coachName?'<div class="meta-item"><div class="meta-label">Coach</div><div class="meta-value">'+ST.coachName+'</div></div>':''}
+        <div class="meta-item"><div class="meta-label">${TX("min.games")}</div><div class="meta-value">${games.length}</div></div>
+        <div class="meta-item"><div class="meta-label">${TX("min.clubTotalMin")}</div><div class="meta-value">${Math.round(totalClubSecs/60)}'</div></div>
+        <div class="meta-item"><div class="meta-label">${TX("data.pdf.generated")}</div><div class="meta-value">${now}</div></div>
+        ${ST.coachName?'<div class="meta-item"><div class="meta-label">'+TX("common.coach")+'</div><div class="meta-value">'+ST.coachName+'</div></div>':''}
       </div>
     </div>
     <div class="cover-footer">
-      <span>FluxGK · GK Minutes Tracker</span>
-      <span>Constraints-Based Approach · Ecological Dynamics</span>
+      <span>${TX("min.pdf.footer")}</span>
+      <span>${TX("data.pdf.methodValue")}</span>
     </div>
   </div>
 
   <div style="padding:0;">
     <div class="kpi-row">
-      <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">Games</div></div>
-      <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">Club Total Min</div></div>
-      <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">GKs</div></div>
-      <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">Avg Game Length</div></div>
+      <div class="kpi"><div class="kpi-n">${games.length}</div><div class="kpi-l">${TX("min.games")}</div></div>
+      <div class="kpi"><div class="kpi-n">${Math.round(totalClubSecs/60)}'</div><div class="kpi-l">${TX("min.clubTotalMin")}</div></div>
+      <div class="kpi"><div class="kpi-n">${gks.length}</div><div class="kpi-l">${TX("min.gks")}</div></div>
+      <div class="kpi"><div class="kpi-n">${games.length>0?Math.round(totalClubSecs/60/games.length):0}'</div><div class="kpi-l">${TX("min.avgGameLen")}</div></div>
     </div>
 
     <div class="sec">
-      <div class="sec-title">Minutes by Goalkeeper</div>
+      <div class="sec-title">${TX("min.minByGkFull")}</div>
       <table>
-        <thead><tr><th>Goalkeeper</th><th>Games</th><th>Selected</th><th>1st Half</th><th>2nd Half</th><th>Total</th><th>% Club Total</th><th>% When Selected</th></tr></thead>
+        <thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.selected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("common.total")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr></thead>
         <tbody>${gkRows}</tbody>
       </table>
     </div>
 
     <div class="sec">
-      <div class="sec-title">Charts</div>
+      <div class="sec-title">${TX("min.charts")}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-        ${chartImgs[0]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">MINUTES BY GK</div><img src=\"'+chartImgs[0]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
-        ${chartImgs[1]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">% CLUB TOTAL</div><img src=\"'+chartImgs[1]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
-        ${chartImgs[2]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">% WHEN SELECTED</div><img src=\"'+chartImgs[2]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[0]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByGk")+'</div><img src=\"'+chartImgs[0]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[1]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.pctClubUp")+'</div><img src=\"'+chartImgs[1]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[2]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.pctSelectedUp")+'</div><img src=\"'+chartImgs[2]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-        ${chartImgs[3]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY SEASON</div><img src=\"'+chartImgs[3]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
-        ${chartImgs[4]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY COMPETITION</div><img src=\"'+chartImgs[4]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
-        ${chartImgs[5]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">BY OPPONENT</div><img src=\"'+chartImgs[5]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[3]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartBySeason")+'</div><img src=\"'+chartImgs[3]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[4]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByComp")+'</div><img src=\"'+chartImgs[4]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
+        ${chartImgs[5]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByOpp")+'</div><img src=\"'+chartImgs[5]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
       </div>
     </div>
 
     <div class="sec">
-      <div class="sec-title">Game Log</div>
+      <div class="sec-title">${TX("min.gameLog")}</div>
       <table>
-        <thead><tr><th>Date</th><th>Opponent</th><th>Competition</th><th>Duration</th>${gks.map(g=>`<th>${g}</th>`).join('')}</tr></thead>
+        <thead><tr><th>${TX("min.date")}</th><th>${TX("min.opponent")}</th><th>${TX("min.competition")}</th><th>${TX("min.duration")}</th>${gks.map(g=>`<th>${g}</th>`).join('')}</tr></thead>
         <tbody>${gameRows}</tbody>
       </table>
     </div>
 
     <div class="footer">
-      <span>FluxGK · GK Minutes Tracker</span>
+      <span>${TX("min.pdf.footer")}</span>
       <span>${ST.clubName} · ${now}</span>
     </div>
 

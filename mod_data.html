@@ -340,19 +340,6 @@ textarea{width:100%;resize:vertical;min-height:110px}
 #syncDot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;transition:background .4s;margin-right:2px}
 
 
-/* ══ ADMIN PANEL ══════════════════════════════════════════ */
-.admin-badge{background:rgba(255,255,255,.2);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;letter-spacing:.05em}
-.user-list{max-height:400px;overflow-y:auto}
-.user-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--bd);font-size:13px}
-.user-row:last-child{border-bottom:none}
-.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.user-name{font-weight:500;color:var(--tx);flex:1}
-.user-email{font-size:11px;color:var(--mt)}
-.user-role{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--pl);color:var(--pd)}
-.user-role.admin{background:#FFF3CD;color:#856404}
-.user-del{width:26px;height:26px;border:0.5px solid var(--bd);border-radius:var(--rm);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mt)}
-.user-del:hover{background:var(--dngl);color:var(--dng);border-color:var(--dng)}
-
 @media(max-width:480px){
   .pse-btn{padding:8px 0;font-size:11px}
   .metrics-row{grid-template-columns:repeat(2,1fr)}
@@ -361,6 +348,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
 }
 </style>
   <link rel="apple-touch-icon" href="data:image/png;base64,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">
+<script src="fluxgk-i18n.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -371,10 +359,10 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <img class="club-logo" id="clubLogoImg" src="" alt="">
   <div style="flex:1;min-width:0">
     <div class="club-name" id="clubNameDisplay" style="display:none"></div>
-    <div class="club-sub-text" id="clubSubDisplay">Data-driven GK</div>
+    <div data-i18n="data.tagline" class="club-sub-text" id="clubSubDisplay">Data-driven GK</div>
   </div>
-  <div id="syncDot" title="Sync status"></div>
-  <button class="hdr-btn" onclick="openSettings()" title="Settings"><i class="ti ti-settings"></i></button>
+  <div id="syncDot" title="Sync status" data-i18n-title="data.syncStatus"></div>
+  <button class="hdr-btn" onclick="openSettings()" title="Settings" data-i18n-title="common.settings"><i class="ti ti-settings"></i></button>
 </div>
 <div class="status-bar" id="statusBar"></div>
 
@@ -382,69 +370,27 @@ textarea{width:100%;resize:vertical;min-height:110px}
 
 <!-- CONTEXT BAR -->
 <div class="player-bar" id="ctxBar" style="display:flex">
-  <label><i class="ti ti-user"></i> Goalkeeper</label>
-  <select id="playerSelect" onchange="switchPlayer()"><option value="">Select…</option></select>
-  <button class="btn-add" style="background:var(--bg2);color:var(--mt);border:0.5px solid var(--bd2);font-size:12px" onclick="showSection('squad')"><i class="ti ti-users"></i> Squad</button>
+  <label><i class="ti ti-user"></i> <span data-i18n="data.goalkeeper">Goalkeeper</span></label>
+  <select id="playerSelect" onchange="switchPlayer()"><option data-i18n="data.selectDots" value="">Select…</option></select>
+  <button class="btn-add" style="background:var(--bg2);color:var(--mt);border:0.5px solid var(--bd2);font-size:12px" onclick="showSection('squad')"><i class="ti ti-users"></i> <span data-i18n="data.squad">Squad</span></button>
 </div>
 
-
-<!-- ── ADMIN ── -->
-<div class="section" id="sec-admin">
-  <div class="sec-header"><div class="dot" style="background:#856404"></div><h2>Admin Panel</h2></div>
-
-  <div class="card">
-    <h3><i class="ti ti-user-plus"></i> Add new user</h3>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <label style="font-size:13px;color:var(--mt);display:block;margin-bottom:4px">Full name</label>
-        <input type="text" id="newUserName" placeholder="e.g. Ahmed Al Mansouri" style="width:100%;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
-      </div>
-      <div>
-        <label style="font-size:13px;color:var(--mt);display:block;margin-bottom:4px">Email</label>
-        <input type="email" id="newUserEmail" placeholder="user@email.com" style="width:100%;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
-      </div>
-      <div>
-        <label style="font-size:13px;color:var(--mt);display:block;margin-bottom:4px">Password</label>
-        <input type="password" id="newUserPass" placeholder="Minimum 6 characters" style="width:100%;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="font-size:13px;color:var(--mt)">Role</label>
-        <select id="newUserRole" style="padding:7px 10px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:13px;font-family:inherit">
-          <option value="coach">Coach</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <div id="adminErr" style="background:var(--dngl);color:var(--dng);border-radius:var(--rm);padding:8px 11px;font-size:13px;display:none"></div>
-      <button class="btn-primary" id="addUserBtn" onclick="adminAddUser()"><i class="ti ti-user-plus"></i> Create user</button>
-    </div>
-  </div>
-
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:13px 14px;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:11px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.07em">Users</span>
-      <span id="userCount" style="font-size:12px;color:var(--mt)"></span>
-    </div>
-    <div class="user-list" id="userList">
-      <div class="empty-state"><i class="ti ti-users"></i><p>Loading users…</p></div>
-    </div>
-  </div>
-</div>
 
 <!-- ── SQUAD ── -->
 <div class="section" id="sec-squad">
-  <div class="sec-header"><div class="dot" style="background:var(--p)"></div><h2>Squad</h2></div>
+  <div class="sec-header"><div class="dot" style="background:var(--p)"></div><h2 data-i18n="data.squad">Squad</h2></div>
   <div class="squad-grid" id="squadGrid"></div>
 </div>
 
 <!-- ── PRE-TRAINING ── -->
 <div class="section active" id="sec-pre">
-  <div class="sec-header"><div class="dot" style="background:var(--p)"></div><h2 id="preFormTitle">Pre-training questionnaire</h2></div>
-  <div class="card"><h3>Session info</h3>
-    <div class="field"><label><i class="ti ti-calendar"></i> Training date</label><input type="date" id="preDate"></div>
-    <div class="field"><label><i class="ti ti-clock"></i> Training time</label>
+  <div class="sec-header"><div class="dot" style="background:var(--p)"></div><h2 data-i18n="data.pre.title" id="preFormTitle">Pre-training questionnaire</h2></div>
+  <div class="card"><h3 data-i18n="data.pre.sessionInfo">Session info</h3>
+    <div class="field"><label><i class="ti ti-calendar"></i> <span data-i18n="data.pre.date">Training date</span></label><input type="date" id="preDate"></div>
+    <div class="field"><label><i class="ti ti-clock"></i> <span data-i18n="data.pre.time">Training time</span></label>
       <div style="display:flex;gap:6px;align-items:center">
         <select id="preTimeHour" style="flex:1;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
-          <option value="">Hour</option>
+          <option data-i18n="data.pre.hour" value="">Hour</option>
           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
           <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
         </select>
@@ -454,149 +400,149 @@ textarea{width:100%;resize:vertical;min-height:110px}
         </select>
       </div>
     </div>
-    <div class="field"><label><i class="ti ti-category"></i> Training type</label>
+    <div class="field"><label><i class="ti ti-category"></i> <span data-i18n="data.pre.type">Training type</span></label>
       <div style="display:flex;gap:6px;align-items:center">
         <select id="preType" style="flex:1;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit"></select>
-        <button onclick="addTrainingType()" style="padding:7px 10px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:transparent;color:var(--mt);cursor:pointer;font-size:12px;white-space:nowrap"><i class="ti ti-plus"></i> Add type</button>
+        <button onclick="addTrainingType()" style="padding:7px 10px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:transparent;color:var(--mt);cursor:pointer;font-size:12px;white-space:nowrap"><i class="ti ti-plus"></i> <span data-i18n="data.pre.addType">Add type</span></button>
       </div>
     </div>
   </div>
   <div class="card" id="preAttendanceCard">
-    <h3><i class="ti ti-users"></i> Attendance</h3>
+    <h3><i class="ti ti-users"></i> <span data-i18n="data.pre.attendance">Attendance</span></h3>
     <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
       <span id="preAttendanceName" style="font-size:14px;color:var(--tx);flex:1"></span>
       <div style="display:flex;gap:8px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--rm);border:1.5px solid var(--sig-ok);background:var(--sig-ok-l);color:var(--sig-ok)">
           <input type="radio" name="attendanceStatus" id="attendancePresent" value="present" checked style="accent-color:var(--sig-ok)" onchange="_onAttendanceChange()">
-          Present
+          <span data-i18n="data.present">Present</span>
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--rm);border:1.5px solid var(--sig-risk);background:var(--sig-risk-l);color:var(--sig-risk)">
           <input type="radio" name="attendanceStatus" id="attendanceAbsent" value="absent" style="accent-color:var(--sig-risk)" onchange="_onAttendanceChange()">
-          Absent
+          <span data-i18n="data.absent">Absent</span>
         </label>
       </div>
     </div>
   </div>
   <div id="preWellBeingCard">
   <div class="card">
-    <h3>Subjective well-being</h3>
-    <div class="field"><label>Sleep quality <span class="val-badge" id="sleepVal">5</span></label>
+    <h3 data-i18n="data.pre.wellbeing">Subjective well-being</h3>
+    <div class="field"><label><span data-i18n="data.pre.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">5</span></label>
       <input type="range" min="1" max="10" value="5" step="1" id="sleep" oninput="updateRange('sleep','sleepVal')">
-      <div class="scale-labels"><span>1 — Very poor</span><span>10 — Excellent</span></div></div>
-    <div class="field"><label>Hydration <span class="val-badge" id="hydrationVal">5</span></label>
+      <div class="scale-labels"><span data-i18n="data.pre.sleepLow">1 — Very poor</span><span data-i18n="data.pre.sleepHigh">10 — Excellent</span></div></div>
+    <div class="field"><label><span data-i18n="data.hydration">Hydration</span> <span class="val-badge" id="hydrationVal">5</span></label>
       <input type="range" min="1" max="10" value="5" step="1" id="hydration" oninput="updateRange('hydration','hydrationVal')">
-      <div class="scale-labels"><span>1 — Dehydrated</span><span>10 — Well hydrated</span></div></div>
-    <div class="field"><label>Recovery <span class="val-badge" id="recoveryVal">5</span></label>
+      <div class="scale-labels"><span data-i18n="data.pre.hydLow">1 — Dehydrated</span><span data-i18n="data.pre.hydHigh">10 — Well hydrated</span></div></div>
+    <div class="field"><label><span data-i18n="data.recovery">Recovery</span> <span class="val-badge" id="recoveryVal">5</span></label>
       <input type="range" min="1" max="10" value="5" step="1" id="recovery" oninput="updateRange('recovery','recoveryVal')">
-      <div class="scale-labels"><span>1 — Exhausted</span><span>10 — Fully recovered</span></div></div>
+      <div class="scale-labels"><span data-i18n="data.pre.recLow">1 — Exhausted</span><span data-i18n="data.pre.recHigh">10 — Fully recovered</span></div></div>
   </div>
   </div>
-  <button class="btn-primary" onclick="submitPre()"><i class="ti ti-device-floppy"></i> Save pre-training</button>
-  <button class="btn-cancel" id="cancelEditPre" onclick="cancelEdit('pre')"><i class="ti ti-x"></i> Cancel editing</button>
+  <button class="btn-primary" onclick="submitPre()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.pre.save">Save pre-training</span></button>
+  <button class="btn-cancel" id="cancelEditPre" onclick="cancelEdit('pre')"><i class="ti ti-x"></i> <span data-i18n="data.cancelEdit">Cancel editing</span></button>
 </div>
 
 <!-- ── POST-TRAINING ── -->
 <div class="section" id="sec-post">
-  <div class="sec-header"><div class="dot" style="background:var(--a)"></div><h2 id="postFormTitle">Post-training questionnaire</h2></div>
+  <div class="sec-header"><div class="dot" style="background:var(--a)"></div><h2 data-i18n="data.post.title" id="postFormTitle">Post-training questionnaire</h2></div>
 <div class="card">
-    <h3><i class="ti ti-link"></i> Link to pre-training session</h3>
-    <p style="font-size:12px;color:var(--mt);margin-bottom:10px">Select the open pre-training session this post closes.</p>
+    <h3><i class="ti ti-link"></i> <span data-i18n="data.post.link">Link to pre-training session</span></h3>
+    <p data-i18n="data.post.linkHelp" style="font-size:12px;color:var(--mt);margin-bottom:10px">Select the open pre-training session this post closes.</p>
     <select id="postLinkPre" style="width:100%;padding:10px 12px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
-      <option value="">-- Select a pre-training session --</option>
+      <option data-i18n="data.post.selectPre" value="">-- Select a pre-training session --</option>
     </select>
     <div id="postNoPreMsg" style="display:none;margin-top:10px;padding:10px 12px;background:var(--al);border-radius:var(--rm);font-size:12px;color:var(--a)">
-      <i class="ti ti-alert-triangle"></i> No open pre-training sessions for this goalkeeper. Save a pre-training first.
+      <i class="ti ti-alert-triangle"></i> <span data-i18n="data.post.noOpen">No open pre-training sessions for this goalkeeper. Save a pre-training first.</span>
     </div>
   </div>
-<div class="card"><h3>Session RPE — modified Borg CR10</h3>
-    <div class="field"><label>Select session RPE</label>
+<div class="card"><h3 data-i18n="data.post.rpeTitle">Session RPE — modified Borg CR10</h3>
+    <div class="field"><label data-i18n="data.post.selectRpe">Select session RPE</label>
       <div class="pse-grid" id="pseGrid"></div>
-      <div class="pse-desc" id="pseDesc">Tap a value from 1 to 10.</div></div></div>
-  <div class="card"><h3>Duration &amp; internal load</h3>
-    <div class="field"><label><i class="ti ti-clock"></i> Training duration (minutes)</label>
+      <div data-i18n="data.post.rpeHelp" class="pse-desc" id="pseDesc">Tap a value from 1 to 10.</div></div></div>
+  <div class="card"><h3><span data-i18n="data.post.duration">Duration &amp; internal load</span></h3>
+    <div class="field"><label><i class="ti ti-clock"></i> <span data-i18n="data.post.durMin">Training duration (minutes)</span></label>
       <input type="number" id="duration" min="1" max="300" value="60" oninput="calcUA()"></div>
     <div class="ua-display">
       <div class="ua-big" id="uaVal">—</div>
-      <div><div class="ua-sub">Arbitrary units (AU)</div>
-        <div style="font-size:11px;color:var(--mt)">RPE × Duration</div>
+      <div><div data-i18n="data.post.au" class="ua-sub">Arbitrary units (AU)</div>
+        <div data-i18n="data.post.rpeXdur" style="font-size:11px;color:var(--mt)">RPE × Duration</div>
         <div id="uaZone" style="margin-top:4px"></div></div></div></div>
-    <button class="btn-primary accent" onclick="submitPost()"><i class="ti ti-device-floppy"></i> Save post-training</button>
-  <button class="btn-cancel" id="cancelEditPost" onclick="cancelEdit('post')"><i class="ti ti-x"></i> Cancel editing</button>
+    <button class="btn-primary accent" onclick="submitPost()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.post.save">Save post-training</span></button>
+  <button class="btn-cancel" id="cancelEditPost" onclick="cancelEdit('post')"><i class="ti ti-x"></i> <span data-i18n="data.cancelEdit">Cancel editing</span></button>
 </div>
 
 <!-- ── TIME SERIES ── -->
 <div class="section" id="sec-dash">
-  <div class="sec-header"><div class="dot" style="background:var(--info)"></div><h2>Time series</h2></div>
+  <div class="sec-header"><div class="dot" style="background:var(--info)"></div><h2 data-i18n="data.series.title">Time series</h2></div>
   <div class="filter-bar">
-    <button class="filter-btn" onclick="setFilter(1,this)">1 week</button>
-    <button class="filter-btn active" onclick="setFilter(4,this)">1 month</button>
-    <button class="filter-btn" onclick="setFilter(12,this)">3 months</button>
-    <button class="filter-btn" onclick="setFilter(26,this)">6 months</button>
-    <button class="filter-btn" onclick="setFilter(0,this)">Full season</button>
+    <button data-i18n="data.series.w1" class="filter-btn" onclick="setFilter(1,this)">1 week</button>
+    <button data-i18n="data.series.m1" class="filter-btn active" onclick="setFilter(4,this)">1 month</button>
+    <button data-i18n="data.series.m3" class="filter-btn" onclick="setFilter(12,this)">3 months</button>
+    <button data-i18n="data.series.m6" class="filter-btn" onclick="setFilter(26,this)">6 months</button>
+    <button data-i18n="data.series.full" class="filter-btn" onclick="setFilter(0,this)">Full season</button>
   </div>
   <div class="metrics-row" id="metricsRow"></div>
-  <div class="chart-wrap"><h3><i class="ti ti-chart-bar"></i> Internal load — AU</h3>
-    <div class="cwrap" style="height:190px"><canvas id="uaChart" role="img" aria-label="Internal load">AU data.</canvas></div>
+  <div class="chart-wrap"><h3><i class="ti ti-chart-bar"></i> <span data-i18n="data.series.load">Internal load — AU</span></h3>
+    <div class="cwrap" style="height:190px"><canvas data-i18n="data.series.auData" id="uaChart" role="img" aria-label="Internal load" data-i18n-aria="data.series.load">AU data.</canvas></div>
     <div class="chart-legend">
-      <div class="legend-item"><span class="legend-dot" style="background:rgba(var(--p-rgb),.6)"></span>AU/session</div>
-      <div class="legend-item"><span class="legend-line" style="background:var(--a)"></span>Moving avg</div>
+      <div class="legend-item"><span class="legend-dot" style="background:rgba(var(--p-rgb),.6)"></span><span data-i18n="data.series.auPer">AU/session</span></div>
+      <div class="legend-item"><span class="legend-line" style="background:var(--a)"></span><span data-i18n="data.series.movavg">Moving avg</span></div>
     </div></div>
-  <div class="chart-wrap"><h3><i class="ti ti-clock"></i> Training duration (minutes)</h3>
-    <div class="cwrap" style="height:165px"><canvas id="durChart" role="img" aria-label="Duration">Duration data.</canvas></div>
+  <div class="chart-wrap"><h3><i class="ti ti-clock"></i> <span data-i18n="data.post.durMin">Training duration (minutes)</span></h3>
+    <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.durData" id="durChart" role="img" aria-label="Duration" data-i18n-aria="data.series.duration">Duration data.</canvas></div>
     <div class="chart-legend">
-      <div class="legend-item"><span class="legend-dot" style="background:rgba(83,74,183,.6)"></span>Duration/session</div>
-      <div class="legend-item"><span class="legend-line" style="background:#534AB7"></span>Moving avg</div>
+      <div class="legend-item"><span class="legend-dot" style="background:rgba(83,74,183,.6)"></span><span data-i18n="data.series.durPer">Duration/session</span></div>
+      <div class="legend-item"><span class="legend-line" style="background:#534AB7"></span><span data-i18n="data.series.movavg">Moving avg</span></div>
     </div></div>
-  <div class="chart-wrap"><h3><i class="ti ti-gauge"></i> Session RPE (CR10)</h3>
-    <div class="cwrap" style="height:165px"><canvas id="pseChart" role="img" aria-label="RPE">RPE data.</canvas></div>
+  <div class="chart-wrap"><h3><i class="ti ti-gauge"></i> <span data-i18n="data.series.rpe">Session RPE (CR10)</span></h3>
+    <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.rpeData" id="pseChart" role="img" aria-label="RPE">RPE data.</canvas></div>
     <div class="chart-legend">
-      <div class="legend-item"><span class="legend-dot" style="background:rgba(216,90,48,.6)"></span>RPE/session</div>
-      <div class="legend-item"><span class="legend-line" style="background:var(--a)"></span>Moving avg</div>
+      <div class="legend-item"><span class="legend-dot" style="background:rgba(216,90,48,.6)"></span><span data-i18n="data.series.rpePer">RPE/session</span></div>
+      <div class="legend-item"><span class="legend-line" style="background:var(--a)"></span><span data-i18n="data.series.movavg">Moving avg</span></div>
     </div></div>
-  <div class="chart-wrap"><h3><i class="ti ti-activity"></i> Pre-training well-being</h3>
-    <div class="cwrap" style="height:165px"><canvas id="wellChart" role="img" aria-label="Well-being">Well-being.</canvas></div>
+  <div class="chart-wrap"><h3><i class="ti ti-activity"></i> <span data-i18n="data.series.wellbeing">Pre-training well-being</span></h3>
+    <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.wbData" id="wellChart" role="img" aria-label="Well-being">Well-being.</canvas></div>
     <div class="chart-legend">
-      <div class="legend-item"><span class="legend-dot" style="background:#185FA5"></span>Sleep</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#9B30D9"></span>Hydration</div>
-      <div class="legend-item"><span class="legend-dot" style="background:var(--a)"></span>Recovery</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#185FA5"></span><span data-i18n="data.sleep">Sleep</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#9B30D9"></span><span data-i18n="data.hydration">Hydration</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--a)"></span><span data-i18n="data.recovery">Recovery</span></div>
     </div></div>
-  <div class="chart-wrap"><h3><i class="ti ti-chart-pie"></i> Training type distribution</h3>
+  <div class="chart-wrap"><h3><i class="ti ti-chart-pie"></i> <span data-i18n="data.series.typeDist">Training type distribution</span></h3>
     <div id="typeChartWrap" style="min-height:120px"></div>
   </div>
   <div class="chart-wrap"><h3><i class="ti ti-trending-up"></i> ACWR</h3>
     <div class="chart-legend" style="margin-bottom:7px">
-      <div class="legend-item"><span class="legend-line" style="background:var(--p)"></span>Safe 0.8–1.3</div>
+      <div class="legend-item"><span class="legend-line" style="background:var(--p)"></span><span data-i18n="data.series.acwrSafe">Safe 0.8–1.3</span></div>
       <div class="legend-item"><span class="legend-line" style="background:var(--dng)"></span>ACWR</div>
     </div>
-    <div class="cwrap" style="height:140px"><canvas id="acwrChart" role="img" aria-label="ACWR">ACWR.</canvas></div>
+    <div class="cwrap" style="height:140px"><canvas data-i18n="data.series.acwrData" id="acwrChart" role="img" aria-label="ACWR">ACWR.</canvas></div>
   </div>
 </div>
 
 <!-- ── HISTORY ── -->
 <div class="section" id="sec-history">
-  <div class="sec-header"><div class="dot" style="background:var(--ht)"></div><h2>Session history</h2></div>
+  <div class="sec-header"><div class="dot" style="background:var(--ht)"></div><h2 data-i18n="data.hist.title">Session history</h2></div>
   <div class="card" style="padding:0;overflow:hidden">
     <div class="session-list" id="sessionList">
-      <div class="empty-state"><i class="ti ti-database-off"></i><p>No sessions yet.</p></div>
+      <div class="empty-state"><i class="ti ti-database-off"></i><p data-i18n="data.hist.empty">No sessions yet.</p></div>
     </div>
   </div>
 </div>
 
 <!-- ── REPORT BUILDER ── -->
 <div class="section" id="sec-report">
-  <div class="sec-header"><div class="dot" style="background:#534AB7"></div><h2>Report builder</h2></div>
+  <div class="sec-header"><div class="dot" style="background:#534AB7"></div><h2 data-i18n="data.rpt.title">Report builder</h2></div>
 
   <!-- SCOPE TABS -->
   <div class="scope-tabs">
-    <button class="scope-tab active" id="tab-group" onclick="setScopeTab('group')"><i class="ti ti-users"></i> Group report</button>
-    <button class="scope-tab" id="tab-solo" onclick="setScopeTab('solo')"><i class="ti ti-user"></i> Individual report</button>
+    <button class="scope-tab active" id="tab-group" onclick="setScopeTab('group')"><i class="ti ti-users"></i> <span data-i18n="data.rpt.group">Group report</span></button>
+    <button class="scope-tab" id="tab-solo" onclick="setScopeTab('solo')"><i class="ti ti-user"></i> <span data-i18n="data.rpt.individual">Individual report</span></button>
   </div>
 
   <!-- GROUP SCOPE -->
   <div id="scope-group">
     <div class="rb-card">
-      <h3><i class="ti ti-users"></i> Goalkeepers</h3>
-      <p style="font-size:12px;color:var(--mt);margin-bottom:10px">Select who appears in the report. If none selected, all are included.</p>
+      <h3><i class="ti ti-users"></i> <span data-i18n="data.goalkeepers">Goalkeepers</span></h3>
+      <p data-i18n="data.rpt.whoHelp" style="font-size:12px;color:var(--mt);margin-bottom:10px">Select who appears in the report. If none selected, all are included.</p>
       <div class="check-grid" id="rptPlayerGrid"></div>
     </div>
   </div>
@@ -604,30 +550,30 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <!-- SOLO SCOPE -->
   <div id="scope-solo" style="display:none">
     <div class="rb-card">
-      <h3><i class="ti ti-user"></i> Select goalkeeper</h3>
+      <h3><i class="ti ti-user"></i> <span data-i18n="data.rpt.selectGk">Select goalkeeper</span></h3>
       <select class="solo-select" id="soloPlayerSelect">
-        <option value="">Choose a goalkeeper…</option>
+        <option data-i18n="data.rpt.chooseGk" value="">Choose a goalkeeper…</option>
       </select>
     </div>
   </div>
 
   <!-- PERIODS -->
   <div class="rb-card">
-    <h3><i class="ti ti-calendar-stats"></i> Periods</h3>
-    <p style="font-size:12px;color:var(--mt);margin-bottom:9px">Each active period becomes its own section in the PDF.</p>
+    <h3><i class="ti ti-calendar-stats"></i> <span data-i18n="data.rpt.periods">Periods</span></h3>
+    <p data-i18n="data.rpt.periodsHelp" style="font-size:12px;color:var(--mt);margin-bottom:9px">Each active period becomes its own section in the PDF.</p>
     <div class="period-presets" id="periodPresets">
-      <button class="pp-btn active" data-w="1">1 week</button>
-      <button class="pp-btn active" data-w="4">1 month</button>
-      <button class="pp-btn" data-w="12">3 months</button>
-      <button class="pp-btn" data-w="26">6 months</button>
-      <button class="pp-btn" data-w="0">Full season</button>
+      <button data-i18n="data.series.w1" class="pp-btn active" data-w="1">1 week</button>
+      <button data-i18n="data.series.m1" class="pp-btn active" data-w="4">1 month</button>
+      <button data-i18n="data.series.m3" class="pp-btn" data-w="12">3 months</button>
+      <button data-i18n="data.series.m6" class="pp-btn" data-w="26">6 months</button>
+      <button data-i18n="data.series.full" class="pp-btn" data-w="0">Full season</button>
     </div>
     <div style="margin-top:10px">
-      <p style="font-size:12px;color:var(--mt);margin-bottom:7px"><strong>Custom period</strong> — add a specific date range:</p>
+      <p style="font-size:12px;color:var(--mt);margin-bottom:7px"><strong data-i18n="data.rpt.custom">Custom period</strong> <span data-i18n="data.rpt.customHelp">— add a specific date range:</span></p>
       <div class="custom-row">
-        <label>From</label><input type="date" id="rptFrom">
-        <label>To</label><input type="date" id="rptTo">
-        <button class="pp-btn" onclick="addCustomPeriod()" style="background:var(--pl);color:var(--pd);border-color:var(--p)">+ Add</button>
+        <label data-i18n="data.from">From</label><input type="date" id="rptFrom">
+        <label data-i18n="data.to">To</label><input type="date" id="rptTo">
+        <button data-i18n="data.rpt.add" class="pp-btn" onclick="addCustomPeriod()" style="background:var(--pl);color:var(--pd);border-color:var(--p)">+ Add</button>
       </div>
       <div class="custom-tags" id="customTags"></div>
     </div>
@@ -635,25 +581,25 @@ textarea{width:100%;resize:vertical;min-height:110px}
 
   <!-- CONTENT SECTIONS -->
   <div class="rb-card">
-    <h3><i class="ti ti-layout-list"></i> Report sections</h3>
+    <h3><i class="ti ti-layout-list"></i> <span data-i18n="data.rpt.sections">Report sections</span></h3>
     <div class="toggle-grid">
-      <div class="toggle-item"><span><i class="ti ti-users" style="font-size:14px"></i> Group overview table</span><label class="tog"><input type="checkbox" id="togGroup" checked><span class="togslider"></span></label></div>
-      <div class="toggle-item"><span><i class="ti ti-chart-bar" style="font-size:14px"></i> Load charts (AU)</span><label class="tog"><input type="checkbox" id="togUA" checked><span class="togslider"></span></label></div>
-      <div class="toggle-item"><span><i class="ti ti-activity" style="font-size:14px"></i> Well-being charts</span><label class="tog"><input type="checkbox" id="togWell" checked><span class="togslider"></span></label></div>
-      <div class="toggle-item"><span><i class="ti ti-trending-up" style="font-size:14px"></i> ACWR chart</span><label class="tog"><input type="checkbox" id="togACWR" checked><span class="togslider"></span></label></div>
-      <div class="toggle-item"><span><i class="ti ti-table" style="font-size:14px"></i> Session tables</span><label class="tog"><input type="checkbox" id="togTable" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-users" style="font-size:14px"></i> <span data-i18n="data.rpt.secOverview">Group overview table</span></span><label class="tog"><input type="checkbox" id="togGroup" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-chart-bar" style="font-size:14px"></i> <span data-i18n="data.rpt.secLoad">Load charts (AU)</span></span><label class="tog"><input type="checkbox" id="togUA" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-activity" style="font-size:14px"></i> <span data-i18n="data.rpt.secWell">Well-being charts</span></span><label class="tog"><input type="checkbox" id="togWell" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-trending-up" style="font-size:14px"></i> <span data-i18n="data.rpt.secAcwr">ACWR chart</span></span><label class="tog"><input type="checkbox" id="togACWR" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-table" style="font-size:14px"></i> <span data-i18n="data.rpt.secTables">Session tables</span></span><label class="tog"><input type="checkbox" id="togTable" checked><span class="togslider"></span></label></div>
     </div>
   </div>
 
   <div class="rb-card">
-    <h3><i class="ti ti-message-2"></i> Coach's comments <span style="font-size:11px;font-weight:400;color:var(--mt)">(optional)</span></h3>
-    <p style="font-size:12px;color:var(--mt);margin-bottom:9px">Appears as a final page in the PDF after all goalkeeper sections.</p>
-    <textarea id="rptComment" placeholder="Write your analysis here. Appears as a final page after all sections."
+    <h3><i class="ti ti-message-2"></i> <span data-i18n="data.rpt.comments">Coach's comments</span> <span data-i18n="data.optional" style="font-size:11px;font-weight:400;color:var(--mt)">(optional)</span></h3>
+    <p data-i18n="data.rpt.commentsHelp" style="font-size:12px;color:var(--mt);margin-bottom:9px">Appears as a final page in the PDF after all goalkeeper sections.</p>
+    <textarea id="rptComment" placeholder="Write your analysis here. Appears as a final page after all sections." data-i18n-placeholder="data.rpt.phComments"
       style="width:100%;min-height:90px;padding:10px 12px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:13px;font-family:inherit;resize:vertical;line-height:1.5;box-sizing:border-box"></textarea>
   </div>
 
   <button class="gen-btn" id="genBtn" onclick="generateReport()">
-    <i class="ti ti-file-type-pdf"></i> Generate &amp; export PDF
+    <i class="ti ti-file-type-pdf"></i> <span data-i18n="data.rpt.generate">Generate &amp; export PDF</span>
   </button>
 </div>
 
@@ -662,44 +608,34 @@ textarea{width:100%;resize:vertical;min-height:110px}
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <button class="active" id="nav-pre"     onclick="showSection('pre')"><i class="ti ti-sun"></i>Pre</button>
-  <button id="nav-post"    onclick="showSection('post')"><i class="ti ti-moon"></i>Post</button>
-  <button id="nav-dash"    onclick="showSection('dash')"><i class="ti ti-chart-line"></i>Series</button>
-  <button id="nav-history" onclick="showSection('history')"><i class="ti ti-history"></i>History</button>
-  <button id="nav-report"  onclick="showSection('report')"><i class="ti ti-file-analytics"></i>Report</button>
-  <button id="nav-squad"   onclick="showSection('squad')"><i class="ti ti-users"></i>Squad</button>
-  <button id="nav-admin" style="display:none" onclick="showSection('admin')"><i class="ti ti-shield"></i>Admin</button>
+  <button class="active" id="nav-pre"     onclick="showSection('pre')"><i class="ti ti-sun"></i><span data-i18n="data.nav.pre">Pre</span></button>
+  <button id="nav-post"    onclick="showSection('post')"><i class="ti ti-moon"></i><span data-i18n="data.nav.post">Post</span></button>
+  <button id="nav-dash"    onclick="showSection('dash')"><i class="ti ti-chart-line"></i><span data-i18n="data.nav.series">Series</span></button>
+  <button id="nav-history" onclick="showSection('history')"><i class="ti ti-history"></i><span data-i18n="data.nav.history">History</span></button>
+  <button id="nav-report"  onclick="showSection('report')"><i class="ti ti-file-analytics"></i><span data-i18n="data.nav.report">Report</span></button>
+  <button id="nav-squad"   onclick="showSection('squad')"><i class="ti ti-users"></i><span data-i18n="data.squad">Squad</span></button>
 </div>
 
 <!-- SETTINGS MODAL -->
 <div class="overlay" id="settingsOverlay" onclick="overlayClose(event)">
 <div class="modal">
-  <div class="modal-hdr"><h2><i class="ti ti-settings"></i> Settings</h2>
+  <div class="modal-hdr"><h2><i class="ti ti-settings"></i> <span data-i18n="data.nav.settings">Settings</span></h2>
     <button class="modal-close" onclick="closeSettings()"><i class="ti ti-x"></i></button></div>
-  <div class="msec"><h3><i class="ti ti-shield"></i> Club branding</h3>
-    <div class="srow"><label>Club / Team name</label><input type="text" class="sinp" id="cfgName" placeholder="e.g. Al Ain FC"></div>
-    <div class="srow"><label>Subtitle / role</label><input type="text" class="sinp" id="cfgSub" placeholder="e.g. Goalkeeper Coach · Futsal"></div>
-    <div class="srow"><label>Primary color</label><div style="display:flex;align-items:center;gap:8px"><input type="color" id="cfgColor" value="#1D9E75"><span style="font-size:12px;color:var(--mt)">Header &amp; accents</span></div></div>
-    <div class="srow"><label>Logo URL</label><input type="text" class="sinp" id="cfgLogo" placeholder="https://…/logo.png"></div>
-    <p class="info-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> Host logo free at <a href="https://imgbb.com" target="_blank">imgbb.com</a>, paste link above.</p>
-    <button class="btn-sec" onclick="applyBranding()" style="width:100%;justify-content:center"><i class="ti ti-check"></i> Apply branding</button></div>
-  <div class="msec"><h3><i class="ti ti-cloud"></i> Cloud database</h3>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px">
-      <span class="db-badge" id="dbBadge"><i class="ti ti-cloud-off" style="font-size:12px"></i> Not connected</span>
-      <span style="font-size:12px;color:var(--mt)" id="dbBadgeSub">Saved locally only</span></div>
-    <p class="info-tip">Connect a <strong>free Firebase project</strong> to sync across all devices.<br><br>
-      <strong>Steps:</strong><br>
-      1. <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a> → Create project<br>
-      2. Build → Firestore Database → Create → Test mode<br>
-      3. Project settings → Web App → copy <code>firebaseConfig</code><br>
-      4. Paste the JSON below and click Connect.</p>
-    <label style="font-size:12px;color:var(--mt);display:block;margin-bottom:4px">Firebase config JSON:</label>
-    <textarea id="cfgFirebase" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
-    <button class="btn-sec" onclick="connectFirebase()" style="width:100%;justify-content:center;margin-top:9px"><i class="ti ti-plug"></i> Connect &amp; sync</button></div>
-  <div class="msec"><h3><i class="ti ti-database"></i> Data backup</h3>
+  <div class="msec"><h3><i class="ti ti-shield"></i> <span data-i18n="data.set.branding">Club branding</span></h3>
+    <div class="srow"><label data-i18n="data.set.clubName">Club / Team name</label><input type="text" class="sinp" id="cfgName" placeholder="e.g. Al Ain FC" data-i18n-placeholder="data.set.phClub"></div>
+    <div class="srow"><label data-i18n="data.set.subtitle">Subtitle / role</label><input type="text" class="sinp" id="cfgSub" placeholder="e.g. Goalkeeper Coach · Futsal" data-i18n-placeholder="data.set.phSub"></div>
+    <div class="srow"><label data-i18n="data.set.color">Primary color</label><div style="display:flex;align-items:center;gap:8px"><input type="color" id="cfgColor" value="#1D9E75"><span data-i18n="data.set.colorHelp" style="font-size:12px;color:var(--mt)">Header &amp; accents</span></div></div>
+    <div class="srow"><label data-i18n="data.set.logo">Logo URL</label><input type="text" class="sinp" id="cfgLogo" placeholder="https://…/logo.png"></div>
+    <p class="info-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> <span data-i18n="data.set.logoTip1">Host logo free at</span> <a href="https://imgbb.com" target="_blank">imgbb.com</a><span data-i18n="data.set.logoTip2">, paste link above.</span></p>
+    <button class="btn-sec" onclick="applyBranding()" style="width:100%;justify-content:center"><i class="ti ti-check"></i> <span data-i18n="data.set.apply">Apply branding</span></button></div>
+  <div class="msec"><h3><i class="ti ti-cloud"></i> <span data-i18n="data.set.cloud">Cloud database</span></h3>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="db-badge" id="dbBadge"><i class="ti ti-cloud-off" style="font-size:12px"></i> <span data-i18n="data.set.notConnected">Not connected</span></span>
+      <span style="font-size:12px;color:var(--mt)" id="dbBadgeSub" data-i18n="data.set.localOnly">Saved locally only</span></div></div>
+  <div class="msec"><h3><i class="ti ti-database"></i> <span data-i18n="data.set.backup">Data backup</span></h3>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn-neutral" onclick="exportJSON()"><i class="ti ti-download"></i> Export JSON</button>
-      <label class="btn-neutral" style="cursor:pointer"><i class="ti ti-upload"></i> Import JSON<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
+      <button class="btn-neutral" onclick="exportJSON()"><i class="ti ti-download"></i> <span data-i18n="data.set.export">Export JSON</span></button>
+      <label class="btn-neutral" style="cursor:pointer"><i class="ti ti-upload"></i> <span data-i18n="data.set.import">Import JSON</span><input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
     </div></div>
 </div></div>
 
@@ -716,13 +652,13 @@ textarea{width:100%;resize:vertical;min-height:110px}
     <div class="pm-bd">
       <div class="pm-qs" id="pmQS"></div>
       <div class="pm-tabs">
-        <button class="pm-tab active" onclick="pmTab('hist',this)"><i class="ti ti-history"></i> History</button>
-        <button class="pm-tab" onclick="pmTab('series',this)"><i class="ti ti-chart-line"></i> Series</button>
+        <button class="pm-tab active" onclick="pmTab('hist',this)"><i class="ti ti-history"></i> <span data-i18n="data.nav.history">History</span></button>
+        <button class="pm-tab" onclick="pmTab('series',this)"><i class="ti ti-chart-line"></i> <span data-i18n="data.nav.series">Series</span></button>
       </div>
       <div class="pm-pn active" id="pm-hist"><div class="card" style="padding:0;overflow:hidden"><div class="session-list" id="pmHL"></div></div></div>
       <div class="pm-pn" id="pm-series">
-        <div class="chart-wrap"><h3>Internal load — AU</h3><div class="cwrap" style="height:170px"><canvas id="pmUAC" role="img" aria-label="AU">.</canvas></div></div>
-        <div class="chart-wrap"><h3>Well-being</h3><div class="cwrap" style="height:150px"><canvas id="pmWC" role="img" aria-label="Well-being">.</canvas></div></div>
+        <div class="chart-wrap"><h3 data-i18n="data.series.load">Internal load — AU</h3><div class="cwrap" style="height:170px"><canvas id="pmUAC" role="img" aria-label="AU">.</canvas></div></div>
+        <div class="chart-wrap"><h3 data-i18n="data.wellbeing">Well-being</h3><div class="cwrap" style="height:150px"><canvas id="pmWC" role="img" aria-label="Well-being">.</canvas></div></div>
       </div>
     </div>
   </div>
@@ -731,15 +667,15 @@ textarea{width:100%;resize:vertical;min-height:110px}
 <div class="ap-ov" id="apOv">
   <div class="ap-sh">
     <div class="modal-hdr" style="margin-bottom:13px">
-      <h2 style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-user-plus"></i> Add goalkeeper</h2>
+      <h2 style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-user-plus"></i> <span data-i18n="data.squad.add">Add goalkeeper</span></h2>
       <button class="modal-close" onclick="closeAP()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="ap-ph"><img id="apPhImg" src="" style="display:none"><div class="ap-lb"><i class="ti ti-camera" style="font-size:22px"></i><span style="font-size:12px">Tap to add photo (optional)</span></div><input type="file" accept="image/*" onchange="apPh(event)"></div>
+    <div class="ap-ph"><img id="apPhImg" src="" style="display:none"><div class="ap-lb"><i class="ti ti-camera" style="font-size:22px"></i><span data-i18n="data.squad.photo" style="font-size:12px">Tap to add photo (optional)</span></div><input type="file" accept="image/*" onchange="apPh(event)"></div>
     <div style="margin-bottom:11px">
-      <label style="font-size:13px;color:var(--mt);display:block;margin-bottom:4px">Full name</label>
-      <input type="text" id="apName" placeholder="e.g. Ahmed Al Mansouri" style="width:100%;padding:9px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:15px;font-family:inherit" onkeydown="if(event.key==='Enter')apOK()">
+      <label data-i18n="data.squad.name" style="font-size:13px;color:var(--mt);display:block;margin-bottom:4px">Full name</label>
+      <input type="text" id="apName" placeholder="e.g. Ahmed Al Mansouri" data-i18n-placeholder="data.squad.phName" style="width:100%;padding:9px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:15px;font-family:inherit" onkeydown="if(event.key==='Enter')apOK()">
     </div>
-    <button class="btn-primary" onclick="apOK()"><i class="ti ti-check"></i> Add to squad</button>
+    <button class="btn-primary" onclick="apOK()"><i class="ti ti-check"></i> <span data-i18n="data.squad.addBtn">Add to squad</span></button>
   </div>
 </div>
 <!-- PDF DOCUMENT (rendered here, only visible on print) -->
@@ -759,7 +695,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
 
 
 
-const ST={players:{},sessions:[],currentPlayer:"",filterWeeks:4,brand:{name:"",sub:"",color:"#1D9E75",logo:""},fb:{on:false,cfg:null},trainingTypes:["Goalkeeper Training","Team Training","Gym Training"]};
+const ST={players:{},sessions:[],currentPlayer:"",filterWeeks:4,brand:{name:"",sub:"",color:"#1D9E75",logo:""},fb:{on:false,cfg:null},trainingTypes:[TX("data.type.gk"),TX("data.type.team"),TX("data.type.gym")]};
 let db=null,fbF=null,selPSE=null,editId=null,customPeriods=[],allChartInst=[];
 
 const PSE_LBL=["1 — Rest","2 — Very easy","3 — Easy","4 — Moderate","5 — Somewhat hard","6 — Hard","7 — Very hard","8 — Very, very hard","9 — Extremely hard","10 — Maximum effort"];
@@ -792,44 +728,33 @@ function applyTheme(){
     else if(id==="cfgSub")el.value=b.sub||"";
     else if(id==="cfgColor")el.value=c;
     else el.value=b.logo||"";});
-  if(ST.fb.cfg){const el=document.getElementById("cfgFirebase");if(el)el.value=JSON.stringify(ST.fb.cfg,null,2);}
 }
 
 // ════════════════════════════════════════════════════════════
-// FIREBASE — Auth + Realtime Database
-// Each user has isolated data under /users/{uid}/
-// Admin data (user list) stored under /admin/users/
+// FIREBASE — Realtime Database (projeto fluxgksystem, vindo do hub)
+// O hub envia firebaseConfig + dataPath no FLUXGK_CONTEXT.
+// Mesma origem + mesmo projeto => a sessao do hub e herdada.
+// Dados isolados em users/{uid}/data/{clubId}/{seasonId}/load
 // ════════════════════════════════════════════════════════════
 
-const RTDB_URL = "https://goalkeeper-load-control-default-rtdb.firebaseio.com";
-const FB_APP_CFG = {
-  apiKey:"AIzaSyBSHzqKs15Dl3HhoVIPimIPz5YgHM3Qfqw",
-  authDomain:"goalkeeper-load-control.firebaseapp.com",
-  projectId:"goalkeeper-load-control",
-  databaseURL:RTDB_URL,
-  storageBucket:"goalkeeper-load-control.firebasestorage.app",
-  messagingSenderId:"235492913787",
-  appId:"1:235492913787:web:53928708f675c7f80068de"
-};
-
-// Your admin UID — set after first login (see init)
-const ADMIN_EMAIL = "pimentafutsal@gmail.com";
+// Config recebida do hub (nao ha mais projeto proprio hardcoded)
+let _cfg = null;
 
 let _db=null, _rf=null, _auth=null, _af=null;
 let chartQueue=[];
-let _uid=null, _base=null, _userRole="coach", _listening=false;
+let _uid=null, _base=null, _listening=false, _fbStarted=false;
 
 // ── SYNC DOT ──────────────────────────────────────────────
 function dotY(){const d=document.getElementById("syncDot");if(d)d.style.background="rgba(255,220,80,.95)";}
 function dotG(){const d=document.getElementById("syncDot");if(d){d.style.background="rgba(100,255,180,.95)";setTimeout(()=>{if(d)d.style.background="rgba(255,255,255,.25)";},1200);}}
 function dotR(){const d=document.getElementById("syncDot");if(d){d.style.background="rgba(255,90,70,.95)";setTimeout(()=>{if(d)d.style.background="rgba(255,255,255,.25)";},3000);}}
 
-// ── USER DATA PATH ────────────────────────────────────────
-// All data is scoped to the authenticated user's UID
-// Scoped path sent by the hub: users/{uid}/data/{clubId}/{seasonId}
-// Falls back to a per-user default so data never lands on the shared root.
-function uPath(p){ return (_base||("users/"+_uid+"/data/_default"))+"/"+p; }
-function lsKey(){ return "glc_"+(_base||("users/"+_uid+"/data/_default")); }
+// ── DATA PATH ─────────────────────────────────────────────
+// Caminho isolado enviado pelo hub: users/{uid}/data/{clubId}/{seasonId}
+// O modulo grava sob /load (igual xg->/xg, stats->/stats, planner->/planner)
+function scopeRoot(){ return (_base||("users/"+_uid+"/data/_default"))+"/load"; }
+function uPath(p){ return scopeRoot()+"/"+p; }
+function lsKey(){ return "glc_"+scopeRoot(); }
 
 // ── INIT FIREBASE ─────────────────────────────────────────
 async function fbInit(){
@@ -837,7 +762,9 @@ async function fbInit(){
     const {initializeApp}   = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const authMod           = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
     const rtMod             = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-    const app  = initializeApp(FB_APP_CFG,"glc");
+    // App PADRAO (sem nome proprio) + mesma config do hub:
+    // e o que permite herdar a sessao autenticada do hub.
+    const app  = initializeApp(_cfg);
     _auth = authMod.getAuth(app);
     _af   = authMod;
     _db   = rtMod.getDatabase(app);
@@ -870,7 +797,7 @@ function loadUserState(){
         setTimeout(()=>rtPushAll(),500);
         // Mark old key as migrated
         localStorage.setItem("glcv5_migrated","true");
-        showToast("Previous data restored successfully!");
+        showToast(TX("data.msg.restored"));
       }
     }
   }catch(e){console.warn("loadUserState error",e);}
@@ -960,11 +887,9 @@ function rtListen(){
 function dbBadge(on){
   const b=document.getElementById("dbBadge"),s=document.getElementById("dbBadgeSub");
   if(!b)return;
-  if(on){b.className="db-badge ok";b.innerHTML='<i class="ti ti-wifi" style="font-size:12px"></i> Real-time';s.textContent="All devices in sync";}
-  else{b.className="db-badge err";b.innerHTML='<i class="ti ti-cloud-off" style="font-size:12px"></i> Offline';s.textContent="Saved locally";}
+  if(on){b.className="db-badge ok";b.innerHTML='<i class="ti ti-wifi" style="font-size:12px"></i> '+TX("data.set.realtime");s.textContent=TX("data.msg.inSync");}
+  else{b.className="db-badge err";b.innerHTML='<i class="ti ti-cloud-off" style="font-size:12px"></i> '+TX("data.set.offline");s.textContent=TX("data.msg.savedLocally");}
 }
-
-window.connectFirebase=async function(){showToast("Already connected.");};
 
 window.applyBranding=function(){
   ST.brand={
@@ -973,7 +898,7 @@ window.applyBranding=function(){
     color:document.getElementById("cfgColor").value,
     logo:document.getElementById("cfgLogo").value.trim()
   };
-  save();applyTheme();closeSettings();showToast("Branding updated!");
+  save();applyTheme();closeSettings();showToast(TX("data.msg.brandingUpdated"));
   rtSaveBrand(ST.brand);
 };
 
@@ -981,92 +906,6 @@ window.openSettings=function(){document.getElementById("settingsOverlay").classL
 window.closeSettings=function(){document.getElementById("settingsOverlay").classList.remove("open");};
 window.overlayClose=function(e){if(e.target===document.getElementById("settingsOverlay"))closeSettings();};
 
-// ════════════════════════════════════════════════════════════
-// ADMIN PANEL
-// ════════════════════════════════════════════════════════════
-window.adminAddUser=async function(){
-  const name =document.getElementById("newUserName").value.trim();
-  const email=document.getElementById("newUserEmail").value.trim();
-  const pass =document.getElementById("newUserPass").value;
-  const role =document.getElementById("newUserRole").value;
-  const errEl=document.getElementById("adminErr");
-  const btn  =document.getElementById("addUserBtn");
-  errEl.style.display="none";
-  if(!name||!email||!pass){errEl.textContent="Fill in all fields.";errEl.style.display="block";return;}
-  if(pass.length<6){errEl.textContent="Password must be at least 6 characters.";errEl.style.display="block";return;}
-  btn.disabled=true;btn.textContent="Creating…";
-  try{
-    // Create user with Firebase Auth
-    const cred=await _af.createUserWithEmailAndPassword(_auth,email,pass);
-    const newUid=cred.user.uid;
-    // Save user profile in admin/users
-    await _rf.set(_rf.ref(_db,"admin/users/"+newUid),{
-      uid:newUid,name,email,role,
-      createdAt:Date.now(),
-      createdBy:_uid
-    });
-    // Sign back in as admin (createUser signs in as new user)
-    // We need to restore admin session — reload the page
-    showToast('"'+name+'" added successfully!');
-    document.getElementById("newUserName").value="";
-    document.getElementById("newUserEmail").value="";
-    document.getElementById("newUserPass").value="";
-    loadUserList();
-    // Re-sign in as admin
-    const adminSnap=await _rf.get(_rf.ref(_db,"admin/users/"+_uid));
-    // createUserWithEmailAndPassword signs in as new user
-    // We need to re-auth as admin — ask admin to re-login
-    setTimeout(()=>{
-      showToast("User created! Please sign in again as admin.");
-      setTimeout(()=>_af.signOut(_auth),2000);
-    },1000);
-  }catch(e){
-    const msgs={
-      "auth/email-already-in-use":"Email already in use.",
-      "auth/invalid-email":"Invalid email.",
-      "auth/weak-password":"Password too weak (min 6 characters)."
-    };
-    errEl.textContent=msgs[e.code]||"Error: "+e.message;
-    errEl.style.display="block";
-  }
-  btn.disabled=false;btn.textContent="Create user";
-};
-
-async function loadUserList(){
-  if(!_db||!_rf||_userRole!=="admin")return;
-  try{
-    const snap=await _rf.get(_rf.ref(_db,"admin/users"));
-    const users=snap.exists()?Object.values(snap.val()):[];
-    document.getElementById("userCount").textContent=users.length+" user"+(users.length!==1?"s":"");
-    if(!users.length){
-      document.getElementById("userList").innerHTML='<div class="empty-state"><i class="ti ti-users"></i><p>No users yet.</p></div>';
-      return;
-    }
-    document.getElementById("userList").innerHTML=users.map(u=>{
-      const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
-      return`<div class="user-row">
-        <div class="user-avatar">${ini}</div>
-        <div style="flex:1;min-width:0">
-          <div class="user-name">${u.name||"—"}</div>
-          <div class="user-email">${u.email||"—"}</div>
-        </div>
-        <span class="user-role ${u.role==="admin"?"admin":""}">${u.role||"coach"}</span>
-        ${u.uid!==_uid?`<button class="user-del" onclick="adminDelUser('${u.uid}','${u.name}')" title="Remove"><i class="ti ti-trash" style="font-size:13px"></i></button>`:"<div style='width:26px'></div>"}
-      </div>`;
-    }).join("");
-  }catch(e){console.warn("loadUserList:",e);}
-}
-
-window.adminDelUser=async function(uid,name){
-  if(!confirm("Remove "+name+"? They will lose access immediately."))return;
-  try{
-    await _rf.remove(_rf.ref(_db,"admin/users/"+uid));
-    // Note: Firebase Auth user deletion requires Admin SDK (server-side)
-    // The user record in Auth remains but they're removed from the app's user list
-    showToast(name+" removed from the platform.");
-    loadUserList();
-  }catch(e){showToast("Error removing user.","err");}
-};
 
 // ════════════════════════════════════════════════════════════
 // SQUAD
@@ -1093,13 +932,13 @@ function renderSquad(){
         <div class="sq-meta">${post.length} sessions · ${tAU} AU</div>
       </div>
       <div class="sq-btns">
-        <button class="sq-btn" onclick="selGo('${p.id}','pre')"><i class="ti ti-sun" style="font-size:12px"></i> Pre</button>
-        <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> Post</button>
+        <button class="sq-btn" onclick="selGo('${p.id}','pre')"><i class="ti ti-sun" style="font-size:12px"></i> <span data-i18n="data.nav.pre">Pre</span></button>
+        <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> <span data-i18n="data.nav.post">Post</span></button>
         <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
       </div>
     </div>`;
   });
-  html+=`<div class="sq-add" onclick="openAP()"><i class="ti ti-user-plus"></i><span>Add goalkeeper</span></div>`;
+  html+=`<div class="sq-add" onclick="openAP()"><i class="ti ti-user-plus"></i><span data-i18n="data.squad.add">Add goalkeeper</span></div>`;
   g.innerHTML=html;
 }
 
@@ -1111,7 +950,7 @@ window.selGo=function(id,tab){
 
 window.delPl=function(id){
   const p=ST.players[id];if(!p)return;
-  if(!confirm("Remove "+p.name+"? All sessions will be deleted."))return;
+  if(!confirm(TX("data.act.remove")+" "+p.name+TX("data.msg.removeConfirm")))return;
   delete ST.players[id];
   ST.sessions=ST.sessions.filter(s=>s._pk!==id);
   if(ST.currentPlayer===id)ST.currentPlayer="";
@@ -1138,7 +977,7 @@ window.apPh=function(e){
 };
 window.apOK=function(){
   const name=document.getElementById("apName").value.trim();
-  if(!name){showToast("Enter a name.","err");return;}
+  if(!name){showToast(TX("data.msg.enterName"),"err");return;}
   const key="p_"+Date.now();
   ST.players[key]={name,id:key,photo:_apPh||null};
   save();closeAP();renderSquad();renderPSelect();
@@ -1181,7 +1020,7 @@ window.openPM=function(id){
   const hl=document.getElementById("pmHL");
   const sorted=ss.slice().sort((a,b)=>b.date.localeCompare(a.date));
   if(!sorted.length){
-    hl.innerHTML='<div class="empty-state"><i class="ti ti-database-off"></i><p>No sessions yet.</p></div>';
+    hl.innerHTML='<div class="empty-state"><i class="ti ti-database-off"></i><p data-i18n="data.hist.empty">No sessions yet.</p></div>';
   } else {
     hl.innerHTML=sorted.map(s=>{
       if(s.type==="pre")
@@ -1245,7 +1084,7 @@ window.pmChangePh=function(e){
     const img=document.createElement("img");img.className="pm-hi";
     img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:cover";
     hero.insertBefore(img,hero.firstChild);img.src=b64;
-    renderSquad();showToast("Photo updated!");
+    renderSquad();showToast(TX("data.msg.photoUpdated"));
     rtSavePhoto(_pmId,b64);
   };
   r.readAsDataURL(f);
@@ -1268,7 +1107,7 @@ window.addPlayer=window.apOK;
 window.switchPlayer=function(){ST.currentPlayer=document.getElementById("playerSelect").value;renderAll();};
 function renderPSelect(){
   const sel=document.getElementById("playerSelect"),cur=ST.currentPlayer||sel.value;
-  sel.innerHTML='<option value="">Select…</option>';
+  sel.innerHTML='<option data-i18n="data.selectDots" value="">Select…</option>';
   Object.values(ST.players).forEach(p=>{
     const o=document.createElement("option");o.value=p.id;o.textContent=p.name;sel.appendChild(o);
   });
@@ -1278,7 +1117,7 @@ function renderPSelect(){
 // ── PSE ──
 function buildPSE(){const g=document.getElementById("pseGrid");g.innerHTML="";for(let i=1;i<=10;i++){const b=document.createElement("button");b.className="pse-btn";b.textContent=i;b.onclick=()=>selP(i);g.appendChild(b);}}
 function selP(v){selPSE=v;document.querySelectorAll(".pse-btn").forEach((b,i)=>b.classList.toggle("selected",i+1===v));document.getElementById("pseDesc").textContent=PSE_LBL[v-1];calcUA();}
-window.calcUA=function(){const dur=parseInt(document.getElementById("duration").value)||0,pse=selPSE||0,ua=pse*dur;document.getElementById("uaVal").textContent=ua>0?ua:"—";const z=document.getElementById("uaZone");if(!ua){z.innerHTML="";return;}const[cls,lbl]=ua<300?["zone-low","Low load"]:ua<600?["zone-med","Moderate load"]:["zone-high","High load"];z.innerHTML=`<span class="zone-badge ${cls}">${lbl}</span>`;};
+window.calcUA=function(){const dur=parseInt(document.getElementById("duration").value)||0,pse=selPSE||0,ua=pse*dur;document.getElementById("uaVal").textContent=ua>0?ua:"—";const z=document.getElementById("uaZone");if(!ua){z.innerHTML="";return;}const[cls,lbl]=ua<300?["zone-low",TX("data.msg.lowLoad")]:ua<600?["zone-med",TX("data.msg.modLoad")]:["zone-high",TX("data.msg.highLoad")];z.innerHTML=`<span class="zone-badge ${cls}">${lbl}</span>`;};
 window.updateRange=function(id,b){document.getElementById(b).textContent=document.getElementById(id).value;};
 
 // ── ATTENDANCE TOGGLE ──
@@ -1288,14 +1127,14 @@ window._onAttendanceChange=function(){
   if(wb)wb.style.display=absent?"none":"block";
   const btn=document.querySelector("#sec-pre .btn-primary");
   if(btn)btn.innerHTML=absent
-    ?'<i class="ti ti-device-floppy"></i> Save absence'
-    :'<i class="ti ti-device-floppy"></i> Save pre-training';
+    ?'<i class="ti ti-device-floppy"></i> '+TX("data.msg.saveAbsence")
+    :'<i class="ti ti-device-floppy"></i> '+TX("data.pre.save");
 };
 
 // ── SUBMIT ──
 window.submitPre=async function(){
-  if(!ST.currentPlayer){showToast("Select a goalkeeper.","err");return;}
-  const date=document.getElementById("preDate").value;if(!date){showToast("Set the date.","err");return;}
+  if(!ST.currentPlayer){showToast(TX("data.msg.pickGk"),"err");return;}
+  const date=document.getElementById("preDate").value;if(!date){showToast(TX("data.msg.setDate"),"err");return;}
   const time=getAmPmTime("pre");
   const trainingType=document.getElementById("preType").value||ST.trainingTypes[0]||"";
   const _attEl=document.querySelector('input[name="attendanceStatus"]:checked');
@@ -1305,11 +1144,11 @@ window.submitPre=async function(){
     const e={id:editId||"abs_"+Date.now(),date,type:"absence",
       present:false,trainingType,time,ts:Date.now(),_pk:ST.currentPlayer};
     saveSession(e);const was=!!editId;editId=null;
-    document.getElementById("preFormTitle").textContent="Pre-training questionnaire";
+    document.getElementById("preFormTitle").textContent=TX("data.pre.title");
     document.getElementById("cancelEditPre").style.display="none";
     document.getElementById("attendancePresent").checked=true;
     _onAttendanceChange();
-    showToast(was?"Absence updated!":"Absence recorded.");
+    showToast(was?TX("data.msg.absenceUpdated"):TX("data.msg.absenceSaved"));
     return;
   }
   const e={id:editId||"pre_"+Date.now(),date,type:"pre",
@@ -1318,18 +1157,18 @@ window.submitPre=async function(){
     recovery:+document.getElementById("recovery").value,
     time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer};
   saveSession(e);const was=!!editId;editId=null;
-  document.getElementById("preFormTitle").textContent="Pre-training questionnaire";
+  document.getElementById("preFormTitle").textContent=TX("data.pre.title");
   document.getElementById("cancelEditPre").style.display="none";
-  showToast(was?"Session updated!":"Pre-training saved!");
+  showToast(was?TX("data.msg.sessionUpdated"):TX("data.msg.preSaved"));
 };
 window.submitPost=async function(){
-  if(!ST.currentPlayer){showToast("Select a goalkeeper.","err");return;}
-  if(!selPSE){showToast("Select RPE.","err");return;}
-  const dur=parseInt(document.getElementById("duration").value)||0;if(dur<1){showToast("Enter duration.","err");return;}
+  if(!ST.currentPlayer){showToast(TX("data.msg.pickGk"),"err");return;}
+  if(!selPSE){showToast(TX("data.msg.pickRpe"),"err");return;}
+  const dur=parseInt(document.getElementById("duration").value)||0;if(dur<1){showToast(TX("data.msg.enterDuration"),"err");return;}
   const preId=document.getElementById("postLinkPre").value;
-  if(!preId){showToast("Select the pre-training session to close.","err");return;}
+  if(!preId){showToast(TX("data.msg.pickPre"),"err");return;}
   const preS=ST.sessions.find(function(s){return s.id===preId;});
-  if(!preS){showToast("Pre-training session not found.","err");return;}
+  if(!preS){showToast(TX("data.msg.preNotFound"),"err");return;}
   const date=preS.date;
   const time=preS.time||"";
   const trainingType=preS.trainingType||"";
@@ -1340,11 +1179,11 @@ window.submitPost=async function(){
   const preIdx=ST.sessions.findIndex(function(s){return s.id===preId;});
   if(preIdx>=0){ST.sessions[preIdx].postId=postId;save();}
   const was=!!editId;editId=null;
-  document.getElementById("postFormTitle").textContent="Post-training questionnaire";
+  document.getElementById("postFormTitle").textContent=TX("data.post.title");
   document.getElementById("cancelEditPost").style.display="none";
   selPSE=null;document.querySelectorAll(".pse-btn").forEach(function(b){b.classList.remove("active");});
   document.getElementById("duration").value="";
-  showToast(was?"Session updated!":"Session closed! AU="+e.ua);
+  showToast(was?TX("data.msg.sessionUpdated"):TX("data.msg.sessionClosed")+e.ua);
   renderAll();
 };
 function saveSession(e){
@@ -1356,7 +1195,7 @@ window.editSession=function(id){
   const s=ST.sessions.find(x=>x.id===id);if(!s)return;editId=id;
   if(s.type==="pre"||s.type==="absence"){
     showSection("pre");
-    document.getElementById("preFormTitle").textContent=s.type==="absence"?"✏ Edit absence":"✏ Edit pre-training";
+    document.getElementById("preFormTitle").textContent=s.type==="absence"?TX("data.msg.editAbsence"):TX("data.msg.editPre");
     document.getElementById("preDate").value=s.date;
     if(s.time)setAmPmTime("pre",s.time);
     if(s.trainingType)document.getElementById("preType").value=s.trainingType;
@@ -1369,7 +1208,7 @@ window.editSession=function(id){
     _onAttendanceChange();
   } else {
     showSection("post");
-    document.getElementById("postFormTitle").textContent="✏ Edit post-training";
+    document.getElementById("postFormTitle").textContent=TX("data.msg.editPost");
     // postDate removed from form — date comes from linked pre session
     if(s.time)setAmPmTime("post",s.time);
     renderOpenPreSessions();
@@ -1385,7 +1224,7 @@ window.editSession=function(id){
 };
 window.deleteSession=function(id){
   const s=ST.sessions.find(x=>x.id===id);if(!s)return;
-  if(!confirm("Delete? Cannot be undone."))return;
+  if(!confirm(TX("data.msg.deleteConfirm")))return;
   ST.sessions=ST.sessions.filter(x=>x.id!==id);
   // If deleting a post, reopen the linked pre session
   if(s.type==="post"&&s.preId){
@@ -1396,10 +1235,10 @@ window.deleteSession=function(id){
   if(s.type==="pre"&&s.postId){
     ST.sessions=ST.sessions.filter(x=>x.id!==s.postId);
   }
-  save();renderAll();showToast("Deleted.");
+  save();renderAll();showToast(TX("data.msg.deleted"));
   rtDeleteSession(s);
 };
-window.cancelEdit=function(t){editId=null;if(t==="pre"){document.getElementById("preFormTitle").textContent="Pre-training questionnaire";document.getElementById("cancelEditPre").style.display="none";}else{document.getElementById("postFormTitle").textContent="Post-training questionnaire";document.getElementById("cancelEditPost").style.display="none";}};
+window.cancelEdit=function(t){editId=null;if(t==="pre"){document.getElementById("preFormTitle").textContent=TX("data.pre.title");document.getElementById("cancelEditPre").style.display="none";}else{document.getElementById("postFormTitle").textContent=TX("data.post.title");document.getElementById("cancelEditPost").style.display="none";}};
 
 // ── FILTER/DASHBOARD ──
 window.setFilter=function(w,btn){ST.filterWeeks=w;document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");renderDashboard();};
@@ -1420,20 +1259,20 @@ function renderDashboard(){
     const col=x.present?"#15803D":"#B91C1C";
     const bg=x.present?"#DCFCE7":"#FEE2E2";
     const lbl=x.present?"P":"A";
-    return'<div title="'+(x.present?"Present":"Absent")+' · '+fd(x.d)+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px">'+
+    return'<div title="'+(x.present?TX("data.present"):TX("data.absent"))+' · '+fd(x.d)+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px">'+
       '<span style="font-size:9px;color:#888">'+fd(x.d)+'</span>'+
       '<span style="width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+col+';font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">'+lbl+'</span>'+
       '</div>';
   }).join("")+'</div>':"";
   document.getElementById("metricsRow").innerHTML=`
-    <div class="metric-card"><div class="mc-label">Sessions</div><div class="mc-val">${totalSessions}</div><div class="mc-sub">${post.length} present · ${absences.length} absent</div></div>
-    <div class="metric-card"><div class="mc-label">Total AU</div><div class="mc-val">${tUA.toLocaleString()}</div><div class="mc-sub">a.u.</div></div>
-    <div class="metric-card"><div class="mc-label">Avg AU</div><div class="mc-val">${aUA||"—"}</div><div class="mc-sub">per session</div></div>
-    <div class="metric-card"><div class="mc-label">Avg RPE</div><div class="mc-val">${aPSE}</div><div class="mc-sub">CR10</div></div>
-    <div class="metric-card"><div class="mc-label">Avg duration</div><div class="mc-val">${aDur}</div><div class="mc-sub">minutes</div></div>
-    <div class="metric-card"><div class="mc-label">Avg sleep</div><div class="mc-val">${aSl}</div><div class="mc-sub">/ 10</div></div>
-    <div class="metric-card"><div class="mc-label">Avg recovery</div><div class="mc-val">${aRec}</div><div class="mc-sub">/ 10</div></div>`;
-  if(attHtml){const ar=document.getElementById("metricsRow");if(ar)ar.insertAdjacentHTML("beforeend",'<div style="grid-column:1/-1"><div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt);margin-bottom:4px">Attendance</div>'+attHtml+'</div>');}
+    <div class="metric-card"><div class="mc-label">${TX("data.m.sessions")}</div><div class="mc-val">${totalSessions}</div><div class="mc-sub">${post.length} ${TX("data.m.present")} · ${absences.length} ${TX("data.m.absent")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.totalAU")}</div><div class="mc-val">${tUA.toLocaleString()}</div><div class="mc-sub">${TX("data.m.au")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgAU")}</div><div class="mc-val">${aUA||"—"}</div><div class="mc-sub">${TX("data.m.perSession")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgRPE")}</div><div class="mc-val">${aPSE}</div><div class="mc-sub">${TX("data.m.cr10")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgDur")}</div><div class="mc-val">${aDur}</div><div class="mc-sub">${TX("data.m.minutes")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSleep")}</div><div class="mc-val">${aSl}</div><div class="mc-sub">${TX("data.m.outOf10")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgRec")}</div><div class="mc-val">${aRec}</div><div class="mc-sub">${TX("data.m.outOf10")}</div></div>`;
+  if(attHtml){const ar=document.getElementById("metricsRow");if(ar)ar.insertAdjacentHTML("beforeend",'<div style="grid-column:1/-1"><div data-i18n="data.pre.attendance" style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt);margin-bottom:4px">Attendance</div>'+attHtml+'</div>');}
   renderCharts(post,pre);
 }
 
@@ -1491,9 +1330,9 @@ function renderCharts(post,pre){
     const lb=pre.map(s=>fd(s.date));
     CH.well=new Chart(document.getElementById("wellChart"),{type:"line",
       data:{labels:lb,datasets:[
-        {label:"Sleep",    data:pre.map(s=>s.sleep),     borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)", borderWidth:2,pointRadius:3,tension:.3,fill:true},
-        {label:"Hydration",data:pre.map(s=>s.hydration), borderColor:"#9B30D9",backgroundColor:"rgba(155,48,217,.07)",borderWidth:2,pointRadius:3,tension:.3,fill:false},
-        {label:"Recovery", data:pre.map(s=>s.recovery),  borderColor:ac,       backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
+        {label:TX("data.sleep"),    data:pre.map(s=>s.sleep),     borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)", borderWidth:2,pointRadius:3,tension:.3,fill:true},
+        {label:TX("data.hydration"),data:pre.map(s=>s.hydration), borderColor:"#9B30D9",backgroundColor:"rgba(155,48,217,.07)",borderWidth:2,pointRadius:3,tension:.3,fill:false},
+        {label:TX("data.recovery"), data:pre.map(s=>s.recovery),  borderColor:ac,       backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
       ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:10,ticks:{...base.scales.y.ticks,stepSize:2}}}}});
   }
 
@@ -1520,15 +1359,15 @@ function renderCharts(post,pre){
 function renderHistory(){
   const el=document.getElementById("sessionList");
   const allS=getPS();
-  if(!allS.length){el.innerHTML='<div class="empty-state"><i class="ti ti-database-off"></i><p>No sessions yet.</p></div>';return;}
+  if(!allS.length){el.innerHTML='<div class="empty-state"><i class="ti ti-database-off"></i><p data-i18n="data.hist.empty">No sessions yet.</p></div>';return;}
   const posts=allS.filter(function(s){return s.type==="post";}).slice().reverse();
   const pres=allS.filter(function(s){return s.type==="pre";});
   const absences=allS.filter(function(s){return s.type==="absence";}).slice().reverse();
   const openPres=pres.filter(function(s){return !s.postId;}).slice().reverse();
   function actionBtns(id){
     return'<span class="sr-actions">'
-      +'<button class="act-btn e" data-edit="'+id+'" title="Edit"><i class="ti ti-pencil"></i></button>'
-      +'<button class="act-btn d" data-del="'+id+'" title="Delete"><i class="ti ti-trash"></i></button>'
+      +'<button class="act-btn e" data-edit="'+id+'" title="'+TX("data.act.edit")+'"><i class="ti ti-pencil"></i></button>'
+      +'<button class="act-btn d" data-del="'+id+'" title="'+TX("data.act.delete")+'"><i class="ti ti-trash"></i></button>'
       +'</span>';
   }
   const postRows=posts.map(function(s){
@@ -1559,7 +1398,7 @@ function renderHistory(){
     return'<div class="session-row" style="opacity:.75;border-left:3px solid var(--a)">'
       +'<span class="sr-date">'+dt+'</span>'
       +'<span class="sr-type pre" style="background:var(--al);color:var(--a)">PENDING</span>'
-      +'<span class="sr-detail">'+(type?type+" · ":"")+"Sleep "+s.sleep+" · Hyd "+s.hydration+" · Rec "+s.recovery+'</span>'
+      +'<span class="sr-detail">'+(type?type+" · ":"")+TX("data.sleep")+" "+s.sleep+" · "+TX("data.hyd")+" "+s.hydration+" · "+TX("data.rec")+" "+s.recovery+'</span>'
       +actionBtns(s.id)+'</div>';
   });
   // Merge all rows sorted by date desc
@@ -1567,7 +1406,7 @@ function renderHistory(){
                  ...absences.map((s,i)=>({d:s.date,ts:s.ts,html:absenceRows[i]})),
                  ...openPres.map((s,i)=>({d:s.date,ts:s.ts,html:openPreRows[i]}))];
   allRows.sort(function(a,b){return b.d.localeCompare(a.d)||b.ts-a.ts;});
-  el.innerHTML=allRows.map(r=>r.html).join("")||'<div class="empty-state"><i class="ti ti-database-off"></i><p>No sessions yet.</p></div>';
+  el.innerHTML=allRows.map(r=>r.html).join("")||'<div class="empty-state"><i class="ti ti-database-off"></i><p data-i18n="data.hist.empty">No sessions yet.</p></div>';
 }
 
 // ── NAV ──
@@ -1578,7 +1417,7 @@ window.showSection=function(id){
   const nb=document.getElementById("nav-"+id);if(nb)nb.classList.add("active");
   const cb=document.getElementById("ctxBar");
   if(cb){
-    cb.style.display=(id==="squad"||id==="admin")?"none":"flex";
+    cb.style.display=(id==="squad")?"none":"flex";
     // Auto-select first player if none selected
     if(!ST.currentPlayer){
       const players=Object.values(ST.players);
@@ -1591,7 +1430,6 @@ window.showSection=function(id){
     }
   }
   if(id==="squad")renderSquad();
-  if(id==="admin")loadUserList();
   if(id==="dash"){renderDashboard();renderTypeChart();}
   if(id==="history")renderHistory();
   if(id==="report")renderReportBuilder();
@@ -1609,10 +1447,10 @@ function renderTypeSelects(){
 }
 
 window.addTrainingType=function(){
-  const name=prompt("New training type name:");
+  const name=prompt(TX("data.msg.newType"));
   if(!name||!name.trim())return;
   const t=name.trim();
-  if(ST.trainingTypes.includes(t)){showToast("Type already exists.","err");return;}
+  if(ST.trainingTypes.includes(t)){showToast(TX("data.msg.typeExists"),"err");return;}
   ST.trainingTypes.push(t);
   save();renderTypeSelects();
   showToast('"'+t+'" added!');
@@ -1631,7 +1469,7 @@ function renderAttendanceList(){
   const nameEl=document.getElementById("preAttendanceName");
   if(!nameEl)return;
   const p=ST.players[ST.currentPlayer];
-  nameEl.textContent=p?p.name:"Select a goalkeeper first";
+  nameEl.textContent=p?p.name:TX("data.msg.pickGkFirst");
   const presEl=document.getElementById("attendancePresent");
   if(presEl)presEl.checked=true; // default present
 }
@@ -1641,7 +1479,7 @@ function renderTypeChart(){
   const el=document.getElementById("typeChartWrap");if(!el)return;
   const pid=ST.currentPlayer;if(!pid)return;
   const sessions=ST.sessions.filter(function(s){return s._pk===pid&&s.type==="post"&&s.trainingType;});
-  if(!sessions.length){el.innerHTML='<div class="empty-state"><i class="ti ti-chart-pie"></i><p>No type data yet.</p></div>';return;}
+  if(!sessions.length){el.innerHTML='<div class="empty-state"><i class="ti ti-chart-pie"></i><p>'+TX("data.msg.noTypeData")+'</p></div>';return;}
   // Count by type
   const counts={};
   sessions.forEach(function(s){counts[s.trainingType]=(counts[s.trainingType]||0)+1;});
@@ -1706,7 +1544,7 @@ function renderOpenPreSessions(){
   const sel=document.getElementById("postLinkPre");
   const msg=document.getElementById("postNoPreMsg");
   if(!sel)return;
-  sel.innerHTML='<option value="">-- Select a pre-training session --</option>';
+  sel.innerHTML='<option data-i18n="data.post.selectPre" value="">-- Select a pre-training session --</option>';
   if(!ST.currentPlayer){return;}
   // Open pre = has no postId
   const openPres=ST.sessions.filter(function(s){
@@ -1738,11 +1576,11 @@ function renderAll(){
   }
   if(ST.currentPlayer){
     document.getElementById("playerSelect").value=ST.currentPlayer;
-    // Show ctxBar if not on squad/admin
+    // Show ctxBar if not on squad
     const cb=document.getElementById("ctxBar");
     const activeSec=document.querySelector(".section.active");
     const activeId=activeSec?activeSec.id.replace("sec-",""):"pre";
-    if(cb&&activeId!=="squad"&&activeId!=="admin") cb.style.display="flex";
+    if(cb&&activeId!=="squad") cb.style.display="flex";
   }renderTypeSelects();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
 
 // ── STATUS/TOAST ──
@@ -1751,8 +1589,8 @@ function hideStatus(){document.getElementById("statusBar").className="status-bar
 let TT;function showToast(m,t){const e=document.getElementById("toast");e.textContent=m;e.className="toast"+(t==="err"?" err":"");e.classList.add("show");clearTimeout(TT);TT=setTimeout(()=>e.classList.remove("show"),3000);}
 
 // ── EXPORT/IMPORT ──
-window.exportJSON=function(){const b=new Blob([JSON.stringify({players:ST.players,sessions:ST.sessions},null,2)],{type:"application/json"});const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="goalkeeper_backup_"+new Date().toISOString().split("T")[0]+".json";a.click();URL.revokeObjectURL(u);showToast("Exported!");};
-window.importJSON=function(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)Object.entries(d.players).forEach(([k,p])=>{if(!ST.players[k])ST.players[k]=p;});if(d.sessions){const ex=new Set(ST.sessions.map(s=>s.id));d.sessions.forEach(s=>{if(!ex.has(s.id))ST.sessions.push(s);});}save();renderAll();showToast("Imported!");}catch(er){showToast("Invalid file.","err");}};r.readAsText(file);e.target.value="";};
+window.exportJSON=function(){const b=new Blob([JSON.stringify({players:ST.players,sessions:ST.sessions},null,2)],{type:"application/json"});const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="goalkeeper_backup_"+new Date().toISOString().split("T")[0]+".json";a.click();URL.revokeObjectURL(u);showToast(TX("data.msg.exported"));};
+window.importJSON=function(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.players)Object.entries(d.players).forEach(([k,p])=>{if(!ST.players[k])ST.players[k]=p;});if(d.sessions){const ex=new Set(ST.sessions.map(s=>s.id));d.sessions.forEach(s=>{if(!ex.has(s.id))ST.sessions.push(s);});}save();renderAll();showToast(TX("data.msg.imported"));}catch(er){showToast(TX("data.msg.invalidFile"),"err");}};r.readAsText(file);e.target.value="";};
 
 // ══════════════════════════════════════════════
 // REPORT BUILDER
@@ -1772,7 +1610,7 @@ function renderReportBuilder(){
   // Player checkboxes (group)
   const grid=document.getElementById("rptPlayerGrid");
   const players=Object.values(ST.players);
-  if(!players.length){grid.innerHTML='<p style="font-size:13px;color:var(--mt)">No goalkeepers added yet.</p>';return;}
+  if(!players.length){grid.innerHTML='<p style="font-size:13px;color:var(--mt)">'+TX("data.rpt.noGkYet")+'</p>';return;}
   grid.innerHTML=players.map(p=>{
     const ini=p.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
     return`<label class="check-item"><input type="checkbox" value="${p.id}" checked><div class="chk-avatar">${ini}</div>${p.name}</label>`;
@@ -1780,7 +1618,7 @@ function renderReportBuilder(){
   // Solo select
   const ss=document.getElementById("soloPlayerSelect");
   const curSolo=ss.value;
-  ss.innerHTML='<option value="">Choose a goalkeeper…</option>';
+  ss.innerHTML='<option data-i18n="data.rpt.chooseGk" value="">Choose a goalkeeper…</option>';
   players.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name;ss.appendChild(o);});
   if(curSolo)ss.value=curSolo;
 }
@@ -1794,7 +1632,7 @@ function getActivePeriods(){
   const periods=[];
   document.querySelectorAll(".pp-btn[data-w].active").forEach(btn=>{
     const w=+btn.dataset.w;
-    const lbl=w===0?"Full Season":w===1?"Last 7 Days":w===4?"Last Month":w===12?"Last 3 Months":"Last 6 Months";
+    const lbl=w===0?TX("data.rpt.full"):w===1?TX("data.rpt.d7"):w===4?TX("data.rpt.m1"):w===12?TX("data.rpt.m3"):TX("data.rpt.m6");
     const from=w===0?null:daysAgo(w*7);
     periods.push({label:lbl,from,to:null});
   });
@@ -1805,8 +1643,8 @@ function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOSt
 
 window.addCustomPeriod=function(){
   const f=document.getElementById("rptFrom").value,t=document.getElementById("rptTo").value;
-  if(!f||!t){showToast("Select both dates.","err");return;}
-  if(f>t){showToast("From must be before To.","err");return;}
+  if(!f||!t){showToast(TX("data.rpt.bothDates"),"err");return;}
+  if(f>t){showToast(TX("data.rpt.fromBeforeTo"),"err");return;}
   customPeriods.push({label:`${fdfull(f)} – ${fdfull(t)}`,from:f,to:t});
   renderCustomTags();
 };
@@ -1842,10 +1680,10 @@ function calcM(ss){
   if(post.length>=4){const ubd={};post.forEach(s=>{ubd[s.date]=(ubd[s.date]||0)+s.ua;});const dates=Object.keys(ubd).sort(),vals=dates.map(d=>ubd[d]),i=vals.length-1;const ac=vals.slice(Math.max(0,i-6),i+1).reduce((a,v)=>a+v,0)/Math.min(7,i+1),ch=vals.slice(Math.max(0,i-27),i+1).reduce((a,v)=>a+v,0)/Math.min(28,i+1);if(ch>0)acwr=(ac/ch).toFixed(2);}
   return{post,pre,absences,tUA,aUA,aPSE,aSl,aHy,aRec,aDur,acwr};
 }
-function zpill(ua){if(!ua||ua==="—")return"—";if(ua<300)return`<span class="zpill zl">Low</span>`;if(ua<600)return`<span class="zpill zm">Moderate</span>`;return`<span class="zpill zh">High</span>`;}
+function zpill(ua){if(!ua||ua==="—")return"—";if(ua<300)return`<span class="zpill zl">${TX("data.pdf.zoneLow")}</span>`;if(ua<600)return`<span class="zpill zm">${TX("data.pdf.zoneMod")}</span>`;return`<span class="zpill zh">${TX("data.pdf.zoneHigh")}</span>`;}
 function acls(v){if(v==="—")return"";const n=parseFloat(v);if(n>=.8&&n<=1.3)return"aok";if(n<.8)return"awk";return"abad";}
-function todayStr(){return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}
-function periodRange(p){return p.from?(p.to?`${fdfull(p.from)} – ${fdfull(p.to)}`:`${fdfull(p.from)} – today`):"Full season";}
+function todayStr(){return new Date().toLocaleDateString(TX("data.pdf.locale"),{day:"2-digit",month:"short",year:"numeric"});}
+function periodRange(p){return p.from?(p.to?`${fdfull(p.from)} – ${fdfull(p.to)}`:`${fdfull(p.from)} – ${TX("data.pdf.today")}`):TX("data.series.full");}
 
 // ── PDF CHART MAKERS ──
 function mkUAChart(id,post,w,h,clubColor){
@@ -1920,7 +1758,7 @@ function mkWellChart(id,pre){
     var pts=s.data.map(function(v,i){return xc(i).toFixed(1)+","+yv(v).toFixed(1);}).join(" ");
     lines+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" stroke-linejoin="round"/>';
     s.data.forEach(function(v,i){dots+='<circle cx="'+xc(i).toFixed(1)+'" cy="'+yv(v).toFixed(1)+'" r="2.5" fill="'+s.color+'"/>';});
-    var labels=["Sleep","Hydration","Recovery"];
+    var labels=[TX("data.sleep"),TX("data.hydration"),TX("data.recovery")];
     var lx=pl+si*72,ly=H-5;
     legend+='<rect x="'+lx+'" y="'+(ly-6)+'" width="10" height="3" fill="'+s.color+'" rx="1"/>';
     legend+='<text x="'+(lx+13)+'" y="'+(ly-3)+'" font-size="6.5" fill="#666" font-family="sans-serif">'+labels[si]+'</text>';
@@ -2054,23 +1892,23 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
   const ss=filterS(player.id,period),m=calcM(ss);
   const uid=`r${secNum}_p${pi}_${Date.now()}`;
   let html=`<div class="rpt-period-block">
-    <div class="period-hdr"><div><div class="ph-lbl">Period ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>
+    <div class="period-hdr"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>
     <div class="rpt-metrics">
-      <div class="rpt-m"><div class="ml">Sessions</div><div class="mv">${m.post.length+m.absences.length}</div><div class="ms">${m.post.length} present · ${m.absences.length} absent</div></div>
-      <div class="rpt-m"><div class="ml">Total AU</div><div class="mv">${m.tUA||"—"}</div><div class="ms">accumulated</div></div>
-      <div class="rpt-m"><div class="ml">Avg AU/session</div><div class="mv">${m.aUA||"—"}</div><div class="ms">a.u.</div></div>
-      <div class="rpt-m"><div class="ml">Avg RPE</div><div class="mv">${m.aPSE}</div><div class="ms">CR10 Borg</div></div>
-      <div class="rpt-m"><div class="ml">Avg duration</div><div class="mv">${m.aDur||"—"}</div><div class="ms">minutes</div></div>
-      <div class="rpt-m"><div class="ml">Avg sleep</div><div class="mv">${m.aSl}</div><div class="ms">/ 10</div></div>
-      <div class="rpt-m"><div class="ml">Avg hydration</div><div class="mv">${m.aHy}</div><div class="ms">/ 10</div></div>
-      <div class="rpt-m"><div class="ml">Avg recovery</div><div class="mv">${m.aRec}</div><div class="ms">/ 10</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.pdf.thSessions")}</div><div class="mv">${m.post.length+m.absences.length}</div><div class="ms">${m.post.length} ${TX("data.m.present")} · ${m.absences.length} ${TX("data.m.absent")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.pdf.thTotalAU")}</div><div class="mv">${m.tUA||"—"}</div><div class="ms">${TX("data.pdf.accumulated")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.pdf.avgAUsession")}</div><div class="mv">${m.aUA||"—"}</div><div class="ms">${TX("data.m.au")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.pdf.thAvgRPE")}</div><div class="mv">${m.aPSE}</div><div class="ms">${TX("data.pdf.cr10borg")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgDur")}</div><div class="mv">${m.aDur||"—"}</div><div class="ms">${TX("data.m.minutes")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgSleep")}</div><div class="mv">${m.aSl}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgHyd")}</div><div class="mv">${m.aHy}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgRec")}</div><div class="mv">${m.aRec}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
     </div>`;
-  if(!ss.length){html+=`<div style="padding:14pt;text-align:center;color:#888;font-size:9.5pt;background:#f8f8f6;border-radius:4pt">No sessions in this period.</div>`;html+=`</div>`;return html;}
-  if(cfg.ua&&m.post.length){const cid=uid+"_ua";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>Internal load — arbitrary units (AU) · ${period.label}</h4><canvas id="${cid}" width="560" height="180"></canvas></div></div>`;chartQueue.push(function(){mkUAChart(cid,m.post,0,0,P);});}
+  if(!ss.length){html+=`<div style="padding:14pt;text-align:center;color:#888;font-size:9.5pt;background:#f8f8f6;border-radius:4pt">${TX("data.pdf.noSessions")}</div>`;html+=`</div>`;return html;}
+  if(cfg.ua&&m.post.length){const cid=uid+"_ua";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.pdf.chartUA")} · ${period.label}</h4><canvas id="${cid}" width="560" height="180"></canvas></div></div>`;chartQueue.push(function(){mkUAChart(cid,m.post,0,0,P);});}
   const hw=cfg.well&&m.pre.length,ha=cfg.acwr&&m.post.length>=4;
   if(hw||ha){html+=`<div class="chart-pair no-break">`;
-    if(hw){const cid=uid+"_well";html+=`<div class="chart-box ${ha?"":"full"}"><h4>Pre-training well-being · ${period.label}</h4><canvas id="${cid}" width="${ha?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkWellChart(cid,m.pre);});}
-    if(ha){const cid=uid+"_acwr";html+=`<div class="chart-box ${hw?"":"full"}"><h4>ACWR · ${period.label}</h4><canvas id="${cid}" width="${hw?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkACWRChart(cid,m.post);});}
+    if(hw){const cid=uid+"_well";html+=`<div class="chart-box ${ha?"":"full"}"><h4>${TX("data.series.wellbeing")} · ${period.label}</h4><canvas id="${cid}" width="${ha?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkWellChart(cid,m.pre);});}
+    if(ha){const cid=uid+"_acwr";html+=`<div class="chart-box ${hw?"":"full"}"><h4>${TX("data.acwr")} · ${period.label}</h4><canvas id="${cid}" width="${hw?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkACWRChart(cid,m.post);});}
     html+=`</div>`;}
   // ── Attendance section ──
   if(m.pre.length||m.absences.length){
@@ -2079,7 +1917,7 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
     m.pre.forEach(function(s){presMap[s.date]=s.present!==false?"present":"absent";});
     m.absences.forEach(function(s){presMap[s.date]="absent";});
     html+='<div class="chart-box" style="margin-bottom:12pt">';
-    html+='<h4 style="font-size:8pt;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8pt">Attendance</h4>';
+    html+='<h4 style="font-size:8pt;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8pt">'+TX("data.pre.attendance")+'</h4>';
     html+='<div style="display:flex;flex-wrap:wrap;gap:6pt">';
     allDates.forEach(function(d){
       const status=presMap[d]||"present";
@@ -2087,12 +1925,12 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
       const bg=status==="present"?"#DCFCE7":"#FEE2E2";
       html+='<div style="display:flex;flex-direction:column;align-items:center;gap:3pt;padding:5pt 8pt;background:'+bg+';border-radius:4pt;min-width:55pt">'
         +'<span style="font-size:7pt;color:#666;font-family:sans-serif">'+fd(d)+'</span>'
-        +'<span style="font-size:8pt;font-weight:600;color:'+col+';font-family:sans-serif">'+(status==="present"?"Present":"Absent")+'</span>'
+        +'<span style="font-size:8pt;font-weight:600;color:'+col+';font-family:sans-serif">'+(status==="present"?TX("data.present"):TX("data.absent"))+'</span>'
         +'</div>';
     });
     html+='</div></div>';
   }
-  if(cfg.table&&m.post.length){html+=`<div class="no-break"><table class="rpt-table"><thead><tr><th>Date</th><th>RPE</th><th>Duration</th><th>AU</th><th>Zone</th></tr></thead><tbody>${m.post.map(s=>`<tr><td>${fdfull(s.date)}</td><td>${s.pse}</td><td>${s.duration} min</td><td>${s.ua}</td><td>${zpill(s.ua)}</td></tr>`).join("")}</tbody></table></div>`;}
+  if(cfg.table&&m.post.length){html+=`<div class="no-break"><table class="rpt-table"><thead><tr><th>${TX("data.pdf.thDate")}</th><th>${TX("data.pdf.thRPE")}</th><th>${TX("data.pdf.thDuration")}</th><th>AU</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>${m.post.map(s=>`<tr><td>${fdfull(s.date)}</td><td>${s.pse}</td><td>${s.duration} ${TX("data.pdf.min")}</td><td>${s.ua}</td><td>${zpill(s.ua)}</td></tr>`).join("")}</tbody></table></div>`;}
   html+=`</div>`;return html;
 }
 
@@ -2102,7 +1940,7 @@ window.generateReport=async function(){
   chartQueue=[];
 
   const periods=getActivePeriods();
-  if(!periods.length){showToast("Select at least one period.","err");return;}
+  if(!periods.length){showToast(TX("data.rpt.pickPeriod"),"err");return;}
 
   const cfg={ua:document.getElementById("togUA").checked,well:document.getElementById("togWell").checked,acwr:document.getElementById("togACWR").checked,table:document.getElementById("togTable").checked,group:document.getElementById("togGroup").checked};
   const brand=ST.brand,P=brand.color||"#16A34A";
@@ -2110,35 +1948,35 @@ window.generateReport=async function(){
 
   if(currentScope==="solo"){
     const soloId=document.getElementById("soloPlayerSelect").value;
-    if(!soloId){showToast("Select a goalkeeper.","err");return;}
-    const p=ST.players[soloId];if(!p){showToast("Goalkeeper not found.","err");return;}
+    if(!soloId){showToast(TX("data.msg.pickGk"),"err");return;}
+    const p=ST.players[soloId];if(!p){showToast(TX("data.rpt.gkNotFound"),"err");return;}
     players=[p];
   } else {
     const checked=[];document.querySelectorAll("#rptPlayerGrid input:checked").forEach(cb=>{const p=ST.players[cb.value];if(p)checked.push(p);});
     players=checked.length?checked:Object.values(ST.players);
-    if(!players.length){showToast("No goalkeepers found.","err");return;}
+    if(!players.length){showToast(TX("data.rpt.noGk"),"err");return;}
   }
 
   let html=``;
 
   // ── COVER ──
-  const scopeLabel=currentScope==="solo"?players[0].name:`${players.length} Goalkeeper${players.length>1?"s":""}`;
+  const scopeLabel=currentScope==="solo"?players[0].name:`${players.length} ${players.length>1?TX("data.goalkeepers"):TX("data.goalkeeper")}`;
   html+=`<div class="rpt-cover">
     <div class="cover-top">
       ${brand.logo?`<img class="cover-logo" src="${brand.logo}" onerror="this.style.display='none'">`:`<div class="cover-logo-ph">${(brand.name||"FluxGK").slice(0,4).toUpperCase()}</div>`}
       <div class="cover-eyebrow">FluxGK</div>
-      <div class="cover-h1">Goalkeeper<br>Load Report</div>
-      <div class="cover-sub">${brand.name||"Futsal Goalkeeping Department"}</div>
+      <div class="cover-h1">${TX("data.pdf.coverTitle")}</div>
+      <div class="cover-sub">${brand.name||TX("data.rpt.dept")}</div>
       <div class="cover-pills">
-        <div class="cover-pill"><strong>${scopeLabel}</strong>Scope</div>
-        <div class="cover-pill"><strong>${periods.length} period${periods.length>1?"s":""}</strong>In report</div>
-        <div class="cover-pill"><strong>${todayStr()}</strong>Generated</div>
+        <div class="cover-pill"><strong>${scopeLabel}</strong>${TX("data.pdf.scope")}</div>
+        <div class="cover-pill"><strong>${periods.length} ${periods.length>1?TX("data.pdf.periods"):TX("data.pdf.period")}</strong>${TX("data.pdf.inReport")}</div>
+        <div class="cover-pill"><strong>${todayStr()}</strong>${TX("data.pdf.generated")}</div>
         ${brand.sub?`<div class="cover-pill"><strong>${brand.sub}</strong></div>`:""}
       </div>
     </div>
     <div class="cover-foot">
-      <div class="cover-foot-item"><div class="lbl">Methodology</div><div class="val">Constraints-Based Approach · Ecological Dynamics</div></div>
-      <div class="cover-foot-item"><div class="lbl">Load metric</div><div class="val">sRPE × Duration = AU (Foster et al.)</div></div>
+      <div class="cover-foot-item"><div class="lbl">${TX("data.pdf.methodology")}</div><div class="val">${TX("data.pdf.methodValue")}</div></div>
+      <div class="cover-foot-item"><div class="lbl">${TX("data.pdf.loadMetric")}</div><div class="val">${TX("data.pdf.loadMetricValue")}</div></div>
     </div>
   </div>`;
 
@@ -2148,14 +1986,14 @@ window.generateReport=async function(){
   if(currentScope==="group"&&players.length>1&&cfg.group){
     html+=`<div class="rpt-group-sec">
       <div class="rpt-sec-hdr" style="background:${P}">
-        <div class="eyebrow">Section ${secIdx++}</div>
-        <div class="title">Group Overview</div>
-        <div class="sub">All goalkeepers — comparative analysis per period</div>
+        <div class="eyebrow">${TX("data.pdf.section")} ${secIdx++}</div>
+        <div class="title">${TX("data.pdf.groupOverview")}</div>
+        <div class="sub">${TX("data.pdf.groupSub")}</div>
       </div>`;
     periods.forEach((period,pi)=>{
-      html+=`<div class="rpt-period-block"><div class="period-hdr" style="border-color:${P}"><div><div class="ph-lbl">Period ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>`;
+      html+=`<div class="rpt-period-block"><div class="period-hdr" style="border-color:${P}"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>`;
       // Comparison table
-      html+=`<table class="rpt-table"><thead><tr><th>Goalkeeper</th><th>Sessions</th><th>Total AU</th><th>Avg AU</th><th>Avg RPE</th><th>Avg Dur.</th><th>Avg Sleep</th><th>Avg Rec.</th><th>ACWR</th><th>Zone</th></tr></thead><tbody>`;
+      html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th><th>${TX("data.pdf.thAvgSleep")}</th><th>${TX("data.pdf.thAvgRec")}</th><th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
       players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td><td>${m.aSl}</td><td>${m.aRec}</td><td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
       html+=`</tbody></table>`;
       // Group time series
@@ -2165,7 +2003,7 @@ window.generateReport=async function(){
           name:p.name,
           sessions:filterS(p.id,period).filter(s=>s.type==="post").sort((a,b)=>a.date.localeCompare(b.date))
         }));
-        html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>Internal load AU per session — all goalkeepers · ${period.label}</h4><canvas id="${cid}" width="560" height="200"></canvas></div></div>`;
+        html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.pdf.chartGroup")} · ${period.label}</h4><canvas id="${cid}" width="560" height="200"></canvas></div></div>`;
         chartQueue.push(function(){mkGroupTimeSeries(cid,seriesData,P);});
       }
       html+=`</div>`;
@@ -2177,15 +2015,15 @@ window.generateReport=async function(){
   players.forEach((player,pi)=>{
     html+=`<div class="rpt-player-sec">
       <div class="rpt-sec-hdr" style="background:${P}">
-        <div class="eyebrow">Section ${secIdx++}</div>
+        <div class="eyebrow">${TX("data.pdf.section")} ${secIdx++}</div>
         <div class="title">${player.name}</div>
-        <div class="sub">Individual load analysis — ${periods.length} period${periods.length>1?"s":""}</div>
+        <div class="sub">${TX("data.pdf.indivSub")} — ${periods.length} ${periods.length>1?TX("data.pdf.periods"):TX("data.pdf.period")}</div>
       </div>`;
     periods.forEach((period,pidx)=>{
       html+=buildPeriodBlock(player,period,pidx,cfg,`pl${pi}`,P);
       if(pidx<periods.length-1)html+=`<hr class="rpt-divider">`;
     });
-    html+=`<div class="rpt-footer">FluxGK · ${brand.name||"Futsal"} · Generated ${todayStr()} · sRPE (Foster et al.) · Constraints-Based Approach · Ecological Dynamics</div>`;
+    html+=`<div class="rpt-footer">FluxGK · ${brand.name||"Futsal"} · ${TX("data.pdf.generated")} ${todayStr()} · ${TX("data.pdf.footer")}</div>`;
     html+=`</div>`;
   });
 
@@ -2200,14 +2038,14 @@ window.generateReport=async function(){
       .split("\n").join("<br>");
     html += '<div class="rpt-player-sec" style="page-break-before:always">'
       + '<div class="rpt-sec-hdr" style="background:'+P+'">'
-      + '<div class="eyebrow">Coach\'s notes</div>'
-      + '<div class="title">Comments &amp; Analysis</div>'
+      + '<div class="eyebrow">'+TX("data.pdf.coachNotes")+'</div>'
+      + '<div class="title">'+TX("data.pdf.commentsTitle")+'</div>'
       + '<div class="sub">'+(brand.name||"FluxGK")+' &middot; '+todayStr()+'</div>'
       + '</div>'
       + '<div style="padding:20pt 24pt;font-size:10pt;line-height:1.75;color:#222;white-space:pre-wrap;border-left:3pt solid '+P+';padding-left:14pt;margin:0 24pt">'
       + safeComment
       + '</div>'
-      + '<div class="rpt-footer">FluxGK &middot; '+(brand.name||"Futsal")+' &middot; Generated '+todayStr()+' &middot; sRPE (Foster et al.) &middot; Constraints-Based Approach &middot; Ecological Dynamics</div>'
+      + '<div class="rpt-footer">FluxGK &middot; '+(brand.name||"Futsal")+' &middot; '+TX("data.pdf.generated")+' '+todayStr()+' &middot; '+TX("data.pdf.footer")+'</div>'
       + '</div>';
   }
 
@@ -2215,11 +2053,13 @@ window.generateReport=async function(){
   chartQueue.forEach(function(fn){fn();});
   // SVG charts are already rendered synchronously above
   // Just trigger print after a brief paint delay
-  showToast("Preparing PDF…");
+  showToast(TX("data.rpt.preparing"));
   setTimeout(()=>window.print(), 400);
 };
 
 // ── INIT ──
+const FLUXGK_DATA_BUILD="data v3 — fluxgksystem + club-isolated 2026-07-16";
+console.log("%c[FluxGK] Load Control "+FLUXGK_DATA_BUILD,"color:#1D9E75;font-weight:bold");
 function today2(){return new Date().toISOString().split("T")[0];}
 (async function init(){
   load();applyTheme();
@@ -2234,17 +2074,49 @@ function today2(){return new Date().toISOString().split("T")[0];}
   const _cb=document.getElementById("ctxBar");if(_cb)_cb.style.display="none";
   // Init Firebase — auth state listener handles everything after
   applyTheme();renderAll();
+  /* ao trocar de idioma, re-renderiza o que e gerado por JS
+     (data-i18n do HTML estatico ja e tratado pelo proprio motor) */
+  FluxGKI18n.onChange(function(){
+    try{ buildPSE(); }catch(e){}
+    try{ renderTypeSelects(); }catch(e){}
+    try{ renderAll(); }catch(e){}
+  });
   window.addEventListener("message",function(ev){
     if(!ev.data||ev.data.type!=="FLUXGK_CONTEXT")return;
-    _uid=ev.data.uid;
-    // Scope every read/write to the active club+season sent by the hub
-    // (users/{uid}/data/{clubId}/{seasonId}). Without this the module wrote
-    // to the shared user root and data leaked across clubs.
-    _base=ev.data.dataPath||null;
-    var p=ev.data.profile||{};
+    var d=ev.data;
+    // Contexto completo e obrigatorio (mesmo padrao de xg/stats/planner)
+    if(!d.uid||!d.dataPath||!d.firebaseConfig){
+      console.error("[FluxGK] Load Control: contexto incompleto",d);
+      showToast(TX("data.msg.noContext"),"err");
+      return;
+    }
+    _uid=d.uid;
+    // Escopo isolado por clube+temporada enviado pelo hub
+    // (users/{uid}/data/{clubId}/{seasonId}/load)
+    _base=d.dataPath;
+    _cfg =d.firebaseConfig;
+    /* idioma definido no hub (persist=false: a escolha e do hub) */
+    if(d.lang) FluxGKI18n.setLang(d.lang,false);
+    console.log("[FluxGK] Load Control scope =",scopeRoot(),"| projeto:",_cfg.projectId);
+    var p=d.profile||{};
     if(typeof ST!=="undefined"&&ST.brand){if(p.clubName)ST.brand.name=p.clubName;if(p.clubColor)ST.brand.color=p.clubColor;if(p.clubBadge)ST.brand.logo=p.clubBadge;}
     if(typeof applyTheme==="function")applyTheme();
-    fbInit().then(function(ok){if(!ok){showToast("Firebase unavailable","err");return;}loadUserState();rtPushAll().then(function(){rtListen();});renderAll();});
+    /* o hub re-envia o contexto ao trocar de idioma: nao reinicializa o Firebase */
+    if(_fbStarted) return;
+    _fbStarted=true;
+    fbInit().then(function(ok){
+      if(!ok){showToast(TX("data.msg.fbUnavailable"),"err");return;}
+      // Mesma origem + mesmo projeto => herda a sessao autenticada do hub
+      _af.onAuthStateChanged(_auth,function(u){
+        if(!u){console.error("[FluxGK] Load Control: sem sessao. Abra pelo hub.");dbBadge(false);return;}
+        if(_listening)return;
+        console.log("[FluxGK] Load Control: autenticado como",u.uid);
+        dbBadge(true);
+        loadUserState();
+        rtPushAll().then(function(){rtListen();});
+        renderAll();
+      });
+    });
   });
 /* avisa o hub que ja esta pronto - nao depende do timing de 600ms */
 try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'data'},'*');}catch(e){}

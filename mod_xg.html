@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Futsal xG">
 <meta name="theme-color" content="#fafaf7">
-<title>Futsal xG Tracker</title>
+<title data-i18n="xg.tracker">Futsal xG Tracker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap');
 :root{
@@ -269,6 +269,7 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
 /* --- a11y: anel de foco para navegacao por teclado --- */
 button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #E8901A;outline-offset:2px}
 </style>
+<script src="fluxgk-i18n.js"></script>
 </head>
 <body>
 <div id="app">
@@ -277,29 +278,29 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
   <div class="logo" onclick="openSettings()">
     <div class="logo-emblem" id="logoEmbA"><span id="logoPhA">⚽</span></div>
     <div>
-      <div class="logo-text" id="hMatchName">Team A vs Team B</div>
-      <div class="logo-sub">⚙ Tap to configure</div>
+      <div data-i18n="xg.vs" class="logo-text" id="hMatchName">Team A vs Team B</div>
+      <div data-i18n="xg.tapConfig" class="logo-sub">⚙ Tap to configure</div>
     </div>
   </div>
   <div class="header-center">
-    <div class="match-comp" id="hComp">Competition</div>
+    <div data-i18n="xg.competition" class="match-comp" id="hComp">Competition</div>
     <div class="match-date" id="hDate">—</div>
   </div>
   <div class="nav-tabs">
-    <button class="ntab active" id="ntab-match" onclick="navTab('match')">⚽ Match</button>
-    <button class="ntab" id="ntab-history" onclick="navTab('history')">📋 History</button>
-    <button class="ntab" id="ntab-clubs" onclick="navTab('clubs')">🛡 Clubs</button>
+    <button data-i18n="xg.tab.match" class="ntab active" id="ntab-match" onclick="navTab('match')">⚽ Match</button>
+    <button data-i18n="xg.tab.history" class="ntab" id="ntab-history" onclick="navTab('history')">📋 History</button>
+    <button data-i18n="xg.tab.clubs" class="ntab" id="ntab-clubs" onclick="navTab('clubs')">🛡 Clubs</button>
     <button class="ntab" id="ntab-report" onclick="navTab('report')">&#128196; Report</button>
   </div>
   <div class="header-right">
     <div class="minute-wrap">
-      <span class="minute-label">MIN</span>
+      <span data-i18n="xg.min" class="minute-label">MIN</span>
       <input type="number" id="minuto" class="minute-input" min="0" max="40" value="1">
     </div>
-    <button class="hbtn accent" onclick="saveCurrentGame()">💾 Save match</button>
-    <button class="hbtn" id="fb-btn" onclick="openFB()">☁ Cloud</button>
-    <button class="hbtn" onclick="openLog()"> Log</button>
-    <button class="hbtn primary" onclick="exportPDF()">⬇ PDF</button>
+    <button data-i18n="xg.saveMatch" class="hbtn accent" onclick="saveCurrentGame()">💾 Save match</button>
+    <button data-i18n="xg.cloud" class="hbtn" id="fb-btn" onclick="openFB()">☁ Cloud</button>
+    <button class="hbtn" onclick="openLog()"> <span data-i18n="xg.log">Log</span></button>
+    <button data-i18n="xg.pdf" class="hbtn primary" onclick="exportPDF()">⬇ PDF</button>
   </div>
 </header>
 <div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid var(--border);font-family:var(--font-m,ui-monospace,monospace);font-size:11px;letter-spacing:.04em;color:var(--text3,#888);flex-shrink:0">
@@ -314,123 +315,123 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
     <div class="team-selector">
       <button class="team-btn active-alfa" id="btn-alfa" onclick="setTeam('alfa')">
         <div class="embsm" id="embSmA"><span id="embSmAph">⚽</span></div>
-        <span id="btnNA">Team A</span>
+        <span data-i18n="xg.teamA" id="btnNA">Team A</span>
       </button>
       <button class="team-btn" id="btn-beta" onclick="setTeam('beta')">
         <div class="embsm" id="embSmB"><span id="embSmBph">⚽</span></div>
-        <span id="btnNB">Team B</span>
+        <span data-i18n="xg.teamB" id="btnNB">Team B</span>
       </button>
     </div>
     <div class="side-bar">
       <div class="side-cell">
-        <div class="side-lbl">Left attacks →</div>
-        <div class="side-name" id="sideLN" style="color:var(--alfa);">Team A</div>
+        <div data-i18n="xg.leftAttacks" class="side-lbl">Left attacks →</div>
+        <div data-i18n="xg.teamA" class="side-name" id="sideLN" style="color:var(--alfa);">Team A</div>
       </div>
       <div class="side-sep"><button class="swap-btn" onclick="swapSides()">⇄</button></div>
       <div class="side-cell" style="text-align:right;">
-        <div class="side-lbl">← Right attacks</div>
-        <div class="side-name" id="sideRN" style="color:var(--beta);">Team B</div>
+        <div data-i18n="xg.rightAttacks" class="side-lbl">← Right attacks</div>
+        <div data-i18n="xg.teamB" class="side-name" id="sideRN" style="color:var(--beta);">Team B</div>
       </div>
     </div>
     <div class="canvas-wrap"><canvas id="court"></canvas></div>
-    <div class="court-hint">Tap the court to mark the shot position</div>
+    <div data-i18n="xg.tapCourt" class="court-hint">Tap the court to mark the shot position</div>
   </div>
 
   <div class="panel">
     <div class="panel-scroll">
-      <div id="posHint" class="pos-hint"> Position marked — fill in the data</div>
+      <div id="posHint" class="pos-hint"> <span data-i18n="xg.marked">Position marked — fill in the data</span></div>
       <div class="xg-card">
         <div class="xg-number" id="xgNum">—</div>
-        <div class="xg-sub">Estimated xG</div>
+        <div data-i18n="xg.estXg" class="xg-sub">Estimated xG</div>
         <div class="xg-bar-track"><div class="xg-bar-fill" id="xgBar"></div></div>
       </div>
       <div class="form-group">
-        <div class="form-label">Body part</div>
+        <div data-i18n="xg.bodyPart" class="form-label">Body part</div>
         <select id="corpo" class="form-select" onchange="calcXG()">
-          <option value="pe_forte">Dominant foot</option>
-          <option value="pe_fraco">Non-dominant foot</option>
-          <option value="cabeca">Head</option>
-          <option value="outro">Other</option>
+          <option data-i18n="xg.domFoot" value="pe_forte">Dominant foot</option>
+          <option data-i18n="xg.nonDomFoot" value="pe_fraco">Non-dominant foot</option>
+          <option data-i18n="xg.head" value="cabeca">Head</option>
+          <option data-i18n="xg.other" value="outro">Other</option>
         </select>
       </div>
       <div class="form-group">
-        <div class="form-label">Game moment</div>
+        <div data-i18n="xg.gameMoment" class="form-label">Game moment</div>
         <select id="tipo" class="form-select" onchange="calcXG()">
-          <option value="saida_pressao">Leaving Pressure</option>
-          <option value="ataque_org">Organized Attack</option>
-          <option value="transicao">Transition</option>
-          <option value="lateral">Throw-in</option>
-          <option value="escanteio">Corner</option>
-          <option value="falta">Free Kick</option>
-          <option value="penalti">Penalty</option>
-          <option value="tiro10m">10m Free Kick</option>
+          <option data-i18n="xg.m.pressure" value="saida_pressao">Leaving Pressure</option>
+          <option data-i18n="xg.m.organized" value="ataque_org">Organized Attack</option>
+          <option data-i18n="xg.m.transition" value="transicao">Transition</option>
+          <option data-i18n="xg.m.throwin" value="lateral">Throw-in</option>
+          <option data-i18n="xg.m.corner" value="escanteio">Corner</option>
+          <option data-i18n="xg.m.freekick" value="falta">Free Kick</option>
+          <option data-i18n="xg.m.penalty" value="penalti">Penalty</option>
+          <option data-i18n="xg.m.tenm" value="tiro10m">10m Free Kick</option>
           <option value="5x4">5v4</option>
           <option value="4x3">4v3</option>
         </select>
       </div>
       <div class="form-group">
-        <div class="form-label">Assist</div>
+        <div data-i18n="xg.assist" class="form-label">Assist</div>
         <div class="toggle-group">
-          <div class="tog" id="tog-assist" onclick="toggle('assist')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('assist')})">With assist</div>
-          <div class="tog on-off" id="tog-noassist" onclick="toggle('noassist')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('noassist')})">None</div>
+          <div data-i18n="xg.withAssist" class="tog" id="tog-assist" onclick="toggle('assist')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('assist')})">With assist</div>
+          <div data-i18n="xg.none" class="tog on-off" id="tog-noassist" onclick="toggle('noassist')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('noassist')})">None</div>
         </div>
       </div>
       <div class="form-group">
-        <div class="form-label">Defender pressure</div>
+        <div data-i18n="xg.defPressure" class="form-label">Defender pressure</div>
         <div class="toggle-group">
-          <div class="tog" id="tog-press" onclick="toggle('press')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('press')})">With pressure</div>
-          <div class="tog on-off" id="tog-nopress" onclick="toggle('nopress')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('nopress')})">None</div>
+          <div data-i18n="xg.withPressure" class="tog" id="tog-press" onclick="toggle('press')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('press')})">With pressure</div>
+          <div data-i18n="xg.none" class="tog on-off" id="tog-nopress" onclick="toggle('nopress')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('nopress')})">None</div>
         </div>
       </div>
       <div class="form-group">
-        <div class="form-label">Goalkeeper presence</div>
+        <div data-i18n="xg.gkPresence" class="form-label">Goalkeeper presence</div>
         <div class="toggle-group">
-          <div class="tog on-off" id="tog-gkpres" onclick="toggle('gkpres')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gkpres')})">Goalkeeper present</div>
-          <div class="tog" id="tog-gkoff" onclick="toggle('gkoff')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gkoff')})">Goalkeeper off-line</div>
+          <div data-i18n="xg.gkPresent" class="tog on-off" id="tog-gkpres" onclick="toggle('gkpres')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gkpres')})">Goalkeeper present</div>
+          <div data-i18n="xg.gkOffLine" class="tog" id="tog-gkoff" onclick="toggle('gkoff')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gkoff')})">Goalkeeper off-line</div>
         </div>
       </div>
       <div class="form-group">
-        <div class="form-label">Defenders behind the ball</div>
+        <div data-i18n="xg.defBehind" class="form-label">Defenders behind the ball</div>
         <select id="defenders" class="form-select" onchange="calcXG()">
           <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4+</option>
         </select>
       </div>
       <div class="form-group">
-        <div class="form-label">Outcome</div>
+        <div data-i18n="xg.outcome" class="form-label">Outcome</div>
         <div class="toggle-group">
-          <div class="tog" id="tog-gol" onclick="toggle('gol')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gol')})">⚽ Goal</div>
-          <div class="tog on-off" id="tog-nogol" onclick="toggle('nogol')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('nogol')})">No goal</div>
+          <div data-i18n="xg.goal" class="tog" id="tog-gol" onclick="toggle('gol')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('gol')})">⚽ Goal</div>
+          <div data-i18n="xg.noGoal" class="tog on-off" id="tog-nogol" onclick="toggle('nogol')" role="button" tabindex="0" onkeydown="kbAct(event,function(){toggle('nogol')})">No goal</div>
         </div>
       </div>
       <div>
         <div class="collapse-header" onclick="toggleCalib()">
-          <span class="collapse-title">⚙ Calibração xG</span>
+          <span data-i18n="xg.calib" class="collapse-title">⚙ Calibração xG</span>
           <span class="collapse-icon" id="calibIcon">▼</span>
         </div>
         <div class="collapse-body" id="calibBody" style="max-height:0;">
           <div class="calib-inner">
             <div class="preset-row">
-              <button class="preset-btn" onclick="applyPreset('conservador')">Conservador</button>
-              <button class="preset-btn active" id="pre-futsal" onclick="applyPreset('futsal')">Futsal</button>
-              <button class="preset-btn" onclick="applyPreset('agressivo')">Agressivo</button>
+              <button data-i18n="xg.conservative" class="preset-btn" onclick="applyPreset('conservador')">Conservador</button>
+              <button data-i18n="xg.futsal" class="preset-btn active" id="pre-futsal" onclick="applyPreset('futsal')">Futsal</button>
+              <button data-i18n="xg.aggressive" class="preset-btn" onclick="applyPreset('agressivo')">Agressivo</button>
             </div>
-            <div class="calib-row"><span class="calib-name">Base máx.</span><input type="range" class="calib-slider" id="sl-base" min="0.3" max="1.0" step="0.05" value="0.85" oninput="onSlider()"><span class="calib-val" id="vl-base">0.85</span></div>
-            <div class="calib-row"><span class="calib-name">Distância</span><input type="range" class="calib-slider" id="sl-dist" min="0.5" max="2.5" step="0.1" value="1.2" oninput="onSlider()"><span class="calib-val" id="vl-dist">1.2</span></div>
-            <div class="calib-row"><span class="calib-name">Ângulo</span><input type="range" class="calib-slider" id="sl-ang" min="0.0" max="1.5" step="0.1" value="0.6" oninput="onSlider()"><span class="calib-val" id="vl-ang">0.6</span></div>
+            <div class="calib-row"><span data-i18n="xg.baseMax" class="calib-name">Base máx.</span><input type="range" class="calib-slider" id="sl-base" min="0.3" max="1.0" step="0.05" value="0.85" oninput="onSlider()"><span class="calib-val" id="vl-base">0.85</span></div>
+            <div class="calib-row"><span data-i18n="xg.distance" class="calib-name">Distância</span><input type="range" class="calib-slider" id="sl-dist" min="0.5" max="2.5" step="0.1" value="1.2" oninput="onSlider()"><span class="calib-val" id="vl-dist">1.2</span></div>
+            <div class="calib-row"><span data-i18n="xg.angle" class="calib-name">Ângulo</span><input type="range" class="calib-slider" id="sl-ang" min="0.0" max="1.5" step="0.1" value="0.6" oninput="onSlider()"><span class="calib-val" id="vl-ang">0.6</span></div>
           </div>
         </div>
       </div>
-      <button class="reg-btn alfa-team" id="regBtn" onclick="registrar()" disabled>+ Register shot</button>
+      <button data-i18n="xg.registerShot" class="reg-btn alfa-team" id="regBtn" onclick="registrar()" disabled>+ Register shot</button>
     </div>
   </div>
 </main>
 
 <footer>
   <div class="stats-grid">
-    <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total</div></div>
-    <div class="stat-card"><div class="stat-val" id="st-gols">0</div><div class="stat-lbl">Gols</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-total">0</div><div data-i18n="xg.total" class="stat-lbl">Total</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-gols">0</div><div data-i18n="xg.goals" class="stat-lbl">Gols</div></div>
     <div class="stat-card"><div class="stat-val" id="st-xg">0.00</div><div class="stat-lbl">xG</div></div>
-    <div class="stat-card"><div class="stat-val" id="st-conv">0%</div><div class="stat-lbl">Conv.</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-conv">0%</div><div data-i18n="xg.conv" class="stat-lbl">Conv.</div></div>
   </div>
 </footer>
 </div>
@@ -438,51 +439,51 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
 <!-- SETTINGS -->
 <div class="overlay" id="ovS" onclick="closeOvOut(event,'ovS')">
   <div class="sheet" style="max-height:78vh;">
-    <div class="sheet-header"><div class="sheet-title">Match settings</div><button class="sheet-close" onclick="closeOv('ovS')" aria-label="Close">✕</button></div>
+    <div class="sheet-header"><div data-i18n="xg.matchSettings" class="sheet-title">Match settings</div><button class="sheet-close" onclick="closeOv('ovS')" aria-label="Close" data-i18n-aria-label="common.close">✕</button></div>
     <div class="sheet-body">
       <div class="settings-body">
         <div class="settings-section">
-          <div class="settings-title">Partida</div>
+          <div data-i18n="xg.match" class="settings-title">Partida</div>
           <div class="settings-row">
-            <div><div class="field-label">Competition</div><input type="text" id="inComp" class="field-input" placeholder="Liga Nacional" oninput="syncMatch()"></div>
-            <div><div class="field-label">Data</div><input type="date" id="inDate" class="field-input" oninput="syncMatch()"></div>
+            <div><div data-i18n="xg.competition" class="field-label">Competition</div><input type="text" id="inComp" class="field-input" placeholder="Liga Nacional" data-i18n-placeholder="xg.ph.comp" oninput="syncMatch()"></div>
+            <div><div data-i18n="xg.date" class="field-label">Data</div><input type="date" id="inDate" class="field-input" oninput="syncMatch()"></div>
           </div>
         </div>
         <div class="settings-section">
-          <div class="settings-title">Team A (blue)</div>
+          <div data-i18n="xg.teamABlue" class="settings-title">Team A (blue)</div>
           <div class="team-edit-row">
             <div class="emblem-btn" id="embBtnA">
               <span id="embBtnAph" style="font-size:22px;"></span>
               <input type="file" accept="image/*" onchange="loadEmb(event,'alfa')">
             </div>
             <div style="flex:1;position:relative;">
-              <input type="text" id="inNA" class="name-input" style="width:100%;" placeholder="Team A or pick from list" value="Team A"
+              <input type="text" id="inNA" class="name-input" style="width:100%;" placeholder="Team A or pick from list" data-i18n-placeholder="xg.ph.teamA" value="Team A"
                 oninput="syncNames();showClubPicker('A',this.value)"
                 onfocus="showClubPicker('A',this.value)"
                 autocomplete="off">
-              <select id="clubSelA" onchange="pickClubFromSelect('A',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option value="">📋 Select club...</option></select>
+              <select id="clubSelA" onchange="pickClubFromSelect('A',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option data-i18n="xg.pickClub" value="">📋 Select club...</option></select>
               <div id="club-picker-A" onclick="event.stopPropagation()" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
             </div>
           </div>
         </div>
         <div class="settings-section">
-          <div class="settings-title">Team B (yellow)</div>
+          <div data-i18n="xg.teamBYellow" class="settings-title">Team B (yellow)</div>
           <div class="team-edit-row">
             <div class="emblem-btn" id="embBtnB">
               <span id="embBtnBph" style="font-size:22px;"></span>
               <input type="file" accept="image/*" onchange="loadEmb(event,'beta')">
             </div>
             <div style="flex:1;position:relative;">
-              <input type="text" id="inNB" class="name-input" style="width:100%;" placeholder="Team B or pick from list" value="Team B"
+              <input type="text" id="inNB" class="name-input" style="width:100%;" placeholder="Team B or pick from list" data-i18n-placeholder="xg.ph.teamB" value="Team B"
                 oninput="syncNames();showClubPicker('B',this.value)"
                 onfocus="showClubPicker('B',this.value)"
                 autocomplete="off">
-              <select id="clubSelB" onchange="pickClubFromSelect('B',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option value="">📋 Select club...</option></select>
+              <select id="clubSelB" onchange="pickClubFromSelect('B',this)" style="margin-top:6px;width:100%;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;padding:0 8px;cursor:pointer;"><option data-i18n="xg.pickClub" value="">📋 Select club...</option></select>
               <div id="club-picker-B" onclick="event.stopPropagation()" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
             </div>
           </div>
         </div>
-        <button class="reg-btn alfa-team" style="margin-top:4px;" onclick="closeOv('ovS')">Save ✓</button>
+        <button data-i18n="xg.saveCheck" class="reg-btn alfa-team" style="margin-top:4px;" onclick="closeOv('ovS')">Save ✓</button>
       </div>
     </div>
   </div>
@@ -491,7 +492,7 @@ button:focus-visible,.tog:focus-visible,.sdel:focus-visible,[role="button"]:focu
 <!-- LOG -->
 <div class="overlay" id="ovL" onclick="closeOvOut(event,'ovL')">
   <div class="sheet">
-    <div class="sheet-header"><div class="sheet-title">Shot log</div><button class="sheet-close" onclick="closeOv('ovL')" aria-label="Close">✕</button></div>
+    <div class="sheet-header"><div data-i18n="xg.shotLog" class="sheet-title">Shot log</div><button class="sheet-close" onclick="closeOv('ovL')" aria-label="Close" data-i18n-aria-label="common.close">✕</button></div>
     <div class="sheet-body" id="logBody"></div>
   </div>
 </div>
@@ -530,8 +531,11 @@ const S={
   calibOpen:false,CFG:{base:0.85,dist:1.2,ang:0.6}
 };
 const PRESETS={conservador:{base:0.65,dist:2.0,ang:1.2},futsal:{base:0.85,dist:1.2,ang:0.6},agressivo:{base:0.95,dist:0.7,ang:0.2}};
-const TIPO={saida_pressao:'Leaving Pressure',ataque_org:'Organized Attack',transicao:'Transition',lateral:'Throw-in',escanteio:'Corner',falta:'Free Kick',penalti:'Penalty',tiro10m:'10m Free Kick','5x4':'5v4','4x3':'4v3'};
-const CORPO={pe_forte:'Dom. foot',pe_fraco:'Non-dom. foot',cabeca:'Head',outro:'Other'};
+const TIPO={saida_pressao:'xg.m.pressure',ataque_org:'xg.m.organized',transicao:'xg.m.transition',lateral:'xg.m.throwin',escanteio:'xg.m.corner',falta:'xg.m.freekick',penalti:'xg.m.penalty',tiro10m:'xg.m.tenm'};
+const CORPO={pe_forte:'xg.domFootShort',pe_fraco:'xg.nonDomFootShort',cabeca:'xg.head',outro:'xg.other'};
+/* rotulo traduzido a partir da chave (o dado gravado continua sendo o codigo) */
+function tipoL(c){return c&&TIPO[c]?TX(TIPO[c]):(c||'');}
+function corpoL(c){return c&&CORPO[c]?TX(CORPO[c]):(c||'');}
 const TC={alfa:'#3B82F6',beta:'#F59E0B'};
 
 /* ── CANVAS ── */
@@ -570,7 +574,7 @@ function swapSides(){S.alfaLeft=!S.alfaLeft;const lT=S.alfaLeft?'alfa':'beta',rT
 function toggle(id){if(id==='assist')S.assist=true;if(id==='noassist')S.assist=false;if(id==='press')S.pressao=true;if(id==='nopress')S.pressao=false;if(id==='gol')S.gol=true;if(id==='nogol')S.gol=false;if(id==='gkpres')S.gkPres=true;if(id==='gkoff')S.gkPres=false;S.defenders=parseInt(document.getElementById('defenders')?.value||0);updTogg();calcXG();}
 function updTogg(){const t=S.cur;[['assist',S.assist,'on-'+t],['noassist',!S.assist,'on-off'],['press',S.pressao,'on-'+t],['nopress',!S.pressao,'on-off'],['gol',S.gol,'on-gol'],['nogol',!S.gol,'on-off'],['gkpres',S.gkPres,'on-off'],['gkoff',!S.gkPres,'on-'+S.cur]].forEach(([id,on,cls])=>{const el=document.getElementById('tog-'+id);if(el)el.className='tog'+(on?' '+cls:'');});}
 
-function registrar(){if(!S.pending)return;const xg=computeXG(S.pending.nx,S.pending.ny,S.cur),min=parseInt(document.getElementById('minuto').value)||0;S.shots.push({team:S.cur,nx:S.pending.nx,ny:S.pending.ny,atkDir:atkDir(S.cur),corpo:document.getElementById('corpo').value,tipo:document.getElementById('tipo').value,assist:S.assist,pressao:S.pressao,gol:S.gol,gkPres:S.gkPres,defenders:S.defenders,xg,min});S.pending=null;document.getElementById('posHint').style.display='none';document.getElementById('regBtn').disabled=true;document.getElementById('xgNum').textContent='—';document.getElementById('xgNum').style.color='';document.getElementById('xgBar').style.width='0%';document.getElementById('minuto').value=Math.min((parseInt(document.getElementById('minuto').value)||0)+1,40);updStats();draw();toast('Shot registered ✓');}
+function registrar(){if(!S.pending)return;const xg=computeXG(S.pending.nx,S.pending.ny,S.cur),min=parseInt(document.getElementById('minuto').value)||0;S.shots.push({team:S.cur,nx:S.pending.nx,ny:S.pending.ny,atkDir:atkDir(S.cur),corpo:document.getElementById('corpo').value,tipo:document.getElementById('tipo').value,assist:S.assist,pressao:S.pressao,gol:S.gol,gkPres:S.gkPres,defenders:S.defenders,xg,min});S.pending=null;document.getElementById('posHint').style.display='none';document.getElementById('regBtn').disabled=true;document.getElementById('xgNum').textContent='—';document.getElementById('xgNum').style.color='';document.getElementById('xgBar').style.width='0%';document.getElementById('minuto').value=Math.min((parseInt(document.getElementById('minuto').value)||0)+1,40);updStats();draw();toast(TX('xg.msg.shotRegistered'));}
 function delShot(i){S.shots.splice(i,1);updStats();draw();renderLog();}
 function updStats(){const t=S.shots.length,g=S.shots.filter(s=>s.gol).length,x=S.shots.reduce((a,s)=>a+s.xg,0);document.getElementById('st-total').textContent=t;document.getElementById('st-gols').textContent=g;document.getElementById('st-xg').textContent=x.toFixed(2);document.getElementById('st-conv').textContent=t>0?Math.round(g/t*100)+'%':'0%';}
 
@@ -609,7 +613,7 @@ function pickClubFromSelect(team,sel){
 function loadEmb(event,team){const file=event.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const src=e.target.result;if(team==='alfa'){S.teamA.emb=src;setEmbUI('A',src,'alfa');}else{S.teamB.emb=src;setEmbUI('B',src,'beta');}syncNames();};r.readAsDataURL(file);}
 function setEmbUI(let_,src,team){const btn=document.getElementById('embBtn'+let_);btn.innerHTML=`<img src="${src}" alt="escudo"><input type="file" accept="image/*" onchange="loadEmb(event,'${team}')">`;if(let_==='A'){const le=document.getElementById('logoEmbA');le.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">`;}const sm=document.getElementById('embSm'+let_);sm.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;">`;}
 function syncNames(){const nA=document.getElementById('inNA').value||'Team A',nB=document.getElementById('inNB').value||'Team B';S.teamA.name=nA;S.teamB.name=nB;document.getElementById('hMatchName').textContent=nA+' vs '+nB;document.getElementById('btnNA').textContent=nA;document.getElementById('btnNB').textContent=nB;document.getElementById('sideLN').textContent=S.alfaLeft?nA:nB;document.getElementById('sideRN').textContent=S.alfaLeft?nB:nA;draw();}
-function syncMatch(){S.comp=document.getElementById('inComp').value;S.date=document.getElementById('inDate').value;document.getElementById('hComp').textContent=S.comp||'Competição';if(S.date){const[y,m,d]=S.date.split('-');document.getElementById('hDate').textContent=`${d}/${m}/${y}`;}else{document.getElementById('hDate').textContent='—';}}
+function syncMatch(){S.comp=document.getElementById('inComp').value;S.date=document.getElementById('inDate').value;document.getElementById('hComp').textContent=S.comp||TX('xg.competition');if(S.date){const[y,m,d]=S.date.split('-');document.getElementById('hDate').textContent=`${d}/${m}/${y}`;}else{document.getElementById('hDate').textContent='—';}}
 
 /* ── LOG ── */
 function renderLog(){
@@ -640,12 +644,12 @@ function renderLog(){
     html+='<div class="steam" style="color:'+col+';">'+nm+'</div>';
     html+='<div class="smin">'+sh.min+"'</div>";
     html+='<div class="sxg" style="color:'+col+';">'+sh.xg.toFixed(2)+'</div>';
-    html+='<div class="stags"><span class="stag">'+(TIPO[sh.tipo]||sh.tipo)+'</span>';
-    html+='<span class="stag">'+(CORPO[sh.corpo]||sh.corpo)+'</span>';
+    html+='<div class="stags"><span class="stag">'+(tipoL(sh.tipo)||sh.tipo)+'</span>';
+    html+='<span class="stag">'+(corpoL(sh.corpo)||sh.corpo)+'</span>';
     if(sh.gol)html+='<span class="stag gol">⚽ Goal</span>';
     html+='</div>';
-    html+='<button title="Edit shot" onclick="editShot('+i+')" style="width:22px;height:22px;border-radius:50%;background:'+ebg+';border:1px solid '+ebc+';color:'+ec+';cursor:pointer;font-size:11px;flex-shrink:0;">✏</button>';
-    html+='<button class="sdel" onclick="delShot('+i+')" aria-label="Delete shot">&#10005;</button>';
+    html+='<button title="Edit shot" data-i18n-title="xg.editShot" onclick="editShot('+i+')" style="width:22px;height:22px;border-radius:50%;background:'+ebg+';border:1px solid '+ebc+';color:'+ec+';cursor:pointer;font-size:11px;flex-shrink:0;">✏</button>';
+    html+='<button class="sdel" onclick="delShot('+i+')" aria-label="Delete shot" data-i18n-aria-label="xg.deleteShot">&#10005;</button>';
     html+='</div>';
     return html;
   }).join('');
@@ -665,7 +669,7 @@ function exportPDF(){
   var dateStr=S.date?(function(){var p=S.date.split('-');return p[2]+'/'+p[1]+'/'+p[0];})()
     :(new Date().toLocaleDateString('en-GB'));
   var win=window.open('','_blank','width=900,height=700');
-  if(!win){alert('Autorize popups para este site.');return;}
+  if(!win){alert(TX('xg.msg.allowPopups'));return;}
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
     +'<style>'
     +"@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500;600&display=swap');"
@@ -714,8 +718,8 @@ function buildPDF(){
   const logoA=S.teamA.emb?`<img class="pdf-logo-img" src="${S.teamA.emb}">`:`<div class="pdf-logo-ph">&#9917;</div>`;
   const logoB=S.teamB.emb?`<img class="pdf-logo-img" src="${S.teamB.emb}">`:`<div class="pdf-logo-ph">&#9917;</div>`;
   const tipoCount={};s.forEach(sh=>{tipoCount[sh.tipo]=(tipoCount[sh.tipo]||0)+1;});
-  const tipoRows=Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<tr><td>${TIPO[t]||t}</td><td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;">${n}</td></tr>`).join('');
-  const tRows=s.map((sh,i)=>`<tr><td>${i+1}</td><td class="${sh.team==='alfa'?'t-alfa':'t-beta'}">${sh.team==='alfa'?nA:nB}</td><td>${sh.min}'</td><td class="xg-c">${sh.xg.toFixed(3)}</td><td>${TIPO[sh.tipo]||sh.tipo}</td><td>${CORPO[sh.corpo]||sh.corpo}</td><td>${sh.assist?'Yes':'No'}</td><td>${sh.pressao?'Yes':'No'}</td><td>${sh.gol?'<span class="gol-b">GOAL</span>':''}</td></tr>`).join('');
+  const tipoRows=Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<tr><td>${tipoL(t)||t}</td><td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;">${n}</td></tr>`).join('');
+  const tRows=s.map((sh,i)=>`<tr><td>${i+1}</td><td class="${sh.team==='alfa'?'t-alfa':'t-beta'}">${sh.team==='alfa'?nA:nB}</td><td>${sh.min}'</td><td class="xg-c">${sh.xg.toFixed(3)}</td><td>${tipoL(sh.tipo)||sh.tipo}</td><td>${corpoL(sh.corpo)||sh.corpo}</td><td>${sh.assist?'Yes':'No'}</td><td>${sh.pressao?'Yes':'No'}</td><td>${sh.gol?'<span class="gol-b">'+TX("xg.pdf.goalUp")+'</span>':''}</td></tr>`).join('');
   const courtImg=cv.toDataURL('image/png');
   document.getElementById('pdf-report').innerHTML=`
   <div class="pdf-page">
@@ -744,27 +748,27 @@ function buildPDF(){
         <div class="pdf-tc-name" style="color:#3B82F6;">${nA}</div>
         <div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">${aS.length}</span></div>
         <div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">${aG}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">${aXG.toFixed(2)}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">${aS.length>0?(aXG/aS.length).toFixed(3):'—'}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">${aConv}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.totalXg")}</span><span class="pdf-tc-v">${aXG.toFixed(2)}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.avgXg")}</span><span class="pdf-tc-v">${aS.length>0?(aXG/aS.length).toFixed(3):'—'}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.conversion")}</span><span class="pdf-tc-v">${aConv}</span></div>
       </div>
-      <div class="pdf-mid"><div class="pdf-score">${aG}–${bG}</div><div class="pdf-score-lbl">Score</div></div>
+      <div class="pdf-mid"><div class="pdf-score">${aG}–${bG}</div><div class="pdf-score-lbl">${TX("xg.pdf.score")}</div></div>
       <div class="pdf-tcol beta">
         <div class="pdf-tc-name" style="color:#F59E0B;">${nB}</div>
         <div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">${bS.length}</span></div>
         <div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">${bG}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">${bXG.toFixed(2)}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">${bS.length>0?(bXG/bS.length).toFixed(3):'—'}</span></div>
-        <div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">${bConv}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.totalXg")}</span><span class="pdf-tc-v">${bXG.toFixed(2)}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.avgXg")}</span><span class="pdf-tc-v">${bS.length>0?(bXG/bS.length).toFixed(3):'—'}</span></div>
+        <div class="pdf-tc-row"><span class="pdf-tc-k">${TX("xg.pdf.conversion")}</span><span class="pdf-tc-v">${bConv}</span></div>
       </div>
     </div>
-    <div class="pdf-section-title">Shot Map</div>
+    <div class="pdf-section-title">${TX("xg.pdf.shotMap")}</div>
     <img class="pdf-court-img" src="${courtImg}" alt="Shot Map">
     <div class="pdf-2col" style="margin-top:10px;">
-      <div><div class="pdf-section-title">Shots by Game Moment</div><table class="pdf-table"><thead><tr><th>Type</th><th style="text-align:right;">Total</th></tr></thead><tbody>${tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">—</td></tr>'}</tbody></table></div>
-      <div><div class="pdf-section-title">xG Reference</div><table class="pdf-table"><thead><tr><th>Range</th><th>Interpretation</th></tr></thead><tbody><tr><td>0.00–0.09</td><td>Unlikely</td></tr><tr><td>0.10–0.24</td><td>Low probability</td></tr><tr><td>0.25–0.44</td><td>Moderate</td></tr><tr><td>0.45–0.64</td><td>Good chance</td></tr><tr><td>0.65–1.00</td><td>Big chance</td></tr></tbody></table></div>
+      <div><div class="pdf-section-title">${TX("xg.pdf.byMoment")}</div><table class="pdf-table"><thead><tr><th>Type</th><th style="text-align:right;">Total</th></tr></thead><tbody>${tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">—</td></tr>'}</tbody></table></div>
+      <div><div class="pdf-section-title">${TX("xg.pdf.reference")}</div><table class="pdf-table"><thead><tr><th>${TX("xg.pdf.range")}</th><th>${TX("xg.pdf.interpretation")}</th></tr></thead><tbody><tr><td>0.00–0.09</td><td>${TX("xg.pdf.unlikely")}</td></tr><tr><td>0.10–0.24</td><td>${TX("xg.pdf.lowProb")}</td></tr><tr><td>0.25–0.44</td><td>${TX("xg.pdf.moderate")}</td></tr><tr><td>0.45–0.64</td><td>${TX("xg.pdf.goodChance")}</td></tr><tr><td>0.65–1.00</td><td>${TX("xg.pdf.bigChance")}</td></tr></tbody></table></div>
     </div>
-    <div class="pdf-section-title" style="margin-top:10px;">Shot Table</div>
+    <div class="pdf-section-title" style="margin-top:10px;">${TX("xg.pdf.shotTable")}</div>
     <table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min</th><th>xG</th><th>Moment</th><th>Body</th><th>Assist</th><th>Press</th><th>Result</th></tr></thead><tbody>${tRows}</tbody></table>
     <div class="pdf-foot" style="margin-top:10px;"><span class="pdf-foot-txt">Futsal xG Tracker</span><span class="pdf-foot-txt">${S.comp||''} · ${dateStr}</span></div>
   </div>`;
@@ -778,12 +782,12 @@ function buildPDF(){
       var _sh=_chunk[_ci],_i=_si+_ci;
       var _nm=_sh.team==='alfa'?nA:nB,_cls=_sh.team==='alfa'?'t-alfa':'t-beta';
       var _a=_sh.assist?'Yes':'No',_pr=_sh.pressao?'Yes':'No';
-      var _o=_sh.gol?'<span class="gol-b">GOAL</span>':'';
+      var _o=_sh.gol?'<span class="gol-b">'+TX("xg.pdf.goalUp")+'</span>':'';
       _rows+='<tr><td>'+(_i+1)+'</td><td class="'+_cls+'">'+_nm+'</td>'
         +'<td>'+_sh.min+"'</td>"
         +'<td class="xg-c">'+_sh.xg.toFixed(3)+'</td>'
-        +'<td>'+(TIPO[_sh.tipo]||_sh.tipo)+'</td>'
-        +'<td>'+(CORPO[_sh.corpo]||_sh.corpo)+'</td>'
+        +'<td>'+(tipoL(_sh.tipo)||_sh.tipo)+'</td>'
+        +'<td>'+(corpoL(_sh.corpo)||_sh.corpo)+'</td>'
         +'<td>'+_a+'</td><td>'+_pr+'</td><td>'+_o+'</td></tr>';
     }
     var _div=document.createElement('div');
@@ -932,7 +936,7 @@ async function saveXGSettings(){
   localStorage.setItem('xg_settings',JSON.stringify(XGS));
   if(FB.ready()){try{await FB.set('settings',XGS);}catch(e){console.warn('FB settings write failed:',e);}}
   applyXGSettings();
-  toast('Settings saved');
+  toast(TX('xg.msg.settingsSaved'));
 }
 
 /* ════════ NAV ════════ */
@@ -964,10 +968,10 @@ function navTab(tab){
 
 /* ════════ SALVAR PARTIDA ════════ */
 function saveCurrentGame(){
-  if(!S.shots.length){toast('No shots to save');return;}
+  if(!S.shots.length){toast(TX('xg.msg.noShots'));return;}
   DB.saveGame({id:Date.now().toString(),teamA:S.teamA.name,teamB:S.teamB.name,
     comp:S.comp,date:S.date||new Date().toISOString().split('T')[0],shots:S.shots});
-  toast('Match saved ✓');renderHist();
+  toast(TX('xg.msg.matchSaved'));renderHist();
 }
 
 /* ════════ HISTÓRICO ════════ */
@@ -1006,12 +1010,12 @@ function populateHistFilters(){
     el.innerHTML='<option value="">'+all+'</option>'+vals.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join('');
     el.value=cur;
   }
-  fill('xg-hist-opp',opps,'All Opponents');
-  fill('xg-hist-comp',comps,'All Competitions');
-  fill('xg-hist-season',seasons,'All Seasons');
-  fill('xg-rep-opp',opps,'All Opponents');
-  fill('xg-rep-comp',comps,'All Competitions');
-  fill('xg-rep-season',seasons,'All Seasons');
+  fill('xg-hist-opp',opps,TX('xg.allOpponents'));
+  fill('xg-hist-comp',comps,TX('xg.allComps'));
+  fill('xg-hist-season',seasons,TX('xg.allSeasons'));
+  fill('xg-rep-opp',opps,TX('xg.allOpponents'));
+  fill('xg-rep-comp',comps,TX('xg.allComps'));
+  fill('xg-rep-season',seasons,TX('xg.allSeasons'));
 }
 
 function renderHist(){
@@ -1038,14 +1042,14 @@ function renderReport(){
   var html='<div style="padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:4px;border:1px solid var(--border2);">'
     +'<div style="font-size:10px;color:var(--text3);font-family:var(--font-m);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">'+games.length+' match'+(games.length!==1?'es':'')+' found — check games to export</div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
-    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;font-family:var(--font-m);">'+games.length+'</div><div style="font-size:9px;color:var(--text3);">Matches</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;font-family:var(--font-m);">'+games.length+'</div><div style="font-size:9px;color:var(--text3);">'+TX("xg.matches")+'</div></div>'
     +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;font-family:var(--font-m);">'+allShots.length+'</div><div style="font-size:9px;color:var(--text3);">Shots</div></div>'
-    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--alfa);font-family:var(--font-m);">'+aXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">Team A xG</div></div>'
-    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--beta);font-family:var(--font-m);">'+bXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">Team B xG</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--alfa);font-family:var(--font-m);">'+aXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">'+TX("xg.teamAxg")+'</div></div>'
+    +'<div style="text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--beta);font-family:var(--font-m);">'+bXG.toFixed(2)+'</div><div style="font-size:9px;color:var(--text3);">'+TX("xg.teamBxg")+'</div></div>'
     +'</div></div>'
     +'<div style="display:flex;align-items:center;gap:8px;padding:8px 4px;">'
     +'<input type="checkbox" id="rep-check-all" checked onchange="toggleAllReportChecks(this.checked)" style="width:16px;height:16px;accent-color:var(--alfa);cursor:pointer;">'
-    +'<label for="rep-check-all" style="font-size:12px;color:var(--text2);cursor:pointer;">Select all</label>'
+    +'<label for="rep-check-all" style="font-size:12px;color:var(--text2);cursor:pointer;">'+TX("xg.selectAll")+'</label>'
     +'</div>';
   games.forEach(function(g){
     var aS=g.shots.filter(function(s){return s.team==='alfa';}),bS=g.shots.filter(function(s){return s.team==='beta';});
@@ -1071,9 +1075,9 @@ function toggleAllReportChecks(checked){
 
 function exportCheckedPDF(){
   var checked=[...document.querySelectorAll('.rep-game-check:checked')].map(function(cb){return cb.dataset.id;});
-  if(!checked.length){toast('Select at least one match');return;}
+  if(!checked.length){toast(TX('xg.msg.pickMatch'));return;}
   var games=DB.games().filter(function(g){return checked.includes(g.id);});
-  if(!games.length){toast('No matches found');return;}
+  if(!games.length){toast(TX('xg.msg.noMatchesFound'));return;}
   if(games.length===1){
     var g=games[0];
     S.shots=g.shots.map(function(s){return Object.assign({},s);});
@@ -1194,7 +1198,7 @@ function renderCourtSVGwithBG(shotGroups,bgImg,W,H){
 
 function loadGameToEdit(id){
   const g=DB.games().find(x=>x.id===id);if(!g)return;
-  if(S.shots.length>0&&!confirm('Load this match for editing? Unsaved shots will be lost.'))return;
+  if(S.shots.length>0&&!confirm(TX('xg.msg.loadConfirm')))return;
   S.shots=g.shots.map(s=>Object.assign({},s));
   S.teamA.name=g.teamA;S.teamB.name=g.teamB;S.comp=g.comp||'';S.date=g.date||'';
   S._editingGameId=id;
@@ -1203,7 +1207,7 @@ function loadGameToEdit(id){
   const compEl=document.getElementById('inComp');if(compEl)compEl.value=g.comp||'';
   const dateEl=document.getElementById('inDate');if(dateEl)dateEl.value=g.date||'';
   syncMatch();updStats();draw();navTab('match');showEditBanner(id);
-  toast('Match loaded ✓');
+  toast(TX('xg.msg.matchLoaded'));
 }
 
 function showEditBanner(id){
@@ -1223,7 +1227,7 @@ function saveEditedGame(){
   const g=DB.games().find(x=>x.id===S._editingGameId);if(!g)return;
   g.shots=S.shots.map(s=>Object.assign({},s));
   g.teamA=S.teamA.name;g.teamB=S.teamB.name;g.comp=S.comp;g.date=S.date;
-  DB.saveGame(g);cancelEditGame();toast('Changes saved ✓');
+  DB.saveGame(g);cancelEditGame();toast(TX('xg.msg.changesSaved'));
 }
 
 function cancelEditGame(){
@@ -1245,7 +1249,7 @@ function renderClubs(){
 function openClubForm(id){
   _editClubId=id;_clubImg=null;
   const cl=id?DB.clubs().find(x=>x.id===id):null;
-  document.getElementById('club-form-ttl').textContent=cl?'Edit Club':'New Club';
+  document.getElementById('club-form-ttl').textContent=cl?TX('xg.editClub'):TX('xg.newClub');
   document.getElementById('club-nm').value=cl&&cl.name||'';
   document.getElementById('club-gk').value=cl&&cl.gk||'';
   _clubImg=cl&&cl.img||null;
@@ -1261,12 +1265,12 @@ function onClubImg(e){
   };r.readAsDataURL(f);
 }
 function saveClub(){
-  const nm=document.getElementById('club-nm').value.trim();if(!nm){alert('Digite o nome');return;}
+  const nm=document.getElementById('club-nm').value.trim();if(!nm){alert(TX('xg.msg.enterName'));return;}
   DB.saveClub({id:_editClubId||Date.now().toString(),name:nm,gk:document.getElementById('club-gk').value.trim(),img:_clubImg});
-  closeOv('ov-club');renderClubs();toast('Club saved ✓');
+  closeOv('ov-club');renderClubs();toast(TX('xg.msg.clubSaved'));
 }
 function deleteClub(){
-  if(_editClubId&&confirm('Delete this club?')){DB.delClub(_editClubId);closeOv('ov-club');renderClubs();}
+  if(_editClubId&&confirm(TX('xg.msg.deleteClub'))){DB.delClub(_editClubId);closeOv('ov-club');renderClubs();}
 }
 
 // ── CLUB PICKER for Team A / Team B fields ──────────────────────
@@ -1325,23 +1329,22 @@ function renderSeason(){
   const tG=games.length,tS=all.length,tGl=all.filter(s=>s.gol).length,tXG=all.reduce((a,s)=>a+s.xg,0);
   const byTipo={};all.forEach(s=>{byTipo[s.tipo]=(byTipo[s.tipo]||0)+1;});
   const tipoRows=Object.entries(byTipo).sort((a,b)=>b[1]-a[1])
-    .map(([t,n])=>'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;"><span>'+(TIPO[t]||t)+'</span><span style="font-family:var(--font-m);font-weight:700;">'+n+'</span></div>').join('');
+    .map(([t,n])=>'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;"><span>'+(tipoL(t)||t)+'</span><span style="font-family:var(--font-m);font-weight:700;">'+n+'</span></div>').join('');
   const byAdv={};games.forEach(g=>{if(!byAdv[g.teamB])byAdv[g.teamB]={s:0,g:0,xg:0};
     g.shots.filter(s=>s.team==='alfa').forEach(s=>{byAdv[g.teamB].s++;byAdv[g.teamB].xg+=s.xg;if(s.gol)byAdv[g.teamB].g++;});});
   const advRows=Object.entries(byAdv).map(([nm,d])=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="font-weight:600;">'+nm+'</span><span style="font-family:var(--font-m);color:var(--text2);">'+d.s+' shots · xG '+d.xg.toFixed(2)+' · '+d.g+' goal(s)</span></div>').join('');
   body.innerHTML='<div class="kpis2" style="grid-template-columns:repeat(4,1fr);">'
-    +'<div class="kpi2"><div class="kpi2-n">'+tG+'</div><div class="kpi2-l">Jogos</div></div>'
-    +'<div class="kpi2"><div class="kpi2-n">'+tS+'</div><div class="kpi2-l">Finalizações</div></div>'
+    +'<div class="kpi2"><div class="kpi2-n">'+tG+'</div><div class="kpi2-l">'+TX("xg.pdf.games")+'</div></div>'
+    +'<div class="kpi2"><div class="kpi2-n">'+tS+'</div><div class="kpi2-l">'+TX("xg.pdf.finishes")+'</div></div>'
     +'<div class="kpi2"><div class="kpi2-n" style="color:var(--gol);">'+tGl+'</div><div class="kpi2-l">Gols</div></div>'
     +'<div class="kpi2"><div class="kpi2-n" style="color:var(--alfa);">'+tXG.toFixed(1)+'</div><div class="kpi2-l">xG</div></div>'
     +'</div>'
-    +'<div class="cd2"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Por tipo de jogada</div>'+tipoRows+'</div>'
-    +'<div class="cd2"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Por adversário</div>'+advRows+'</div>';
+    +'<div class="cd2"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">'+TX("xg.pdf.byPlayType")+'</div>'+tipoRows+'</div>'
+    +'<div class="cd2"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">'+TX("xg.pdf.byOpponent")+'</div>'+advRows+'</div>';
 }
 
 /* ════════ FIREBASE REALTIME DATABASE ════════ */
-// Uses the same project as Stats & Minutes (fluxgk-statistics)
-// Data path: fluxgk-xg/
+// Projeto e caminho vem do hub (FLUXGK_CONTEXT): dataPath + '/xg'
 var _fbXGApp=null,_fbXGDb=null,_fbXGReady=false;
 var _HUB=null;
 var _XPATH={games:null, opponents:null};   /* preenchidos pelo contexto do hub */
@@ -1357,6 +1360,8 @@ window.addEventListener('message', function(e){
   if(window.parent!==window && e.source!==window.parent) return;
   if(!d.uid || !d.dataPath || !d.firebaseConfig){ console.error('[FluxGK] xG: contexto incompleto', d); return; }
   _HUB=d;
+  /* idioma definido no hub (persist=false: a escolha e do hub) */
+  if(d.lang) FluxGKI18n.setLang(d.lang,false);
   /* jogos por temporada; adversarios por clube */
   _XPATH.games     = d.dataPath + '/xg/games';
   _XPATH.opponents = 'users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
@@ -1448,7 +1453,7 @@ const FB={
     catch(e){return false;}
   },
   async test(){return _fbXGReady;},
-  _cfg(){return _fbXGReady?{pid:'fluxgk-statistics'}:null;}
+  _cfg(){return _fbXGReady?{pid:(_HUB&&_HUB.firebaseConfig&&_HUB.firebaseConfig.projectId)||'—'}:null;}
 };
 
 function openFB(){
@@ -1464,7 +1469,7 @@ function updateFBStatus(){
   const btn=document.getElementById('fb-btn');
   if(!bar)return;
   if(FB.ready()){bar.textContent='● Synced';bar.style.color='#4ade80';if(btn)btn.style.borderColor='#4ade80';}
-  else{bar.textContent='● No cloud';bar.style.color='var(--text3)';if(btn)btn.style.borderColor='';}
+  else{bar.textContent=TX('xg.fb.noCloud');bar.style.color='var(--text3)';if(btn)btn.style.borderColor='';}
 }
 
 async function syncToCloud(){
@@ -1477,7 +1482,7 @@ async function syncToCloud(){
 
 async function saveFBConfig(){
   // Manual sync — pull latest from Firebase and merge with local
-  if(!FB.ready()){toast('Firebase not ready yet, please wait...');return;}
+  if(!FB.ready()){toast(TX('xg.fbNotReady'));return;}
   const remote=await FB.get('main');
   if(remote){
     const lg=DB.games(),lc=DB.clubs();
@@ -1495,27 +1500,27 @@ async function saveFBConfig(){
 function discFB(){localStorage.removeItem('fxg_fb');document.getElementById('fb-disc-btn').style.display='none';updateFBStatus();}
 
 async function testFBConn(){
-  const ok=await FB.test();toast(ok?'Connection OK ✓':'Connection failed.');
+  const ok=await FB.test();toast(ok?TX('xg.connOk'):TX('xg.connFail'));
 }
 
 async function importFromCloud(){
-  if(!FB.ready()){toast('● No cloud');return;}
+  if(!FB.ready()){toast(TX('xg.fb.noCloud'));return;}
   const paths=['main','data','match','game','default'];
   let found=null;
   for(const p of paths){
     const d=await FB.get(p);
     if(d&&(d.games||d.clubs)){found=d;break;}
   }
-  if(!found){toast('No data found.');return;}
+  if(!found){toast(TX('xg.noData'));return;}
   if(found.games&&found.games.length)localStorage.setItem('fxg_games',JSON.stringify(found.games));
   if(found.clubs&&found.clubs.length)localStorage.setItem('fxg_clubs',JSON.stringify(found.clubs));
-  toast('Data imported ✓');
+  toast(TX('xg.dataImported'));
 }
 
 async function diagFB(){
   const pre=document.getElementById('fb-diag');pre.style.display='block';pre.textContent='Searching...';
   const pid=FB._cfg()&&FB._cfg().pid,key=FB._cfg()&&FB._cfg().key;
-  if(!pid||!key){pre.textContent='No credentials.';return;}
+  if(!pid||!key){pre.textContent=TX('xg.noCreds');return;}
   const base='https://firestore.googleapis.com/v1/projects/'+pid+'/databases/(default)/documents';
   const results={};
   for(const col of['fxg_data','games','data']){
@@ -1543,8 +1548,8 @@ async function importFromAny(results){
     if(ug.length)localStorage.setItem('fxg_games',JSON.stringify(ug));
     if(uc.length)localStorage.setItem('fxg_clubs',JSON.stringify(uc));
     pre.textContent+='\\n\\n✓ IMPORTADO: '+ug.length+' match(es), '+uc.length+' club(s)';
-    toast('Data imported ✓');
-  }else{pre.textContent+='\\n\\n⚠ Nenhum dado encontrado.';}
+    toast(TX('xg.dataImported'));
+  }else{pre.textContent+=TX('xg.noDataFound');}
 }
 
 window.addEventListener('load',()=>{
@@ -1570,14 +1575,14 @@ function editShot(i){
   var ds=document.getElementById('defenders');if(ds)ds.value=S.defenders;
   updTogg();calcXG();draw();
   var btn=document.getElementById('regBtn');
-  if(btn){btn.textContent='Update shot';btn.onclick=function(){updateShot();};btn.disabled=false;}
+  if(btn){btn.textContent=TX('xg.msg.updateShot');btn.onclick=function(){updateShot();};btn.disabled=false;}
   var hint=document.getElementById('shot-hint');
-  if(hint){hint.textContent='Editing shot';hint.style.display='block';}
+  if(hint){hint.textContent=TX('xg.msg.editingShot');hint.style.display='block';}
   var cb=document.getElementById('cancelEditBtn');
   if(!cb){cb=document.createElement('button');cb.id='cancelEditBtn';cb.className='reg-btn';
     cb.style.cssText='background:var(--bg3);color:var(--text2);border:1px solid var(--border2);margin-top:-4px;';
     if(btn)btn.parentNode.insertBefore(cb,btn.nextSibling);}
-  cb.textContent='Cancel edit';cb.style.display='block';cb.onclick=cancelEdit;
+  cb.textContent=TX('xg.msg.cancelEdit');cb.style.display='block';cb.onclick=cancelEdit;
   closeOv('ovL');renderLog();
 }
 function updateShot(){
@@ -1590,12 +1595,12 @@ function updateShot(){
     assist:S.assist,pressao:S.pressao,gol:S.gol,
     gkPres:S.gkPres,defenders:S.defenders,xg:xg,
     min:parseInt(document.getElementById('minuto').value)||0});
-  cancelEdit();updStats();draw();toast('Shot updated ✓');
+  cancelEdit();updStats();draw();toast(TX('xg.msg.shotUpdated'));
 }
 function cancelEdit(){
   S._editIdx=null;S.pending=null;
   var btn=document.getElementById('regBtn');
-  if(btn){btn.textContent='+ Register shot';btn.onclick=registrar;btn.disabled=true;btn.style.background='';}
+  if(btn){btn.textContent=TX('xg.registerShot');btn.onclick=registrar;btn.disabled=true;btn.style.background='';}
   var hint=document.getElementById('shot-hint');
   if(hint)hint.style.display='none';
   var cb=document.getElementById('cancelEditBtn');
@@ -1605,32 +1610,32 @@ function cancelEdit(){
 </script>
 
 <div class="pg-ov" id="pg-history">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">History</div><div></div></div>
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div data-i18n="xg.history" class="pov-ttl">History</div><div></div></div>
   <div class="pov-filter-bar">
-    <select id="xg-hist-opp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Opponents</option></select>
-    <select id="xg-hist-comp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Competitions</option></select>
-    <select id="xg-hist-season" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Seasons</option></select>
+    <select id="xg-hist-opp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allOpponents" value="">All Opponents</option></select>
+    <select id="xg-hist-comp" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allComps" value="">All Competitions</option></select>
+    <select id="xg-hist-season" onchange="renderHist()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allSeasons" value="">All Seasons</option></select>
   </div>
   <div class="pov-body" id="hist-body"></div>
 </div>
 
 <div class="pg-ov" id="pg-report">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">Report</div><div></div></div>
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div data-i18n="xg.report" class="pov-ttl">Report</div><div></div></div>
   <div class="pov-filter-bar">
-    <select id="xg-rep-opp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Opponents</option></select>
-    <select id="xg-rep-comp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Competitions</option></select>
-    <select id="xg-rep-season" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option value="">All Seasons</option></select>
-    <button onclick="exportCheckedPDF()" style="padding:6px 14px;border-radius:7px;border:none;background:var(--alfa);color:#fff;font-family:var(--font-h);font-size:12px;font-weight:700;cursor:pointer;">Export PDF</button>
+    <select id="xg-rep-opp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allOpponents" value="">All Opponents</option></select>
+    <select id="xg-rep-comp" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allComps" value="">All Competitions</option></select>
+    <select id="xg-rep-season" onchange="renderReport()" style="flex:1;min-width:100px;padding:6px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font-h);font-size:11px;"><option data-i18n="xg.allSeasons" value="">All Seasons</option></select>
+    <button data-i18n="xg.exportPdf" onclick="exportCheckedPDF()" style="padding:6px 14px;border-radius:7px;border:none;background:var(--alfa);color:#fff;font-family:var(--font-h);font-size:12px;font-weight:700;cursor:pointer;">Export PDF</button>
   </div>
   <div class="pov-body" id="rep-preview-body"></div>
 </div>
 
 <div class="pg-ov" id="pg-xgsettings">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div class="pov-ttl">Settings</div><div></div></div>
+  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">&#8592; Back</button><div data-i18n="xg.settings" class="pov-ttl">Settings</div><div></div></div>
   <div class="pov-body">
     <div class="settings-body">
       <div class="settings-section">
-        <div class="settings-title">Club Badge</div>
+        <div data-i18n="xg.clubBadge" class="settings-title">Club Badge</div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
           <div id="xg-badge-prev" style="width:64px;height:64px;border-radius:10px;background:var(--bg3);border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:cover;background-position:center;flex-shrink:0;">
             <span style="font-size:28px;">&#x1F6E1;</span>
@@ -1640,80 +1645,80 @@ function cancelEdit(){
               &#128247; Upload Badge
             </label>
             <input type="file" id="xg-badge-input" accept="image/*" onchange="loadXGBadge(event)" style="display:none;">
-            <button class="fbtn2" onclick="XGS.clubBadge='';var p=document.getElementById('xg-badge-prev');p.style.backgroundImage='none';p.innerHTML='<span style=&quot;font-size:28px;&quot;>&#x1F6E1;</span>';" style="font-size:11px;padding:6px 12px;border-radius:8px;">Remove</button>
+            <button class="fbtn2" onclick="XGS.clubBadge='';var p=document.getElementById('xg-badge-prev');p.style.backgroundImage='none';p.innerHTML='<span style=&quot;font-size:28px;&quot;>&#x1F6E1;</span>';" style="font-size:11px;padding:6px 12px;border-radius:8px;"><span data-i18n="common.remove">Remove</span></button>
           </div>
         </div>
-        <p style="font-size:10px;color:var(--text3);">Used in PDF reports. Click "Upload Badge" to select an image.</p>
+        <p data-i18n="xg.badgeHint" style="font-size:10px;color:var(--text3);">Used in PDF reports. Click "Upload Badge" to select an image.</p>
       </div>
       <div class="settings-section">
-        <div class="settings-title">Default Team A</div>
-        <input type="text" id="xg-default-teamA" class="fin2" placeholder="e.g. Kuwait Club">
+        <div data-i18n="xg.defaultTeamA" class="settings-title">Default Team A</div>
+        <input type="text" id="xg-default-teamA" class="fin2" placeholder="e.g. Kuwait Club" data-i18n-placeholder="xg.ph.club">
       </div>
       <div class="settings-section">
-        <div class="settings-title">Coach Name</div>
-        <input type="text" id="xg-coach-name" class="fin2" placeholder="e.g. Lucas Pimenta">
+        <div data-i18n="xg.coachName" class="settings-title">Coach Name</div>
+        <input type="text" id="xg-coach-name" class="fin2" placeholder="e.g. Lucas Pimenta" data-i18n-placeholder="xg.ph.coach">
       </div>
       <div class="settings-section">
-        <div class="settings-title">Seasons</div>
+        <div data-i18n="xg.seasons" class="settings-title">Seasons</div>
         <div id="xg-seasons-list" style="margin-bottom:8px;"></div>
         <div style="display:flex;gap:6px;">
           <input type="text" id="xg-season-input" class="fin2" placeholder="e.g. 2025-26" style="flex:1;" onkeydown="if(event.key==='Enter')addXGItem('seasons','xg-season-input')">
-          <button class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('seasons','xg-season-input')">+ Add</button>
+          <button data-i18n="data.rpt.add" class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('seasons','xg-season-input')">+ Add</button>
         </div>
       </div>
       <div class="settings-section">
-        <div class="settings-title">Competitions</div>
+        <div data-i18n="xg.competitions" class="settings-title">Competitions</div>
         <div id="xg-comps-list" style="margin-bottom:8px;"></div>
         <div style="display:flex;gap:6px;">
-          <input type="text" id="xg-comp-input" class="fin2" placeholder="e.g. Kuwait Premier League" style="flex:1;" onkeydown="if(event.key==='Enter')addXGItem('competitions','xg-comp-input')">
-          <button class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('competitions','xg-comp-input')">+ Add</button>
+          <input type="text" id="xg-comp-input" class="fin2" placeholder="e.g. Kuwait Premier League" data-i18n-placeholder="xg.ph.league" style="flex:1;" onkeydown="if(event.key==='Enter')addXGItem('competitions','xg-comp-input')">
+          <button data-i18n="data.rpt.add" class="fbtn2 p" style="flex-shrink:0;padding:8px 14px;" onclick="addXGItem('competitions','xg-comp-input')">+ Add</button>
         </div>
       </div>
-      <button class="fbtn2 p" onclick="saveXGSettings()" style="margin-top:8px;">Save Settings</button>
+      <button data-i18n="xg.saveSettings" class="fbtn2 p" onclick="saveXGSettings()" style="margin-top:8px;">Save Settings</button>
     </div>
   </div>
 </div>
 <div class="pg-ov" id="pg-clubs">
-  <div class="pov-hdr"><button class="pov-bk" onclick="navTab('match')">← Back</button><div class="pov-ttl">Clubs</div><button class="hbtn accent" onclick="openClubForm(null)">+ Add</button></div>
+  <div class="pov-hdr"><button data-i18n="xg.back" class="pov-bk" onclick="navTab('match')">← Back</button><div data-i18n="xg.clubs" class="pov-ttl">Clubs</div><button data-i18n="data.rpt.add" class="hbtn accent" onclick="openClubForm(null)">+ Add</button></div>
   <div class="pov-body" id="clubs-body"></div>
 </div>
 <div class="overlay" id="ov-club" onclick="closeOvOut(event,'ov-club')">
-  <div class="sheet"><div class="sheet-header"><div class="sheet-title" id="club-form-ttl">New Club</div><button class="sheet-close" onclick="closeOv('ov-club')" aria-label="Close">✕</button></div>
+  <div class="sheet"><div class="sheet-header"><div data-i18n="xg.newClub" class="sheet-title" id="club-form-ttl">New Club</div><button class="sheet-close" onclick="closeOv('ov-club')" aria-label="Close" data-i18n-aria-label="common.close">✕</button></div>
   <div class="sheet-body"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
     <div style="display:flex;align-items:center;gap:12px;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;">
         <div class="ce2" style="width:52px;height:52px;" id="club-emb-prev"><span style="font-size:26px;">🛡</span></div>
-        <label for="club-emb-input" style="font-size:9px;color:var(--alfa);font-family:var(--font-m);cursor:pointer;text-align:center;">📷 Badge</label>
+        <label data-i18n="xg.badge" for="club-emb-input" style="font-size:9px;color:var(--alfa);font-family:var(--font-m);cursor:pointer;text-align:center;">📷 Badge</label>
         <input type="file" id="club-emb-input" accept="image/*" onchange="onClubImg(event)" style="display:none;">
       </div>
-      <div style="flex:1;"><div class="flbl2">Club name</div><input type="text" id="club-nm" class="fin2" placeholder="e.g. Kazma SC"></div>
+      <div style="flex:1;"><div data-i18n="xg.clubName" class="flbl2">Club name</div><input type="text" id="club-nm" class="fin2" placeholder="e.g. Kazma SC" data-i18n-placeholder="xg.ph.opp"></div>
     </div>
-    <div><div class="flbl2">Main goalkeeper</div><input type="text" id="club-gk" class="fin2" placeholder="Goalkeeper name"></div>
-    <button class="fbtn2 p" onclick="saveClub()">Save club</button>
-    <button class="fbtn2 d" id="club-del-btn" style="display:none" onclick="deleteClub()">Delete club</button>
+    <div><div data-i18n="xg.mainGk" class="flbl2">Main goalkeeper</div><input type="text" id="club-gk" class="fin2" placeholder="Goalkeeper name" data-i18n-placeholder="xg.ph.gkName"></div>
+    <button data-i18n="xg.saveClub" class="fbtn2 p" onclick="saveClub()">Save club</button>
+    <button data-i18n="xg.deleteClub" class="fbtn2 d" id="club-del-btn" style="display:none" onclick="deleteClub()">Delete club</button>
   </div></div></div>
 </div>
 <div class="overlay" id="ov-exp" onclick="closeOvOut(event,'ov-exp')">
-  <div class="sheet"><div class="sheet-header"><div class="sheet-title">Export report</div><button class="sheet-close" onclick="cancelExport()" aria-label="Cancel export">✕</button></div>
+  <div class="sheet"><div class="sheet-header"><div data-i18n="xg.exportReport" class="sheet-title">Export report</div><button class="sheet-close" onclick="cancelExport()" aria-label="Cancel export" data-i18n-aria-label="xg.cancelExport">✕</button></div>
   <div class="sheet-body"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
-    <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;font-family:var(--font-m);color:var(--text2);"><span id="exp-count">0</span> matches match the current filter.</div>
-    <button class="fbtn2 p" onclick="doExportCombined()">Combined report<br><span style="font-size:11px;font-weight:400;opacity:.75;">One PDF with all matches together</span></button>
-    <button class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);" onclick="doExportIndividual()">Individual PDFs<br><span style="font-size:11px;font-weight:400;opacity:.75;">Opens <span id="exp-count2">0</span> separate PDFs, one per match</span></button>
-    <button class="fbtn2" style="background:none;color:var(--text3);border:1px solid var(--border2);" onclick="cancelExport()">Cancel</button>
+    <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;font-family:var(--font-m);color:var(--text2);"><span id="exp-count">0</span> <span data-i18n="xg.matchFilter">matches match the current filter.</span></div>
+    <button data-i18n="xg.combined" class="fbtn2 p" onclick="doExportCombined()">Combined report<br><span data-i18n="xg.combinedSub" style="font-size:11px;font-weight:400;opacity:.75;">One PDF with all matches together</span></button>
+    <button data-i18n="xg.individual" class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);" onclick="doExportIndividual()">Individual PDFs<br><span style="font-size:11px;font-weight:400;opacity:.75;"><span data-i18n="xg.opens">Opens</span> <span id="exp-count2">0</span> <span data-i18n="xg.separatePdfs">separate PDFs, one per match</span></span></button>
+    <button data-i18n="common.cancel" class="fbtn2" style="background:none;color:var(--text3);border:1px solid var(--border2);" onclick="cancelExport()">Cancel</button>
   </div></div></div>
 </div>
 
 <div class="overlay" id="ov-fb" onclick="closeOvOut(event,'ov-fb')">
-  <div class="sheet"><div class="sheet-header"><div class="sheet-title">☁ Firebase</div><button class="sheet-close" onclick="closeOv('ov-fb')" aria-label="Close">✕</button></div>
+  <div class="sheet"><div class="sheet-header"><div class="sheet-title"data-i18n="xg.fb.title">☁ Firebase</div><button class="sheet-close" onclick="closeOv('ov-fb')" aria-label="Close" data-i18n-aria-label="common.close">✕</button></div>
   <div class="sheet-body"><div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
-    <div id="fb-status-bar" style="padding:8px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;font-family:var(--font-m);color:var(--text2);">● No cloud</div>
-    <div><div class="flbl2">Project ID</div><input type="text" id="fb-pid" class="fin2" placeholder="my-project-12345"></div>
-    <div><div class="flbl2">API Key (Web)</div><input type="text" id="fb-key" class="fin2" placeholder="AIzaSy..."></div>
-    <button class="fbtn2 p" onclick="saveFBConfig()">Save & connect</button>
-    <button class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);" onclick="testFBConn()">Test connection</button>
-    <button class="fbtn2 p" style="background:var(--bg3);color:var(--alfa);border:1px solid var(--alfa);" onclick="importFromCloud()">Import from cloud</button>
-    <button class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);font-size:11px;" onclick="diagFB()">🔍 Diagnose</button>
-    <button class="fbtn2 d" id="fb-disc-btn" style="display:none;" onclick="discFB()">Disconnect</button>
+    <div id="fb-status-bar" style="padding:8px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;font-family:var(--font-m);color:var(--text2);" data-i18n="xg.fb.noCloud">● No cloud</div>
+    <div><div class="flbl2" data-i18n="xg.fb.pid">Project ID</div><input type="text" id="fb-pid" class="fin2" placeholder="my-project-12345"></div>
+    <div><div class="flbl2" data-i18n="xg.fb.key">API Key (Web)</div><input type="text" id="fb-key" class="fin2" placeholder="AIzaSy..."></div>
+    <button class="fbtn2 p" onclick="saveFBConfig()" data-i18n="xg.fb.save">Save &amp; connect</button>
+    <button class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);" onclick="testFBConn()" data-i18n="xg.fb.test">Test connection</button>
+    <button class="fbtn2 p" style="background:var(--bg3);color:var(--alfa);border:1px solid var(--alfa);" onclick="importFromCloud()" data-i18n="xg.fb.import">Import from cloud</button>
+    <button class="fbtn2" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);font-size:11px;" onclick="diagFB()" data-i18n="xg.fb.diag">🔍 Diagnose</button>
+    <button class="fbtn2 d" id="fb-disc-btn" style="display:none;" onclick="discFB()" data-i18n="xg.fb.disconnect">Disconnect</button>
     <pre id="fb-diag" style="display:none;font-size:9px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;max-height:200px;white-space:pre-wrap;"></pre>
   </div></div></div>
 </div>
@@ -1740,7 +1745,7 @@ function buildGameHTML(g, gameColor, showPageBreak, courtImg){
   // Tipo breakdown
   var tipoCount={};s.forEach(function(sh){tipoCount[sh.tipo]=(tipoCount[sh.tipo]||0)+1;});
   var tipoRows=Object.entries(tipoCount).sort(function(a,b){return b[1]-a[1];})
-    .map(function(e){return '<tr><td>'+(TIPO[e[0]]||e[0])+'</td><td style="text-align:right;font-family:monospace;font-weight:600;">'+e[1]+'</td></tr>';}).join('');
+    .map(function(e){return '<tr><td>'+(tipoL(e[0])||e[0])+'</td><td style="text-align:right;font-family:monospace;font-weight:600;">'+e[1]+'</td></tr>';}).join('');
   // Shot table rows
   var PER=25, pages='', tot=Math.ceil(s.length/PER)||1;
   for(var p=0;p<tot;p++){
@@ -1751,11 +1756,11 @@ function buildGameHTML(g, gameColor, showPageBreak, courtImg){
       var nm=sh.team==='alfa'?nA:nB, cls=sh.team==='alfa'?'t-alfa':'t-beta';
       return '<tr><td>'+(i+1)+'</td><td class="'+cls+'">'+nm+"</td><td>"+sh.min+"'</td>"
         +'<td class="xg-c">'+sh.xg.toFixed(3)+'</td>'
-        +'<td>'+(TIPO[sh.tipo]||sh.tipo)+'</td>'
-        +'<td>'+(CORPO[sh.corpo]||sh.corpo)+'</td>'
+        +'<td>'+(tipoL(sh.tipo)||sh.tipo)+'</td>'
+        +'<td>'+(corpoL(sh.corpo)||sh.corpo)+'</td>'
         +'<td>'+(sh.assist?'Yes':'No')+'</td>'
         +'<td>'+(sh.pressao?'Yes':'No')+'</td>'
-        +'<td>'+(sh.gol?'<span class="gol-b">GOAL</span>':'')+'</td></tr>';
+        +'<td>'+(sh.gol?'<span class="gol-b">'+TX("xg.pdf.goalUp")+'</span>':'')+'</td></tr>';
     }).join('');
     var pb=p===0&&showPageBreak?'page-break-before:always;break-before:page;':'';
     if(p===0){
@@ -1785,28 +1790,28 @@ function buildGameHTML(g, gameColor, showPageBreak, courtImg){
         +'<div class="pdf-tc-name" style="color:#3B82F6;">'+nA+'</div>'
         +'<div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">'+aS.length+'</span></div>'
         +'<div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">'+aG+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">'+aXG.toFixed(2)+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">'+(aS.length>0?(aXG/aS.length).toFixed(3):'--')+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">'+aConv+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.totalXg")+'</span><span class="pdf-tc-v">'+aXG.toFixed(2)+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.avgXg")+'</span><span class="pdf-tc-v">'+(aS.length>0?(aXG/aS.length).toFixed(3):'--')+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.conversion")+'</span><span class="pdf-tc-v">'+aConv+'</span></div>'
         +'</div>'
-        +'<div class="pdf-mid"><div class="pdf-score">'+aG+'&ndash;'+bG+'</div><div class="pdf-score-lbl">Score</div></div>'
+        +'<div class="pdf-mid"><div class="pdf-score">'+aG+'&ndash;'+bG+'</div><div class="pdf-score-lbl">'+TX("xg.pdf.score")+'</div></div>'
         +'<div class="pdf-tcol beta">'
         +'<div class="pdf-tc-name" style="color:#F59E0B;">'+nB+'</div>'
         +'<div class="pdf-tc-row"><span class="pdf-tc-k">Shots</span><span class="pdf-tc-v">'+bS.length+'</span></div>'
         +'<div class="pdf-tc-row"><span class="pdf-tc-k">Goals</span><span class="pdf-tc-v">'+bG+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Total xG</span><span class="pdf-tc-v">'+bXG.toFixed(2)+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Avg xG/shot</span><span class="pdf-tc-v">'+(bS.length>0?(bXG/bS.length).toFixed(3):'--')+'</span></div>'
-        +'<div class="pdf-tc-row"><span class="pdf-tc-k">Conversion</span><span class="pdf-tc-v">'+bConv+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.totalXg")+'</span><span class="pdf-tc-v">'+bXG.toFixed(2)+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.avgXg")+'</span><span class="pdf-tc-v">'+(bS.length>0?(bXG/bS.length).toFixed(3):'--')+'</span></div>'
+        +'<div class="pdf-tc-row"><span class="pdf-tc-k">'+TX("xg.pdf.conversion")+'</span><span class="pdf-tc-v">'+bConv+'</span></div>'
         +'</div></div>'
-        +'<div class="pdf-section-title">Shot Map</div>'
+        +'<div class="pdf-section-title">'+TX("xg.pdf.shotMap")+'</div>'
         +courtEl
         +'<div class="pdf-2col" style="margin-top:10px;">'
-        +'<div><div class="pdf-section-title">Shots by Game Moment</div>'
+        +'<div><div class="pdf-section-title">'+TX("xg.pdf.byMoment")+'</div>'
         +'<table class="pdf-table"><thead><tr><th>Type</th><th style="text-align:right;">Total</th></tr></thead>'
         +'<tbody>'+(tipoRows||'<tr><td colspan="2" style="color:#999;text-align:center;">--</td></tr>')+'</tbody></table></div>'
-        +'<div><div class="pdf-section-title">xG Reference</div>'
-        +'<table class="pdf-table"><thead><tr><th>Range</th><th>Interpretation</th></tr></thead>'
-        +'<tbody><tr><td>0.00–0.09</td><td>Unlikely</td></tr><tr><td>0.10–0.24</td><td>Low probability</td></tr><tr><td>0.25–0.44</td><td>Moderate</td></tr><tr><td>0.45–0.64</td><td>Good chance</td></tr><tr><td>0.65–1.00</td><td>Big chance</td></tr></tbody></table></div>'
+        +'<div><div class="pdf-section-title">'+TX("xg.pdf.reference")+'</div>'
+        +'<table class="pdf-table"><thead><tr><th>'+TX("xg.pdf.range")+'</th><th>'+TX("xg.pdf.interpretation")+'</th></tr></thead>'
+        +'<tbody><tr><td>0.00–0.09</td><td>'+TX("xg.pdf.unlikely")+'</td></tr><tr><td>0.10–0.24</td><td>'+TX("xg.pdf.lowProb")+'</td></tr><tr><td>0.25–0.44</td><td>'+TX("xg.pdf.moderate")+'</td></tr><tr><td>0.45–0.64</td><td>'+TX("xg.pdf.goodChance")+'</td></tr><tr><td>0.65–1.00</td><td>'+TX("xg.pdf.bigChance")+'</td></tr></tbody></table></div>'
         +'</div>'
         +'<div class="pdf-section-title" style="margin-top:10px;">Shot Table'+range+'</div>'
         +'<table class="pdf-table"><thead><tr><th>#</th><th>Team</th><th>Min</th><th>xG</th><th>Moment</th><th>Body</th><th>Assist</th><th>Press</th><th>Result</th></tr></thead>'
@@ -1831,7 +1836,7 @@ function exportFilteredPDF(){
   var comp=(document.getElementById('xg-rep-comp')||{}).value||'';
   var season=(document.getElementById('xg-rep-season')||{}).value||'';
   var games=getFilteredGames(opp,comp,season);
-  if(!games.length){toast('No matches to export');return;}
+  if(!games.length){toast(TX('xg.msg.noExport'));return;}
   if(games.length===1){
     var g=games[0];
     S.shots=g.shots.map(function(s){return Object.assign({},s);});
@@ -2000,7 +2005,7 @@ function exportCombinedPDF(games,opp,comp,season){
     +'<div class="ctit">Futsal xG<br>Report</div>'
     +'<div class="csub">'+club+'</div>'
     +'<div class="cmeta">'
-    +'<div class="cmi"><div class="cml">Matches</div><div class="cmv">'+games.length+'</div></div>'
+    +'<div class="cmi"><div class="cml">'+TX("xg.matches")+'</div><div class="cmv">'+games.length+'</div></div>'
     +(opp?'<div class="cmi"><div class="cml">Opponent</div><div class="cmv">'+opp+'</div></div>':'')
     +(comp?'<div class="cmi"><div class="cml">Competition</div><div class="cmv">'+comp+'</div></div>':'')
     +(season?'<div class="cmi"><div class="cml">Season</div><div class="cmv">'+season+'</div></div>':'')
@@ -2012,15 +2017,15 @@ function exportCombinedPDF(games,opp,comp,season){
     // ── SUMMARY PAGE ──
     +'<div class="pdf-page" style="page-break-before:always;break-before:page;">'
     +'<div class="kr">'
-    +'<div class="k"><div class="kn">'+games.length+'</div><div class="kl">Matches</div></div>'
-    +'<div class="k"><div class="kn">'+allShots.length+'</div><div class="kl">Total Shots</div></div>'
-    +'<div class="k"><div class="kn" style="color:#3B82F6;">'+aXG.toFixed(2)+'</div><div class="kl">Team A xG</div></div>'
-    +'<div class="k"><div class="kn" style="color:#F59E0B;">'+bXG.toFixed(2)+'</div><div class="kl">Team B xG</div></div>'
+    +'<div class="k"><div class="kn">'+games.length+'</div><div class="kl">'+TX("xg.matches")+'</div></div>'
+    +'<div class="k"><div class="kn">'+allShots.length+'</div><div class="kl">'+TX("xg.pdf.totalShots")+'</div></div>'
+    +'<div class="k"><div class="kn" style="color:#3B82F6;">'+aXG.toFixed(2)+'</div><div class="kl">'+TX("xg.teamAxg")+'</div></div>'
+    +'<div class="k"><div class="kn" style="color:#F59E0B;">'+bXG.toFixed(2)+'</div><div class="kl">'+TX("xg.teamBxg")+'</div></div>'
     +'</div>'
-    +'<div style="margin-bottom:18px;"><div class="sc">Combined Shot Map — All Matches</div>'
+    +'<div style="margin-bottom:18px;"><div class="sc">'+TX("xg.pdf.combinedMap")+'</div>'
     +combinedCourt+'</div>'
-    +'<div style="margin-bottom:18px;"><div class="sc">Match Log</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Date</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Opponent</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Competition</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Season</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Score</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Team A xG</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Team B xG</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Shots</th></tr></thead>'
+    +'<div style="margin-bottom:18px;"><div class="sc">'+TX("xg.pdf.matchLog")+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Date</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Opponent</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Competition</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Season</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">'+TX("xg.pdf.score")+'</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">'+TX("xg.teamAxg")+'</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">'+TX("xg.teamBxg")+'</th><th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:8px 10px;border-bottom:2px solid #e5e5e5;">Shots</th></tr></thead>'
     +'<tbody>'+gameRows+'</tbody></table></div>'
     +'<div class="ft"><span>FluxGK · Futsal xG Tracker</span><span>'+club+' · '+now+'</span></div>'
     +'</div>'
@@ -2028,13 +2033,13 @@ function exportCombinedPDF(games,opp,comp,season){
     +individualSections
     // ── PRINT BUTTON ──
     +'<div class="np">'
-    +'<button onclick="window.print()" style="padding:11px 28px;background:'+ac+';border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;color:#fff;">Print / Save as PDF</button>'
+    +'<button onclick="window.print()" style="padding:11px 28px;background:'+ac+';border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;color:#fff;">'+TX("xg.pdf.printSave")+'</button>'
     +'<button onclick="window.close()" style="padding:11px 24px;background:#eee;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-left:10px;">Close</button>'
     +'</div>'
     +'</body></html>';
 
   var win=window.open('','_blank','width=900,height=700');
-  if(!win){alert('Allow popups for this site.');return;}
+  if(!win){alert(TX('xg.msg.allowPopups'));return;}
   win.document.write(html);
   win.document.close();
   setTimeout(function(){win.print();},800);
