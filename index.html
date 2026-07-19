@@ -71,6 +71,25 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .hsv{font-size:21px;font-weight:700;color:var(--ink);font-family:'JetBrains Mono',monospace}
 .hsl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .mgrid{display:grid;gap:9px}
+
+/* ---------- LARGURA: notebook + iPad ----------
+   O hub nasceu para celular e esticava ate a borda no monitor.
+   Aqui limitamos e centralizamos o conteudo, sem mexer no HTML.
+   Referencias: iPad retrato ~810px · iPad paisagem ~1080px · notebook ~1440px */
+:root{--maxw:960px}
+.hbody>*{max-width:var(--maxw);margin-left:auto;margin-right:auto}
+/* a barra escura segue de ponta a ponta; so o conteudo dela alinha com o corpo */
+.hnav{padding:0}
+.hnav>*:first-child{margin-left:max(16px,calc((100% - var(--maxw))/2))}
+.hnav>*:last-child{margin-right:max(16px,calc((100% - var(--maxw))/2))}
+/* cards dos modulos: 1 coluna no celular, 2 a partir do iPad retrato */
+@media(min-width:680px){
+  .mgrid{grid-template-columns:1fr 1fr;gap:11px}
+  .hbody{padding-left:24px;padding-right:24px}
+}
+/* barra do modulo alinhada com o mesmo limite */
+.mtbar{padding:0}
+.mtbar>*:first-child{margin-left:max(13px,calc((100% - var(--maxw))/2))}
 .langrow{display:flex;align-items:center;justify-content:space-between;margin-top:22px;padding-top:16px;border-top:1px solid var(--faint)}
 .langlbl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
 .langsw{display:inline-flex;border:1px solid var(--faint);border-radius:9px;overflow:hidden;background:#fff}
