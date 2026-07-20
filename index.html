@@ -443,9 +443,29 @@ function loadStats(){
   var p=dataPath();
   ['st-sess','st-match','st-gk'].forEach(function(i){document.getElementById(i).textContent=p?'-':'0';});
   if(!p)return;
-  _rtdb.ref(p+'/planner/sessions').get().then(function(s){document.getElementById('st-sess').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
-  _rtdb.ref(p+'/xg/games').get().then(function(s){document.getElementById('st-match').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
-  _rtdb.ref(p+'/roster').get().then(function(s){document.getElementById('st-gk').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+  /* sessoes = eventos de treino do Load Control
+     (users/{uid}/data/{clube}/{temporada}/load/sessions/{goleiro}/{id}).
+     A sessao e um EVENTO, nao um registro por goleiro: varios goleiros (e faltas)
+     do mesmo treino sao a mesma sessao. Identidade = data + horario + tipo.
+     - o 'pos' herda a identidade do seu 'pre' (mesma data/horario/tipo), entao nao duplica;
+     - a 'abs' (falta) tambem prova que houve sessao e conta. */
+  _rtdb.ref(p+'/load/sessions').get().then(function(s){
+    var eventos={}, v=s.val()||{};
+    Object.keys(v).forEach(function(pk){
+      var byGk=v[pk]||{};
+      Object.keys(byGk).forEach(function(id){
+        var r=byGk[id]; if(!r||!r.date) return;
+        eventos[r.date+'|'+(r.time||'')+'|'+(r.trainingType||'')]=1;
+      });
+    });
+    document.getElementById('st-sess').textContent=Object.keys(eventos).length;
+  }).catch(function(e){console.error(e);});
+  /* jogos = partidas do modulo Minutagem (users/{uid}/data/{clube}/{temporada}/minutes/games).
+     Estrutura: games/{id} = {...} — cada id e um jogo, entao basta contar as chaves. */
+  _rtdb.ref(p+'/minutes/games').get().then(function(s){document.getElementById('st-match').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+  /* goleiros = elenco do Load Control (users/{uid}/data/{clube}/{temporada}/load/players).
+     Antes lia '/roster', caminho que nenhum modulo grava — por isso ficava sempre em zero. */
+  _rtdb.ref(p+'/load/players').get().then(function(s){document.getElementById('st-gk').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
 }
 function refresh(){applyIdentity();loadStats();}
 
