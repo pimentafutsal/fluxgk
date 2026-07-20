@@ -88,16 +88,19 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
    O hub nasceu para celular e esticava ate a borda no monitor.
    Aqui limitamos e centralizamos o conteudo, sem mexer no HTML.
    Referencias: iPad retrato ~810px · iPad paisagem ~1080px · notebook ~1440px */
-:root{--maxw:960px}
+:root{--maxw:1280px}
 .hbody>*{max-width:var(--maxw);margin-left:auto;margin-right:auto}
 /* a barra escura segue de ponta a ponta; so o conteudo dela alinha com o corpo */
 .hnav{padding:0}
 .hnav>*:first-child{margin-left:max(16px,calc((100% - var(--maxw))/2))}
 .hnav>*:last-child{margin-right:max(16px,calc((100% - var(--maxw))/2))}
-/* cards dos modulos: 1 coluna no celular, 2 a partir do iPad retrato */
+/* cards dos modulos: 1 coluna no celular, 2 no iPad retrato, 3 no notebook */
 @media(min-width:680px){
   .mgrid{grid-template-columns:1fr 1fr;gap:11px}
   .hbody{padding-left:24px;padding-right:24px}
+}
+@media(min-width:1100px){
+  .mgrid{grid-template-columns:repeat(3,1fr)}   /* 6 modulos = 2 linhas de 3 */
 }
 /* barra do modulo alinhada com o mesmo limite */
 .mtbar{padding:0}

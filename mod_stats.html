@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK — GK Statistics</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -111,8 +112,8 @@ body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height
 ::-webkit-scrollbar-track{background:var(--surface2);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 #header{background:var(--carbon);border-bottom:1px solid #1a1a1a;padding:0 24px;position:sticky;top:0;z-index:100;}
-#header-inner{max-width:1380px;margin:0 auto;display:flex;align-items:center;height:56px;}
-#main{max-width:1380px;margin:0 auto;padding:24px 20px;}
+#header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;height:56px;}
+#main{max-width:1280px;margin:0 auto;padding:24px 20px;}
 .logo{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:24px;}
 .logo-box{width:30px;height:30px;background:var(--paper);border-radius:7px;display:flex;align-items:center;justify-content:center;}
 .logo-box span{font-weight:700;font-size:12px;color:var(--ink);}
@@ -549,9 +550,12 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 <script>
 // ═══ STATE ═══════════════════════════════════════════════════════
 const ST = {
-  clubs:['Al-Kuwait','Al-Arabi','Al-Salmiya','Al-Shabab','Al-Jahra'],
-  comps:['Kuwait Premier League','Kuwait Cup','Kuwait Super Cup'],
-  gks:['GK 1','GK 2','GK 3'],
+  /* comeca vazio: cada clube cadastra os proprios adversarios, competicoes
+     e goleiros na aba Ajustes. Dados de exemplo aqui vazavam para o Firebase
+     do clube real assim que o usuario mexia em qualquer item. */
+  clubs:[],
+  comps:[],
+  gks:[],
   games:[],
   accent:'#e8ff00',
   clubName:TX('st.myClub'),

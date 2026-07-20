@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Futsal xG">
 <meta name="theme-color" content="#fafaf7">
 <title data-i18n="xg.tracker">Futsal xG Tracker</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap');
 :root{
@@ -22,7 +23,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-h);overflow:hidden;}
-#app{display:grid;grid-template-rows:auto auto 1fr auto;height:100dvh;height:100vh;max-width:1200px;margin:0 auto;}
+#app{display:grid;grid-template-rows:auto auto 1fr auto;height:100dvh;height:100vh;max-width:1280px;margin:0 auto;}
 
 /* HEADER */
 header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);background:var(--bg);z-index:10;gap:8px;}
@@ -234,8 +235,8 @@ footer{border-top:1px solid var(--border);background:var(--bg);padding:9px 14px;
 .pov-hdr{display:none;}
 .pov-ttl{font-size:14px;font-weight:800;flex:1;}
 .pov-bk{padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font-h);font-size:11px;font-weight:600;cursor:pointer;}
-.pov-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;max-width:1200px;width:100%;margin:0 auto;align-self:center;}
-.pov-filter-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;max-width:1200px;width:100%;margin:0 auto;}
+.pov-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;max-width:1280px;width:100%;margin:0 auto;align-self:center;}
+.pov-filter-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;max-width:1280px;width:100%;margin:0 auto;}
 .cd2{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:14px 16px;}
 .kpis2{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
 .kpi2{background:var(--bg2);border-radius:10px;border:1px solid var(--border);padding:10px;text-align:center;}
@@ -524,7 +525,7 @@ try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'FL
 
 /* ── STATE ── */
 const S={
-  teamA:{name:'Team A',emb:null}, teamB:{name:'Team B',emb:null},
+  teamA:{name:'',emb:null}, teamB:{name:'',emb:null},   /* vazio: rotulo traduzido so na exibicao */
   comp:'',date:'',cur:'alfa',alfaLeft:true,
   shots:[],pending:null,_editIdx:null,_editingGameId:null,
   assist:false,pressao:false,gol:false,gkPres:true,defenders:0,
@@ -612,7 +613,7 @@ function pickClubFromSelect(team,sel){
 }
 function loadEmb(event,team){const file=event.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const src=e.target.result;if(team==='alfa'){S.teamA.emb=src;setEmbUI('A',src,'alfa');}else{S.teamB.emb=src;setEmbUI('B',src,'beta');}syncNames();};r.readAsDataURL(file);}
 function setEmbUI(let_,src,team){const btn=document.getElementById('embBtn'+let_);btn.innerHTML=`<img src="${src}" alt="escudo"><input type="file" accept="image/*" onchange="loadEmb(event,'${team}')">`;if(let_==='A'){const le=document.getElementById('logoEmbA');le.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">`;}const sm=document.getElementById('embSm'+let_);sm.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;">`;}
-function syncNames(){const nA=document.getElementById('inNA').value||'Team A',nB=document.getElementById('inNB').value||'Team B';S.teamA.name=nA;S.teamB.name=nB;document.getElementById('hMatchName').textContent=nA+' vs '+nB;document.getElementById('btnNA').textContent=nA;document.getElementById('btnNB').textContent=nB;document.getElementById('sideLN').textContent=S.alfaLeft?nA:nB;document.getElementById('sideRN').textContent=S.alfaLeft?nB:nA;draw();}
+function syncNames(){const nA=document.getElementById('inNA').value||TX('xg.teamA'),nB=document.getElementById('inNB').value||TX('xg.teamB');S.teamA.name=nA;S.teamB.name=nB;document.getElementById('hMatchName').textContent=nA+' vs '+nB;document.getElementById('btnNA').textContent=nA;document.getElementById('btnNB').textContent=nB;document.getElementById('sideLN').textContent=S.alfaLeft?nA:nB;document.getElementById('sideRN').textContent=S.alfaLeft?nB:nA;draw();}
 function syncMatch(){S.comp=document.getElementById('inComp').value;S.date=document.getElementById('inDate').value;document.getElementById('hComp').textContent=S.comp||TX('xg.competition');if(S.date){const[y,m,d]=S.date.split('-');document.getElementById('hDate').textContent=`${d}/${m}/${y}`;}else{document.getElementById('hDate').textContent='—';}}
 
 /* ── LOG ── */
