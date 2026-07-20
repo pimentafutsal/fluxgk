@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FluxGK · Diagnóstico de dados locais</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafaf7;color:#0a0a0a;padding:24px 16px 60px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:13px;color:#737373;margin-bottom:20px}
+.warn{background:#FAEEDA;border:1px solid #EF9F27;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:20px}
+.warn b{color:#854F0B}
+h2{font-size:15px;font-weight:700;margin:24px 0 8px;display:flex;align-items:center;gap:8px}
+.tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase}
+.t-uso{background:#E1F5EE;color:#0F6E56}
+.t-legado{background:#FCEBEB;color:#A32D2D}
+.t-outro{background:#F1EFE8;color:#5F5E5A}
+.hint{font-size:12px;color:#737373;margin-bottom:10px;line-height:1.6}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#737373;padding:9px 12px;background:#fafafa;border-bottom:1px solid #e5e5e5;font-weight:600}
+td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.k{font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all}
+.sz{color:#737373;white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.desc{color:#525252;font-size:12px;line-height:1.5}
+.vazio{padding:14px;font-size:13px;color:#737373;background:#fff;border:1px solid #e5e5e5;border-radius:10px}
+button{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #d4d4d4;background:#fff;cursor:pointer;font-weight:500}
+button:hover{background:#fafafa}
+button.danger{border-color:#E24B4A;color:#A32D2D}
+button.danger:hover{background:#FCEBEB}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tot{font-size:12px;color:#737373;margin-top:8px}
+.box{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:14px;margin-top:8px;font-size:13px;line-height:1.7}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f4f4f2;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Diagnóstico de dados locais</h1>
+<p class="sub">Mostra o que o FluxGK guardou <b>neste navegador</b>. Não mexe no Firebase.</p>
+
+<div class="warn">
+<b>Importante:</b> esta página só enxerga o navegador em que ela está aberta, e só se
+estiver no mesmo endereço do sistema. Abra-a a partir do mesmo lugar de onde você usa o
+FluxGK — se usa pelo site, acesse <code>seu-site/ferramentas/diagnostico.html</code>;
+se usa pela pasta, abra este arquivo pela pasta.
+</div>
+
+<div id="app"></div>
+
+<h2>E os dados do Firebase?</h2>
+<div class="box">
+São outra coisa, e esta página <b>não</b> os alcança. Ficam em
+<code>users/{seu-uid}/data/{clube}/{temporada}/</code> e você os vê no
+<b>Console do Firebase → Realtime Database → Dados</b>.<br><br>
+A diferença prática: apagar o cache local aqui <b>não apaga nada de verdade</b> — na próxima
+abertura o sistema baixa tudo do Firebase de novo. Já apagar no Console do Firebase é
+definitivo.<br><br>
+<b>Se um dado sumiu do Firebase mas continua aparecendo na tela</b>, é cache local: limpe aqui.<br>
+<b>Se aparece em dois clubes diferentes</b>, é cache antigo de antes do isolamento por clube:
+limpe os itens marcados como legado.
+</div>
+
+</div>
+
+<script>
+/* ── catalogo: o que cada chave e ──────────────────────────── */
+var CATALOGO = [
+  {re:/^fluxgk_lang$/,                cat:'uso',    d:'Idioma escolhido no hub (EN/PT).'},
+  {re:/^glc_users\//,                 cat:'uso',    d:'Cache do Controle de Carga — isolado por clube e temporada. É recriado a partir do Firebase.'},
+  {re:/^fluxgk_sessions$/,            cat:'uso',    d:'Sessões do Planner guardadas no navegador.'},
+  {re:/^fluxgk_exercises$/,           cat:'uso',    d:'Biblioteca de exercícios do Planner.'},
+  {re:/^fluxgk_settings$/,            cat:'uso',    d:'Identidade do clube no Planner (hoje vem do hub; guardado só como cópia).'},
+  {re:/^fluxgk_(badge|color)$/,       cat:'uso',    d:'Escudo e cor do clube no Planner (cópia local).'},
+  {re:/^fxg_games$/,                  cat:'uso',    d:'Partidas do xG guardadas no navegador.'},
+  {re:/^fxg_clubs$/,                  cat:'uso',    d:'Clubes adversários cadastrados no xG.'},
+  {re:/^xg_settings$/,                cat:'uso',    d:'Ajustes do xG (calibração, identidade).'},
+  {re:/^fluxgk_videolab_dashboards_v1$/, cat:'uso', d:'Painéis de tags do Laboratório de Vídeo.'},
+  {re:/^fluxgk_videolab_library_v1$/, cat:'uso',    d:'Biblioteca de jogos do Vídeo (clipes marcados).'},
+  {re:/^fluxgk_video_badge_handoff$/, cat:'uso',    d:'Escudo passado do hub para o Vídeo. Temporário.'},
+
+  {re:/^glcv5$/,                      cat:'legado', d:'Controle de Carga anterior ao login. Já foi migrado — pode apagar.'},
+  {re:/^glcv5_migrated$/,             cat:'legado', d:'Marcador de que a migração acima já ocorreu. Apagar faz a migração tentar de novo — não recomendado apagar sozinho.'},
+  {re:/^glc_(?!users\/)/,             cat:'legado', d:'⚠ Cache do Controle de Carga ANTES do isolamento por clube. É a causa clássica de dado aparecendo em dois clubes. Pode apagar.'},
+  {re:/^_disabled_/,                  cat:'legado', d:'Chave desativada por uma versão anterior. Pode apagar.'},
+  {re:/^fxg_fb$/,                     cat:'legado', d:'Configuração manual de Firebase do xG. Hoje a config vem do hub. Pode apagar.'}
+];
+
+function classificar(k){
+  for (var i=0;i<CATALOGO.length;i++) if (CATALOGO[i].re.test(k)) return CATALOGO[i];
+  if (/^(fluxgk|glc|fxg|xg_)/i.test(k)) return {cat:'outro', d:'Chave do FluxGK que não está no catálogo — pode ser de uma versão antiga.'};
+  return null;
+}
+function tamanho(v){
+  var b = new Blob([v||'']).size;
+  return b < 1024 ? b+' B' : b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+}
+function bytes(v){ return new Blob([v||'']).size; }
+
+function render(){
+  var grupos = {uso:[], legado:[], outro:[]}, alheias = 0, totalBytes = 0;
+  for (var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i), v = localStorage.getItem(k), c = classificar(k);
+    if (!c){ alheias++; continue; }
+    totalBytes += bytes(v);
+    grupos[c.cat].push({k:k, v:v, d:c.d});
+  }
+  var html = '';
+  var titulos = {
+    uso:    ['Em uso','t-uso',  'Estes o sistema usa hoje. Apagar não perde nada do Firebase — só força o sistema a baixar tudo de novo na próxima abertura.'],
+    legado: ['Legado','t-legado','Restos de versões anteriores. São a fonte mais comum de dado fantasma. Pode apagar com segurança.'],
+    outro:  ['Não catalogado','t-outro','Chaves do FluxGK que não reconheço. Vale me mostrar antes de apagar.']
+  };
+  ['legado','uso','outro'].forEach(function(cat){
+    var t = titulos[cat], itens = grupos[cat];
+    html += '<h2>'+t[0]+' <span class="tag '+t[1]+'">'+itens.length+'</span></h2>';
+    html += '<p class="hint">'+t[2]+'</p>';
+    if (!itens.length){ html += '<div class="vazio">Nada aqui.</div>'; return; }
+    html += '<table><thead><tr><th>Chave</th><th>Tamanho</th><th>O que é</th></tr></thead><tbody>';
+    itens.forEach(function(it){
+      html += '<tr><td class="k">'+it.k.replace(/</g,'&lt;')+'</td><td class="sz">'+tamanho(it.v)+'</td><td class="desc">'+it.d+'</td></tr>';
+    });
+    html += '</tbody></table>';
+    if (cat==='legado' && itens.length)
+      html += '<div class="acoes"><button class="danger" onclick="limpar(\'legado\')">Apagar os '+itens.length+' itens de legado</button></div>';
+    if (cat==='uso' && itens.length)
+      html += '<div class="acoes"><button class="danger" onclick="limpar(\'uso\')">Apagar o cache em uso ('+itens.length+')</button></div>';
+  });
+  html += '<p class="tot">Total ocupado pelo FluxGK: <b>'+tamanho(new Array(totalBytes+1).join('a'))+'</b>'
+        + (alheias ? ' · '+alheias+' chave(s) de outros sites, ignoradas' : '') + '</p>';
+  document.getElementById('app').innerHTML = html;
+}
+
+function limpar(cat){
+  var alvo = [];
+  for (var i=0;i<localStorage.length;i++){
+    var k = localStorage.key(i), c = classificar(k);
+    if (c && c.cat === cat) alvo.push(k);
+  }
+  if (!alvo.length) return;
+  var msg = cat === 'legado'
+    ? 'Apagar '+alvo.length+' item(ns) de versões antigas?\n\nIsso não afeta o Firebase.'
+    : 'Apagar '+alvo.length+' item(ns) de cache em uso?\n\nNada é perdido no Firebase — o sistema baixa tudo de novo na próxima abertura.\n\nAtenção: o que estiver SÓ no navegador e ainda não sincronizado será perdido.';
+  if (!confirm(msg)) return;
+  alvo.forEach(function(k){ localStorage.removeItem(k); });
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
