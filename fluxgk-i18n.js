@@ -701,6 +701,7 @@
     'vid.tt.editDrawing':"Edit this drawing's strokes",
     'vid.tt.expand':'Show clips','vid.tt.collapse':'Hide clips',
     'vid.tt.drawClip':'Draw on this clip','vid.tt.exportGroup':'Export all clips of this tag',
+    'vid.tt.removeFromPlaylist':'Remove from this playlist','vid.f.playlistEmpty':'No clips in this playlist yet.',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'No clips tagged. Tag clips in the Analysis tab to export.',
     'vid.f.noClipsAnalysis':'No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.',
@@ -1509,6 +1510,7 @@
     'vid.tt.editDrawing':'Editar os traços deste desenho',
     'vid.tt.expand':'Mostrar lances','vid.tt.collapse':'Esconder lances',
     'vid.tt.drawClip':'Desenhar neste lance','vid.tt.exportGroup':'Exportar todos os lances desta etiqueta',
+    'vid.tt.removeFromPlaylist':'Remover desta playlist','vid.f.playlistEmpty':'Nenhum lance nesta playlist ainda.',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'Nenhum clipe marcado. Marque clipes na aba Análise para exportar.',
     'vid.f.noClipsAnalysis':'Nenhum clipe marcado ainda. Carregue um vídeo na aba Análise e clique numa tag durante a reprodução.',

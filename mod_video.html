@@ -1612,6 +1612,8 @@ let lastClickedId = null;
 /* etiquetas expandidas no painel de clipes. Recolhido por padrao:
    os lances so aparecem quando o usuario clica na seta do grupo. */
 let expandedTags = new Set();
+/* playlists expandidas (mesma logica das etiquetas) */
+let expandedPls = new Set();
 
 function flatEventsInOrder(){
   const seen = [];
@@ -1848,17 +1850,28 @@ function renderPlaylists(){
       const evs = pl.evIds.map(id => state.events.find(e => e.id === id)).filter(Boolean);
       const wrap = document.createElement('div');
       wrap.className = 'plist';
+      const plOpen = expandedPls.has(pl.id);
+      if (plOpen) wrap.classList.add('open');
       const head = document.createElement('div');
       head.className = 'phead';
-      head.innerHTML = '<div class="dot" style="background:var(--blue)"></div>' +
+      head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(plOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">▸</button>' +
+        '<div class="dot" style="background:var(--blue)"></div>' +
         '<div class="pname">' + escapeHtml(pl.name) + '</div>' +
         '<div class="count">' + evs.length + ' clip' + (evs.length === 1 ? '' : 's') + '</div>' +
         '<div class="spacer"></div>';
+      /* clique no cabecalho (fora dos botoes) mostra/esconde os lances da playlist */
+      const plToggle = () => {
+        if (expandedPls.has(pl.id)) expandedPls.delete(pl.id);
+        else expandedPls.add(pl.id);
+        renderPlaylists();
+      };
+      head.addEventListener('click', (e) => { if (!e.target.closest('button')) plToggle(); });
+      head.querySelector('.caret').addEventListener('click', (e) => { e.stopPropagation(); plToggle(); });
       const bPlay = document.createElement('button');
       bPlay.className = 'mini';
       bPlay.textContent = TX('vid.f.playlistBtn');
       bPlay.disabled = !evs.length;
-      bPlay.addEventListener('click', () => startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name));
+      bPlay.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name); });
       const bExp = document.createElement('button');
       bExp.className = 'mini primary';
       bExp.textContent = TX('vid.f.export');
@@ -1866,7 +1879,8 @@ function renderPlaylists(){
       bExp.disabled = !evs.length;
       /* abre a aba Exportar com os lances da playlist marcados, para o usuario
          escolher audio, desenhos, qualidade etc. (antes exportava direto). */
-      bExp.addEventListener('click', () => {
+      bExp.addEventListener('click', (e) => {
+        e.stopPropagation();
         const ids = new Set(evs.map(ev => ev.id));
         state.events.forEach(ev => { expSel[ev.id] = ids.has(ev.id); });
         switchTab('export');
@@ -1876,13 +1890,65 @@ function renderPlaylists(){
       bDel.className = 'mini ghost danger';
       bDel.textContent = '✕';
       bDel.title = TX('vid.tt.deletePlaylist');
-      bDel.addEventListener('click', () => {
+      bDel.addEventListener('click', (e) => {
+        e.stopPropagation();
         state.namedPlaylists = state.namedPlaylists.filter(x => x.id !== pl.id);
         saveSession();
         renderPlaylists();
       });
       head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
       wrap.appendChild(head);
+
+      /* lances DENTRO da playlist: aparecem ao expandir; da para abrir cada um
+         e remover da playlist (sem apagar o lance em si). */
+      const plClips = document.createElement('div');
+      plClips.className = 'clips';
+      if (!evs.length){
+        const em = document.createElement('div');
+        em.className = 'empty'; em.style.cssText = 'padding:12px;font-size:12px';
+        em.textContent = TX('vid.f.playlistEmpty');
+        plClips.appendChild(em);
+      }
+      evs.slice().sort((a,b)=>a.start-b.start).forEach(ev => {
+        const tag = findTag(ev.tagId);
+        const row = document.createElement('div');
+        row.className = 'erow';
+
+        const tEl = document.createElement('span');
+        tEl.className = 'et';
+        tEl.textContent = fmt(ev.t, true);
+        tEl.title = TX('vid.tt.openTrimmed');
+        tEl.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, tag); });
+
+        const nEl = document.createElement('span');
+        nEl.className = 'ename';
+        nEl.textContent = ev.name || (tag ? tag.name : '') ;
+        nEl.title = TX('vid.tt.openTrimmed');
+        nEl.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, tag); });
+
+        const dotEl = document.createElement('span');
+        if (tag) dotEl.style.cssText = 'width:8px;height:8px;border-radius:2px;flex:none;background:' + tag.color;
+
+        const sp = document.createElement('span');
+        sp.className = 'spacer';
+
+        /* remover ESTE lance da playlist (nao apaga o lance, so tira daqui) */
+        const bRm = document.createElement('button');
+        bRm.className = 'mini ghost danger';
+        bRm.textContent = '✕';
+        bRm.title = TX('vid.tt.removeFromPlaylist');
+        bRm.addEventListener('click', (e) => {
+          e.stopPropagation();
+          pl.evIds = pl.evIds.filter(id => id !== ev.id);
+          saveSession();
+          renderPlaylists();
+        });
+
+        row.appendChild(dotEl); row.appendChild(tEl); row.appendChild(nEl); row.appendChild(sp); row.appendChild(bRm);
+        plClips.appendChild(row);
+      });
+      wrap.appendChild(plClips);
+
       box.appendChild(wrap);
     });
   }
