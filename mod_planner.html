@@ -5,6 +5,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>FluxGK · Training Planner</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1552,8 +1553,28 @@ function saveCurrentSession(){
      grava e sincroniza. a sessao passa a existir na Library na hora. */
   _persistSessionToLibrary();
   toast(TX('plan.msg.savedToLib'));
+  /* libera o planejador para uma NOVA sessao (a salva continua na biblioteca,
+     e pode ser reaberta para o pos-treino via editSessionFromLibrary). */
+  _newSession();
   /* vai para a Library para o usuario ver que arquivou */
   showPage('library');
+}
+
+/* zera o planejador para comecar uma sessao do zero, mantendo a identidade
+   do clube que vem do hub (nao mexe em _hdrTitle/_hdrClub/cor/escudo). */
+function _newSession(){
+  exercises = [];
+  rating = 0;
+  _editingSessionId = null;
+  _editPostState = null;
+  ['sDate','sTime','sDur','sType','sPlayers','sObj','sMeth'].forEach(function(id){
+    delete _sessionFormState[id];
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  ['postPos','postImp','postAff','postCon','postEme','postNxt'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  try{ renderExercises(); }catch(e){}
 }
 
 /* nucleo unico de gravacao — usado por 'Salvar na biblioteca' e por 'Atualizar' */

@@ -823,7 +823,7 @@
     'tat.msg.cleared':'Court cleared','tat.msg.imgSent':'Image sent to exercise',
     'tat.msg.imgSaved':'Image saved','tat.msg.projSaved':'Project saved (.json)',
     'tat.msg.projLoaded':'Project loaded','tat.msg.invalidFile':'Invalid file',
-    'tat.floor':'FLOOR','tat.useInExercise':'✓ USE IN EXERCISE'
+    'tat.floor':'FLOOR','tat.useInExercise':'✓ USE IN EXERCISE','tat.close':'✕ CLOSE'
   },
 
   /* ══════════════ PT-BR ══════════════ */
@@ -1629,7 +1629,7 @@
     'tat.msg.cleared':'Quadra limpa','tat.msg.imgSent':'Imagem enviada para o exercício',
     'tat.msg.imgSaved':'Imagem salva','tat.msg.projSaved':'Projeto salvo (.json)',
     'tat.msg.projLoaded':'Projeto carregado','tat.msg.invalidFile':'Arquivo inválido',
-    'tat.floor':'PISO','tat.useInExercise':'✓ USAR NO EXERCÍCIO'
+    'tat.floor':'PISO','tat.useInExercise':'✓ USAR NO EXERCÍCIO','tat.close':'✕ FECHAR'
   }
 
   };

@@ -38,7 +38,13 @@
   .tbtn.primary:hover{filter:brightness(1.08)}
   #topbar .grow{flex:1}
   #topbar::-webkit-scrollbar{display:none}
-  @media (max-width:980px){ #topbar{overflow-x:auto} }
+  /* barra sempre rolavel na horizontal: com rotulos em PT (mais longos) os botoes
+     ultrapassavam a largura e os do fim ficavam inacessiveis. */
+  #topbar{overflow-x:auto}
+  /* modo embutido (aberto pelo Planner): acoes principais num canto fixo,
+     sempre visiveis, independentes da largura/idioma da barra de cima. */
+  #embed-bar{position:fixed;right:14px;bottom:14px;z-index:40;display:flex;gap:8px}
+  #embed-bar .tbtn{box-shadow:0 2px 10px rgba(0,0,0,.18)}
 
   /* ───── Palette ───── */
   #palette{
@@ -1565,6 +1571,9 @@ function captureReport(){
   return url;
 }
 if(EMBED){
+  /* acoes num canto fixo, fora da barra superior lotada */
+  const bar = document.createElement('div');
+  bar.id = 'embed-bar';
   const useBtn = document.createElement('button');
   useBtn.className = 'tbtn primary';
   useBtn.textContent = TX('tat.useInExercise');
@@ -1573,12 +1582,13 @@ if(EMBED){
     window.parent.postMessage({type:'fluxgk-tatica-image', dataUrl:url}, '*');
     toast(TX('tat.msg.imgSent'));
   };
-  document.getElementById('topbar').appendChild(useBtn);
   const closeBtn = document.createElement('button');
   closeBtn.className = 'tbtn';
-  closeBtn.textContent = '✕ CLOSE';
+  closeBtn.textContent = TX('tat.close');
   closeBtn.onclick = ()=>window.parent.postMessage({type:'fluxgk-tatica-close'}, '*');
-  document.getElementById('topbar').appendChild(closeBtn);
+  bar.appendChild(useBtn);
+  bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
 }
 
 function stamp(){
