@@ -699,6 +699,8 @@
     'vid.tt.deletePlaylist':'Delete this playlist (clips stay under their tags)',
     'vid.tt.playZoom':'Play zooming into this drawing','vid.tt.deleteDrawing':'Delete drawing',
     'vid.tt.editDrawing':"Edit this drawing's strokes",
+    'vid.tt.expand':'Show clips','vid.tt.collapse':'Hide clips',
+    'vid.tt.drawClip':'Draw on this clip','vid.tt.exportGroup':'Export all clips of this tag',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'No clips tagged. Tag clips in the Analysis tab to export.',
     'vid.f.noClipsAnalysis':'No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.',
@@ -1505,6 +1507,8 @@
     'vid.tt.deletePlaylist':'Excluir esta playlist (os clipes permanecem nas suas tags)',
     'vid.tt.playZoom':'Reproduzir com zoom neste desenho','vid.tt.deleteDrawing':'Excluir desenho',
     'vid.tt.editDrawing':'Editar os traços deste desenho',
+    'vid.tt.expand':'Mostrar lances','vid.tt.collapse':'Esconder lances',
+    'vid.tt.drawClip':'Desenhar neste lance','vid.tt.exportGroup':'Exportar todos os lances desta etiqueta',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'Nenhum clipe marcado. Marque clipes na aba Análise para exportar.',
     'vid.f.noClipsAnalysis':'Nenhum clipe marcado ainda. Carregue um vídeo na aba Análise e clique numa tag durante a reprodução.',

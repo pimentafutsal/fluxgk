@@ -278,10 +278,23 @@
   .plist .dot{width:10px;height:10px;border-radius:3px;flex:none}
   .plist .pname{font-weight:600;font-size:13px}
   .plist .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  /* seta de recolher/expandir o grupo de etiqueta */
+  .plist .caret{flex:none;width:22px;height:22px;border:none;background:transparent;cursor:pointer;
+    font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;
+    transition:transform .15s}
+  .plist .caret:hover{color:var(--ink)}
+  .plist.open .caret{transform:rotate(90deg)}
+  .plist .phead{cursor:pointer}
+  /* container dos lances: escondido quando o grupo esta recolhido */
+  .plist .clips{display:none}
+  .plist.open .clips{display:block}
   .erow{
     display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);
-    font-size:13px;
+    font-size:13px;min-width:0;
   }
+  /* nome ocupa o espaco livre e trunca em vez de empurrar/estourar a largura */
+  .erow .ename{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+  .erow .et,.erow .er{flex:none}
   .erow:last-child{border-bottom:none}
   .erow.current{background:#f2f5ff}
   .erow.sel{background:#e7edff;box-shadow:inset 3px 0 0 var(--blue)}
@@ -1596,6 +1609,9 @@ $('noteInput').addEventListener('keydown', (e) => {
 /* ---------------- playlists ---------------- */
 let selectedIds = new Set();
 let lastClickedId = null;
+/* etiquetas expandidas no painel de clipes. Recolhido por padrao:
+   os lances so aparecem quando o usuario clica na seta do grupo. */
+let expandedTags = new Set();
 
 function flatEventsInOrder(){
   const seen = [];
@@ -1655,33 +1671,65 @@ function renderPlaylists(){
   groups.forEach(g => {
     const wrap = document.createElement('div');
     wrap.className = 'plist';
+    const isOpen = expandedTags.has(g.tag.id);
+    if (isOpen) wrap.classList.add('open');
 
     const head = document.createElement('div');
     head.className = 'phead';
-    head.innerHTML = '<div class="dot" style="background:' + g.tag.color + '"></div>' +
+    head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(isOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">▸</button>' +
+      '<div class="dot" style="background:' + g.tag.color + '"></div>' +
       '<div class="pname">' + escapeHtml(g.tag.name) + '</div>' +
       '<div class="count">' + g.evs.length + ' clip' + (g.evs.length === 1 ? '' : 's') + '</div>' +
       '<div class="spacer"></div>';
+
+    /* clique no cabecalho (fora dos botoes) recolhe/expande o grupo */
+    const toggle = () => {
+      if (expandedTags.has(g.tag.id)) expandedTags.delete(g.tag.id);
+      else expandedTags.add(g.tag.id);
+      renderPlaylists();
+    };
+    head.addEventListener('click', (e) => { if (!e.target.closest('button')) toggle(); });
+    head.querySelector('.caret').addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
 
     const playAll = document.createElement('button');
     playAll.className = 'mini ghost';
     playAll.textContent = TX('vid.f.viewAll');
     playAll.title = TX('vid.tt.playTagClips');
-    playAll.addEventListener('click', () => startPlaylist(g.evs, g.tag.name));
+    playAll.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(g.evs, g.tag.name); });
 
     const selAll = document.createElement('button');
     selAll.className = 'mini ghost';
     selAll.textContent = TX('vid.f.select');
     selAll.title = TX('vid.tt.selectTagClips');
-    selAll.addEventListener('click', () => {
-      g.evs.forEach(e => selectedIds.add(e.id));
+    selAll.addEventListener('click', (e) => {
+      e.stopPropagation();
+      g.evs.forEach(ev => selectedIds.add(ev.id));
       lastClickedId = g.evs.length ? g.evs[g.evs.length - 1].id : null;
       updateRowSelection();
     });
 
+    /* exportar todos os lances desta etiqueta como uma exportacao */
+    const expAll = document.createElement('button');
+    expAll.className = 'mini ghost';
+    expAll.textContent = TX('vid.f.export');
+    expAll.title = TX('vid.tt.exportGroup');
+    expAll.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ids = new Set(g.evs.map(ev => ev.id));
+      state.events.forEach(ev => { expSel[ev.id] = ids.has(ev.id); });
+      switchTab('export');
+      log(TX('vid.f.exportOpenedSp') + g.evs.length + TX('vid.f.adjustExportSp'));
+    });
+
     head.appendChild(playAll);
     head.appendChild(selAll);
+    head.appendChild(expAll);
     wrap.appendChild(head);
+
+    /* os lances ficam num container que so aparece com o grupo expandido */
+    const clipsBox = document.createElement('div');
+    clipsBox.className = 'clips';
+    wrap.appendChild(clipsBox);
 
     g.evs.forEach((ev, i) => {
       const row = document.createElement('div');
@@ -1745,9 +1793,21 @@ function renderPlaylists(){
       bEdit.title = TX('vid.tt.editStartEnd');
       bEdit.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, g.tag, true); });
 
+      /* desenhar: antes so existia no menu do botao direito (muito escondido).
+         agora tem um botao visivel na linha do lance. */
+      const bDraw = document.createElement('button');
+      bDraw.className = 'mini ghost';
+      bDraw.textContent = '✏️';
+      bDraw.title = TX('vid.tt.drawClip');
+      bDraw.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openClip(ev, g.tag);
+        setTimeout(() => { setDrawMode(true); log(TX('vid.f.drawModeOn')); }, 250);
+      });
+
       row.appendChild(tEl); row.appendChild(nEl); row.appendChild(rEl); row.appendChild(sp);
-      row.appendChild(bEdit); row.appendChild(bMenu);
-      wrap.appendChild(row);
+      row.appendChild(bDraw); row.appendChild(bEdit); row.appendChild(bMenu);
+      clipsBox.appendChild(row);
     });
 
     box.appendChild(wrap);
