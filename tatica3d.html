@@ -20,9 +20,9 @@
 
   /* ───── Top bar ───── */
   #topbar{
-    position:absolute;top:0;left:0;right:0;height:52px;z-index:20;
+    position:absolute;top:0;left:0;right:0;min-height:52px;z-index:20;
     background:var(--paper);border-bottom:1px solid var(--line);
-    display:flex;align-items:center;gap:8px;padding:0 14px;
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px;row-gap:6px;padding:7px 14px;
   }
   #brand{font-weight:700;letter-spacing:.04em;font-size:15px;color:var(--ink);white-space:nowrap}
   #brand b{color:var(--accent)}
@@ -36,15 +36,10 @@
   .tbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .tbtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .tbtn.primary:hover{filter:brightness(1.08)}
-  #topbar .grow{flex:1}
-  #topbar::-webkit-scrollbar{display:none}
-  /* barra sempre rolavel na horizontal: com rotulos em PT (mais longos) os botoes
-     ultrapassavam a largura e os do fim ficavam inacessiveis. */
-  #topbar{overflow-x:auto}
-  /* modo embutido (aberto pelo Planner): acoes principais num canto fixo,
-     sempre visiveis, independentes da largura/idioma da barra de cima. */
-  #embed-bar{position:fixed;right:14px;bottom:14px;z-index:40;display:flex;gap:8px}
-  #embed-bar .tbtn{box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  #topbar .grow{flex:1;min-width:12px}
+  /* a barra quebra em mais linhas quando nao cabe (em PT os rotulos sao maiores),
+     em vez de cortar o ultimo botao. a paleta e o toast descem conforme a altura
+     real da barra, calculada em _layoutBar(). */
 
   /* ───── Palette ───── */
   #palette{
@@ -1571,9 +1566,7 @@ function captureReport(){
   return url;
 }
 if(EMBED){
-  /* acoes num canto fixo, fora da barra superior lotada */
-  const bar = document.createElement('div');
-  bar.id = 'embed-bar';
+  /* acoes na propria barra (que agora quebra em linhas, entao nunca ficam cortadas) */
   const useBtn = document.createElement('button');
   useBtn.className = 'tbtn primary';
   useBtn.textContent = TX('tat.useInExercise');
@@ -1586,10 +1579,22 @@ if(EMBED){
   closeBtn.className = 'tbtn';
   closeBtn.textContent = TX('tat.close');
   closeBtn.onclick = ()=>window.parent.postMessage({type:'fluxgk-tatica-close'}, '*');
-  bar.appendChild(useBtn);
-  bar.appendChild(closeBtn);
-  document.body.appendChild(bar);
+  document.getElementById('topbar').appendChild(useBtn);
+  document.getElementById('topbar').appendChild(closeBtn);
 }
+
+/* a paleta e o toast ficam logo abaixo da barra; se a barra quebra em 2 linhas,
+   eles descem junto. recalcula ao carregar, ao redimensionar e quando a barra muda. */
+function _layoutBar(){
+  var tb=document.getElementById('topbar'); if(!tb) return;
+  var y=tb.offsetHeight+12;
+  var pal=document.getElementById('palette'); if(pal) pal.style.top=y+'px';
+  var tst=document.getElementById('toast');   if(tst) tst.style.top=y+'px';
+}
+window.addEventListener('load',_layoutBar);
+window.addEventListener('resize',_layoutBar);
+if(window.ResizeObserver){ new ResizeObserver(_layoutBar).observe(document.getElementById('topbar')); }
+setTimeout(_layoutBar,300);
 
 function stamp(){
   const d = new Date();
