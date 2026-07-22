@@ -1861,10 +1861,17 @@ function renderPlaylists(){
       bPlay.addEventListener('click', () => startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name));
       const bExp = document.createElement('button');
       bExp.className = 'mini primary';
-      bExp.textContent = '⤓';
+      bExp.textContent = TX('vid.f.export');
       bExp.title = TX('vid.tt.exportPlaylist');
       bExp.disabled = !evs.length;
-      bExp.addEventListener('click', () => exportEvents(evs.slice().sort((a,b)=>a.start-b.start), safeName(pl.name) + '.mp4', 'Playlist "' + pl.name + '"'));
+      /* abre a aba Exportar com os lances da playlist marcados, para o usuario
+         escolher audio, desenhos, qualidade etc. (antes exportava direto). */
+      bExp.addEventListener('click', () => {
+        const ids = new Set(evs.map(ev => ev.id));
+        state.events.forEach(ev => { expSel[ev.id] = ids.has(ev.id); });
+        switchTab('export');
+        log(TX('vid.f.exportOpenedSp') + evs.length + TX('vid.f.adjustExportSp'));
+      });
       const bDel = document.createElement('button');
       bDel.className = 'mini ghost danger';
       bDel.textContent = '✕';
