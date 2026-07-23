@@ -26,6 +26,8 @@
     _SPATH.games=d.dataPath+'/stats/games';
     _SPATH.gks=d.dataPath+'/stats/gks';
     _SPATH.comps=d.dataPath+'/stats/comps';
+    _SPATH.skills=d.dataPath+'/stats/skills';
+    _SPATH.moments=d.dataPath+'/stats/moments';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
@@ -90,6 +92,8 @@
     });
     db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=v;try{populateAllSelects();}catch(e){}});
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{populateAllSelects();}catch(e){}});
+    db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v&&v.length)ST.skills=v;try{renderSkillMomentGroups();renderList('skills');}catch(e){}});
+    db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v&&v.length)ST.moments=v;try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
     db.ref(_SPATH.opponents).on('value',function(snap){
       var v=snap.val();
       if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});
@@ -166,16 +170,11 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .goal-zone{height:52px;border-radius:5px;border:1.5px solid var(--border2);background:var(--surface);color:var(--mute);font-family:var(--mono);font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;}
 .goal-zone:hover{border-color:#999;color:var(--ink);}
 .goal-zone.active{border-color:var(--ink);background:rgba(10,10,10,.08);color:var(--ink);}
-.court-wrap{width:140px;border-radius:7px;overflow:hidden;border:1px solid var(--border2);}
-.court-top{background:#1a3a5c;height:44px;display:flex;align-items:center;justify-content:center;}
-.court-circle{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);}
-.court-div{height:2px;background:rgba(255,255,255,.15);}
-.court-grid{background:#1e2a1e;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:3px;height:66px;}
-.court-zone{border-radius:4px;border:1.5px solid var(--border2);background:rgba(255,255,255,.05);color:var(--mute);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:all .15s;}
-.court-zone:hover{border-color:#4ade80;color:#4ade80;}
-.court-zone.active{border-color:#4ade80;background:rgba(74,222,128,.2);color:#4ade80;}
-.court-gkbox{background:#1e2a1e;height:22px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;}
-.court-gkrect{width:44px;height:12px;border:1px solid rgba(255,255,255,.2);border-radius:2px;}
+/* corredor da finalizacao: 3 botoes claros, mesmo estilo dos outros campos
+   (antes era um desenho de quadra confuso; os valores 124/152/125 seguem iguais) */
+.court-zone{padding:7px 14px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--mute);font-size:12px;font-family:var(--font);font-weight:600;cursor:pointer;transition:all .15s;}
+.court-zone:hover{border-color:#999;color:var(--ink);}
+.court-zone.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
 .shot-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
 .shot-item.goal{border-color:#fecaca;}
 .shot-item.save{border-color:#bbf7d0;}
@@ -337,21 +336,11 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
           <div><div data-i18n="st.minute" class="label">Minute</div><input type="text" id="sf-minute" placeholder="e.g. 14, 32+1"></div>
           <div>
             <div data-i18n="st.gameMoment" class="label">Game Moment</div>
-            <div class="mc-group" id="sf-moment-group">
-              <button data-i18n="st.m.pressure" class="mc-btn" onclick="mcSel(this,'moment','Leaving pressure')">Leaving pressure</button>
-              <button data-i18n="st.m.organized" class="mc-btn" onclick="mcSel(this,'moment','Organized attack')">Organized attack</button>
-              <button data-i18n="st.m.transition" class="mc-btn" onclick="mcSel(this,'moment','Transition')">Transition</button>
-              <button data-i18n="st.m.ballstop" class="mc-btn" onclick="mcSel(this,'moment','Ball stop')">Ball stop</button>
-              <button data-i18n="st.m.special" class="mc-btn" onclick="mcSel(this,'moment','Special game')">Special game</button>
-            </div>
+            <div class="mc-group" id="sf-moment-group"></div>
           </div>
           <div>
             <div data-i18n="st.skillType" class="label">Skill Type</div>
-            <div class="mc-group" id="sf-skill-group">
-              <button class="mc-btn" onclick="mcSel(this,'skill','1vs1')">1vs1</button>
-              <button data-i18n="st.k.goalProt" class="mc-btn" onclick="mcSel(this,'skill','Goal protection')">Goal protection</button>
-              <button data-i18n="st.k.secondPost" class="mc-btn" onclick="mcSel(this,'skill','2nd post')">2nd post</button>
-            </div>
+            <div class="mc-group" id="sf-skill-group"></div>
           </div>
           <div>
             <div data-i18n="st.result" class="label">Result *</div>
@@ -387,16 +376,11 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
             </div>
           </div>
           <div>
-            <div data-i18n="st.vShotPos" class="label" style="margin-bottom:10px;">Vertical Shot Position</div>
-            <div class="court-wrap">
-              <div class="court-top"><div class="court-circle"></div></div>
-              <div class="court-div"></div>
-              <div class="court-grid">
-                <button class="court-zone" onclick="selCourt(this,124)" title="Left corridor" data-i18n-title="st.g.leftCorr"></button>
-                <button class="court-zone" onclick="selCourt(this,152)" title="Center corridor" data-i18n-title="st.g.centerCorr"></button>
-                <button class="court-zone" onclick="selCourt(this,125)" title="Right corridor" data-i18n-title="st.g.rightCorr"></button>
-              </div>
-              <div class="court-gkbox"><div class="court-gkrect"></div></div>
+            <div data-i18n="st.corridor" class="label">Corridor of the shot</div>
+            <div class="mc-group" id="sf-court-group">
+              <button class="court-zone" onclick="selCourt(this,124)" data-i18n="st.g.left">Left</button>
+              <button class="court-zone" onclick="selCourt(this,152)" data-i18n="st.g.center">Center</button>
+              <button class="court-zone" onclick="selCourt(this,125)" data-i18n="st.g.right">Right</button>
             </div>
           </div>
         </div>
@@ -536,6 +520,24 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div id="comps-list"></div>
     </div>
     <div class="card">
+      <div data-i18n="st.skillsTitle" class="card-title">Technical actions</div>
+      <div data-i18n="st.skillsSub" class="page-sub" style="margin:-4px 0 10px;">Characterize with your own technical actions.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-skill-input" placeholder="Add technical action…" data-i18n-placeholder="st.ph.skill" onkeydown="if(event.key==='Enter')addItem('skills','add-skill-input','skills-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('skills','add-skill-input','skills-list')">Add</button>
+      </div>
+      <div id="skills-list"></div>
+    </div>
+    <div class="card">
+      <div data-i18n="st.momentsTitle" class="card-title">Game moments</div>
+      <div data-i18n="st.momentsSub" class="page-sub" style="margin:-4px 0 10px;">Characterize with your own game moments.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-moment-input" placeholder="Add game moment…" data-i18n-placeholder="st.ph.moment" onkeydown="if(event.key==='Enter')addItem('moments','add-moment-input','moments-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('moments','add-moment-input','moments-list')">Add</button>
+      </div>
+      <div id="moments-list"></div>
+    </div>
+    <div class="card">
       <div data-i18n="st.goalkeepers" class="card-title">Goalkeepers</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="add-gk-input" placeholder="Add goalkeeper name…" data-i18n-placeholder="st.ph.gk" onkeydown="if(event.key==='Enter')addItem('gks','add-gk-input','gks-list')">
@@ -555,6 +557,12 @@ const ST = {
      do clube real assim que o usuario mexia em qualquer item. */
   clubs:[],
   comps:[],
+  /* listas caracterizaveis pelo treinador (por clube/temporada).
+     Semeadas com os valores padrao na 1a vez; stLbl() traduz os padroes
+     conhecidos e deixa passar os personalizados. */
+  skills:['1vs1','Goal protection','2nd post'],
+  moments:['Leaving pressure','Organized attack','Transition','Ball stop','Special game'],
+  _seeded:false,
   gks:[],
   games:[],
   accent:'#e8ff00',
@@ -583,6 +591,9 @@ function persist(){
   /* elenco e competicoes: por temporada */
   window.fbSet(_SPATH.gks, ST.gks||[]).catch(e=>console.error('FB gks:',e));
   window.fbSet(_SPATH.comps, ST.comps||[]).catch(e=>console.error('FB comps:',e));
+  /* acoes tecnicas e momentos: caracterizaveis pelo treinador */
+  if(_SPATH.skills)  window.fbSet(_SPATH.skills,  ST.skills||[]).catch(e=>console.error('FB skills:',e));
+  if(_SPATH.moments) window.fbSet(_SPATH.moments, ST.moments||[]).catch(e=>console.error('FB moments:',e));
   /* adversarios: por clube (compartilhado com o xG) */
   var opp={};
   (ST.clubs||[]).forEach(function(name){
@@ -640,7 +651,7 @@ function renderSettings(){
   ['clubs','comps','gks'].forEach(k=>renderList(k));
 }
 function renderList(key){
-  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list'}[key];
+  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',skills:'skills-list',moments:'moments-list'}[key];
   const el=document.getElementById(listId); if(!el) return;
   el.innerHTML='';
   if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX("st.noItems")+'</div>';return;}
@@ -661,7 +672,9 @@ function renderList(key){
         <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>
       </div>`;
     } else {
-      d.innerHTML=`<span style="font-size:13px;">${item}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+      /* skills/moments mostram o rotulo traduzido dos padroes; personalizados passam direto */
+      const label=(key==='skills'||key==='moments')?stLbl(item):item;
+      d.innerHTML=`<span style="font-size:13px;">${label}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
     }
     el.appendChild(d);
   });
@@ -680,9 +693,11 @@ function addItem(key,inputId,listId){
   const inp=document.getElementById(inputId);
   const v=inp.value.trim(); if(!v||ST[key].includes(v)){inp.focus();return;}
   ST[key].push(v); inp.value=''; persist(); renderList(key); populateAllSelects();
+  if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
 }
 function removeItem(key,idx){
   ST[key].splice(idx,1); persist(); renderList(key); populateAllSelects();
+  if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
 }
 
 // ═══ SELECTS ══════════════════════════════════════════════════════
@@ -804,6 +819,25 @@ function mcSel(btn,field,val){
   btn.classList.add('active');
   SF[field]=val;
 }
+
+/* monta os botoes de Momento e Acao Tecnica a partir das listas do treinador.
+   data-val guarda o valor gravado (canonico); o texto e stLbl() (traduz os
+   padroes, deixa passar os personalizados). Reaplica a selecao atual (SF). */
+function renderSkillMomentGroups(){
+  [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills]].forEach(function(cfg){
+    var field=cfg[0], el=document.getElementById(cfg[1]), list=cfg[2]||[];
+    if(!el) return;
+    el.innerHTML='';
+    list.forEach(function(val){
+      var b=document.createElement('button');
+      b.className='mc-btn'+(SF[field]===val?' active':'');
+      b.dataset.val=val;
+      b.textContent=stLbl(val);
+      b.onclick=function(){ mcSel(b,field,val); };
+      el.appendChild(b);
+    });
+  });
+}
 function selGoal(btn,zone){
   document.querySelectorAll('.goal-zone').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active'); SF.goalZone=zone;
@@ -906,7 +940,10 @@ function editShot(idx){
   Object.entries(fieldMap).forEach(([key,gid])=>{
     if(!s[key]) return;
     document.getElementById(gid).querySelectorAll('.mc-btn').forEach(b=>{
-      b.classList.toggle('active',b.textContent.trim()===s[key].trim());
+      /* casa pelo valor gravado (data-val) quando existir; senao pelo texto.
+         corrige selecao nao restaurada quando o rotulo e traduzido. */
+      const v=(b.dataset&&b.dataset.val!==undefined)?b.dataset.val:b.textContent.trim();
+      b.classList.toggle('active',v.trim()===s[key].trim());
     });
   });
   const gl={1:'',2:'',3:'',4:'',5:'',6:''};
@@ -1758,6 +1795,10 @@ function bootUI(){
   document.getElementById('nav-club-name').textContent=ST.clubName;
   // rep-filter-gk-wrap shown only for 'By GK' report type
   populateAllSelects();
+  renderSkillMomentGroups();
+  renderList('skills'); renderList('moments');
+  /* ao trocar de idioma, re-traduz os rotulos padrao dos botoes e das listas */
+  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderList('skills'); renderList('moments'); }); }catch(e){}
   renderDashboard();
   // Sync settings inputs
   const cn=document.getElementById('set-club-name'); if(cn) cn.value=ST.clubName;

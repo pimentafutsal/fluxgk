@@ -508,8 +508,8 @@
     /* graficos */
     'st.resultDist':'Result Distribution','st.gameMoment':'Game Moment','st.skillType':'Skill Type',
     'st.hDistance':'Horizontal Distance','st.hDistShort':'H. Distance',
-    'st.shotLocation':'Shot Location on Goal','st.vShotPos':'Vertical Shot Position',
-    'st.vShotPosCorr':'Vertical Shot Position (Corridor)',
+    'st.shotLocation':'Shot Location on Goal','st.vShotPos':'Shot corridor','st.corridor':'Corridor of the shot',
+    'st.vShotPosCorr':'Shot corridor',
     /* registro de jogo */
     'st.addShotsHint':'Add shots one by one, then save the full game.',
     'st.editingGame':'Editing existing game','st.editingHint':'Changes will overwrite the saved game when you save.',
@@ -568,6 +568,9 @@
     'st.msg.noExport':'No data to export. Adjust filters first.',
     /* placeholders */
     'st.ph.club':'Add club name…','st.ph.comp':'Add competition…','st.ph.gk':'Add goalkeeper name…',
+    'st.skillsTitle':'Technical actions','st.skillsSub':'Characterize with your own technical actions.',
+    'st.momentsTitle':'Game moments','st.momentsSub':'Characterize with your own game moments.',
+    'st.ph.skill':'Add technical action…','st.ph.moment':'Add game moment…',
     'st.ph.gkOpt':'GK (optional)…','st.season2':'Season','st.opponent2':'Opponent',
 
     /* ═══ VIDEO LAB (mod_video) ═══ */
@@ -1317,8 +1320,8 @@
     /* graficos */
     'st.resultDist':'Distribuição de Resultados','st.gameMoment':'Momento de Jogo','st.skillType':'Ação Técnica',
     'st.hDistance':'Distância Horizontal','st.hDistShort':'Dist. Horiz.',
-    'st.shotLocation':'Local da Finalização no Gol','st.vShotPos':'Posição Vertical da Finalização',
-    'st.vShotPosCorr':'Posição Vertical da Finalização (Corredor)',
+    'st.shotLocation':'Local da Finalização no Gol','st.vShotPos':'Corredor da finalização','st.corridor':'Corredor da finalização',
+    'st.vShotPosCorr':'Corredor da finalização',
     /* registro de jogo */
     'st.addShotsHint':'Adicione as finalizações uma a uma e depois salve o jogo completo.',
     'st.editingGame':'Editando jogo existente','st.editingHint':'As alterações substituirão o jogo salvo quando você salvar.',
@@ -1377,6 +1380,9 @@
     'st.msg.noExport':'Sem dados para exportar. Ajuste os filtros primeiro.',
     /* placeholders */
     'st.ph.club':'Adicionar nome do clube…','st.ph.comp':'Adicionar competição…','st.ph.gk':'Adicionar nome do goleiro…',
+    'st.skillsTitle':'Ações técnicas','st.skillsSub':'Caracterize com suas próprias ações técnicas.',
+    'st.momentsTitle':'Momentos de jogo','st.momentsSub':'Caracterize com seus próprios momentos de jogo.',
+    'st.ph.skill':'Adicionar ação técnica…','st.ph.moment':'Adicionar momento de jogo…',
     'st.ph.gkOpt':'Goleiro (opcional)…','st.season2':'Temporada','st.opponent2':'Adversário',
 
     /* ═══ LABORATÓRIO DE VÍDEO (mod_video) ═══ */
