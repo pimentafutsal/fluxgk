@@ -694,6 +694,26 @@ function uploadClubBadge(clubName, input){
    Sempre normaliza para array de verdade, senao .includes/.push estouram e o
    botao "Add" parece nao fazer nada (o texto fica no campo). */
 function _asArr(v){ return Array.isArray(v) ? v : (v && typeof v==='object' ? Object.values(v) : (v!=null?[v]:[])); }
+
+/* ── ROTULOS: valor gravado (ingles) -> texto traduzido (GLOBAL) ──
+   Os valores continuam em ingles no banco (comparacoes como
+   s.result==='Goal conceded' seguem funcionando). So a exibicao muda.
+   Precisa ser global: renderList, renderSkillMomentGroups e as listas de
+   finalizacoes chamam stLbl() fora de showHistShotForm. */
+var _ST_LBL={
+  'Save':'st.r.save','Blocked':'st.r.blocked','Out':'st.r.out',
+  'Goal conceded':'st.r.goal','Post':'st.r.post',
+  'Leaving pressure':'st.m.pressure','Organized attack':'st.m.organized',
+  'Transition':'st.m.transition','Ball stop':'st.m.ballstop','Special game':'st.m.special',
+  'Goal protection':'st.k.goalProt','2nd post':'st.k.secondPost',
+  'Before halfway':'st.d.beforeHalf','Before the halfway line':'st.d.beforeHalfFull',
+  'Before 10m':'st.d.before10','After 10m':'st.d.after10','Area':'st.d.area','Penalty':'st.d.penalty',
+  'Top Left':'st.g.topLeft','Top Right':'st.g.topRight','Mid Left':'st.g.midLeft',
+  'Mid Right':'st.g.midRight','Low Left':'st.g.lowLeft','Low Right':'st.g.lowRight',
+  'Left corridor':'st.g.leftCorr','Center corridor':'st.g.centerCorr','Right corridor':'st.g.rightCorr',
+  'Left':'st.g.left','Center':'st.g.center','Right':'st.g.right'
+};
+function stLbl(v){ if(v==null||v==='') return v; var k=_ST_LBL[v]; return k?TX(k):v; }
 function addItem(key,inputId,listId){
   const inp=document.getElementById(inputId); if(!inp) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
@@ -1088,23 +1108,9 @@ function showHistShotForm(gameId,idx){
   const title=isEdit?`Edit Shot #${idx+1}`:TX('st.newShot');
 
 
-/* ── ROTULOS: valor gravado (ingles) -> texto traduzido ──
-   Os valores continuam em ingles no banco (comparacoes como
-   s.result==='Goal conceded' seguem funcionando). So a exibicao muda. */
-var _ST_LBL={
-  'Save':'st.r.save','Blocked':'st.r.blocked','Out':'st.r.out',
-  'Goal conceded':'st.r.goal','Post':'st.r.post',
-  'Leaving pressure':'st.m.pressure','Organized attack':'st.m.organized',
-  'Transition':'st.m.transition','Ball stop':'st.m.ballstop','Special game':'st.m.special',
-  'Goal protection':'st.k.goalProt','2nd post':'st.k.secondPost',
-  'Before halfway':'st.d.beforeHalf','Before the halfway line':'st.d.beforeHalfFull',
-  'Before 10m':'st.d.before10','After 10m':'st.d.after10','Area':'st.d.area','Penalty':'st.d.penalty',
-  'Top Left':'st.g.topLeft','Top Right':'st.g.topRight','Mid Left':'st.g.midLeft',
-  'Mid Right':'st.g.midRight','Low Left':'st.g.lowLeft','Low Right':'st.g.lowRight',
-  'Left corridor':'st.g.leftCorr','Center corridor':'st.g.centerCorr','Right corridor':'st.g.rightCorr',
-  'Left':'st.g.left','Center':'st.g.center','Right':'st.g.right'
-};
-function stLbl(v){ if(v==null||v==='') return v; var k=_ST_LBL[v]; return k?TX(k):v; }
+  /* _ST_LBL e stLbl() agora sao GLOBAIS (definidos no topo do script) para
+     que renderList/renderSkillMomentGroups e as listas de finalizacoes possam
+     usa-los. Antes ficavam presos aqui dentro e quebravam esses chamadores. */
 
   function mcBtns(field,opts,cur){
     return opts.map(o=>`<button class="mc-btn${cur===o?' active':''}" onclick="histMcSel(this,'${field}','${o}')">${stLbl(o)}</button>`).join('');
