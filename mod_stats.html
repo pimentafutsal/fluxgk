@@ -90,10 +90,10 @@
       if(!window._uiBooted){window._uiBooted=true;bootUI();}
       else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
-    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=v;try{populateAllSelects();}catch(e){}});
-    db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{populateAllSelects();}catch(e){}});
-    db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v&&v.length)ST.skills=v;try{renderSkillMomentGroups();renderList('skills');}catch(e){}});
-    db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v&&v.length)ST.moments=v;try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
+    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{populateAllSelects();}catch(e){}});
+    db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}});
+    db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}});
+    db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
     db.ref(_SPATH.opponents).on('value',function(snap){
       var v=snap.val();
       if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});
@@ -653,6 +653,7 @@ function renderSettings(){
 function renderList(key){
   const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',skills:'skills-list',moments:'moments-list'}[key];
   const el=document.getElementById(listId); if(!el) return;
+  if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   el.innerHTML='';
   if(ST[key].length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX("st.noItems")+'</div>';return;}
   ST[key].forEach((item,i)=>{
@@ -689,14 +690,24 @@ function uploadClubBadge(clubName, input){
   };
   reader.readAsDataURL(file);
 }
+/* Firebase Realtime Database as vezes devolve arrays como objetos ({0:..,1:..}).
+   Sempre normaliza para array de verdade, senao .includes/.push estouram e o
+   botao "Add" parece nao fazer nada (o texto fica no campo). */
+function _asArr(v){ return Array.isArray(v) ? v : (v && typeof v==='object' ? Object.values(v) : (v!=null?[v]:[])); }
 function addItem(key,inputId,listId){
-  const inp=document.getElementById(inputId);
+  const inp=document.getElementById(inputId); if(!inp) return;
+  if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   const v=inp.value.trim(); if(!v||ST[key].includes(v)){inp.focus();return;}
-  ST[key].push(v); inp.value=''; persist(); renderList(key); populateAllSelects();
+  ST[key].push(v); inp.value=''; persist();
+  try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
+  try{ populateAllSelects(); }catch(e){}
   if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
 }
 function removeItem(key,idx){
-  ST[key].splice(idx,1); persist(); renderList(key); populateAllSelects();
+  if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
+  ST[key].splice(idx,1); persist();
+  try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
+  try{ populateAllSelects(); }catch(e){}
   if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
 }
 
@@ -825,7 +836,7 @@ function mcSel(btn,field,val){
    padroes, deixa passar os personalizados). Reaplica a selecao atual (SF). */
 function renderSkillMomentGroups(){
   [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills]].forEach(function(cfg){
-    var field=cfg[0], el=document.getElementById(cfg[1]), list=cfg[2]||[];
+    var field=cfg[0], el=document.getElementById(cfg[1]), list=_asArr(cfg[2]);
     if(!el) return;
     el.innerHTML='';
     list.forEach(function(val){
