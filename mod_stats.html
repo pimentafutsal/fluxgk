@@ -11,7 +11,7 @@
 <script>
 (function(){
   console.log('%c[FluxGK] stats v2.2 — consumidor do hub (aba Setup)','color:#E8901A;font-weight:bold');
-  window._HUB=null; window._SPATH={games:null,gks:null,comps:null,opponents:null};
+  window._HUB=null; window._SPATH={games:null,gks:null,comps:null,opponents:null,offtypes:null,offresults:null};
   window._fbReady=false; window._uiBooted=false;
   function _sHexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim());}
 
@@ -28,6 +28,8 @@
     _SPATH.comps=d.dataPath+'/stats/comps';
     _SPATH.skills=d.dataPath+'/stats/skills';
     _SPATH.moments=d.dataPath+'/stats/moments';
+    _SPATH.offtypes=d.dataPath+'/stats/offtypes';
+    _SPATH.offresults=d.dataPath+'/stats/offresults';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
@@ -94,6 +96,8 @@
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}});
     db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}});
     db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
+    db.ref(_SPATH.offtypes).on('value',function(snap){var v=snap.val();if(v)ST.offtypes=_asArr(v);try{renderOffForms();renderList('offtypes');}catch(e){}});
+    db.ref(_SPATH.offresults).on('value',function(snap){var v=snap.val();if(v)ST.offresults=_asArr(v);try{renderOffForms();renderList('offresults');}catch(e){}});
     db.ref(_SPATH.opponents).on('value',function(snap){
       var v=snap.val();
       if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});
@@ -307,7 +311,8 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   <div class="tabs">
     <button data-i18n="st.step1" class="tab active" id="rec-tab-meta" onclick="recTab('meta')">1. Game Info</button>
     <button class="tab" id="rec-tab-shots" onclick="recTab('shots')"><span data-i18n="st.step2">2. Shots (</span><span id="rec-shot-count">0</span>)</button>
-    <button data-i18n="st.step3" class="tab" id="rec-tab-review" onclick="recTab('review')">3. Review &amp; Save</button>
+    <button class="tab" id="rec-tab-off" onclick="recTab('off')"><span data-i18n="st.step2b">3. Offensive (</span><span id="rec-off-count">0</span>)</button>
+    <button data-i18n="st.step3" class="tab" id="rec-tab-review" onclick="recTab('review')">4. Review &amp; Save</button>
   </div>
   <div id="rec-phase-meta">
     <div class="card" style="max-width:620px;">
@@ -392,6 +397,44 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div>
         <div data-i18n="st.savedShots" class="label mb16">Saved Shots</div>
         <div id="shots-list"><div data-i18n="st.noShots" style="color:var(--mute);font-size:13px;">No shots recorded yet.</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="rec-phase-off" style="display:none;">
+    <div class="g2" style="align-items:start;">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+          <div data-i18n="st.offNum" style="font-weight:700;font-size:15px;">Offensive action #<span id="off-form-num">1</span></div>
+          <button data-i18n="st.reviewSave" class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
+        </div>
+        <div data-i18n="st.offHint" class="page-sub" style="margin:-8px 0 14px;">Register goalkeeper offensive actions: type, moment and result.</div>
+        <div class="g2" style="gap:16px;">
+          <div>
+            <div data-i18n="st.goalkeeper" class="label">Goalkeeper</div>
+            <select id="off-gk" onchange="OA.gk=this.value;lastShotGk=this.value;"></select>
+          </div>
+          <div><div data-i18n="st.minute" class="label">Minute</div><input type="text" id="off-minute" placeholder="e.g. 14, 32+1"></div>
+          <div style="grid-column:1/-1;">
+            <div data-i18n="st.offType" class="label">Action Type *</div>
+            <div class="mc-group" id="off-type-group"></div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div data-i18n="st.gameMoment" class="label">Game Moment</div>
+            <div class="mc-group" id="off-moment-group"></div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div data-i18n="st.offResult" class="label">Result *</div>
+            <div class="mc-group" id="off-result-group"></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
+          <button data-i18n="st.clear" class="btn btn-ghost" onclick="clearOffForm()">Clear</button>
+          <button data-i18n="st.saveOff" class="btn btn-accent" onclick="saveOffAction()">Save Action →</button>
+        </div>
+      </div>
+      <div>
+        <div data-i18n="st.savedOff" class="label mb16">Saved Offensive Actions</div>
+        <div id="off-list"><div data-i18n="st.noOff" style="color:var(--mute);font-size:13px;">No offensive actions recorded yet.</div></div>
       </div>
     </div>
   </div>
@@ -538,6 +581,24 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div id="moments-list"></div>
     </div>
     <div class="card">
+      <div data-i18n="st.offTypesTitle" class="card-title">Offensive actions (type)</div>
+      <div data-i18n="st.offTypesSub" class="page-sub" style="margin:-4px 0 10px;">Characterize the goalkeeper's offensive action types.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-offtype-input" placeholder="Add offensive action type…" data-i18n-placeholder="st.ph.offtype" onkeydown="if(event.key==='Enter')addItem('offtypes','add-offtype-input','offtypes-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('offtypes','add-offtype-input','offtypes-list')">Add</button>
+      </div>
+      <div id="offtypes-list"></div>
+    </div>
+    <div class="card">
+      <div data-i18n="st.offResultsTitle" class="card-title">Offensive actions (result)</div>
+      <div data-i18n="st.offResultsSub" class="page-sub" style="margin:-4px 0 10px;">Characterize the outcomes of offensive actions.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-offresult-input" placeholder="Add offensive result…" data-i18n-placeholder="st.ph.offresult" onkeydown="if(event.key==='Enter')addItem('offresults','add-offresult-input','offresults-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('offresults','add-offresult-input','offresults-list')">Add</button>
+      </div>
+      <div id="offresults-list"></div>
+    </div>
+    <div class="card">
       <div data-i18n="st.goalkeepers" class="card-title">Goalkeepers</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="add-gk-input" placeholder="Add goalkeeper name…" data-i18n-placeholder="st.ph.gk" onkeydown="if(event.key==='Enter')addItem('gks','add-gk-input','gks-list')">
@@ -562,6 +623,11 @@ const ST = {
      conhecidos e deixa passar os personalizados. */
   skills:['1vs1','Goal protection','2nd post'],
   moments:['Leaving pressure','Organized attack','Transition','Ball stop','Special game'],
+  /* Ações Ofensivas do goleiro (por clube/temporada). offtypes = tipo da ação;
+     offresults = desfecho. Ambas caracterizáveis pelo treinador na aba Ajustes.
+     Semeadas com padrões neutros; o momento reusa ST.moments. */
+  offtypes:['Throw','Kick','Pass'],
+  offresults:['Goal','Assist','Kept possession','Lost possession'],
   _seeded:false,
   gks:[],
   games:[],
@@ -574,6 +640,8 @@ const ST = {
 let CUR = newGame();
 let editingGameId = null; // null = new game, string id = editing existing game
 let SF = { minute:'', moment:null, skill:null, result:null, hDistance:null, goalZone:null, courtZone:null, gk:null };
+let OA = { minute:'', type:null, moment:null, result:null, gk:null }; // form de ação ofensiva
+let editOaIdx = null; // null = nova ação; índice = editando ação existente
 let lastShotGk = null; // persiste o GK entre finalizações
 let editShotIdx = null;
 const CHARTS = {};
@@ -581,7 +649,7 @@ let reportType = 'game';
 
 function newGame(){
   const y = new Date().getFullYear();
-  return {id:Date.now(),date:'',opponent:'',competition:'',gk:'',season:`${y}-${String(y+1).slice(2)}`,shots:[]};
+  return {id:Date.now(),date:'',opponent:'',competition:'',gk:'',season:`${y}-${String(y+1).slice(2)}`,shots:[],offActions:[]};
 }
 
 // ═══ STORAGE ══════════════════════════════════════════════════════
@@ -594,6 +662,9 @@ function persist(){
   /* acoes tecnicas e momentos: caracterizaveis pelo treinador */
   if(_SPATH.skills)  window.fbSet(_SPATH.skills,  ST.skills||[]).catch(e=>console.error('FB skills:',e));
   if(_SPATH.moments) window.fbSet(_SPATH.moments, ST.moments||[]).catch(e=>console.error('FB moments:',e));
+  /* acoes ofensivas: tipos e desfechos caracterizaveis pelo treinador */
+  if(_SPATH.offtypes)   window.fbSet(_SPATH.offtypes,   ST.offtypes||[]).catch(e=>console.error('FB offtypes:',e));
+  if(_SPATH.offresults) window.fbSet(_SPATH.offresults, ST.offresults||[]).catch(e=>console.error('FB offresults:',e));
   /* adversarios: por clube (compartilhado com o xG) */
   var opp={};
   (ST.clubs||[]).forEach(function(name){
@@ -648,10 +719,10 @@ function applyAccent(color){
 function renderSettings(){
   /* identidade (nome, cor) vem do hub — nao se edita aqui.
      esta pagina agora e so cadastro de adversarios, competicoes e goleiros. */
-  ['clubs','comps','gks'].forEach(k=>renderList(k));
+  ['clubs','comps','gks','offtypes','offresults'].forEach(k=>renderList(k));
 }
 function renderList(key){
-  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',skills:'skills-list',moments:'moments-list'}[key];
+  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',skills:'skills-list',moments:'moments-list',offtypes:'offtypes-list',offresults:'offresults-list'}[key];
   const el=document.getElementById(listId); if(!el) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   el.innerHTML='';
@@ -673,8 +744,8 @@ function renderList(key){
         <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>
       </div>`;
     } else {
-      /* skills/moments mostram o rotulo traduzido dos padroes; personalizados passam direto */
-      const label=(key==='skills'||key==='moments')?stLbl(item):item;
+      /* skills/moments/offtypes/offresults mostram o rotulo traduzido dos padroes; personalizados passam direto */
+      const label=(key==='skills'||key==='moments'||key==='offtypes'||key==='offresults')?stLbl(item):item;
       d.innerHTML=`<span style="font-size:13px;">${label}</span><button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
     }
     el.appendChild(d);
@@ -711,9 +782,20 @@ var _ST_LBL={
   'Top Left':'st.g.topLeft','Top Right':'st.g.topRight','Mid Left':'st.g.midLeft',
   'Mid Right':'st.g.midRight','Low Left':'st.g.lowLeft','Low Right':'st.g.lowRight',
   'Left corridor':'st.g.leftCorr','Center corridor':'st.g.centerCorr','Right corridor':'st.g.rightCorr',
-  'Left':'st.g.left','Center':'st.g.center','Right':'st.g.right'
+  'Left':'st.g.left','Center':'st.g.center','Right':'st.g.right',
+  /* Ações Ofensivas — padroes semeados (tipos e desfechos). Valores personalizados
+     do treinador passam direto por stLbl (verbatim), como skills/momentos. */
+  'Throw':'st.ot.throw','Kick':'st.ot.kick','Pass':'st.ot.pass',
+  'Goal':'st.or.goal','Assist':'st.or.assist','Kept possession':'st.or.kept','Lost possession':'st.or.lost'
 };
-function stLbl(v){ if(v==null||v==='') return v; var k=_ST_LBL[v]; return k?TX(k):v; }
+/* Traduz os valores canonicos conhecidos; deixa passar os personalizados.
+   Blindado: se a chave i18n ainda nao existe (TX devolve a propria chave ou vazio),
+   volta ao valor canonico em vez de mostrar "st.or.goal" cru. */
+function stLbl(v){ if(v==null||v==='') return v; var k=_ST_LBL[v]; if(!k) return v; var t=TX(k); return (t&&t!==k)?t:v; }
+/* TX com fallback garantido: usa a traducao se a chave existir; senao devolve o
+   texto padrao. Necessario para as chaves novas das Acoes Ofensivas enquanto
+   fluxgk-i18n.js nao for atualizado (o modulo continua exibindo em ingles). */
+function _txf(k,f){ var t; try{t=TX(k);}catch(e){t=null;} return (t&&t!==k)?t:f; }
 function addItem(key,inputId,listId){
   const inp=document.getElementById(inputId); if(!inp) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
@@ -722,6 +804,7 @@ function addItem(key,inputId,listId){
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
   if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 function removeItem(key,idx){
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
@@ -729,6 +812,7 @@ function removeItem(key,idx){
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
   if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 
 // ═══ SELECTS ══════════════════════════════════════════════════════
@@ -880,10 +964,11 @@ function selCourt(btn,zone){
 
 // ═══ RECORD ═══════════════════════════════════════════════════════
 function recTab(t){
-  ['meta','shots','review'].forEach(n=>{
+  ['meta','shots','off','review'].forEach(n=>{
     document.getElementById('rec-phase-'+n).style.display=n===t?'':'none';
     const tab=document.getElementById('rec-tab-'+n); if(tab) tab.classList.toggle('active',n===t);
   });
+  if(t==='off'){ renderOffForms(); renderOffList(); updateOffNum(); populateOffGkSelect(lastShotGk||''); }
   if(t==='review') buildReview();
   // Show/hide edit context banner
   const banner=document.getElementById('rec-edit-banner');
@@ -892,7 +977,7 @@ function recTab(t){
 function cancelEditGame(){
   if(!confirm(TX('st.msg.discard'))) return;
   CUR=newGame(); editingGameId=null; lastShotGk=null;
-  clearShotForm(); recTab('meta');
+  clearShotForm(); clearOffForm(); recTab('meta');
   populateRecordSelects();
   showPage('history');
 }
@@ -901,7 +986,7 @@ function navToRecord(){
   if(editingGameId!==null&&CUR.shots.length>0){
     if(!confirm(TX('st.discardEditing'))) return;
     CUR=newGame(); editingGameId=null; lastShotGk=null;
-    clearShotForm(); recTab('meta');
+    clearShotForm(); clearOffForm(); recTab('meta');
   }
   showPage('record');
 }
@@ -986,6 +1071,106 @@ function editShot(idx){
 function delShot(idx){
   CUR.shots.splice(idx,1); renderShotsList(); updateShotNum();
 }
+
+// ═══ AÇÕES OFENSIVAS ══════════════════════════════════════════════
+/* Monta os botoes de Tipo / Momento / Resultado a partir das listas do
+   treinador (ST.offtypes, ST.moments, ST.offresults). data-val guarda o valor
+   gravado (canonico); o texto e stLbl(). Reaplica a selecao atual (OA). */
+function renderOffForms(){
+  [['type','off-type-group',ST.offtypes],
+   ['moment','off-moment-group',ST.moments],
+   ['result','off-result-group',ST.offresults]].forEach(function(cfg){
+    var field=cfg[0], el=document.getElementById(cfg[1]), list=_asArr(cfg[2]);
+    if(!el) return;
+    el.innerHTML='';
+    list.forEach(function(val){
+      var b=document.createElement('button');
+      b.className='mc-btn'+(OA[field]===val?' active':'');
+      b.dataset.val=val;
+      b.textContent=stLbl(val);
+      b.onclick=function(){ mcOff(b,field,val); };
+      el.appendChild(b);
+    });
+  });
+}
+function mcOff(btn,field,val){
+  const group=btn.closest('.mc-group');
+  group.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  OA[field]=val;
+}
+function populateOffGkSelect(selectedGk){
+  const el=document.getElementById('off-gk'); if(!el) return;
+  const cur=selectedGk||lastShotGk||OA.gk||'';
+  el.innerHTML='<option value="">'+_txf('st.gkOptional','GK (optional)…')+'</option>';
+  ST.gks.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
+  if(cur){ OA.gk=cur; }
+}
+function updateOffNum(){
+  const n=document.getElementById('off-form-num');
+  if(n) n.textContent=editOaIdx!==null?editOaIdx+1:(CUR.offActions?CUR.offActions.length:0)+1;
+  const c=document.getElementById('rec-off-count');
+  if(c) c.textContent=CUR.offActions?CUR.offActions.length:0;
+}
+function clearOffForm(){
+  const m=document.getElementById('off-minute'); if(m) m.value='';
+  const preservedGk=lastShotGk;
+  OA={minute:'',type:null,moment:null,result:null,gk:preservedGk};
+  editOaIdx=null;
+  renderOffForms();
+  populateOffGkSelect(preservedGk);
+  updateOffNum();
+}
+function saveOffAction(){
+  if(!Array.isArray(CUR.offActions)) CUR.offActions=_asArr(CUR.offActions);
+  if(!OA.type){alert(_txf('st.msg.pickOffType','Please pick an action type.'));return;}
+  if(!OA.result){alert(TX('st.msg.pickResult'));return;}
+  const gkVal=document.getElementById('off-gk').value||OA.gk||null;
+  if(gkVal) lastShotGk=gkVal;
+  const act={...OA, minute:document.getElementById('off-minute').value, gk:gkVal};
+  if(editOaIdx!==null) CUR.offActions[editOaIdx]=act;
+  else CUR.offActions.push(act);
+  clearOffForm(); renderOffList(); updateOffNum();
+}
+function renderOffList(){
+  const el=document.getElementById('off-list'); if(!el) return;
+  const list=Array.isArray(CUR.offActions)?CUR.offActions:_asArr(CUR.offActions);
+  if(list.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+_txf('st.noOff','No offensive actions recorded yet.')+'</div>';return;}
+  el.innerHTML='';
+  list.forEach((a,i)=>{
+    const isGoal=a.result==='Goal',isAssist=a.result==='Assist';
+    const d=document.createElement('div');
+    d.className=`shot-item${isGoal?' save':''}`;
+    const tags=[a.gk,a.type,a.moment].filter(Boolean).map(t=>`<span class="shot-tag">${stLbl(t)}</span>`).join('');
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--mute);">#${i+1}</span>
+        <span style="margin-left:8px;font-weight:600;font-size:13px;">${a.minute?a.minute+"'":"—"}</span>
+        <span style="margin-left:8px;font-size:12px;color:${isGoal?'var(--green)':isAssist?'var(--accent)':'var(--mute)'};">${stLbl(a.result)||'—'}</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="editOffAction(${i})">${TX("common.edit")}</button>
+        <button class="btn btn-danger btn-sm" onclick="delOffAction(${i})">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">${tags}</div>`;
+    el.appendChild(d);
+  });
+}
+function editOffAction(idx){
+  const list=Array.isArray(CUR.offActions)?CUR.offActions:_asArr(CUR.offActions);
+  const a=list[idx]; if(!a) return;
+  editOaIdx=idx;
+  OA={...a};
+  const m=document.getElementById('off-minute'); if(m) m.value=a.minute||'';
+  renderOffForms(); // reflete a selecao de OA nos botoes
+  populateOffGkSelect(a.gk||lastShotGk||'');
+  updateOffNum();
+}
+function delOffAction(idx){
+  if(!Array.isArray(CUR.offActions)) CUR.offActions=_asArr(CUR.offActions);
+  CUR.offActions.splice(idx,1); renderOffList(); updateOffNum();
+}
 function buildReview(){
   const s=calcStats(CUR.shots);
   const isEdit=editingGameId!==null;
@@ -1006,7 +1191,7 @@ function saveGame(){
     if(idx>=0) ST.games[idx]=gameToSave; else ST.games.push(gameToSave);
     persistGame(gameToSave);
     const shotCount=CUR.shots.length;
-    CUR=newGame(); editingGameId=null; lastShotGk=null; clearShotForm(); recTab('meta');
+    CUR=newGame(); editingGameId=null; lastShotGk=null; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
     alert(TX('st.gameUpdatedN')+shotCount+TX('st.shotsSaved'));
   } else {
@@ -1014,7 +1199,7 @@ function saveGame(){
     ST.games.push(gameToSave);
     persistGame(gameToSave);
     const shotCount=gameToSave.shots.length;
-    CUR=newGame(); lastShotGk=null; clearShotForm(); recTab('meta');
+    CUR=newGame(); lastShotGk=null; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
     alert(TX('st.gameSavedN')+shotCount+TX('st.shotsRecorded'));
   }
@@ -1222,8 +1407,8 @@ function toggleEditGame(id){
 }
 function openGameInRecord(id){
   const g=ST.games.find(g=>g.id==id); if(!g) return;
-  // Deep-copy game into CUR
-  CUR={...g, shots:g.shots.map(s=>({...s}))};
+  // Deep-copy game into CUR (offActions pode faltar em jogos antigos)
+  CUR={...g, shots:g.shots.map(s=>({...s})), offActions:_asArr(g.offActions).map(a=>({...a}))};
   editingGameId=id;
   lastShotGk=g.shots.length?g.shots[g.shots.length-1].gk||null:null;
   // Navigate to Record page
@@ -1242,6 +1427,7 @@ function openGameInRecord(id){
   recTab('shots');
   renderShotsList();
   updateShotNum();
+  updateOffNum(); // reflete a contagem de ações ofensivas no badge da sub-aba
   populateShotGkSelect(lastShotGk||'');
 }
 function saveEditGame(id){
@@ -1813,9 +1999,10 @@ function bootUI(){
   // rep-filter-gk-wrap shown only for 'By GK' report type
   populateAllSelects();
   renderSkillMomentGroups();
-  renderList('skills'); renderList('moments');
+  renderOffForms();
+  renderList('skills'); renderList('moments'); renderList('offtypes'); renderList('offresults');
   /* ao trocar de idioma, re-traduz os rotulos padrao dos botoes e das listas */
-  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderList('skills'); renderList('moments'); }); }catch(e){}
+  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderOffForms(); renderList('skills'); renderList('moments'); renderList('offtypes'); renderList('offresults'); }); }catch(e){}
   renderDashboard();
   // Sync settings inputs
   const cn=document.getElementById('set-club-name'); if(cn) cn.value=ST.clubName;
