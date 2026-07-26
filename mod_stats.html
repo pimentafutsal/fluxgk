@@ -1102,7 +1102,7 @@ function mcOff(btn,field,val){
 function populateOffGkSelect(selectedGk){
   const el=document.getElementById('off-gk'); if(!el) return;
   const cur=selectedGk||lastShotGk||OA.gk||'';
-  el.innerHTML='<option value="">'+_txf('st.gkOptional','GK (optional)…')+'</option>';
+  el.innerHTML='<option value="">'+_txf('st.ph.gkOpt','GK (optional)…')+'</option>';
   ST.gks.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
   if(cur){ OA.gk=cur; }
 }

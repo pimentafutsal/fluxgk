@@ -513,7 +513,7 @@
     /* registro de jogo */
     'st.addShotsHint':'Add shots one by one, then save the full game.',
     'st.editingGame':'Editing existing game','st.editingHint':'Changes will overwrite the saved game when you save.',
-    'st.cancelEdit':'✕ Cancel edit','st.step1':'1. Game Info','st.step2':'2. Shots (','st.step3':'3. Review & Save',
+    'st.cancelEdit':'✕ Cancel edit','st.step1':'1. Game Info','st.step2':'2. Shots (','st.step2b':'3. Offensive (','st.step3':'4. Review & Save',
     'st.gameInfo':'Game Information','st.date':'Date *','st.season':'Season *','st.opponent':'Opponent *',
     'st.selectOpponent':'Select opponent…','st.competition':'Competition','st.selectComp':'Select competition…',
     'st.nextShots':'Next: Record Shots →','st.shotNum':'Shot #','st.reviewSave':'Review & Save',
@@ -571,6 +571,17 @@
     'st.skillsTitle':'Technical actions','st.skillsSub':'Characterize with your own technical actions.',
     'st.momentsTitle':'Game moments','st.momentsSub':'Characterize with your own game moments.',
     'st.ph.skill':'Add technical action…','st.ph.moment':'Add game moment…',
+    /* --- ações ofensivas (offensive actions) --- */
+    'st.offNum':'Offensive action #','st.offHint':'Register goalkeeper offensive actions: type, moment and result.',
+    'st.offType':'Action Type *','st.offResult':'Result *',
+    'st.saveOff':'Save Action →','st.savedOff':'Saved Offensive Actions','st.noOff':'No offensive actions recorded yet.',
+    'st.offTypesTitle':'Offensive actions (type)','st.offTypesSub':'Characterize the goalkeeper\u2019s offensive action types.',
+    'st.offResultsTitle':'Offensive actions (result)','st.offResultsSub':'Characterize the outcomes of offensive actions.',
+    'st.ph.offtype':'Add offensive action type…','st.ph.offresult':'Add offensive result…',
+    'st.msg.pickOffType':'Please pick an action type.',
+    /* tipos e resultados semeados (o treinador pode renomear/apagar) */
+    'st.ot.throw':'Throw','st.ot.kick':'Kick','st.ot.pass':'Pass',
+    'st.or.goal':'Goal','st.or.assist':'Assist','st.or.kept':'Kept possession','st.or.lost':'Lost possession',
     'st.ph.gkOpt':'GK (optional)…','st.season2':'Season','st.opponent2':'Opponent',
 
     /* ═══ VIDEO LAB (mod_video) ═══ */
@@ -1325,7 +1336,7 @@
     /* registro de jogo */
     'st.addShotsHint':'Adicione as finalizações uma a uma e depois salve o jogo completo.',
     'st.editingGame':'Editando jogo existente','st.editingHint':'As alterações substituirão o jogo salvo quando você salvar.',
-    'st.cancelEdit':'✕ Cancelar edição','st.step1':'1. Dados do Jogo','st.step2':'2. Finalizações (','st.step3':'3. Revisar e Salvar',
+    'st.cancelEdit':'✕ Cancelar edição','st.step1':'1. Dados do Jogo','st.step2':'2. Finalizações (','st.step2b':'3. Ofensivas (','st.step3':'4. Revisar e Salvar',
     'st.gameInfo':'Dados do Jogo','st.date':'Data *','st.season':'Temporada *','st.opponent':'Adversário *',
     'st.selectOpponent':'Selecione o adversário…','st.competition':'Competição','st.selectComp':'Selecione a competição…',
     'st.nextShots':'Avançar: Registrar Finalizações →','st.shotNum':'Finalização nº','st.reviewSave':'Revisar e Salvar',
@@ -1383,6 +1394,17 @@
     'st.skillsTitle':'Ações técnicas','st.skillsSub':'Caracterize com suas próprias ações técnicas.',
     'st.momentsTitle':'Momentos de jogo','st.momentsSub':'Caracterize com seus próprios momentos de jogo.',
     'st.ph.skill':'Adicionar ação técnica…','st.ph.moment':'Adicionar momento de jogo…',
+    /* --- ações ofensivas --- */
+    'st.offNum':'Ação ofensiva #','st.offHint':'Registre as ações ofensivas do goleiro: tipo, momento e resultado.',
+    'st.offType':'Tipo de Ação *','st.offResult':'Resultado *',
+    'st.saveOff':'Salvar Ação →','st.savedOff':'Ações Ofensivas Salvas','st.noOff':'Nenhuma ação ofensiva registrada ainda.',
+    'st.offTypesTitle':'Ações ofensivas (tipo)','st.offTypesSub':'Caracterize os tipos de ação ofensiva do goleiro.',
+    'st.offResultsTitle':'Ações ofensivas (resultado)','st.offResultsSub':'Caracterize os desfechos das ações ofensivas.',
+    'st.ph.offtype':'Adicionar tipo de ação ofensiva…','st.ph.offresult':'Adicionar resultado…',
+    'st.msg.pickOffType':'Selecione um tipo de ação.',
+    /* tipos e resultados semeados (o treinador pode renomear/apagar) */
+    'st.ot.throw':'Arremesso','st.ot.kick':'Chute','st.ot.pass':'Passe',
+    'st.or.goal':'Gol','st.or.assist':'Assistência','st.or.kept':'Posse mantida','st.or.lost':'Posse perdida',
     'st.ph.gkOpt':'Goleiro (opcional)…','st.season2':'Temporada','st.opponent2':'Adversário',
 
     /* ═══ LABORATÓRIO DE VÍDEO (mod_video) ═══ */
