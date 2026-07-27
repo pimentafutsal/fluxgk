@@ -286,6 +286,18 @@ tr:hover td{background:var(--surface2);}
         </div>
       </div>
     </div>
+    <!-- Prorrogacao (overtime) -->
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:4px;padding-top:14px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="g-has-ot" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="toggleOT()">
+        <span data-i18n="min.hasOT" style="font-weight:600;font-size:13px;">Went to extra time</span>
+      </label>
+      <div id="ot-etmin-wrap" style="display:none;align-items:center;gap:6px;">
+        <span data-i18n="min.eachEt" style="font-size:12px;color:var(--mute);">Each ET period:</span>
+        <input type="number" id="g-et-min" value="5" min="1" max="15" style="width:70px;" oninput="onEtMinChange()">
+        <span data-i18n="min.min" style="font-size:12px;color:var(--mute);">min</span>
+      </div>
+    </div>
   </div>
 
   <!-- Squad Selection -->
@@ -303,6 +315,17 @@ tr:hover td{background:var(--surface2);}
   <div class="card mb20">
     <div data-i18n="min.pt2" class="section-hdr">Playing Time — 2nd Half</div>
     <div id="gk-rows-h2" style="display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
+  <!-- Prorrogacao: so aparece quando g-has-ot esta marcado -->
+  <div id="ot-sections" style="display:none;">
+    <div class="card mb20">
+      <div data-i18n="min.pt.et1" class="section-hdr">Playing Time — Extra Time 1</div>
+      <div id="gk-rows-e1" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+    <div class="card mb20">
+      <div data-i18n="min.pt.et2" class="section-hdr">Playing Time — Extra Time 2</div>
+      <div id="gk-rows-e2" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
   </div>
 
   <!-- Summary & Save -->
@@ -395,7 +418,7 @@ tr:hover td{background:var(--surface2);}
       <table id="rep-table">
         <thead><tr>
           <th data-i18n="data.goalkeeper">Goalkeeper</th><th data-i18n="min.games">Games</th><th data-i18n="min.gamesSelected">Games Selected</th>
-          <th data-i18n="min.h1">1st Half</th><th data-i18n="min.h2">2nd Half</th><th data-i18n="min.totalMin">Total Min</th>
+          <th data-i18n="min.h1">1st Half</th><th data-i18n="min.h2">2nd Half</th><th data-i18n="min.e1">ET 1</th><th data-i18n="min.e2">ET 2</th><th data-i18n="min.totalMin">Total Min</th>
           <th data-i18n="min.pctClub">% of Club Total</th><th data-i18n="min.pctSelected">% When Selected</th>
         </tr></thead>
         <tbody id="rep-tbody"></tbody>
@@ -563,10 +586,28 @@ function gkTotalSecs(intervals){
 }
 
 // ── COLLECT FORM ──────────────────────────────────────────────────
+// Periodos: h1/h2 sempre; e1/e2 (prorrogacao) so quando g-has-ot esta marcado.
+function otOn(){ var c=document.getElementById('g-has-ot'); return !!(c&&c.checked); }
+function periodMin(period){
+  var isEt=(period==='e1'||period==='e2');
+  var el=document.getElementById(isEt?'g-et-min':'g-half-min');
+  return parseInt(el&&el.value)|| (isEt?5:20);
+}
+function toggleOT(){
+  var on=otOn();
+  var sec=document.getElementById('ot-sections'); if(sec)sec.style.display=on?'':'none';
+  var w=document.getElementById('ot-etmin-wrap'); if(w)w.style.display=on?'flex':'none';
+  updateTotals();
+}
+function onEtMinChange(){ updateTotals(); }
+
 function buildCollectForm(){
   buildSquadList();
   buildHalfRows('h1');
   buildHalfRows('h2');
+  buildHalfRows('e1');
+  buildHalfRows('e2');
+  toggleOT();
   updateSummary();
 }
 
@@ -610,12 +651,12 @@ function buildHalfRows(half){
     prev[gk]=ivs;
   });
   el.innerHTML='';
-  const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  const perMin=periodMin(half);
   ST.gks.forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     const row=document.createElement('div');
     row.className='gk-minute-row';row.dataset.gk=gk;
-    const initIvs=prev[gk]||[{entry:halfMin+':00',exit:''}];
+    const initIvs=prev[gk]||[{entry:perMin+':00',exit:''}];
     row.innerHTML=`
       <div class="gk-name">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -632,7 +673,7 @@ function buildHalfRows(half){
 }
 
 function addInterval(half,gkId,entryVal,exitVal){
-  const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  const perMin=periodMin(half);
   const container=document.getElementById('intervals-'+half+'-'+gkId);
   if(!container)return;
   const idx=container.children.length;
@@ -642,7 +683,7 @@ function addInterval(half,gkId,entryVal,exitVal){
     <span style="font-size:10px;color:var(--mute);font-family:var(--mono);width:20px;">${idx+1}.</span>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
       <span style="font-size:9px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;">${TX("min.entry")}</span>
-      <input type="text" class="time-input iv-entry" placeholder="${halfMin}:00" value="${entryVal||''}" oninput="updateTotals()">
+      <input type="text" class="time-input iv-entry" placeholder="${perMin}:00" value="${entryVal||''}" oninput="updateTotals()">
     </div>
     <span style="color:var(--mute);">→</span>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
@@ -659,7 +700,7 @@ function addInterval(half,gkId,entryVal,exitVal){
 function updateTotals(){
   ST.gks.forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
-    ['h1','h2'].forEach(half=>{
+    ['h1','h2','e1','e2'].forEach(half=>{
       const container=document.getElementById('intervals-'+half+'-'+gkId);
       if(!container)return;
       let total=0;
@@ -690,22 +731,26 @@ function updateSummary(){
     const gkId=gk.replace(/\s/g,'_');
     const selCb=document.getElementById('sel-'+gkId);
     const selected=selCb&&selCb.checked;
-    let h1=0,h2=0;
-    ['h1','h2'].forEach(half=>{
+    const per={h1:0,h2:0,e1:0,e2:0};
+    ['h1','h2','e1','e2'].forEach(half=>{
       const c=document.getElementById('intervals-'+half+'-'+gkId);
       if(!c)return;
       c.querySelectorAll('.interval-row').forEach(row=>{
-        const dur=intervalSecs(row.querySelector('.iv-entry').value,row.querySelector('.iv-exit').value);
-        if(half==='h1')h1+=dur;else h2+=dur;
+        per[half]+=intervalSecs(row.querySelector('.iv-entry').value,row.querySelector('.iv-exit').value);
       });
     });
-    const total=h1+h2;
+    const total=per.h1+per.h2+per.e1+per.e2;
     const pctTotal=totalGameMin>0?Math.round(total/totalGameMin*100):0;
-    html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
+    const otHtml=otOn()
+      ?`<span style="font-size:12px;color:var(--mute);">${TX('min.e1')}: <b>${fmtTime(per.e1)}</b></span>
+        <span style="font-size:12px;color:var(--mute);">${TX('min.e2')}: <b>${fmtTime(per.e2)}</b></span>`
+      :'';
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;flex-wrap:wrap;">
       <span style="font-weight:600;min-width:120px;">${gk}</span>
       <span class="badge ${selected?'badge-green':'badge-mute'}">${selected?TX('min.selectedLbl'):TX('min.notSelected')}</span>
-      <span style="font-size:12px;color:var(--mute);">1st: <b>${fmtTime(h1)}</b></span>
-      <span style="font-size:12px;color:var(--mute);">2nd: <b>${fmtTime(h2)}</b></span>
+      <span style="font-size:12px;color:var(--mute);">1st: <b>${fmtTime(per.h1)}</b></span>
+      <span style="font-size:12px;color:var(--mute);">2nd: <b>${fmtTime(per.h2)}</b></span>
+      ${otHtml}
       <span style="font-size:12px;font-weight:700;color:var(--ink);">Total: ${fmtTime(total)}</span>
       <span class="badge badge-blue">${pctTotal}% of game</span>
     </div>`;
@@ -721,25 +766,31 @@ function collectGameData(){
   const season=document.getElementById('g-season').value;
   const totalMin=parseInt(document.getElementById('g-total-min').value)||40;
   const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
+  const hasOT=otOn();
+  const etMin=parseInt(document.getElementById('g-et-min').value)||5;
   const gkData={};
   ST.gks.forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     const selCb=document.getElementById('sel-'+gkId);
     const selected=selCb&&selCb.checked;
-    let h1Ivs=[],h2Ivs=[];
-    ['h1','h2'].forEach(half=>{
+    const ivsOf={h1:[],h2:[],e1:[],e2:[]};
+    ['h1','h2','e1','e2'].forEach(half=>{
+      if((half==='e1'||half==='e2')&&!hasOT)return; // ignora prorrogacao se nao houve
       const c=document.getElementById('intervals-'+half+'-'+gkId);
       if(!c)return;
       c.querySelectorAll('.interval-row').forEach(row=>{
-        const iv={entry:row.querySelector('.iv-entry').value,exit:row.querySelector('.iv-exit').value};
-        if(half==='h1')h1Ivs.push(iv);else h2Ivs.push(iv);
+        ivsOf[half].push({entry:row.querySelector('.iv-entry').value,exit:row.querySelector('.iv-exit').value});
       });
     });
-    const h1Secs=h1Ivs.reduce((s,iv)=>s+intervalSecs(iv.entry,iv.exit),0);
-    const h2Secs=h2Ivs.reduce((s,iv)=>s+intervalSecs(iv.entry,iv.exit),0);
-    gkData[gk]={selected,h1Ivs,h2Ivs,h1Secs,h2Secs,totalSecs:h1Secs+h2Secs};
+    const secOf={};
+    ['h1','h2','e1','e2'].forEach(p=>{ secOf[p]=ivsOf[p].reduce((s,iv)=>s+intervalSecs(iv.entry,iv.exit),0); });
+    const totalSecs=secOf.h1+secOf.h2+secOf.e1+secOf.e2;
+    gkData[gk]={selected,
+      h1Ivs:ivsOf.h1,h2Ivs:ivsOf.h2,e1Ivs:ivsOf.e1,e2Ivs:ivsOf.e2,
+      h1Secs:secOf.h1,h2Secs:secOf.h2,e1Secs:secOf.e1,e2Secs:secOf.e2,
+      totalSecs};
   });
-  return {date,opp,comp,season,totalMin,halfMin,gkData,id:Date.now()};
+  return {date,opp,comp,season,totalMin,halfMin,hasOT,etMin,gkData,id:Date.now()};
 }
 
 function saveGame(){
@@ -767,6 +818,8 @@ function resetGameForm(){
   document.getElementById('g-season').value='';
   document.getElementById('g-total-min').value='40';
   document.getElementById('g-half-min').value='20';
+  const otcb=document.getElementById('g-has-ot'); if(otcb)otcb.checked=false;
+  const etm=document.getElementById('g-et-min'); if(etm)etm.value='5';
   buildCollectForm();
 }
 
@@ -818,21 +871,21 @@ function renderHistory(){
       return `<tr><td><span style="font-family:var(--mono);font-size:12px;">${g.date}</span></td><td><b>${g.opp||'—'}</b></td><td>${g.comp||'—'}</td><td>${g.season||'—'}</td><td>${g.totalMin||40}'</td>${gkCols}<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="editGame(${g.id})" style="margin-right:4px;">✎ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})">✕</button></td></tr>`;
     }).join('');
   } else if(view==='gk'){
-    thead.innerHTML=`<tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.gamesSelected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("min.totalMin")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr>`;
+    thead.innerHTML=`<tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.gamesSelected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("min.e1")}</th><th>${TX("min.e2")}</th><th>${TX("min.totalMin")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr>`;
     const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||0)*60,0);
     tbody.innerHTML=allGks.map(gkName=>{
-      let gamesCount=0,selectedCount=0,h1=0,h2=0,total=0,selectedSecs=0;
+      let gamesCount=0,selectedCount=0,h1=0,h2=0,e1=0,e2=0,total=0,selectedSecs=0;
       games.forEach(g=>{
         const d=g.gkData&&g.gkData[gkName];
         if(!d)return;
         gamesCount++;
         if(d.selected)selectedCount++;
-        h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+        h1+=d.h1Secs||0;h2+=d.h2Secs||0;e1+=d.e1Secs||0;e2+=d.e2Secs||0;total+=d.totalSecs||0;
         if(d.selected)selectedSecs+=(g.totalMin||40)*60;
       });
       const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
       const pctSel=selectedSecs>0?Math.round(total/selectedSecs*100):0;
-      return `<tr><td><b>${gkName}</b></td><td>${gamesCount}</td><td>${selectedCount}</td><td style="font-family:var(--mono);">${fmtTime(h1)}</td><td style="font-family:var(--mono);">${fmtTime(h2)}</td><td style="font-family:var(--mono);font-weight:700;">${fmtTime(total)}</td>
+      return `<tr><td><b>${gkName}</b></td><td>${gamesCount}</td><td>${selectedCount}</td><td style="font-family:var(--mono);">${fmtTime(h1)}</td><td style="font-family:var(--mono);">${fmtTime(h2)}</td><td style="font-family:var(--mono);">${fmtTime(e1)}</td><td style="font-family:var(--mono);">${fmtTime(e2)}</td><td style="font-family:var(--mono);font-weight:700;">${fmtTime(total)}</td>
         <td><div class="min-bar-wrap"><div class="min-bar"><div class="min-bar-fill" style="width:${pctTotal}%;"></div></div><span style="font-size:11px;font-family:var(--mono);font-weight:600;">${pctTotal}%</span></div></td>
         <td><span class="pct-pill" style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};">${pctSel}%</span></td></tr>`;
     }).join('');
@@ -867,6 +920,8 @@ function editGame(id){
   document.getElementById('g-season').value=g.season||'';
   document.getElementById('g-total-min').value=g.totalMin||40;
   document.getElementById('g-half-min').value=g.halfMin||20;
+  const otcb=document.getElementById('g-has-ot'); if(otcb)otcb.checked=!!g.hasOT;
+  const etm=document.getElementById('g-et-min'); if(etm)etm.value=g.etMin||5;
   // Rebuild form with GK data from the game
   buildCollectForm();
   // After form is built, populate squad selection and intervals
@@ -882,12 +937,12 @@ function editGame(id){
         const badge=selCb.closest('label').parentElement.querySelector('.badge');
         if(badge){badge.className='badge '+(d.selected?'badge-green':'badge-mute');badge.textContent=d.selected?TX('min.selectedLbl'):TX('min.notSelected');}
       }
-      // Intervals per half
-      ['h1','h2'].forEach(half=>{
+      // Intervals per period (h1/h2 sempre; e1/e2 se houve prorrogacao)
+      ['h1','h2','e1','e2'].forEach(half=>{
         const container=document.getElementById('intervals-'+half+'-'+gkId);
         if(!container)return;
         container.innerHTML=''; // clear defaults
-        const ivs=(half==='h1'?d.h1Ivs:d.h2Ivs)||[];
+        const ivs=(d[{h1:'h1Ivs',h2:'h2Ivs',e1:'e1Ivs',e2:'e2Ivs'}[half]])||[];
         if(ivs.length===0){
           addInterval(half,gkId,'','');
         } else {
@@ -1036,11 +1091,11 @@ function renderRepTable(){
 
   const tbody=document.getElementById('rep-tbody');
   tbody.innerHTML=gks.map(gkName=>{
-    let gc=0,sel=0,h1=0,h2=0,total=0,selSecs=0;
+    let gc=0,sel=0,h1=0,h2=0,e1=0,e2=0,total=0,selSecs=0;
     games.forEach(g=>{
       const d=g.gkData&&g.gkData[gkName];if(!d)return;
       gc++;if(d.selected){sel++;selSecs+=(g.totalMin||40)*60;}
-      h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+      h1+=d.h1Secs||0;h2+=d.h2Secs||0;e1+=d.e1Secs||0;e2+=d.e2Secs||0;total+=d.totalSecs||0;
     });
     const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
     const pctSel=selSecs>0?Math.round(total/selSecs*100):0;
@@ -1048,6 +1103,8 @@ function renderRepTable(){
       <td><b>${gkName}</b></td><td>${gc}</td><td>${sel}</td>
       <td style="font-family:var(--mono);">${fmtTime(h1)}</td>
       <td style="font-family:var(--mono);">${fmtTime(h2)}</td>
+      <td style="font-family:var(--mono);">${fmtTime(e1)}</td>
+      <td style="font-family:var(--mono);">${fmtTime(e2)}</td>
       <td style="font-family:var(--mono);font-weight:700;">${fmtTime(total)}</td>
       <td><div class="min-bar-wrap"><div class="min-bar"><div class="min-bar-fill" style="width:${pctTotal}%;"></div></div><span style="font-size:11px;font-family:var(--mono);font-weight:600;">${pctTotal}%</span></div></td>
       <td><span class="pct-pill" style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};">${pctSel}%</span></td>
@@ -1087,11 +1144,11 @@ function exportReport(){
   }
 
   const gkRows=gks.map(gkName=>{
-    let gc=0,sel=0,h1=0,h2=0,total=0,selSecs=0;
+    let gc=0,sel=0,h1=0,h2=0,e1=0,e2=0,total=0,selSecs=0;
     games.forEach(g=>{
       const d=g.gkData&&g.gkData[gkName];if(!d)return;
       gc++;if(d.selected){sel++;selSecs+=(g.totalMin||40)*60;}
-      h1+=d.h1Secs||0;h2+=d.h2Secs||0;total+=d.totalSecs||0;
+      h1+=d.h1Secs||0;h2+=d.h2Secs||0;e1+=d.e1Secs||0;e2+=d.e2Secs||0;total+=d.totalSecs||0;
     });
     const pctTotal=totalClubSecs>0?Math.round(total/totalClubSecs*100):0;
     const pctSel=selSecs>0?Math.round(total/selSecs*100):0;
@@ -1101,6 +1158,8 @@ function exportReport(){
       <td style="padding:10px 12px;text-align:center;">${sel}</td>
       <td style="padding:10px 12px;font-family:monospace;">${fmtTime(h1)}</td>
       <td style="padding:10px 12px;font-family:monospace;">${fmtTime(h2)}</td>
+      <td style="padding:10px 12px;font-family:monospace;">${fmtTime(e1)}</td>
+      <td style="padding:10px 12px;font-family:monospace;">${fmtTime(e2)}</td>
       <td style="padding:10px 12px;font-family:monospace;font-weight:700;">${fmtTime(total)}</td>
       <td style="padding:10px 12px;"><div style="display:flex;align-items:center;gap:8px;">${bar(pctTotal,a)}<span style="font-size:11px;font-family:monospace;font-weight:600;min-width:36px;">${pctTotal}%</span></div></td>
       <td style="padding:10px 12px;"><span style="background:${pctSel>=50?'#dcfce7':pctSel>=25?'#fef3c7':'#fee2e2'};color:${pctSel>=50?'#15803d':pctSel>=25?'#b45309':'#dc2626'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:monospace;">${pctSel}%</span></td>
@@ -1187,7 +1246,7 @@ function exportReport(){
     <div class="sec">
       <div class="sec-title">${TX("min.minByGkFull")}</div>
       <table>
-        <thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.selected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("common.total")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr></thead>
+        <thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.selected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("min.e1")}</th><th>${TX("min.e2")}</th><th>${TX("common.total")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr></thead>
         <tbody>${gkRows}</tbody>
       </table>
     </div>
