@@ -390,7 +390,7 @@
     'min.bySeason':'By Season','min.byComp':'By Competition',
     'min.minByGk':'Minutes by GK','min.pctClub':'% of Club Total','min.pctSelected':'% When Selected',
     /* relatorio */
-    'min.rptSub':'Goalkeeper minutes analysis and PDF export.','min.exportPdf':'Export PDF',
+    'min.rptSub':'Goalkeeper minutes analysis and PDF export.','min.exportPdf':'Export PDF','min.exportGame':'Export game',
     'min.minByGkFull':'Minutes by Goalkeeper','min.games':'Games','min.gamesSelected':'Games Selected',
     'min.h1':'1st Half','min.h2':'2nd Half','min.totalMin':'Total Min','min.totalMinLower':'Total min',
     'min.duration':'Duration','min.gks':'GKs','min.avgGame':'Avg Game',
@@ -1216,7 +1216,7 @@
     'min.bySeason':'Por Temporada','min.byComp':'Por Competição',
     'min.minByGk':'Minutos por Goleiro','min.pctClub':'% do Total do Clube','min.pctSelected':'% Quando Relacionado',
     /* relatorio */
-    'min.rptSub':'Análise da minutagem dos goleiros e exportação em PDF.','min.exportPdf':'Exportar PDF',
+    'min.rptSub':'Análise da minutagem dos goleiros e exportação em PDF.','min.exportPdf':'Exportar PDF','min.exportGame':'Exportar jogo',
     'min.minByGkFull':'Minutos por Goleiro','min.games':'Jogos','min.gamesSelected':'Jogos Relacionado',
     'min.h1':'1º Tempo','min.h2':'2º Tempo','min.totalMin':'Min Totais','min.totalMinLower':'Min totais',
     'min.duration':'Duração','min.gks':'Goleiros','min.avgGame':'Média/Jogo',

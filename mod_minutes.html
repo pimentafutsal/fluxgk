@@ -399,10 +399,10 @@ tr:hover td{background:var(--surface2);}
 
   <div class="card mb20">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:1;min-width:120px;"><div data-i18n="min.season" class="label">Season</div><select id="r-season"><option data-i18n="common.all" value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div data-i18n="min.competition" class="label">Competition</div><select id="r-comp"><option data-i18n="common.all" value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div data-i18n="min.opponent" class="label">Opponent</div><select id="r-opp"><option data-i18n="common.all" value="">All</option></select></div>
-      <div style="flex:1;min-width:120px;"><div data-i18n="data.goalkeeper" class="label">Goalkeeper</div><select id="r-gk"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.season" class="label">Season</div><select id="r-season" onchange="renderRepTable()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.competition" class="label">Competition</div><select id="r-comp" onchange="renderRepTable()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="min.opponent" class="label">Opponent</div><select id="r-opp" onchange="renderRepTable()"><option data-i18n="common.all" value="">All</option></select></div>
+      <div style="flex:1;min-width:120px;"><div data-i18n="data.goalkeeper" class="label">Goalkeeper</div><select id="r-gk" onchange="renderRepTable()"><option data-i18n="common.all" value="">All</option></select></div>
       <button class="btn btn-accent" onclick="exportReport()" style="flex-shrink:0;margin-top:18px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         <span data-i18n="min.exportPdf">Export PDF</span>
@@ -868,7 +868,7 @@ function renderHistory(){
         const sel=d.selected;
         return `<td><span style="font-family:var(--mono);font-weight:600;">${fmtTime(t)}</span> <span class="badge ${sel?'badge-green':'badge-mute'}" style="font-size:9px;">${pct}%</span></td>`;
       }).join('');
-      return `<tr><td><span style="font-family:var(--mono);font-size:12px;">${g.date}</span></td><td><b>${g.opp||'—'}</b></td><td>${g.comp||'—'}</td><td>${g.season||'—'}</td><td>${g.totalMin||40}'</td>${gkCols}<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="editGame(${g.id})" style="margin-right:4px;">✎ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})">✕</button></td></tr>`;
+      return `<tr><td><span style="font-family:var(--mono);font-size:12px;">${g.date}</span></td><td><b>${g.opp||'—'}</b></td><td>${g.comp||'—'}</td><td>${g.season||'—'}</td><td>${g.totalMin||40}'</td>${gkCols}<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="exportGameReport(${g.id})" style="margin-right:4px;" title="${TX('min.exportGame')}">⤓ ${TX('min.exportGame')}</button><button class="btn btn-ghost btn-sm" onclick="editGame(${g.id})" style="margin-right:4px;">✎ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteGame(${g.id})">✕</button></td></tr>`;
     }).join('');
   } else if(view==='gk'){
     thead.innerHTML=`<tr><th>${TX("data.goalkeeper")}</th><th>${TX("min.games")}</th><th>${TX("min.gamesSelected")}</th><th>${TX("min.h1")}</th><th>${TX("min.h2")}</th><th>${TX("min.e1")}</th><th>${TX("min.e2")}</th><th>${TX("min.totalMin")}</th><th>${TX("min.pctClub")}</th><th>${TX("min.pctSelected")}</th></tr>`;
@@ -1127,17 +1127,31 @@ function exportReport(){
   });
   if(games.length===0){alert(TX('min.msg.noData'));return;}
   const gks=gkFilter?[gkFilter]:ST.gks;
+  buildMinutesPDF(games,gks,{scope:'report',showCharts:true});
+}
+
+// Exporta o PDF de um unico jogo, direto do historico (sem passar pelos filtros do relatorio)
+function exportGameReport(id){
+  const g=ST.games.find(x=>String(x.id)===String(id));
+  if(!g){alert(TX('min.msg.gameNotFound'));return;}
+  buildMinutesPDF([g],ST.gks,{scope:'game',showCharts:false});
+}
+
+// Motor de PDF compartilhado: relatorio agregado (varios jogos) e jogo unico.
+function buildMinutesPDF(games,gks,opts){
+  opts=opts||{};
+  const isGame=opts.scope==='game';
   const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const a=ST.accent||'#1a3a6b';
 
-  // Capture report chart canvases as base64 images
+  // Capture report chart canvases as base64 images (so no relatorio agregado)
   const chartIds=['rch-gk','rch-gk-pct','rch-gk-sel','rch-season','rch-comp','rch-opp'];
-  const chartImgs=chartIds.map(id=>{
+  const chartImgs=opts.showCharts?chartIds.map(id=>{
     const el=document.getElementById(id);
     if(!el||!ALL_CHARTS[id])return '';
     try{return el.toDataURL('image/png');}catch(e){return '';}
-  });
+  }):['','','','','',''];
 
   function bar(pct,color){
     return `<div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px;min-width:${pct>0?3:0}px;"></div></div>`;
@@ -1216,7 +1230,7 @@ function exportReport(){
     <div class="cover-top">
       <div class="cover-tag">FluxGK</div>
       <div class="cover-badge">${ST.clubBadge?'<img src="'+ST.clubBadge+'">':(ST.clubName?ST.clubName.slice(0,2).toUpperCase():'GK')}</div>
-      <div class="cover-title">${TX("min.pdf.title")}<br>${TX("min.tab.report")}</div>
+      <div class="cover-title">${TX("min.pdf.title")}<br>${isGame?(games[0].date+' vs '+(games[0].opp||'—')):TX("min.tab.report")}</div>
       <div class="cover-sub">${ST.clubName}</div>
       <div class="cover-games">
         <div class="cover-games-label">${TX("min.pdf.gamesIn")}</div>
@@ -1251,7 +1265,7 @@ function exportReport(){
       </table>
     </div>
 
-    <div class="sec">
+    ${opts.showCharts?`<div class="sec">
       <div class="sec-title">${TX("min.charts")}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
         ${chartImgs[0]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByGk")+'</div><img src=\"'+chartImgs[0]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
@@ -1263,7 +1277,7 @@ function exportReport(){
         ${chartImgs[4]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByComp")+'</div><img src=\"'+chartImgs[4]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
         ${chartImgs[5]?'<div><div style=\"font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:6px;\">'+TX("min.chartByOpp")+'</div><img src=\"'+chartImgs[5]+'\" style=\"width:100%;border-radius:6px;border:1px solid #eee;\"></div>':''}
       </div>
-    </div>
+    </div>`:''}
 
     <div class="sec">
       <div class="sec-title">${TX("min.gameLog")}</div>
