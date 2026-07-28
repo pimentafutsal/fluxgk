@@ -333,6 +333,12 @@
   .fpanel.on{display:block}
   .fpanel.min .fpbody{display:none}
   .fpanel.min .fpresize{display:none}
+  /* modo barra horizontal: fixa embaixo, ocupa a largura e as tags fluem lado a lado */
+  #tagPanel.wide{max-height:44vh}
+  #tagPanel.wide .fpbody{max-height:36vh;overflow:auto}
+  #tagPanel.wide .fpresize{display:none}
+  #tagPanel.wide #tagGrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  #tagWide.active{background:var(--blue);color:#fff}
   .fphead{
     display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:grab;user-select:none;
     border-bottom:1px solid var(--line);background:var(--paper);border-radius:8px 8px 0 0;
@@ -745,6 +751,7 @@
     <span data-i18n="vid.tags">TAGS</span>
     <span data-i18n="vid.dragMove" style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
     <span class="spacer"></span>
+    <button class="mini ghost" id="tagWide" title="Dock as a horizontal bar at the bottom (off the video)" data-i18n-title="vid.tt.wideTags">⬌</button>
     <button class="mini ghost" id="panelMin" title="Minimize/expand" data-i18n-title="vid.tt.minimize">—</button>
   </div>
   <div class="fpbody" id="tagPanelBody">
@@ -2248,6 +2255,7 @@ function makeFloating(panelId, headId, gripId, bodyId){
   let drag = null, rs = null;
   head.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button')) return;
+    if (panelId === 'tagPanel' && _tagWide) setTagWide(false); // arrastar volta ao flutuante
     const r = panel.getBoundingClientRect();
     drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
     try { head.setPointerCapture(e.pointerId); } catch (err) { /* sem captura */ }
@@ -2284,6 +2292,30 @@ function makeFloating(panelId, headId, gripId, bodyId){
 }
 makeFloating('tagPanel', 'tagPanelHandle', 'tagGrip', 'tagPanelBody');
 makeFloating('plPanel', 'plPanelHandle', 'plGrip', 'plPanelBody');
+
+/* ---- painel de etiquetas como barra horizontal (fixa embaixo, fora do vídeo) ---- */
+let _tagWide = false, _tagFloatCss = null;
+function setTagWide(on){
+  const p = $('tagPanel');
+  _tagWide = !!on;
+  const btn = $('tagWide'); if (btn) btn.classList.toggle('active', _tagWide);
+  if (_tagWide){
+    // guarda a posição flutuante para restaurar depois
+    _tagFloatCss = { left:p.style.left, top:p.style.top, right:p.style.right, bottom:p.style.bottom, width:p.style.width };
+    p.classList.add('wide');
+    p.style.left = '16px'; p.style.right = '16px';
+    p.style.bottom = '16px'; p.style.top = 'auto'; p.style.width = 'auto';
+  } else {
+    p.classList.remove('wide');
+    const s = _tagFloatCss || {};
+    p.style.left = s.left || ''; p.style.top = s.top || ''; p.style.right = s.right || '';
+    p.style.bottom = s.bottom || ''; p.style.width = s.width || '';
+  }
+  try { localStorage.setItem('fluxgk_video_tagwide', _tagWide ? '1' : '0'); } catch (e) {}
+}
+$('tagWide').addEventListener('click', () => setTagWide(!_tagWide));
+/* restaura a preferência do treinador */
+try { if (localStorage.getItem('fluxgk_video_tagwide') === '1') setTagWide(true); } catch (e) {}
 
 /* =====================================================================
    DESENHO PRO — caneta, formas, spotlight, medição, linking, ângulo, lupa
