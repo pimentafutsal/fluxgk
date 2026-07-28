@@ -640,6 +640,7 @@
           <label data-i18n="vid.postDefault" for="postSec" style="margin-left:6px">post default</label><input type="number" id="postSec" value="3" min="0" max="60" step="1">s
         </div>
         <button data-i18n="vid.changeVideo" class="ghost" id="changeVideo">Change video</button>
+        <button data-i18n="vid.newEdit" class="ghost" id="newEdit" title="Finish this edit (it stays in the library) and start a new one with another video" data-i18n-title="vid.tt.newEdit">＋ New edit</button>
       </div>
       <div id="nowPlaying">
         <div class="dotpulse"></div>
@@ -1011,6 +1012,41 @@ function openFilePicker(){
 }
 $('dropzone').addEventListener('click', () => openFilePicker());
 $('changeVideo').addEventListener('click', () => openFilePicker());
+
+/* grava a sessao atual na biblioteca imediatamente (sem esperar o debounce) */
+function flushSaveSession(){
+  if (!state.file) return;
+  clearTimeout(saveTimer);
+  const all = libAll();
+  all[sessionKey()] = {
+    name: state.file.name, size: state.file.size, savedAt: Date.now(),
+    events: state.events, nextEventId: state.nextEventId, drawings: state.drawings,
+    measureScale: state.measureScale, namedPlaylists: state.namedPlaylists,
+  };
+  libWrite(all);
+}
+/* Nova edicao: guarda o video atual no historico e limpa a bancada para outro video */
+async function startNewEdit(){
+  if (state.file){
+    const ok = await askConfirm(TX('vid.newEditTitle'), TX('vid.newEditQ'), TX('vid.newEditGo'));
+    if (!ok) return;
+    flushSaveSession();
+  }
+  if (state.url){ try { URL.revokeObjectURL(state.url); } catch (e) {} }
+  state.file = null; state.url = null;
+  try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
+  state.events = []; state.nextEventId = 1; state.drawings = [];
+  state.namedPlaylists = []; state.measureScale = null; state.clip = null;
+  try { exitClip(); } catch (e) {}
+  try { cancelFreeze(); } catch (e) {}
+  $('videoWrap').classList.remove('on');
+  $('dropzone').style.display = '';
+  $('fileName').textContent = '';
+  renderPlaylists(); renderDrawList(); updateBadge(); renderTags();
+  log(TX('vid.f.newEditReady'), 'ok');
+  openFilePicker();
+}
+$('newEdit').addEventListener('click', startNewEdit);
 $('fileInput').addEventListener('change', (e) => {
   const f = e.target.files[0];
   loadFile(f);
@@ -3404,6 +3440,21 @@ function renderDashEditor(){
   nameInp.addEventListener('change', () => renderDashTab());
   head.appendChild(nameInp);
 
+  /* botao explicito de salvar — grava agora e confirma se foi para a nuvem */
+  const bSave = document.createElement('button');
+  bSave.className = 'mini primary';
+  bSave.textContent = TX('vid.saveDash');
+  bSave.title = TX('vid.tt.saveDash');
+  bSave.addEventListener('click', async () => {
+    bSave.disabled = true;
+    const okCloud = await pushToCloudNow();
+    bSave.disabled = false;
+    bSave.textContent = TX('vid.saved');
+    setTimeout(() => { bSave.textContent = TX('vid.saveDash'); }, 1600);
+    log(okCloud ? TX('vid.msg.dashSavedCloud') : TX('vid.msg.dashSavedLocal'), okCloud ? 'ok' : 'err');
+  });
+  head.appendChild(bSave);
+
   if (d.id === state.currentDashId){
     const act = document.createElement('span');
     act.className = 'badge';
@@ -4013,15 +4064,23 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
 /* ---------------- biblioteca de jogos ---------------- */
 const LIB_KEY = 'fluxgk_videolab_library_v1';
 
+/* Espelho em memoria: no iframe do iPad o localStorage pode nao persistir.
+   Mantendo a biblioteca na memoria, ela sobrevive à sessão e sobe correta
+   para a nuvem mesmo se o localStorage estiver bloqueado (senao subiria vazia
+   e apagaria o historico na nuvem). */
+let _libMem = null;
 function libAll(){
+  if (_libMem) return _libMem;
   try {
     const raw = localStorage.getItem(LIB_KEY);
     const d = raw ? JSON.parse(raw) : null;
-    return (d && typeof d === 'object') ? d : {};
-  } catch (e) { return {}; }
+    _libMem = (d && typeof d === 'object') ? d : {};
+  } catch (e) { _libMem = {}; }
+  return _libMem;
 }
 function libWrite(all){
-  try { localStorage.setItem(LIB_KEY, JSON.stringify(all)); }
+  _libMem = all || {};
+  try { localStorage.setItem(LIB_KEY, JSON.stringify(_libMem)); }
   catch (e) { log(TX('vid.msg.storageFull'), 'err'); }
   if (typeof pushToCloud === 'function') pushToCloud();
 }
@@ -4630,6 +4689,7 @@ let _lastContext = null;  // guarda o contexto do clube para repassar a uma aba 
 console.log('%c[FluxGK] video v2.0 — consumidor do hub','color:#E8901A;font-weight:bold');
 /* FB_CONFIG_HUB e _videoDataPath ja declarados no topo */
 let fbDB = null, fbUser = null, _fbReady = false;
+let _cloudLoaded = false;  /* so sobe para a nuvem depois do 1o pull, p/ nao sobrescrever com estado padrao/vazio */
 
 function ldScript(src){
   return new Promise((res, rej) => {
@@ -4669,7 +4729,7 @@ function cloudUid(){ return (fbUser && fbUser.uid) || window._fluxgkUid || null;
 let _pushTimer = null;
 function pushToCloud(){
   const uid = cloudUid();
-  if (!_fbReady || !fbDB || !uid) return;
+  if (!_fbReady || !fbDB || !uid || !_cloudLoaded) return;
   clearTimeout(_pushTimer);
   _pushTimer = setTimeout(() => {
     try {
@@ -4684,6 +4744,21 @@ function pushToCloud(){
   }, 600);
 }
 
+/* grava AGORA (sem debounce) e devolve se foi para a nuvem — usado pelo botao "Salvar dashboard" */
+function pushToCloudNow(){
+  persistDashboards();  /* garante local + espelho */
+  const uid = cloudUid();
+  if (!_fbReady || !fbDB || !uid || !_cloudLoaded || !_videoDataPath) return Promise.resolve(false);
+  try {
+    const payload = {
+      library: libAll(),
+      dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
+      updatedAt: Date.now(),
+    };
+    return fbDB.ref(_videoDataPath).set(payload).then(() => true).catch(() => false);
+  } catch (e) { return Promise.resolve(false); }
+}
+
 /* puxa do DB e mescla com o local (a nuvem é a fonte da verdade se mais recente) */
 function pullFromCloud(){
   const uid = cloudUid();
@@ -4691,21 +4766,26 @@ function pullFromCloud(){
   if (!_videoDataPath) return;   /* sem contexto do hub: nada a ler */
   fbDB.ref(_videoDataPath).once('value').then((snap) => {
     const data = snap.val();
-    if (!data) { pushToCloud(); return; } // primeira vez: sobe o que já existe local
     try {
-      if (data.library && typeof data.library === 'object'){
-        libWrite(data.library);
+      if (data){
+        if (data.library && typeof data.library === 'object'){
+          libWrite(data.library);   // vira a fonte da verdade em memoria
+        }
+        if (data.dashboards && Array.isArray(data.dashboards.dashboards) && data.dashboards.dashboards.length){
+          state.dashboards = data.dashboards.dashboards;
+          state.currentDashId = data.dashboards.currentId || state.dashboards[0].id;
+          persistDashboards();
+          renderDashboards(); renderTags();
+          if (typeof renderDashTab === 'function') renderDashTab();
+        }
+        log(TX('vid.msg.cloudSynced'));
+        renderLibrary && renderLibrary();
       }
-      if (data.dashboards && Array.isArray(data.dashboards.dashboards) && data.dashboards.dashboards.length){
-        state.dashboards = data.dashboards.dashboards;
-        state.currentDashId = data.dashboards.currentId || state.dashboards[0].id;
-        persistDashboards();
-        renderDashboards(); renderTags();
-      }
-      log(TX('vid.msg.cloudSynced'));
-      renderLibrary && renderLibrary();
     } catch (e) { /* dados inesperados — mantém local */ }
-  }).catch(() => {});
+    // a partir daqui as edicoes do usuario podem subir; semeia a nuvem se estava vazia
+    _cloudLoaded = true;
+    pushToCloud();
+  }).catch(() => { _cloudLoaded = true; });
 }
 
 /* ================= /INTEGRAÇÃO COM O HUB ================= */
