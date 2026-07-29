@@ -375,9 +375,25 @@ function withTimeout(p,ms,label){
   ]);
 }
 async function loadAll(){
-  try{
-    var snap=await withTimeout(U().get(),8000,'Realtime Database');
-    var d=snap.val()||{};
+  /* Le SOMENTE os nós leves (clubs/active/profile) — NAO a árvore inteira.
+     Antes lia users/{uid} inteiro (todos os módulos + biblioteca de vídeo);
+     conforme os dados cresceram, essa leitura estourava o tempo limite e o app
+     abria vazio ("zerado"). Ler só o essencial é rápido e evita o timeout. */
+  async function readLight(){
+    var reads=await Promise.all([
+      withTimeout(U('clubs').get(),20000,'clubs'),
+      withTimeout(U('active').get(),20000,'active'),
+      withTimeout(U('profile').get(),20000,'profile')
+    ]);
+    return { clubs:reads[0].val()||{}, active:reads[1].val()||{}, profile:reads[2].val()||{} };
+  }
+  var d=null,lastErr=null;
+  for(var attempt=0;attempt<2&&!d;attempt++){
+    try{ d=await readLight(); }
+    catch(e){ lastErr=e; if(attempt===0) await new Promise(function(r){setTimeout(r,1200);}); }
+  }
+  if(d){
+    APP._loadFailed=false;
     APP.profile=Object.assign({coachName:'',methodology:'Constraints-Led Approach'},d.profile||{});
     /* idioma salvo no perfil vale entre aparelhos (sem sobrescrever escolha local ja feita) */
     if(APP.profile.lang&&!localStorage.getItem('fluxgk_lang')) FluxGKI18n.setLang(APP.profile.lang);
@@ -394,17 +410,21 @@ async function loadAll(){
       var sids=Object.keys(c.seasons||{});
       APP.active.seasonId=sids[sids.length-1]||null;
     }
-  }catch(e){
+  }else{
+    /* A leitura FALHOU (timeout/rede/permissão). NAO trate como "sem clubes":
+       marcamos a falha para nao arriscar sobrescrever dados que estão no banco. */
+    var e=lastErr||new Error('load failed');
     console.error('[FluxGK] loadAll failed:',e);
+    APP._loadFailed=true;
     var msg=String(e.message||e);
     if(msg.indexOf('TIMEOUT')===0){
-      showToast(TX('hub.msg.dbTimeout'),7000);
+      showToast(TX('hub.msg.dbTimeout'),8000);
     }else if(msg.toLowerCase().indexOf('permission')>-1){
-      showToast(TX('hub.msg.permission'),7000);
+      showToast(TX('hub.msg.permission'),8000);
     }else{
-      showToast(TX('hub.msg.loadFail'),6000);
+      showToast(TX('hub.msg.loadFail'),7000);
     }
-    /* o app ABRE mesmo assim, vazio, em vez de travar nas bolinhas */
+    /* o app ABRE mesmo assim, mas o aviso deixa claro que foi falha de conexão */
   }
 }
 
