@@ -507,8 +507,7 @@
   <button class="mini" id="togglePl" title="Show/hide the playlists panel" data-i18n-title="vid.tt.playlistsPanel">Playlists <span class="badge" id="plCount">0</span></button>
   <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels" data-i18n-title="vid.tt.layout">▦ Layout</button>
   <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" data-i18n-title="vid.tt.header" style="display:none">▱ Header</button>
-  <button class="mini" id="appFullscreen" title="Fullscreen the whole app" data-i18n-title="vid.tt.fullscreen">⛶ Fullscreen</button>
-  <button class="mini" id="openTab" title="Open this module in its own tab — enables the Save-as dialog and full screen" data-i18n-title="vid.tt.newTab" style="display:none">⤢ New tab</button>
+  <button class="mini" id="appFullscreen" title="Fill the window (⌃⌘F for full browser fullscreen)" data-i18n-title="vid.tt.fullscreen">⛶ Fullscreen</button>
 </header>
 <div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#9aa">
   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
@@ -1544,7 +1543,7 @@ function loadFile(file){
 
 let _wasAppFsBeforePick = false;
 function openFilePicker(){
-  _wasAppFsBeforePick = (document.fullscreenElement === document.body || document.webkitFullscreenElement === document.body);
+  _wasAppFsBeforePick = isAppFs() || _vidMax;   /* lembra se estávamos em tela cheia (ou preenchendo a janela) */
   $('fileInput').click();
 }
 $('dropzone').addEventListener('click', () => openFilePicker());
@@ -1587,10 +1586,15 @@ $('newEdit').addEventListener('click', startNewEdit);
 $('fileInput').addEventListener('change', (e) => {
   const f = e.target.files[0];
   loadFile(f);
-  // o seletor de arquivo do SO derruba a tela cheia; se estávamos nela, voltamos
-  if (f && _wasAppFsBeforePick && !(document.fullscreenElement || document.webkitFullscreenElement)){
-    const el = document.body;
-    setTimeout(() => { try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (err) {} }, 120);
+  // o seletor de arquivo do SO derruba a tela cheia; se estávamos nela, voltamos sozinhos
+  if (f && _wasAppFsBeforePick && !isAppFs()){
+    const el = document.documentElement;
+    setTimeout(() => {
+      try {
+        const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+        if (r && r.catch) r.catch(() => { if (_vidMax) hubExpand(true); });
+      } catch (err) { if (_vidMax) hubExpand(true); }
+    }, 150);
   }
   _wasAppFsBeforePick = false;
 });
@@ -1686,51 +1690,41 @@ $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.25));
 $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.25));
 $('zoomReset').addEventListener('click', () => setZoom(1, 0, 0));
 $('fsBtn').addEventListener('click', () => {
-  const inHub = (window.parent && window.parent !== window);
-  if (inHub){ setHubMax(!_vidMax); return; }  /* dentro do hub: expande o iframe, sem a API (evita a tela fantasma) */
-  if (document.fullscreenElement) { document.exitFullscreen(); return; }
-  if (stage.requestFullscreen){
-    const r = stage.requestFullscreen();
-    if (r && r.catch) r.catch(() => log(TX('vid.f.fsBlocked'), 'err'));
-  }
+  if (isAppFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+  const el = stage;
+  try {
+    const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    if (r && r.catch) r.catch(() => toggleAppFullscreen());   /* plano B: tela cheia do app / preencher janela */
+  } catch (e) { toggleAppFullscreen(); }
 });
 
 /* ---------------- tela cheia do APP inteiro ---------------- */
 function isAppFs(){
-  return document.fullscreenElement === document.body || document.webkitFullscreenElement === document.body;
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
 }
-let _vidMax = false;
-function setHubMax(on){
+let _vidMax = false;   /* plano B: iframe preenchendo a janela, quando a tela cheia real for bloqueada */
+function hubExpand(on){
   _vidMax = !!on;
-  try { window.parent.postMessage({ type: 'FLUXGK_VIDEO_MAXIMIZE', on: _vidMax }, '*'); } catch (e) {}
+  try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'FLUXGK_VIDEO_MAXIMIZE', on: _vidMax }, '*'); } catch (e) {}
   document.body.classList.toggle('app-fs', _vidMax);
   if (!_vidMax) document.body.classList.remove('hide-header');
-  $('toggleHeader').style.display = _vidMax ? '' : 'none';
-  $('appFullscreen').textContent = _vidMax ? TX('vid.f.exit') : TX('vid.fullscreen');
+  $('toggleHeader').style.display = (_vidMax || isAppFs()) ? '' : 'none';
+  $('appFullscreen').textContent = (_vidMax || isAppFs()) ? TX('vid.f.exit') : TX('vid.fullscreen');
   setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
 }
-$('appFullscreen').addEventListener('click', () => {
-  const inHub = (window.parent && window.parent !== window);
-  if (inHub){
-    /* dentro do hub NÃO usamos a API de fullscreen: de dentro de um iframe ela deixa
-       uma "tela fantasma" congelada no macOS. Pedimos ao hub para expandir o iframe. */
-    setHubMax(!_vidMax);
-    return;
-  }
-  if (document.fullscreenElement || document.webkitFullscreenElement){
-    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-  } else {
-    const el = document.body;
-    try {
-      const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
-      if (r && r.catch) r.catch(() => log(TX('vid.f.fsBlocked'), 'err'));
-    } catch (err) {
-      log(TX('vid.f.fsBlocked'), 'err');
-    }
-  }
-});
-/* Esc sai do modo expandido dentro do hub (não há fullscreen real para o Esc tratar) */
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _vidMax) setHubMax(false); });
+function toggleAppFullscreen(){
+  if (isAppFs()){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+  if (_vidMax){ hubExpand(false); return; }
+  /* tela cheia REAL (o iframe tem allowfullscreen no hub, então não gera a tela fantasma) */
+  const el = document.documentElement;
+  try {
+    const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    if (r && r.catch) r.catch(() => hubExpand(true));   /* bloqueada → preenche a janela */
+  } catch (e) { hubExpand(true); }
+}
+$('appFullscreen').addEventListener('click', toggleAppFullscreen);
+/* Esc só é necessário para o plano B (a tela cheia real o navegador já trata) */
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _vidMax) hubExpand(false); });
 $('toggleHeader').addEventListener('click', () => {
   document.body.classList.toggle('hide-header');
 });

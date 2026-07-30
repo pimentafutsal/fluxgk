@@ -704,7 +704,7 @@
     /* tooltips */
     'vid.tt.tagsPanel':'Show/hide the tags panel','vid.tt.playlistsPanel':'Show/hide the playlists panel',
     'vid.tt.layout':'Toggle between LongoMatch (docked) layout and floating panels',
-    'vid.tt.header':'Hide/show the header (fullscreen only)','vid.tt.fullscreen':'Fullscreen the whole app',
+    'vid.tt.header':'Hide/show the header (fullscreen only)','vid.tt.fullscreen':'Full screen (⌃⌘F also works). Esc to exit.',
     'vid.tt.newTab':'Open this module in its own tab — enables the Save-as dialog and full screen',
     'vid.tt.backMatch':'Back to the full match video','vid.tt.draw':'Draw over the video',
     'vid.tt.zoomOut':'Zoom out','vid.tt.zoomIn':'Zoom in','vid.tt.reset100':'Reset to 100%','vid.tt.fs':'Fullscreen',
@@ -1559,7 +1559,7 @@
     /* tooltips */
     'vid.tt.tagsPanel':'Mostrar/ocultar o painel de tags','vid.tt.playlistsPanel':'Mostrar/ocultar o painel de playlists',
     'vid.tt.layout':'Alternar entre o layout LongoMatch (encaixado) e painéis flutuantes',
-    'vid.tt.header':'Ocultar/mostrar o cabeçalho (só em tela cheia)','vid.tt.fullscreen':'Tela cheia no app inteiro',
+    'vid.tt.header':'Ocultar/mostrar o cabeçalho (só em tela cheia)','vid.tt.fullscreen':'Tela cheia (⌃⌘F também funciona). Esc para sair.',
     'vid.tt.newTab':'Abrir este módulo em uma aba própria — habilita o diálogo Salvar como e a tela cheia',
     'vid.tt.backMatch':'Voltar ao vídeo completo do jogo','vid.tt.draw':'Desenhar sobre o vídeo',
     'vid.tt.zoomOut':'Diminuir zoom','vid.tt.zoomIn':'Aumentar zoom','vid.tt.reset100':'Voltar para 100%','vid.tt.fs':'Tela cheia',
