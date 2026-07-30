@@ -1135,6 +1135,53 @@ function projPlaylistAdd(plId, evs){
   let n = 0; (evs || []).forEach(ev => { pl.items.push(projSnapshot(ev)); n++; });
   projPersist(); return n;
 }
+/* ---- edição da coleção direto na aba Projeto (mover/copiar/adicionar) ---- */
+function projFindPlaylist(plId){ const p = currentProject(); return p ? projPlaylistsOf(p).find(x => x.id === plId) : null; }
+function projMoveItem(fromId, toId, itemId){
+  const from = projFindPlaylist(fromId), to = projFindPlaylist(toId);
+  if (!from || !to) return;
+  const idx = (from.items || []).findIndex(i => i.id === itemId); if (idx < 0) return;
+  const it = from.items.splice(idx, 1)[0];
+  if (!Array.isArray(to.items)) to.items = [];
+  to.items.push(it);
+  projPersist(); renderProjectTab();
+}
+function projCopyItem(toId, item){
+  const to = projFindPlaylist(toId); if (!to) return;
+  if (!Array.isArray(to.items)) to.items = [];
+  to.items.push(Object.assign({}, item, { id: 'i' + Math.random().toString(36).slice(2, 9) }));
+  projPersist(); renderProjectTab();
+}
+/* adiciona um clipe (da visão por etiqueta) a uma playlist de observação */
+function projAddClipToPlaylist(toId, clip){
+  const to = projFindPlaylist(toId); if (!to) return;
+  if (!Array.isArray(to.items)) to.items = [];
+  const tg = findTag(clip.tagId);
+  to.items.push({ id: 'i' + Math.random().toString(36).slice(2, 9), srcKey: clip.srcKey, srcName: clip.srcName, tagId: clip.tagId, tagName: tg ? tg.name : '', color: tg ? tg.color : '#888', name: clip.name || '', note: clip.note || '', t: clip.t, start: clip.start, end: clip.end });
+  projPersist(); renderProjectTab();
+}
+/* painelzinho inline de ações (mover/copiar para outras playlists / nova) */
+function projBuildActionsPanel(currentPlId, onPick){
+  const p = currentProject(); if (!p) return document.createElement('div');
+  const panel = document.createElement('div');
+  panel.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:8px;margin:2px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+  const others = projPlaylistsOf(p).filter(pl => pl.id !== currentPlId);
+  const mk = (label, fn, cls) => { const b = document.createElement('button'); b.className = 'mini' + (cls ? ' ' + cls : ''); b.textContent = label; b.addEventListener('click', fn); return b; };
+  if (currentPlId){ // veio de uma playlist: oferece mover e copiar
+    const lm = document.createElement('span'); lm.style.cssText = 'font-size:11px;color:var(--muted)'; lm.textContent = TX('vid.proj.moveTo') + ':';
+    panel.appendChild(lm);
+    others.forEach(pl => panel.appendChild(mk('→ ' + pl.name, () => onPick('move', pl.id))));
+    const lc = document.createElement('span'); lc.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px'; lc.textContent = TX('vid.proj.copyTo') + ':';
+    panel.appendChild(lc);
+    others.forEach(pl => panel.appendChild(mk('⧉ ' + pl.name, () => onPick('copy', pl.id))));
+  } else { // veio da visão por etiqueta: só adicionar
+    const la = document.createElement('span'); la.style.cssText = 'font-size:11px;color:var(--muted)'; la.textContent = TX('vid.proj.addToList') + ':';
+    panel.appendChild(la);
+    projPlaylistsOf(p).forEach(pl => panel.appendChild(mk('+ ' + pl.name, () => onPick('add', pl.id))));
+  }
+  panel.appendChild(mk(TX('vid.proj.newList'), async () => { const nm = await askText(TX('vid.proj.newListPrompt')); if (nm && nm.trim()) onPick('new', nm.trim()); }, 'primary'));
+  return panel;
+}
 /* ===== vínculo de pasta (File System Access API + IndexedDB) =====
    O navegador não guarda caminhos absolutos (segurança), mas guarda um "handle"
    da PASTA. Assim os vídeos se reconectam sozinhos (1 permissão para a pasta),
@@ -1290,10 +1337,21 @@ function renderProjectTab(){
           const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = it.color || '#888';
           const nm2 = document.createElement('span'); nm2.style.flex = '1';
           nm2.textContent = (it.name || it.tagName || 'clip') + (it.note ? (' — ' + it.note) : '') + '  ·  ' + (it.srcName || '') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
+          const actWrap = document.createElement('div'); actWrap.style.width = '100%';
+          const bMove = document.createElement('button'); bMove.className = 'mini ghost'; bMove.textContent = '⋯'; bMove.title = TX('vid.proj.moveCopy');
+          bMove.addEventListener('click', () => {
+            if (actWrap.firstChild){ actWrap.innerHTML = ''; return; }
+            const panel = projBuildActionsPanel(pl.id, (action, arg) => {
+              if (action === 'move') projMoveItem(pl.id, arg, it.id);
+              else if (action === 'copy') projCopyItem(arg, it);
+              else if (action === 'new'){ const npl = projPlaylistCreate(arg, []); if (npl) projCopyItem(npl.id, it); }
+            });
+            actWrap.appendChild(panel);
+          });
           const rm = document.createElement('button'); rm.className = 'mini ghost danger'; rm.textContent = '✕'; rm.title = TX('vid.proj.removeItem');
           rm.addEventListener('click', () => { pl.items = items.filter(x => x.id !== it.id); projPersist(); renderProjectTab(); });
-          row.appendChild(dot); row.appendChild(nm2); row.appendChild(rm);
-          card.appendChild(row);
+          row.appendChild(dot); row.appendChild(nm2); row.appendChild(bMove); row.appendChild(rm);
+          card.appendChild(row); card.appendChild(actWrap);
         });
         box.appendChild(card);
       });
@@ -1329,8 +1387,19 @@ function renderProjectTab(){
         bySrc[src].forEach(it => {
           const row = document.createElement('div'); row.className = 'expitem';
           const nm2 = document.createElement('span'); nm2.style.flex = '1';
-          nm2.textContent = (it.name || (tg && tg.name) || 'clip') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
-          row.appendChild(nm2); card.appendChild(row);
+          nm2.textContent = (it.name || (tg && tg.name) || 'clip') + (it.note ? (' — ' + it.note) : '') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
+          const actWrap = document.createElement('div'); actWrap.style.width = '100%';
+          const bAdd = document.createElement('button'); bAdd.className = 'mini ghost'; bAdd.textContent = '＋'; bAdd.title = TX('vid.proj.addToList');
+          bAdd.addEventListener('click', () => {
+            if (actWrap.firstChild){ actWrap.innerHTML = ''; return; }
+            const clip = it;
+            const panel = projBuildActionsPanel(null, (action, arg) => {
+              if (action === 'add') projAddClipToPlaylist(arg, clip);
+              else if (action === 'new'){ const npl = projPlaylistCreate(arg, []); if (npl) projAddClipToPlaylist(npl.id, clip); }
+            });
+            actWrap.appendChild(panel);
+          });
+          row.appendChild(nm2); row.appendChild(bAdd); card.appendChild(row); card.appendChild(actWrap);
         });
       });
       box.appendChild(card);
@@ -1358,37 +1427,73 @@ function renderProjectTab(){
     });
   }
 }
+function projRemoveVideo(srcKey){
+  const p = currentProject(); if (!p) return;
+  p.videos = (p.videos || []).filter(v => v.srcKey !== srcKey);
+  projPersist(); renderProjectTab();
+}
 async function populateProjectVideos(p, container){
   container.innerHTML = '';
-  let folderVids = null;
-  try{ folderVids = await projListFolderVideos(p); }catch(e){ folderVids = null; }
-  const registered = (p.videos || []).map(v => v.srcName).filter(Boolean);
-  const names = new Set();
-  if (Array.isArray(folderVids)) folderVids.forEach(n => names.add(n));
-  registered.forEach(n => names.add(n));
-  if (!names.size){
+  /* cabeçalho + botão adicionar */
+  const hdr = document.createElement('div'); hdr.className = 'exprow'; hdr.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
+  const ht = document.createElement('span'); ht.className = 'fpsection'; ht.style.flex = '1'; ht.textContent = TX('vid.proj.myVideos');
+  const bAdd = document.createElement('button'); bAdd.className = 'mini primary'; bAdd.textContent = TX('vid.proj.addVideo');
+  const pickWrap = document.createElement('div');   /* onde a lista da pasta aparece ao clicar em adicionar */
+  bAdd.addEventListener('click', () => toggleAddFromFolder(p, pickWrap));
+  hdr.appendChild(ht); hdr.appendChild(bAdd);
+  container.appendChild(hdr);
+  container.appendChild(pickWrap);
+
+  /* lista SÓ dos vídeos já trazidos para o projeto */
+  const registered = (p.videos || []);
+  if (!registered.length){
     const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left';
-    em.textContent = (folderVids === null) ? TX('vid.proj.linkToList') : TX('vid.proj.folderEmpty');
+    em.textContent = TX('vid.proj.noVideosYet');
     container.appendChild(em); return;
   }
-  const hdr = document.createElement('div'); hdr.className = 'fpsection'; hdr.style.cssText = 'margin:8px 0 4px';
-  hdr.textContent = TX('vid.proj.videosToOpen');
-  container.appendChild(hdr);
-  Array.from(names).sort((a, b) => a.localeCompare(b)).forEach(name => {
+  registered.slice().sort((a, b) => (a.srcName || '').localeCompare(b.srcName || '')).forEach(v => {
     const row = document.createElement('div'); row.className = 'librow';
     const info = document.createElement('div'); info.style.flex = '1';
-    const isReg = registered.includes(name);
-    const inFolder = Array.isArray(folderVids) && folderVids.includes(name);
-    const tags = [];
-    if (isReg) tags.push(TX('vid.proj.vidCut'));
-    if (inFolder) tags.push(TX('vid.proj.vidInFolder'));
-    if (!isReg && !inFolder) tags.push(TX('vid.proj.vidNew'));
-    info.innerHTML = '<div class="lname">' + name + '</div><div class="lmeta">' + tags.join(' · ') + '</div>';
+    info.innerHTML = '<div class="lname">' + (v.srcName || '—') + '</div>';
     const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
-    bOpen.addEventListener('click', () => projOpenVideo(name));
-    row.appendChild(info); row.appendChild(bOpen);
+    bOpen.addEventListener('click', () => projOpenVideo(v.srcName));
+    const bRm = document.createElement('button'); bRm.className = 'mini ghost danger'; bRm.textContent = '✕'; bRm.title = TX('vid.proj.removeVideo');
+    bRm.addEventListener('click', () => projRemoveVideo(v.srcKey));
+    row.appendChild(info); row.appendChild(bOpen); row.appendChild(bRm);
     container.appendChild(row);
   });
+}
+/* mostra/oculta a lista de vídeos da pasta que ainda NÃO estão no projeto */
+async function toggleAddFromFolder(p, wrap){
+  if (wrap._open){ wrap._open = false; wrap.innerHTML = ''; return; }
+  wrap._open = true; wrap.innerHTML = '';
+  let folderVids = null;
+  try{ folderVids = await projListFolderVideos(p); }catch(e){ folderVids = null; }
+  if (folderVids === null){
+    /* sem pasta vinculada → abre o seletor de arquivo (modo manual) */
+    wrap._open = false;
+    openFilePicker();
+    return;
+  }
+  const registered = (p.videos || []).map(v => v.srcName);
+  const avail = folderVids.filter(n => !registered.includes(n));
+  const boxp = document.createElement('div'); boxp.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:8px;margin:4px 0 8px';
+  const t = document.createElement('div'); t.className = 'fpsection'; t.style.marginBottom = '6px'; t.textContent = TX('vid.proj.addFromFolder');
+  boxp.appendChild(t);
+  if (!avail.length){
+    const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left'; em.textContent = TX('vid.proj.allAdded');
+    boxp.appendChild(em);
+  } else {
+    avail.forEach(name => {
+      const row = document.createElement('div'); row.className = 'librow';
+      const info = document.createElement('div'); info.style.flex = '1'; info.innerHTML = '<div class="lname">' + name + '</div>';
+      const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
+      bOpen.addEventListener('click', () => { wrap._open = false; wrap.innerHTML = ''; projOpenVideo(name); });
+      row.appendChild(info); row.appendChild(bOpen);
+      boxp.appendChild(row);
+    });
+  }
+  wrap.appendChild(boxp);
 }
 if ($('projNewBtn')) $('projNewBtn').addEventListener('click', () => {
   const el = $('projNewName'); const name = ((el && el.value) || '').trim();
