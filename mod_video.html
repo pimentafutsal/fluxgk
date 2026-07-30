@@ -471,6 +471,21 @@
   }
   #log .err{color:var(--red)}
   #log .ok{color:var(--blue)}
+  /* ---- lançador (home) estilo LongoMatch ---- */
+  #vlHome{position:fixed;inset:0;z-index:120;background:var(--paper);display:none;align-items:center;justify-content:center;padding:24px}
+  #vlHome.on{display:flex}
+  .vlhome-inner{max-width:920px;width:100%;text-align:center}
+  .vlhome-brand{font-weight:800;font-size:30px;letter-spacing:.01em;margin-bottom:6px}
+  .vlhome-brand span{color:var(--blue)}
+  .vlhome-sub{color:var(--muted);margin-bottom:30px;font-size:14px}
+  .vlhome-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:860px){.vlhome-grid{grid-template-columns:repeat(2,1fr)}}
+  .vltile{display:flex;flex-direction:column;align-items:center;gap:9px;padding:28px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:transform .08s ease,border-color .08s ease,box-shadow .08s ease}
+  .vltile:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 10px 26px rgba(10,10,10,.08)}
+  .vltile-ic{font-size:36px;line-height:1}
+  .vltile-nm{font-weight:700;font-size:15px;color:var(--ink)}
+  .vltile-ds{font-size:12px;color:var(--muted);line-height:1.35}
+  #navHome{font-size:15px;line-height:1;padding:6px 11px}
 </style>
 <script src="fluxgk-i18n.js"></script>
 </head>
@@ -480,10 +495,12 @@
   <div class="brand" id="brandBox"><span id="brandBadge" style="display:none"></span>FLUX<span>GK</span> · <span data-i18n="vid.title" id="brandName">VIDEO LAB</span></div>
   <div data-i18n="vid.module" class="tag">HUB MODULE — v1.0</div>
   <nav id="tabs">
+    <button id="navHome" class="tabbtn" title="Home" data-i18n-title="vid.home.back">⌂</button>
     <button data-i18n="vid.nav.analysis" class="tabbtn active" data-tab="analise">Analysis</button>
     <button data-i18n="vid.nav.dashboards" class="tabbtn" data-tab="dash">Dashboards</button>
     <button data-i18n="vid.exportWord" class="tabbtn" data-tab="export">Export</button>
     <button data-i18n="vid.nav.library" class="tabbtn" data-tab="library">Library</button>
+    <button data-i18n="vid.nav.project" class="tabbtn" data-tab="project">Project</button>
   </nav>
   <div class="spacer"></div>
   <button class="mini" id="togglePanel" title="Show/hide the tags panel" data-i18n-title="vid.tt.tagsPanel">Tags</button>
@@ -500,9 +517,45 @@
   <span id="vctx-coach">—</span>
 </div>
 
+<!-- ================= LANÇADOR (home) ================= -->
+<div id="vlHome">
+  <div class="vlhome-inner">
+    <div class="vlhome-brand">FLUX<span>GK</span> · <span data-i18n="vid.title">VIDEO LAB</span></div>
+    <div class="vlhome-sub" data-i18n="vid.home.sub">What do you want to do?</div>
+    <div class="vlhome-grid">
+      <button class="vltile" data-go="analise">
+        <div class="vltile-ic">🎬</div>
+        <div class="vltile-nm" data-i18n="vid.home.analysis">Analyze a video</div>
+        <div class="vltile-ds" data-i18n="vid.home.analysisD">One match: load, tag clips and export.</div>
+      </button>
+      <button class="vltile" data-go="project">
+        <div class="vltile-ic">🗂️</div>
+        <div class="vltile-nm" data-i18n="vid.home.project">Project</div>
+        <div class="vltile-ds" data-i18n="vid.home.projectD">Themed playlists across several matches.</div>
+      </button>
+      <button class="vltile" data-go="library">
+        <div class="vltile-ic">🎞️</div>
+        <div class="vltile-nm" data-i18n="vid.home.gallery">Video gallery</div>
+        <div class="vltile-ds" data-i18n="vid.home.galleryD">Your saved matches and their clips.</div>
+      </button>
+      <button class="vltile" data-go="dash">
+        <div class="vltile-ic">🏷️</div>
+        <div class="vltile-nm" data-i18n="vid.home.dash">Dashboards</div>
+        <div class="vltile-ds" data-i18n="vid.home.dashD">Your tag sets for marking clips.</div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <main>
   <!-- ================= ABA: ANÁLISE ================= -->
   <section id="tab-analise" class="tabpane active">
+    <div id="projBar" style="display:none;align-items:center;gap:10px;padding:8px 12px;margin-bottom:10px;background:rgba(30,79,255,.08);border:1px solid rgba(30,79,255,.25);border-radius:8px;font-size:13px">
+      <span style="font-weight:600">🗂️ <span data-i18n="vid.proj.working">Project</span>: <b id="projBarName"></b></span>
+      <span style="flex:1"></span>
+      <button class="mini" id="projBarView" data-i18n="vid.proj.view">View project</button>
+      <button class="mini ghost" id="projBarExit" data-i18n="vid.proj.exit">Exit project</button>
+    </div>
     <div id="lmLayout">
     <aside id="lmLeft">
       <div data-i18n="vid.clips" class="zhead">CLIPS</div>
@@ -685,6 +738,10 @@
         <div class="body">
           <div id="expProps">
             <div class="exprow">
+              <label data-i18n="vid.fileNameLbl">File name</label>
+              <input type="text" id="expName" placeholder="fluxgk_compilado" data-i18n-placeholder="vid.ph.fileName" maxlength="80" style="flex:1;min-width:150px">
+            </div>
+            <div class="exprow">
               <label data-i18n="vid.quality">Quality</label>
               <select id="expQuality">
                 <option data-i18n="vid.high" value="high">High</option>
@@ -724,6 +781,9 @@
             <div class="exprow check">
               <label><input type="checkbox" id="expPerFile"> <span data-i18n="vid.onePerClip">One file per clip (instead of a single compilation)</span></label>
             </div>
+            <div class="exprow check">
+              <label><input type="checkbox" id="expChooseFolder" checked> <span data-i18n="vid.chooseFolder">Choose where to save (ask for the folder)</span></label>
+            </div>
             <div id="expNote" class="expnote"></div>
             <div class="exprow" style="margin-top:14px">
               <button data-i18n="vid.export" class="primary" id="expRun" style="flex:1">⤓ Export</button>
@@ -740,6 +800,21 @@
       <h2 data-i18n="vid.matchLibrary">Match library</h2>
       <div class="body" id="library">
         <div data-i18n="vid.noMatches" class="empty">No matches saved yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ABA: PROJETO (multi-vídeos) ================= -->
+  <section id="tab-project" class="tabpane">
+    <div class="card">
+      <h2 data-i18n="vid.proj.title">Projects — work across several videos</h2>
+      <div data-i18n="vid.proj.sub" class="empty" style="text-align:left;margin:2px 0 12px">Open a project and work inside it: load the match videos and cut — every clip belongs to the project and is organized by tag (theme).</div>
+      <div id="projNewWrap" style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" id="projNewName" placeholder="New project (e.g. Scouting Semey 25/26)" data-i18n-placeholder="vid.proj.ph.newProject" maxlength="60" style="flex:1;min-width:160px">
+        <button class="primary" id="projNewBtn" data-i18n="vid.proj.newProject">+ New project</button>
+      </div>
+      <div class="body" id="projView">
+        <div data-i18n="vid.proj.noProjects" class="empty">No projects yet.</div>
       </div>
     </div>
   </section>
@@ -920,6 +995,12 @@ const state = {
   clip: null,            // lance aberto cortado no visualizador
   dashboards: [],
   currentDashId: null,
+  /* Projetos multi-vídeos: um projeto é um CONJUNTO DE VÍDEOS. Cortar dentro dele
+     salva os clipes como sempre (por vídeo, na biblioteca); o projeto agrega por
+     etiqueta (tema). projectMode = estamos trabalhando dentro de um projeto. */
+  projects: [],
+  currentProjectId: null,
+  projectMode: false,
   zoom: 1, panX: 0, panY: 0,
 };
 
@@ -977,6 +1058,152 @@ function loadDashboards(){
   persistDashboards();
 }
 
+/* ---------------- projetos multi-vídeos ---------------- */
+const PROJ_KEY = 'fluxgk_videolab_projects_v1';
+const PROJ_KEY_OLD = 'fluxgk_videolab_project_v1';
+function projList(){ if (!Array.isArray(state.projects)) state.projects = []; return state.projects; }
+function currentProject(){ return projList().find(p => p.id === state.currentProjectId) || null; }
+function projPersist(){
+  try{ localStorage.setItem(PROJ_KEY, JSON.stringify({ projects: state.projects, currentId: state.currentProjectId })); }catch(e){}
+  if (typeof pushToCloud === 'function') pushToCloud();
+}
+function loadProjects(){
+  try{
+    const raw = localStorage.getItem(PROJ_KEY);
+    const d = raw ? JSON.parse(raw) : null;
+    if (d && Array.isArray(d.projects)){ state.projects = d.projects; state.currentProjectId = d.currentId || null; }
+  }catch(e){}
+  if (!Array.isArray(state.projects)) state.projects = [];
+  /* migração do formato antigo (playlists com items) → 1 projeto com os vídeos citados */
+  try{
+    if (!state.projects.length){
+      const rawOld = localStorage.getItem(PROJ_KEY_OLD);
+      const old = rawOld ? JSON.parse(rawOld) : null;
+      if (old && Array.isArray(old.playlists) && old.playlists.length){
+        const vids = {};
+        old.playlists.forEach(pl => (pl.items || []).forEach(it => { if (it.srcKey) vids[it.srcKey] = it.srcName || ''; }));
+        const videos = Object.keys(vids).map(k => ({ srcKey: k, srcName: vids[k] }));
+        if (videos.length) state.projects.push({ id: 'pr' + Math.random().toString(36).slice(2, 9), name: 'Projeto', createdAt: Date.now(), videos: videos });
+      }
+    }
+  }catch(e){}
+}
+function projCreate(name){
+  const p = { id: 'pr' + Math.random().toString(36).slice(2, 9), name: (name || 'Projeto').slice(0, 60), createdAt: Date.now(), videos: [] };
+  projList().push(p); state.currentProjectId = p.id; state.projectMode = true; projPersist(); return p;
+}
+function projOpen(id){ state.currentProjectId = id; state.projectMode = true; projPersist(); }
+function projClose(){ state.currentProjectId = null; state.projectMode = false; projPersist(); if (typeof updateProjBar === 'function') updateProjBar(); }
+/* registra o vídeo atual no projeto ativo (ao carregar um vídeo em modo projeto) */
+function projRegisterCurrentVideo(){
+  const p = currentProject(); if (!p || !state.file) return;
+  if (!Array.isArray(p.videos)) p.videos = [];
+  const key = sessionKey();
+  if (!p.videos.find(v => v.srcKey === key)){ p.videos.push({ srcKey: key, srcName: state.file.name }); projPersist(); }
+}
+/* todos os clipes do projeto, lidos das sessões dos vídeos na biblioteca */
+function projAllClips(p){
+  const out = []; const lib = libAll();
+  ((p && p.videos) || []).forEach(v => {
+    const s = lib[v.srcKey];
+    if (s && Array.isArray(s.events)) s.events.forEach(e => out.push(Object.assign({}, e, { srcKey: v.srcKey, srcName: v.srcName })));
+  });
+  return out;
+}
+/* barra de contexto do projeto na aba Análise */
+function updateProjBar(){
+  const bar = $('projBar'); if (!bar) return;
+  const p = currentProject();
+  if (state.projectMode && p){ bar.style.display = 'flex'; const nm = $('projBarName'); if (nm) nm.textContent = p.name; }
+  else bar.style.display = 'none';
+}
+function renderProjectTab(){
+  const box = $('projView'); if (!box) return;
+  const newWrap = $('projNewWrap');
+  const p = currentProject();
+  box.innerHTML = '';
+  if (p){
+    /* ---- projeto aberto: cabeçalho + agregado por etiqueta (tema) ---- */
+    if (newWrap) newWrap.style.display = 'none';
+    const bar = document.createElement('div'); bar.className = 'ghead'; bar.style.gap = '8px';
+    const nmInp = document.createElement('input'); nmInp.value = p.name; nmInp.maxLength = 60;
+    nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
+    nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ p.name = v.slice(0, 60); projPersist(); } });
+    const bWork = document.createElement('button'); bWork.className = 'mini primary'; bWork.textContent = TX('vid.proj.goBench');
+    bWork.addEventListener('click', () => { state.projectMode = true; updateProjBar(); switchTab('analise'); log(TX('vid.proj.benchHint')); });
+    const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close');
+    bClose.addEventListener('click', () => { projClose(); renderProjectTab(); });
+    const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
+    bDel.addEventListener('click', async () => {
+      if (!(await askConfirm(TX('vid.proj.delProj'), TX('vid.proj.delProjQ') + p.name + '"?', TX('vid.delete')))) return;
+      state.projects = projList().filter(x => x.id !== p.id); state.currentProjectId = null; state.projectMode = false;
+      projPersist(); updateProjBar(); renderProjectTab();
+    });
+    bar.appendChild(nmInp); bar.appendChild(bWork); bar.appendChild(bClose); bar.appendChild(bDel);
+    box.appendChild(bar);
+
+    const clips = projAllClips(p);
+    const meta = document.createElement('div'); meta.className = 'empty'; meta.style.cssText = 'text-align:left;margin:6px 0 10px';
+    meta.textContent = ((p.videos && p.videos.length) || 0) + ' ' + TX('vid.proj.videos') + ' · ' + clips.length + ' ' + TX('vid.f.clips');
+    box.appendChild(meta);
+    if (!clips.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.benchEmpty'); box.appendChild(em); return; }
+
+    const byTag = {}; clips.forEach(c => { const k = c.tagId || '—'; (byTag[k] = byTag[k] || []).push(c); });
+    Object.keys(byTag).forEach(tagId => {
+      const arr = byTag[tagId]; const tg = findTag(tagId);
+      const card = document.createElement('div'); card.className = 'expgrp';
+      const head = document.createElement('div'); head.className = 'ghead';
+      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = (tg && tg.color) || '#888';
+      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = (tg && tg.name) || '—';
+      const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = arr.length + ' ' + TX('vid.f.clips');
+      const bExp = document.createElement('button'); bExp.className = 'mini'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.exportSoon');
+      bExp.addEventListener('click', () => log(TX('vid.proj.exportSoon')));
+      head.appendChild(dot); head.appendChild(nm); head.appendChild(cnt); head.appendChild(bExp);
+      card.appendChild(head);
+      const bySrc = {}; arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
+      Object.keys(bySrc).forEach(src => {
+        const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:8px 0 4px'; sh.textContent = '🎬 ' + src;
+        card.appendChild(sh);
+        bySrc[src].forEach(it => {
+          const row = document.createElement('div'); row.className = 'expitem';
+          const nm2 = document.createElement('span'); nm2.style.flex = '1';
+          nm2.textContent = (it.name || (tg && tg.name) || 'clip') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
+          row.appendChild(nm2); card.appendChild(row);
+        });
+      });
+      box.appendChild(card);
+    });
+  } else {
+    /* ---- nenhum projeto aberto: lista de projetos para escolher/criar ---- */
+    if (newWrap) newWrap.style.display = '';
+    const lists = projList();
+    if (!lists.length){ box.innerHTML = '<div class="empty">' + TX('vid.proj.noProjects') + '</div>'; return; }
+    lists.forEach(p2 => {
+      const clips = projAllClips(p2);
+      const card = document.createElement('div'); card.className = 'librow'; card.style.cursor = 'pointer';
+      const info = document.createElement('div'); info.style.flex = '1';
+      info.innerHTML = '<div class="lname">' + (p2.name || 'Projeto') + '</div><div class="lmeta">' + ((p2.videos && p2.videos.length) || 0) + ' ' + TX('vid.proj.videos') + ' · ' + clips.length + ' ' + TX('vid.f.clips') + '</div>';
+      info.addEventListener('click', () => { projOpen(p2.id); renderProjectTab(); });
+      const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
+      bOpen.addEventListener('click', () => { projOpen(p2.id); renderProjectTab(); });
+      const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
+      bDel.addEventListener('click', async () => {
+        if (!(await askConfirm(TX('vid.proj.delProj'), TX('vid.proj.delProjQ') + (p2.name || '') + '"?', TX('vid.delete')))) return;
+        state.projects = projList().filter(x => x.id !== p2.id); projPersist(); renderProjectTab();
+      });
+      card.appendChild(info); card.appendChild(bOpen); card.appendChild(bDel);
+      box.appendChild(card);
+    });
+  }
+}
+if ($('projNewBtn')) $('projNewBtn').addEventListener('click', () => {
+  const el = $('projNewName'); const name = ((el && el.value) || '').trim();
+  if (!name){ if (el) el.focus(); return; }
+  projCreate(name); if (el) el.value = '';
+  renderProjectTab();
+  log(TX('vid.proj.created') + name);
+});
+
 /* ---------------- util ---------------- */
 function fmt(t, withTenth){
   if (!isFinite(t) || t < 0) t = 0;
@@ -991,6 +1218,9 @@ function log(msg, cls){
   $('log').prepend(el);
 }
 function safeName(s){ return s.replace(/[^\p{L}\p{N}\-_ ]/gu, '').trim().replace(/\s+/g, '_').toLowerCase() || 'clipe'; }
+/* nome de arquivo digitado pelo treinador: tira só caracteres proibidos, mantém acentos e maiúsculas */
+function cleanFileName(s){ return String(s || '').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim(); }
+let _exportBaseName = '';  /* nome escolhido na aba de exportação, usado na compilação/arquivo único */
 
 /* ---------------- video load ---------------- */
 const video = $('video');
@@ -1009,6 +1239,7 @@ function loadFile(file){
   renderTags();
   exitClip();
   restoreSession();
+  if (state.projectMode){ projRegisterCurrentVideo(); updateProjBar(); }
   log(TX('vid.f.videoLoadedSp') + file.name, 'ok');
 }
 
@@ -2193,8 +2424,23 @@ function switchTab(name){
   if (name === 'library') renderLibrary();
   if (name === 'dash') renderDashTab();
   if (name === 'export') renderExportTab();
+  if (name === 'project') renderProjectTab();
+  if (name === 'analise') updateProjBar();
 }
-document.querySelectorAll('.tabbtn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+document.querySelectorAll('.tabbtn').forEach(b => b.addEventListener('click', () => { if (b.dataset.tab) switchTab(b.dataset.tab); }));
+
+/* ---------------- lançador (home) ---------------- */
+function showVlHome(){ const h = $('vlHome'); if (h) h.classList.add('on'); }
+function hideVlHome(){ const h = $('vlHome'); if (h) h.classList.remove('on'); }
+document.querySelectorAll('#vlHome .vltile').forEach(t => t.addEventListener('click', () => {
+  const go = t.dataset.go; hideVlHome();
+  if (go === 'analise'){ state.projectMode = false; updateProjBar(); }  // uso avulso: fora de projeto
+  if (go) switchTab(go);
+}));
+if ($('navHome')) $('navHome').addEventListener('click', showVlHome);
+if ($('brandBox')){ const bb = $('brandBox'); bb.style.cursor = 'pointer'; bb.title = TX('vid.home.back'); bb.addEventListener('click', showVlHome); }
+if ($('projBarView')) $('projBarView').addEventListener('click', () => switchTab('project'));
+if ($('projBarExit')) $('projBarExit').addEventListener('click', () => { projClose(); updateProjBar(); });
 
 let dockedLayout = true;
 
@@ -3772,6 +4018,12 @@ function renderExportTab(){
       box.appendChild(grp);
     });
   }
+  // sugere um nome de arquivo editável — só preenche se o campo estiver vazio
+  const nameEl = $('expName');
+  if (nameEl && !nameEl.value){
+    const base = state.file ? cleanFileName(state.file.name.replace(/\.[^.]+$/, '')) : '';
+    nameEl.value = base ? (base + ' - clipes') : 'fluxgk_compilado';
+  }
   updateExpNote();
 }
 
@@ -3813,22 +4065,28 @@ $('expRun').addEventListener('click', async () => {
   const perFile = $('expPerFile').checked && evs.length > 1;
   const fmtExt = ($('expFormat').value === 'webm') ? 'webm' : 'mp4';
 
-  // dentro do hub (iframe sandbox) o seletor de pasta é bloqueado pelo navegador;
-  // nesse caso baixamos direto na pasta de downloads, sem tentativa frustrada.
   const inHub = (window.parent && window.parent !== window);
 
-  // PASSO 1: pergunta o local de salvamento JÁ no clique (um arquivo só; por-arquivo usa pasta padrão)
-  if (!perFile && !inHub){
-    const suggested = (evs.length === 1
-      ? (evs[0].name ? safeName(evs[0].name) : safeName(findTag(evs[0].tagId).name) + '_lance')
-      : 'fluxgk_compilado') + '.' + fmtExt;
+  // nome do arquivo escolhido pelo treinador (ou um padrão sensato)
+  const typed = cleanFileName($('expName') ? $('expName').value : '');
+  const fallback = (evs.length === 1
+    ? (evs[0].name ? safeName(evs[0].name) : safeName(findTag(evs[0].tagId).name) + '_lance')
+    : 'fluxgk_compilado');
+  _exportBaseName = typed || fallback;
+  const chooseFolder = $('expChooseFolder') ? $('expChooseFolder').checked : false;
+
+  // PASSO 1: se pediu para escolher a pasta (e não é multi-arquivo), abre o seletor JÁ no clique.
+  // Tentamos mesmo dentro do hub; se o navegador bloquear, cai no download com o nome escolhido.
+  if (!perFile && chooseFolder && window.showSaveFilePicker){
+    const suggested = _exportBaseName + '.' + fmtExt;
     const handle = await pickSaveLocation(suggested, fmtExt === 'webm' ? 'video/webm' : 'video/mp4');
     if (handle === 'cancel'){ log(TX('vid.msg.exportCanceled')); return; }
-    _pendingSaveHandle = handle; // pode ser um handle ou null (sem suporte → download)
+    _pendingSaveHandle = handle; // handle (grava onde escolheu) ou null (bloqueado → download)
+    if (handle === null && inHub) log(TX('vid.f.folderBlockedHub'), 'err');
   } else {
-    _pendingSaveHandle = null; // múltiplos arquivos ou dentro do hub: vão para a pasta de downloads
-    if (inHub) log(TX('vid.f.savedDownloads'));
-    else log(TX('vid.f.multiDownloads'));
+    _pendingSaveHandle = null; // download para a pasta padrão, com o nome escolhido
+    if (perFile) log(TX('vid.f.multiDownloads'));
+    else log(TX('vid.f.savedDownloads'));
   }
 
   // PASSO 2: processa e grava no destino escolhido
@@ -3841,7 +4099,7 @@ $('expRun').addEventListener('click', async () => {
         await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)));
       }
     } else {
-      await exportEvents(evs, 'fluxgk_compilado.mp4', TX('vid.f.compilation') + evs.length + ' clips)');
+      await exportEvents(evs, (_exportBaseName || 'fluxgk_compilado') + '.mp4', TX('vid.f.compilation') + evs.length + ' clips)');
     }
     _pendingSaveHandle = undefined;
     return;
@@ -3906,7 +4164,7 @@ async function exportReencoded(evs){
       const tag = findTag(group[0].tagId);
       const name = perFile
         ? (group[0].name ? safeName(group[0].name) : safeName(tag.name) + '_lance' + (gi + 1))
-        : 'fluxgk_compilado';
+        : (_exportBaseName || 'fluxgk_compilado');
       await recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, gi + 1, groups.length);
     }
   } catch (err) {
@@ -4768,6 +5026,7 @@ function pushToCloud(){
       const payload = {
         library: libAll(),
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
+        projects: { list: state.projects || [], currentId: state.currentProjectId || null },
         updatedAt: Date.now(),
       };
       if (!_videoDataPath) return;   /* sem contexto do hub: nao grava fora de users/{uid} */
@@ -4785,6 +5044,7 @@ function pushToCloudNow(){
     const payload = {
       library: libAll(),
       dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
+      projects: { list: state.projects || [], currentId: state.currentProjectId || null },
       updatedAt: Date.now(),
     };
     return fbDB.ref(_videoDataPath).set(payload).then(() => true).catch(() => false);
@@ -4810,6 +5070,13 @@ function pullFromCloud(){
           renderDashboards(); renderTags();
           if (typeof renderDashTab === 'function') renderDashTab();
         }
+        if (data.projects && Array.isArray(data.projects.list)){
+          state.projects = data.projects.list;
+          state.currentProjectId = data.projects.currentId || null;
+          try { localStorage.setItem(PROJ_KEY, JSON.stringify({ projects: state.projects, currentId: state.currentProjectId })); } catch (e) {}
+          if (typeof renderProjectTab === 'function') renderProjectTab();
+          if (typeof updateProjBar === 'function') updateProjBar();
+        }
         log(TX('vid.msg.cloudSynced'));
         renderLibrary && renderLibrary();
       }
@@ -4824,14 +5091,18 @@ function pullFromCloud(){
 
 /* ---------------- init ---------------- */
 loadDashboards();
+loadProjects();
+state.projectMode = false;   /* abre neutro; o lançador/Projeto decide entrar no modo */
 renderDashboards();
 renderTags();
 renderSpeeds();
 updateBadge();
 renderDrawList();
+renderProjectTab();
 applyDock();
 syncPanels();
 initFirebase();
+showVlHome();   /* abre no lançador, estilo LongoMatch */
 log(TX('vid.msg.ready'));
 </script>
 </body>

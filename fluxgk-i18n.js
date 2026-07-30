@@ -589,7 +589,21 @@
 
     /* ═══ VIDEO LAB (mod_video) ═══ */
     'vid.title':'VIDEO LAB','vid.module':'HUB MODULE — v1.0',
-    'vid.nav.analysis':'Analysis','vid.nav.dashboards':'Dashboards','vid.nav.export':'Export','vid.nav.library':'Library',
+    'vid.nav.analysis':'Analysis','vid.nav.dashboards':'Dashboards','vid.nav.export':'Export','vid.nav.library':'Library','vid.nav.project':'Project',
+    'vid.home.sub':'What do you want to do?','vid.home.back':'Home',
+    'vid.home.analysis':'Analyze a video','vid.home.analysisD':'One match: load, tag clips and export.',
+    'vid.home.project':'Project','vid.home.projectD':'Themed playlists across several matches.',
+    'vid.home.gallery':'Video gallery','vid.home.galleryD':'Your saved matches and their clips.',
+    'vid.home.dash':'Dashboards','vid.home.dashD':'Your tag sets for marking clips.',
+    'vid.proj.title':'Projects — work across several videos','vid.proj.sub':'Open a project and work inside it: load the match videos and cut — every clip belongs to the project and is organized by tag (theme).',
+    'vid.proj.ph.newProject':'New project (e.g. Scouting Semey 25/26)','vid.proj.newProject':'+ New project','vid.proj.noProjects':'No projects yet. Create one above.','vid.proj.created':'Project created: ',
+    'vid.proj.videos':'video(s)','vid.proj.goBench':'▶ Go to workbench','vid.proj.benchHint':'You are inside the project — load the match videos and cut; the clips go into the project.','vid.proj.benchEmpty':'No clips yet. Go to the workbench, load a video and cut.',
+    'vid.proj.close':'Close project','vid.proj.delProj':'Delete project','vid.proj.delProjQ':'Delete the project "',
+    'vid.proj.working':'Project','vid.proj.view':'View project','vid.proj.exit':'Exit project',
+    'vid.proj.ph.newList':'New playlist (e.g. Goals conceded)','vid.proj.newList':'+ New playlist','vid.proj.newListPrompt':'Project playlist name',
+    'vid.proj.noLists':'No project playlists yet.','vid.proj.emptyList':'This playlist has no clips yet.','vid.proj.export':'⤓ Export','vid.proj.exportSoon':'Playlist export arrives in the next update (stage 2).',
+    'vid.proj.delList':'Delete playlist','vid.proj.delListQ':'Delete the project playlist "','vid.proj.removeItem':'Remove from playlist',
+    'vid.f.addToProject':'Add to project','vid.f.addedToProject':' clip(s) added to "',
     'vid.tags':'Tags','vid.playlists':'Playlists','vid.clips':'CLIPS',
     'vid.layout':'▦ Layout','vid.header':'▱ Header','vid.fullscreen':'⛶ Fullscreen','vid.newTab':'⤢ New tab',
     /* carregar video */
@@ -631,6 +645,8 @@
     'vid.overlayName':'Overlay the clip name on the video','vid.burnDrawings':'Burn the drawings into the video',
     'vid.watermark':'Watermark','vid.includeAudio':'Include audio',
     'vid.onePerClip':'One file per clip (instead of a single compilation)',
+    'vid.fileNameLbl':'File name','vid.ph.fileName':'e.g. Qadsia 1x2 Nasr','vid.chooseFolder':'Choose where to save (ask for the folder)',
+    'vid.f.folderBlockedHub':'Folder picker is blocked inside the hub — saved to Downloads. Open the lab in its own tab (⤢ New tab) to pick a folder.',
     /* biblioteca */
     'vid.matchLibrary':'Match library','vid.noMatches':'No matches saved yet.',
     'vid.dragMove':'drag to move','vid.noClipsTagged':'No clips tagged yet. Load a video and click a tag during playback.',
@@ -1420,7 +1436,21 @@
 
     /* ═══ LABORATÓRIO DE VÍDEO (mod_video) ═══ */
     'vid.title':'LAB DE VÍDEO','vid.module':'MÓDULO DO HUB — v1.0',
-    'vid.nav.analysis':'Análise','vid.nav.dashboards':'Painéis','vid.nav.export':'Exportar','vid.nav.library':'Biblioteca',
+    'vid.nav.analysis':'Análise','vid.nav.dashboards':'Painéis','vid.nav.export':'Exportar','vid.nav.library':'Biblioteca','vid.nav.project':'Projeto',
+    'vid.home.sub':'O que você quer fazer?','vid.home.back':'Início',
+    'vid.home.analysis':'Analisar um vídeo','vid.home.analysisD':'Um jogo: subir, marcar clipes e exportar.',
+    'vid.home.project':'Projeto','vid.home.projectD':'Playlists temáticas cruzando vários jogos.',
+    'vid.home.gallery':'Galeria de vídeos','vid.home.galleryD':'Seus jogos salvos e seus clipes.',
+    'vid.home.dash':'Painéis','vid.home.dashD':'Seus conjuntos de etiquetas para marcar clipes.',
+    'vid.proj.title':'Projetos — trabalhe com vários vídeos','vid.proj.sub':'Abra um projeto e trabalhe dentro dele: suba os vídeos dos jogos e corte — cada clipe pertence ao projeto e se organiza pela etiqueta (tema).',
+    'vid.proj.ph.newProject':'Novo projeto (ex.: Scouting Semey 25/26)','vid.proj.newProject':'+ Novo projeto','vid.proj.noProjects':'Nenhum projeto ainda. Crie um acima.','vid.proj.created':'Projeto criado: ',
+    'vid.proj.videos':'vídeo(s)','vid.proj.goBench':'▶ Ir para a bancada','vid.proj.benchHint':'Você está dentro do projeto — suba os vídeos dos jogos e corte; os clipes vão para o projeto.','vid.proj.benchEmpty':'Ainda sem clipes. Vá para a bancada, suba um vídeo e corte.',
+    'vid.proj.close':'Fechar projeto','vid.proj.delProj':'Excluir projeto','vid.proj.delProjQ':'Excluir o projeto "',
+    'vid.proj.working':'Projeto','vid.proj.view':'Ver projeto','vid.proj.exit':'Sair do projeto',
+    'vid.proj.ph.newList':'Nova playlist (ex.: Gols sofridos)','vid.proj.newList':'+ Nova playlist','vid.proj.newListPrompt':'Nome da playlist do projeto',
+    'vid.proj.noLists':'Nenhuma playlist de projeto ainda.','vid.proj.emptyList':'Esta playlist ainda não tem clipes.','vid.proj.export':'⤓ Exportar','vid.proj.exportSoon':'A exportação da playlist chega na próxima atualização (etapa 2).',
+    'vid.proj.delList':'Excluir playlist','vid.proj.delListQ':'Excluir a playlist do projeto "','vid.proj.removeItem':'Remover da playlist',
+    'vid.f.addToProject':'Adicionar ao Projeto','vid.f.addedToProject':' clipe(s) adicionados a "',
     'vid.tags':'Tags','vid.playlists':'Playlists','vid.clips':'CLIPES',
     'vid.layout':'▦ Layout','vid.header':'▱ Cabeçalho','vid.fullscreen':'⛶ Tela cheia','vid.newTab':'⤢ Nova aba',
     /* carregar video */
@@ -1462,6 +1492,8 @@
     'vid.overlayName':'Sobrepor o nome do clipe no vídeo','vid.burnDrawings':'Gravar os desenhos no vídeo',
     'vid.watermark':'Marca d’água','vid.includeAudio':'Incluir áudio',
     'vid.onePerClip':'Um arquivo por clipe (em vez de uma compilação única)',
+    'vid.fileNameLbl':'Nome do arquivo','vid.ph.fileName':'ex.: Qadsia 1x2 Nasr','vid.chooseFolder':'Escolher onde salvar (perguntar a pasta)',
+    'vid.f.folderBlockedHub':'A escolha de pasta é bloqueada dentro do hub — salvo em Downloads. Abra o lab em aba própria (⤢ Nova aba) para escolher a pasta.',
     /* biblioteca */
     'vid.matchLibrary':'Biblioteca de jogos','vid.noMatches':'Nenhum jogo salvo ainda.',
     'vid.dragMove':'arraste para mover','vid.noClipsTagged':'Nenhum clipe marcado ainda. Carregue um vídeo e clique numa tag durante a reprodução.',
