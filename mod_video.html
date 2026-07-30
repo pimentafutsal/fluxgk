@@ -1968,7 +1968,7 @@ function startTrimEdit(){
   applySeekRange();
   video.currentTime = c.trimIn;
   renderTrim();
-  log(TX('vid.f.timeEditingSp') + CLIP_MARGIN + TX('vid.f.beforeAfter'));
+  log(TX('vid.f.timeEditingSp') + CLIP_MARGIN + TX('vid.f.beforeAfter') + ' ' + TX('vid.f.dragEdgeHint'));
 }
 function stopTrimEdit(save){
   const c = state.clip;
@@ -2012,6 +2012,29 @@ function renderTrim(){
 (function(){
   const track = $('trimTrack');
   let dragging = null; // 'in' | 'out' | 'seek'
+  let edgeDir = 0, edgeTimer = null;   // expande a janela ao segurar a alça na borda
+  function stopEdge(){ if (edgeTimer){ clearInterval(edgeTimer); edgeTimer = null; } edgeDir = 0; }
+  function startEdge(){
+    if (edgeTimer) return;
+    edgeTimer = setInterval(() => {
+      const c = state.clip;
+      if (!c || !c.editing || !dragging || !edgeDir){ stopEdge(); return; }
+      const span = Math.max(0.5, c.viewEnd - c.viewStart);
+      const step = Math.max(0.25, span * 0.03);   // proporcional: mais aberto → cresce mais rápido (menos zoom)
+      if (edgeDir < 0){
+        c.viewStart = Math.max(0, c.viewStart - step);
+        c.trimIn = c.viewStart;
+        video.currentTime = c.trimIn;
+      } else {
+        const dur = state.duration || (c.viewEnd + step);
+        c.viewEnd = Math.min(dur, c.viewEnd + step);
+        c.trimOut = c.viewEnd;
+        video.currentTime = c.trimOut;
+      }
+      applySeekRange();
+      renderTrim();
+    }, 60);
+  }
   function timeAt(e){
     const r = track.getBoundingClientRect();
     const c = state.clip;
@@ -2034,6 +2057,14 @@ function renderTrim(){
     } else {
       video.currentTime = t;
     }
+    // segurar a alça na borda expande a janela (estende o lance além do tempo atual)
+    if (dragging === 'in' || dragging === 'out'){
+      const r = track.getBoundingClientRect();
+      const f = (e.clientX - r.left) / r.width;
+      if (dragging === 'in' && f <= 0.03 && c.viewStart > 0){ edgeDir = -1; startEdge(); }
+      else if (dragging === 'out' && f >= 0.97 && c.viewEnd < (state.duration || Infinity)){ edgeDir = 1; startEdge(); }
+      else stopEdge();
+    }
     renderTrim();
   }
   function down(which){
@@ -2054,7 +2085,9 @@ function renderTrim(){
     down('seek')(e);
   });
   track.addEventListener('pointermove', move);
-  track.addEventListener('pointerup', () => { dragging = null; });
+  track.addEventListener('pointerup', () => { dragging = null; stopEdge(); });
+  track.addEventListener('pointercancel', () => { dragging = null; stopEdge(); });
+  track.addEventListener('lostpointercapture', () => { stopEdge(); });
 })();
 
 /* ---------------- tags ---------------- */
