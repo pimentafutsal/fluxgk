@@ -129,6 +129,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .mbck::after{content:'';position:absolute;top:-8px;bottom:-8px;left:0;right:0}
 .mtnm{font-size:11px;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;letter-spacing:.1em}
 .mfrm{flex:1;border:none;width:100%}
+.mfrm.vidmax{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99999;background:#000}
 
 /* ---------- SHEET ---------- */
 .sh{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:100}
@@ -778,6 +779,8 @@ window.addEventListener('message',function(e){
   if(!e.data)return;
   if(e.data.type==='FLUXGK_STAT_UPDATE')loadStats();
   if(e.data.type==='FLUXGK_MODULE_READY')pushContext(e.source);
+  /* modulo pede para preencher a janela (tela cheia sem a API — evita a tela fantasma no macOS) */
+  if(e.data.type==='FLUXGK_VIDEO_MAXIMIZE'){var fr=document.getElementById('mfrm');if(fr)fr.classList.toggle('vidmax',!!e.data.on);}
 });
 function openModule(key){
   if(!dataPath()){showToast(TX('hub.msg.clubSeasonFirst'));openSwitch();return;}

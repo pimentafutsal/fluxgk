@@ -1686,6 +1686,8 @@ $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.25));
 $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.25));
 $('zoomReset').addEventListener('click', () => setZoom(1, 0, 0));
 $('fsBtn').addEventListener('click', () => {
+  const inHub = (window.parent && window.parent !== window);
+  if (inHub){ setHubMax(!_vidMax); return; }  /* dentro do hub: expande o iframe, sem a API (evita a tela fantasma) */
   if (document.fullscreenElement) { document.exitFullscreen(); return; }
   if (stage.requestFullscreen){
     const r = stage.requestFullscreen();
@@ -1697,7 +1699,24 @@ $('fsBtn').addEventListener('click', () => {
 function isAppFs(){
   return document.fullscreenElement === document.body || document.webkitFullscreenElement === document.body;
 }
+let _vidMax = false;
+function setHubMax(on){
+  _vidMax = !!on;
+  try { window.parent.postMessage({ type: 'FLUXGK_VIDEO_MAXIMIZE', on: _vidMax }, '*'); } catch (e) {}
+  document.body.classList.toggle('app-fs', _vidMax);
+  if (!_vidMax) document.body.classList.remove('hide-header');
+  $('toggleHeader').style.display = _vidMax ? '' : 'none';
+  $('appFullscreen').textContent = _vidMax ? TX('vid.f.exit') : TX('vid.fullscreen');
+  setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
+}
 $('appFullscreen').addEventListener('click', () => {
+  const inHub = (window.parent && window.parent !== window);
+  if (inHub){
+    /* dentro do hub NÃO usamos a API de fullscreen: de dentro de um iframe ela deixa
+       uma "tela fantasma" congelada no macOS. Pedimos ao hub para expandir o iframe. */
+    setHubMax(!_vidMax);
+    return;
+  }
   if (document.fullscreenElement || document.webkitFullscreenElement){
     (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   } else {
@@ -1710,6 +1729,8 @@ $('appFullscreen').addEventListener('click', () => {
     }
   }
 });
+/* Esc sai do modo expandido dentro do hub (não há fullscreen real para o Esc tratar) */
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _vidMax) setHubMax(false); });
 $('toggleHeader').addEventListener('click', () => {
   document.body.classList.toggle('hide-header');
 });
@@ -1743,6 +1764,7 @@ document.addEventListener('webkitfullscreenchange', syncAppFs);
     if (!insideStage) return;
     if (document.fullscreenElement || document.webkitFullscreenElement) { armed = false; return; }
     armed = false;                // dispara só uma vez
+    if (window.parent && window.parent !== window) return;  /* dentro do hub: nunca auto-fullscreen (evita a tela fantasma) */
     const el = document.body;
     try {
       const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
