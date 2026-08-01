@@ -873,7 +873,8 @@
     'tat.msg.cleared':'Court cleared','tat.msg.imgSent':'Image sent to exercise',
     'tat.msg.imgSaved':'Image saved','tat.msg.projSaved':'Project saved (.json)',
     'tat.msg.projLoaded':'Project loaded','tat.msg.invalidFile':'Invalid file',
-    'tat.floor':'FLOOR','tat.useInExercise':'✓ USE IN EXERCISE','tat.close':'✕ CLOSE'
+    'tat.floor':'FLOOR','tat.useInExercise':'✓ USE IN EXERCISE','tat.close':'✕ CLOSE',
+    'tat.frameHalf':'◧ Frame: Half court','tat.frameFull':'▭ Frame: Full court','tat.frameTip':'Framing of the exported image (goal zone or full court) — click to switch','tat.frameHalfSet':'Export framing: half court (goal zone)','tat.frameFullSet':'Export framing: full court'
   },
 
   /* ══════════════ PT-BR ══════════════ */
@@ -1729,7 +1730,8 @@
     'tat.msg.cleared':'Quadra limpa','tat.msg.imgSent':'Imagem enviada para o exercício',
     'tat.msg.imgSaved':'Imagem salva','tat.msg.projSaved':'Projeto salvo (.json)',
     'tat.msg.projLoaded':'Projeto carregado','tat.msg.invalidFile':'Arquivo inválido',
-    'tat.floor':'PISO','tat.useInExercise':'✓ USAR NO EXERCÍCIO','tat.close':'✕ FECHAR'
+    'tat.floor':'PISO','tat.useInExercise':'✓ USAR NO EXERCÍCIO','tat.close':'✕ FECHAR',
+    'tat.frameHalf':'◧ Enquadr.: Meia-quadra','tat.frameFull':'▭ Enquadr.: Quadra inteira','tat.frameTip':'Enquadramento da imagem exportada (zona do gol ou quadra inteira) — clique para trocar','tat.frameHalfSet':'Enquadramento: meia-quadra (zona do gol)','tat.frameFullSet':'Enquadramento: quadra inteira'
   }
 
   };

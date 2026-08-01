@@ -1539,6 +1539,7 @@ window.addEventListener('keydown', e=>{
 /* ============================================================
    FOTO (PNG) e PROJETO (JSON)
    ============================================================ */
+let _capFrame = 'half';   // enquadramento da captura: 'half' = zona do gol (padrão), 'full' = quadra inteira
 function captureReport(){
   const size = new THREE.Vector2();
   renderer.getSize(size);
@@ -1551,18 +1552,28 @@ function captureReport(){
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
 
-  /* PADRONIZAÇÃO: a imagem exportada é SEMPRE a mesma visão — 2D top-down,
-     quadra inteira, números em pé — não importa o zoom/orbit/2D-3D/meia-quadra
-     que estiver no board. Assim a transferência para o exercício fica consistente. */
-  is2D = true; orient2D = 0;
+  /* PADRONIZAÇÃO: a imagem exportada é SEMPRE a mesma visão (2D top-down, números
+     em pé), independente do zoom/orbit/2D-3D. O ENQUADRAMENTO é escolhido em _capFrame:
+       'half' = meia-quadra / zona do gol (padrão do treino de goleiros)
+       'full' = quadra inteira                                                   */
+  is2D = true;
   applyViewMode();      // mostra o board 2D + proxies e esconde os modelos 3D
-  syncProxies();        // reorienta os discos numerados para orient2D=0
-
   const capCam = new THREE.OrthographicCamera(-ORTHO_H*2, ORTHO_H*2, ORTHO_H, -ORTHO_H, 0.1, 200);
-  capCam.up.set(0, 0, -1);
-  capCam.position.set(0, 60, 0);
-  capCam.lookAt(0, 0, 0);
+  if(_capFrame === 'half'){
+    capCam.up.set(1, 0, 0);          // baliza embaixo, meia-quadra
+    capCam.position.set(-10.3, 60, 0);
+    capCam.lookAt(-10.3, 0, 0);
+    capCam.zoom = 1.55;
+    orient2D = -Math.PI/2;
+  } else {
+    capCam.up.set(0, 0, -1);         // quadra inteira, top-down
+    capCam.position.set(0, 60, 0);
+    capCam.lookAt(0, 0, 0);
+    capCam.zoom = 1;
+    orient2D = 0;
+  }
   capCam.updateProjectionMatrix();
+  syncProxies();        // reorienta os discos numerados conforme orient2D
   renderer.render(scene, capCam);
   const url = renderer.domElement.toDataURL('image/png');
 
@@ -1581,6 +1592,15 @@ function captureReport(){
 }
 if(EMBED){
   /* acoes na propria barra (que agora quebra em linhas, entao nunca ficam cortadas) */
+  /* alternador de enquadramento da captura (meia-quadra ⇄ quadra inteira) */
+  const frameBtn = document.createElement('button');
+  frameBtn.className = 'tbtn';
+  frameBtn.title = TX('tat.frameTip');
+  function _updFrameBtn(){ frameBtn.textContent = (_capFrame === 'half') ? TX('tat.frameHalf') : TX('tat.frameFull'); }
+  _updFrameBtn();
+  frameBtn.onclick = ()=>{ _capFrame = (_capFrame === 'half') ? 'full' : 'half'; _updFrameBtn(); toast((_capFrame === 'half') ? TX('tat.frameHalfSet') : TX('tat.frameFullSet')); };
+  document.getElementById('topbar').appendChild(frameBtn);
+
   const useBtn = document.createElement('button');
   useBtn.className = 'tbtn primary';
   useBtn.textContent = TX('tat.useInExercise');
