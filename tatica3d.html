@@ -1544,24 +1544,38 @@ function captureReport(){
   renderer.getSize(size);
   const prevRatio = renderer.getPixelRatio();
   const W = 1600, H = 800;
+
+  /* guarda o estado do usuário para restaurar depois */
+  const prev2D = is2D, prevOrient = orient2D, prevActive = activeCamera;
+
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
-  if(is2D){
-    ortho.left = -ORTHO_H*2; ortho.right = ORTHO_H*2;
-    ortho.updateProjectionMatrix();
-  } else {
-    camera.aspect = 2;
-    camera.updateProjectionMatrix();
-  }
-  renderer.render(scene, activeCamera);
+
+  /* PADRONIZAÇÃO: a imagem exportada é SEMPRE a mesma visão — 2D top-down,
+     quadra inteira, números em pé — não importa o zoom/orbit/2D-3D/meia-quadra
+     que estiver no board. Assim a transferência para o exercício fica consistente. */
+  is2D = true; orient2D = 0;
+  applyViewMode();      // mostra o board 2D + proxies e esconde os modelos 3D
+  syncProxies();        // reorienta os discos numerados para orient2D=0
+
+  const capCam = new THREE.OrthographicCamera(-ORTHO_H*2, ORTHO_H*2, ORTHO_H, -ORTHO_H, 0.1, 200);
+  capCam.up.set(0, 0, -1);
+  capCam.position.set(0, 60, 0);
+  capCam.lookAt(0, 0, 0);
+  capCam.updateProjectionMatrix();
+  renderer.render(scene, capCam);
   const url = renderer.domElement.toDataURL('image/png');
-  /* restaura viewport */
+
+  /* restaura EXATAMENTE o que o usuário estava vendo */
+  is2D = prev2D; orient2D = prevOrient; activeCamera = prevActive;
+  applyViewMode(); syncProxies();
   renderer.setPixelRatio(prevRatio);
   renderer.setSize(size.x, size.y, false);
-  const a = window.innerWidth/window.innerHeight;
+  const a = window.innerWidth / window.innerHeight;
   camera.aspect = a; camera.updateProjectionMatrix();
   ortho.left = -ORTHO_H*a; ortho.right = ORTHO_H*a;
   ortho.updateProjectionMatrix();
+  camCtl.apply();
   renderer.render(scene, activeCamera);
   return url;
 }
