@@ -1170,12 +1170,14 @@ function buildReportHTML(sessions){
           <strong style="font-size:11pt;font-weight:700">${ex.name}</strong>
           <span style="margin-left:auto;font-size:8pt;color:#737373">${ex.duration}min · ${ex.players}p</span>
         </div>
-        ${ex.img?`<div style="background:#111;text-align:center"><img src="${ex.img}" style="max-width:100%;max-height:180pt;width:auto;height:auto;object-fit:contain;display:inline-block;margin:0 auto"/></div>`:''}
-        <div style="padding:10pt 12pt">
-          ${ex.desc?`<p style="font-size:9pt;color:#333;line-height:1.65;margin-bottom:8pt">${ex.desc}</p>`:''}
-          ${ex.goal?`<div style="font-size:8.5pt;border-left:2.5pt solid ${P};padding:6pt 10pt;background:${P}11;margin-bottom:7pt;color:#111">→ ${ex.goal}</div>`:''}
-          ${ex.variations?`<p style="font-size:8.5pt;color:#666;font-style:italic;margin-bottom:5pt">↗ ${ex.variations}</p>`:''}
-          ${ex.materials?`<p style="font-size:8pt;color:#555;font-family:monospace">MAT: ${ex.materials}</p>`:''}
+        <div style="display:flex;align-items:stretch;gap:0">
+          ${ex.img?`<div style="flex:0 0 52%;background:#fff;display:flex;align-items:center;justify-content:center;padding:8pt;border-right:0.5pt solid #e0ddd8"><img src="${ex.img}" style="max-width:100%;max-height:200pt;width:auto;height:auto;object-fit:contain;display:block"/></div>`:''}
+          <div style="flex:1;padding:10pt 12pt;min-width:0">
+            ${ex.desc?`<p style="font-size:9pt;color:#333;line-height:1.6;margin-bottom:8pt">${ex.desc}</p>`:''}
+            ${ex.goal?`<div style="font-size:8.5pt;border-left:2.5pt solid ${P};padding:6pt 10pt;background:${P}11;margin-bottom:7pt;color:#111">→ ${ex.goal}</div>`:''}
+            ${ex.variations?`<p style="font-size:8.5pt;color:#666;font-style:italic;margin-bottom:5pt">↗ ${ex.variations}</p>`:''}
+            ${ex.materials?`<p style="font-size:8pt;color:#555;font-family:monospace">MAT: ${ex.materials}</p>`:''}
+          </div>
         </div>
       </div>`;
     });

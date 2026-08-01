@@ -1584,8 +1584,11 @@ function captureReport(){
   capCam.updateProjectionMatrix();
   syncProxies();        // reorienta os discos numerados conforme orient2D
   renderer.setSize(W, H, false);
+  const _prevBg = scene.background;              // fundo BRANCO só na captura (combina com a página do PDF)
+  scene.background = new THREE.Color(0xffffff);
   renderer.render(scene, capCam);
   const url = renderer.domElement.toDataURL('image/png');
+  scene.background = _prevBg;
 
   /* restaura EXATAMENTE o que o usuário estava vendo */
   is2D = prev2D; orient2D = prevOrient; activeCamera = prevActive;
