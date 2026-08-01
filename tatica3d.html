@@ -1544,36 +1544,46 @@ function captureReport(){
   const size = new THREE.Vector2();
   renderer.getSize(size);
   const prevRatio = renderer.getPixelRatio();
-  const W = 1600, H = 800;
 
   /* guarda o estado do usuário para restaurar depois */
   const prev2D = is2D, prevOrient = orient2D, prevActive = activeCamera;
 
   renderer.setPixelRatio(1);
-  renderer.setSize(W, H, false);
 
   /* PADRONIZAÇÃO: a imagem exportada é SEMPRE a mesma visão (2D top-down, números
-     em pé), independente do zoom/orbit/2D-3D. O ENQUADRAMENTO é escolhido em _capFrame:
-       'half' = meia-quadra / zona do gol (padrão do treino de goleiros)
-       'full' = quadra inteira                                                   */
+     em pé), independente do zoom/orbit/2D-3D. Enquadramos um RETÂNGULO do mundo
+     exato e ajustamos a proporção do canvas para não cortar nem distorcer.
+       'half' = zona do gol (gol embaixo, largura cheia)   — padrão do treino de GK
+       'full' = quadra inteira (top-down)                                          */
   is2D = true;
   applyViewMode();      // mostra o board 2D + proxies e esconde os modelos 3D
-  const capCam = new THREE.OrthographicCamera(-ORTHO_H*2, ORTHO_H*2, ORTHO_H, -ORTHO_H, 0.1, 200);
+
+  let capCam, W, H;
   if(_capFrame === 'half'){
-    capCam.up.set(1, 0, 0);          // baliza embaixo, meia-quadra
-    capCam.position.set(-10.3, 60, 0);
-    capCam.lookAt(-10.3, 0, 0);
-    capCam.zoom = 1.55;
+    const xMin = -HALF_L - 1.5;   // 1,5 m atrás do gol (x=-20)
+    const xMax = -3;              // ~17 m à frente do gol (cobre área + marca de 10 m)
+    const zHalf = HALF_W + 1;     // largura cheia (±10) + margem
+    const cx = (xMin + xMax) / 2; // centro em X
+    const xHalf = (xMax - xMin) / 2;
+    capCam = new THREE.OrthographicCamera(-zHalf, zHalf, xHalf, -xHalf, 0.1, 200);
+    capCam.up.set(1, 0, 0);       // +X para cima  ⇒  gol (x menor) fica embaixo
+    capCam.position.set(cx, 60, 0);
+    capCam.lookAt(cx, 0, 0);
     orient2D = -Math.PI/2;
+    W = 1600; H = Math.round(W * xHalf / zHalf);   // proporção = altura/largura do retângulo
   } else {
-    capCam.up.set(0, 0, -1);         // quadra inteira, top-down
+    const xHalf = HALF_L + 2;     // ±22 (quadra 40 + margem)
+    const zHalf = HALF_W + 1;     // ±11
+    capCam = new THREE.OrthographicCamera(-xHalf, xHalf, zHalf, -zHalf, 0.1, 200);
+    capCam.up.set(0, 0, -1);
     capCam.position.set(0, 60, 0);
     capCam.lookAt(0, 0, 0);
-    capCam.zoom = 1;
     orient2D = 0;
+    W = 1600; H = Math.round(W * zHalf / xHalf);
   }
   capCam.updateProjectionMatrix();
   syncProxies();        // reorienta os discos numerados conforme orient2D
+  renderer.setSize(W, H, false);
   renderer.render(scene, capCam);
   const url = renderer.domElement.toDataURL('image/png');
 
