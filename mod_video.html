@@ -1320,8 +1320,8 @@ function renderProjectTab(){
         const nmInp = document.createElement('input'); nmInp.value = pl.name; nmInp.maxLength = 60; nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
         nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ pl.name = v.slice(0, 60); projPersist(); } });
         const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = (pl.items ? pl.items.length : 0) + ' ' + TX('vid.f.clips');
-        const bExp = document.createElement('button'); bExp.className = 'mini'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.exportSoon');
-        bExp.addEventListener('click', () => log(TX('vid.proj.exportSoon')));
+        const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+        bExp.addEventListener('click', () => exportCombined(pl.items, p.name + ' - ' + pl.name));
         const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
         bDel.addEventListener('click', async () => {
           if (!(await askConfirm(TX('vid.proj.delList'), TX('vid.proj.delListQ') + pl.name + '"?', TX('vid.delete')))) return;
@@ -1375,8 +1375,8 @@ function renderProjectTab(){
       const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = (tg && tg.color) || '#888';
       const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = (tg && tg.name) || '—';
       const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = arr.length + ' ' + TX('vid.f.clips');
-      const bExp = document.createElement('button'); bExp.className = 'mini'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.exportSoon');
-      bExp.addEventListener('click', () => log(TX('vid.proj.exportSoon')));
+      const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+      bExp.addEventListener('click', () => exportCombined(arr, p.name + ' - ' + ((tg && tg.name) || 'tema')));
       head.appendChild(dot); head.appendChild(nm); head.appendChild(cnt); head.appendChild(bExp);
       card.appendChild(head);
       const bySrc = {}; arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
@@ -4647,6 +4647,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     let raf = null;
     let frozenUntil = 0;        // timestamp (ms) até quando segurar o quadro congelado
     let frozenDrawing = null;   // desenho sendo exibido durante o congelamento
+    let seekingDraw = null;     // aguardando o seek preciso até o frame do desenho
     const playedDrawings = new Set(); // desenhos já exibidos (não repetir)
 
     function activeDrawingAt(t){
@@ -4664,6 +4665,18 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       if (cancelRequested){ cleanup(); reject(new Error('CANCELLED')); return; }
       const ev = group[gi];
 
+      // aguardando o seek terminar para congelar no frame EXATO do desenho
+      if (seekingDraw){
+        if (!video.seeking){
+          frozenDrawing = seekingDraw;
+          seekingDraw = null;
+          frozenUntil = performance.now() + Math.max(0.5, frozenDrawing.freeze || 3) * 1000;
+        }
+        drawFrameWith(frozenDrawing || seekingDraw);
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
       // está num congelamento de desenho?
       if (frozenDrawing){
         drawFrameWith(frozenDrawing);
@@ -4676,13 +4689,18 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         return;
       }
 
-      // chegou num desenho? congela aqui
+      // chegou num desenho? trava no frame EXATO (seek) para não desincronizar
       const d = activeDrawingAt(video.currentTime);
       if (d){
         video.pause();
-        frozenDrawing = d;
-        frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
-        drawFrameWith(d);
+        if (Math.abs(video.currentTime - d.t) > 0.02){
+          seekingDraw = d;
+          video.currentTime = d.t;   // frame exato onde o desenho foi salvo
+        } else {
+          frozenDrawing = d;
+          frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
+          drawFrameWith(d);
+        }
         raf = requestAnimationFrame(tick);
         return;
       }
@@ -4719,6 +4737,141 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       raf = requestAnimationFrame(tick);
     });
   });
+}
+
+/* =====================================================================
+   EXPORT COMBINADO — junta clipes de VÁRIOS vídeos num arquivo único.
+   Busca cada fonte pela pasta vinculada, emenda os cortes na ordem e grava
+   os desenhos (áudio fica de fora nesta versão para estabilidade ao trocar
+   de fonte no meio da gravação).
+   ===================================================================== */
+async function exportCombined(items, baseName){
+  if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
+  const order = (items || []).filter(it => it && it.srcKey);
+  if (!order.length){ log(TX('vid.proj.expEmpty'), 'err'); return; }
+  const p = currentProject();
+
+  // 1) resolver TODAS as fontes pela pasta vinculada (senão aborta pedindo para vincular)
+  const keys = [];
+  order.forEach(i => { if (!keys.includes(i.srcKey)) keys.push(i.srcKey); });
+  const fileMap = {}; const missing = [];
+  for (const k of keys){
+    const nm = (order.find(i => i.srcKey === k) || {}).srcName || k;
+    let f = null; try { f = await projResolveFile(p, nm); } catch (e) {}
+    if (f) fileMap[k] = f; else missing.push(nm);
+  }
+  if (missing.length){ log(TX('vid.proj.expMissing') + missing.join(', '), 'err'); return; }
+
+  // 2) destino: nome + pasta opcional (mesmas opções da aba Export)
+  const fmtSel = ($('expFormat') && $('expFormat').value === 'webm') ? 'webm' : 'mp4';
+  _exportBaseName = cleanFileName(baseName) || 'fluxgk_playlist';
+  const chooseFolder = $('expChooseFolder') ? $('expChooseFolder').checked : false;
+  if (chooseFolder && window.showSaveFilePicker){
+    const h = await pickSaveLocation(_exportBaseName + '.' + fmtSel, fmtSel === 'webm' ? 'video/webm' : 'video/mp4');
+    if (h === 'cancel'){ log(TX('vid.msg.exportCanceled')); return; }
+    _pendingSaveHandle = h;
+  } else { _pendingSaveHandle = null; }
+
+  exporting = true; cancelRequested = false;
+  const tv = document.createElement('video');
+  tv.muted = true; tv.playsInline = true; tv.preload = 'auto';
+  let curKey = null, curURL = null;
+  function loadSource(key){
+    return new Promise((res, rej) => {
+      if (curKey === key && tv.readyState >= 1){ res(); return; }
+      if (curURL){ try { URL.revokeObjectURL(curURL); } catch (e) {} }
+      curURL = URL.createObjectURL(fileMap[key]); curKey = key;
+      const on = () => { tv.removeEventListener('loadedmetadata', on); res(); };
+      tv.addEventListener('loadedmetadata', on);
+      tv.addEventListener('error', () => rej(new Error('load ' + key)), { once: true });
+      tv.src = curURL;
+    });
+  }
+  const withDraw = $('expDraw') ? $('expDraw').checked : true;
+  const withTitle = $('expTitle') ? $('expTitle').checked : false;
+
+  try {
+    await loadSource(order[0].srcKey);
+    const resH = parseInt(($('expRes') || {}).value, 10) || 0;
+    const vw0 = tv.videoWidth || 1280, vh0 = tv.videoHeight || 720;
+    const outW = resH ? Math.round(resH * vw0 / vh0 / 2) * 2 : vw0;
+    const outH = resH || vh0;
+    const qual = (($('expQuality') || {}).value) || 'high';
+    const bitrate = qual === 'high' ? 8e6 : qual === 'medium' ? 4e6 : 2e6;
+    const mime = fmtSel === 'webm'
+      ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm')
+      : (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : 'video/webm');
+    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+    const cv = document.createElement('canvas'); cv.width = outW; cv.height = outH;
+    const cx = cv.getContext('2d');
+    const stream = cv.captureStream(30);
+    let rec;
+    try { rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate }); }
+    catch (e){ exporting = false; hideProgress(); log('MediaRecorder: ' + (e.message || e), 'err'); return; }
+    const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(res => { rec.onstop = res; });
+    rec.start(200);
+
+    function paint(shapes, ev){
+      const sc = Math.min(outW / tv.videoWidth, outH / tv.videoHeight);
+      const dw = tv.videoWidth * sc, dh = tv.videoHeight * sc;
+      const ox = (outW - dw) / 2, oy = (outH - dh) / 2;
+      cx.fillStyle = '#000'; cx.fillRect(0, 0, outW, outH);
+      try { cx.drawImage(tv, ox, oy, dw, dh); } catch (e) {}
+      if (withDraw && shapes){ cx.save(); cx.translate(ox, oy); shapes.forEach(s => drawShape(cx, s, dw, dh)); cx.restore(); }
+      if (withTitle && ev && ev.name){
+        cx.font = '600 ' + Math.round(outH * 0.04) + 'px "Space Grotesk", sans-serif';
+        const pad = outH * 0.02; const tw = cx.measureText(ev.name).width;
+        cx.fillStyle = 'rgba(10,10,10,.6)'; cx.fillRect(pad, pad, tw + pad * 1.4, outH * 0.07);
+        cx.fillStyle = ev.color || '#1E4FFF'; cx.fillRect(pad, pad, outW * 0.008, outH * 0.07);
+        cx.fillStyle = '#fff'; cx.textBaseline = 'middle'; cx.fillText(ev.name, pad * 1.7, pad + outH * 0.035);
+      }
+    }
+    function playItem(it){
+      return new Promise(async (resolve) => {
+        try { await loadSource(it.srcKey); } catch (e) { resolve(); return; }
+        const drawings = withDraw ? ((libAll()[it.srcKey] || {}).drawings || []) : [];
+        const played = new Set();
+        let frozen = null, frozenUntil = 0, seeking = null;
+        try {
+          tv.currentTime = Math.max(0, it.start);
+          await new Promise(r => { const on = () => { tv.removeEventListener('seeked', on); r(); }; tv.addEventListener('seeked', on); setTimeout(r, 1500); });
+        } catch (e) {}
+        tv.play().catch(() => {});
+        function activeAt(t){ for (const d of drawings){ if (played.has(d.id)) continue; if (t >= d.t - 0.06 && t <= d.t + 0.5 && d.t >= it.start && d.t <= it.end) return d; } return null; }
+        function loop(){
+          if (cancelRequested){ resolve(); return; }
+          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; } paint(frozen ? frozen.shapes : null, it); requestAnimationFrame(loop); return; }
+          if (frozen){ paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
+          const d = activeAt(tv.currentTime);
+          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > 0.02){ seeking = d; tv.currentTime = d.t; } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
+          paint(null, it);
+          if (tv.currentTime >= it.end - 0.03 || tv.ended){ tv.pause(); resolve(); return; }
+          requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+      });
+    }
+
+    for (let i = 0; i < order.length; i++){
+      if (cancelRequested) break;
+      setProgress(i / order.length, TX('vid.proj.expProgress') + (i + 1) + '/' + order.length);
+      await playItem(order[i]);
+    }
+    try { rec.stop(); } catch (e) {}
+    await stopped;
+    if (curURL){ try { URL.revokeObjectURL(curURL); } catch (e) {} }
+    exporting = false; hideProgress();
+    if (cancelRequested){ log(TX('vid.msg.exportCanceled2'), 'err'); _pendingSaveHandle = undefined; return; }
+    const blob = new Blob(chunks, { type: mime });
+    const saved = await saveBlob(blob, _exportBaseName + '.' + ext, mime);
+    _pendingSaveHandle = undefined;
+    log(saved ? (TX('vid.proj.expDone') + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)') : TX('vid.msg.noFileSaved'), 'ok');
+  } catch (e){
+    exporting = false; hideProgress(); _pendingSaveHandle = undefined;
+    log('Export: ' + (e.message || e), 'err');
+  }
 }
 
 /* ---------------- biblioteca de jogos ---------------- */
