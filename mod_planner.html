@@ -1165,13 +1165,13 @@ function buildReportHTML(sessions){
 
     // Exercise cards
     (s.exercises||[]).forEach((ex,i)=>{
-      html += `<div class="no-break" style="margin-bottom:14pt;border:0.5pt solid #e0ddd8;border-radius:4pt;overflow:hidden;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-        <div style="display:flex;align-items:center;gap:8pt;padding:8pt 10pt;background:#f7f7f5;border-bottom:0.5pt solid #e0ddd8">
+      html += `<div class="no-break" style="margin-bottom:10pt;border:0.5pt solid #e0ddd8;border-radius:4pt;overflow:hidden;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+        <div style="display:flex;align-items:center;gap:8pt;padding:7pt 10pt;background:#f7f7f5;border-bottom:0.5pt solid #e0ddd8">
           <span style="font-size:7.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2pt 7pt;background:${P};color:#fff">${phaseLabel(ex.phase)}</span>
           <strong style="font-size:11pt;font-weight:700">${ex.name}</strong>
           <span style="margin-left:auto;font-size:8pt;color:#737373">${ex.duration}min · ${ex.players}p</span>
         </div>
-        ${ex.img?`<div style="background:#111;text-align:center"><img src="${ex.img}" style="max-width:100%;max-height:320pt;width:100%;height:auto;object-fit:contain;display:block"/></div>`:''}
+        ${ex.img?`<div style="background:#111;text-align:center"><img src="${ex.img}" style="max-width:100%;max-height:200pt;width:auto;height:auto;object-fit:contain;display:inline-block;margin:0 auto"/></div>`:''}
         <div style="padding:10pt 12pt">
           ${ex.desc?`<p style="font-size:9pt;color:#333;line-height:1.65;margin-bottom:8pt">${ex.desc}</p>`:''}
           ${ex.goal?`<div style="font-size:8.5pt;border-left:2.5pt solid ${P};padding:6pt 10pt;background:${P}11;margin-bottom:7pt;color:#111">→ ${ex.goal}</div>`:''}
