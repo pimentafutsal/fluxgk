@@ -884,6 +884,11 @@
     <div class="nmbody">
       <label data-i18n="vid.name" class="nmlabel" for="nameInput">Name</label>
       <input type="text" id="nameInput" maxlength="60" autocomplete="off">
+      <label data-i18n="vid.gkLabel" class="nmlabel" for="gkSelect">Goalkeeper</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <select id="gkSelect" style="flex:1;padding:8px 10px;border:1px solid var(--line,#e3e1da);border-radius:6px;background:#fff;font-size:14px;font-family:inherit"></select>
+        <button type="button" class="mini ghost" id="gkAddBtn" title="Add goalkeeper" data-i18n-title="vid.gkAddTip" style="flex:none">＋</button>
+      </div>
       <label data-i18n="vid.notes" class="nmlabel" for="noteInput">Notes</label>
       <textarea id="noteInput" rows="3" placeholder="Notes about the clip (optional)" data-i18n-placeholder="vid.ph.notes"></textarea>
       <div class="nmrange" id="nmRange"></div>
@@ -1000,6 +1005,7 @@ const state = {
   projects: [],
   currentProjectId: null,
   projectMode: false,
+  gks: [],   /* elenco de goleiros do videolab (por clube/temporada) — cada corte pode ser marcado com um */
   zoom: 1, panX: 0, panY: 0,
 };
 
@@ -1087,6 +1093,24 @@ function loadProjects(){
     }
   }catch(e){}
 }
+/* ---------------- elenco de goleiros ---------------- */
+const GKS_KEY = 'fluxgk_videolab_gks_v1';
+function gkList(){ if (!Array.isArray(state.gks)) state.gks = []; return state.gks; }
+function loadGks(){
+  try{ const raw = localStorage.getItem(GKS_KEY); const d = raw ? JSON.parse(raw) : null; if (Array.isArray(d)) state.gks = d; }catch(e){}
+  if (!Array.isArray(state.gks)) state.gks = [];
+}
+function persistGks(){
+  try{ localStorage.setItem(GKS_KEY, JSON.stringify(state.gks)); }catch(e){}
+  if (typeof pushToCloud === 'function') pushToCloud();
+}
+function gkAdd(name){
+  const n = (name || '').trim().slice(0, 40); if (!n) return null;
+  if (!gkList().some(g => g.toLowerCase() === n.toLowerCase())){ gkList().push(n); persistGks(); }
+  return n;
+}
+function gkRemove(name){ state.gks = gkList().filter(g => g !== name); persistGks(); }
+
 function projCreate(name){
   const p = { id: 'pr' + Math.random().toString(36).slice(2, 9), name: (name || 'Projeto').slice(0, 60), createdAt: Date.now(), videos: [], playlists: [] };
   projList().push(p); state.currentProjectId = p.id; state.projectMode = true; projPersist(); return p;
@@ -1351,6 +1375,60 @@ function renderProjectTab(){
           rm.addEventListener('click', () => { pl.items = items.filter(x => x.id !== it.id); projPersist(); renderProjectTab(); });
           row.appendChild(dot); row.appendChild(nm2); row.appendChild(bMove); row.appendChild(rm);
           card.appendChild(row); card.appendChild(actWrap);
+        });
+        box.appendChild(card);
+      });
+    }
+
+    /* ---- elenco de goleiros (gerenciar) ---- */
+    const gkHdr = document.createElement('div'); gkHdr.className = 'fpsection'; gkHdr.style.cssText = 'margin:16px 0 6px;font-size:12px';
+    gkHdr.textContent = TX('vid.gkRoster');
+    box.appendChild(gkHdr);
+    const gkBar = document.createElement('div'); gkBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px';
+    gkList().forEach(g => {
+      const chip = document.createElement('span'); chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:20px;font-size:12px';
+      chip.textContent = '🧤 ' + g;
+      const x = document.createElement('button'); x.className = 'mini ghost danger'; x.textContent = '✕'; x.style.cssText = 'padding:0 4px;border:none'; x.title = TX('vid.gkRemove');
+      x.addEventListener('click', () => { gkRemove(g); renderProjectTab(); });
+      chip.appendChild(x); gkBar.appendChild(chip);
+    });
+    const addG = document.createElement('button'); addG.className = 'mini primary'; addG.textContent = TX('vid.gkAddBtnLbl');
+    addG.addEventListener('click', async () => { const nm = await askText(TX('vid.gkNewPrompt')); if (nm && nm.trim()){ gkAdd(nm.trim()); renderProjectTab(); } });
+    gkBar.appendChild(addG);
+    box.appendChild(gkBar);
+
+    /* ---- visão POR GOLEIRO (pasta de cada goleiro + export individual) ---- */
+    const gkClips = projAllClips(p);
+    const byGk = {}; gkClips.forEach(c => { const k = (c.gk && c.gk.trim()) ? c.gk : '—'; (byGk[k] = byGk[k] || []).push(c); });
+    const gkKeys = Object.keys(byGk);
+    if (gkKeys.length){
+      const gh = document.createElement('div'); gh.className = 'fpsection'; gh.style.cssText = 'margin:14px 0 6px;font-size:12px';
+      gh.textContent = TX('vid.gkByGk');
+      box.appendChild(gh);
+      gkKeys.sort((a, b) => a === '—' ? 1 : b === '—' ? -1 : a.localeCompare(b));
+      gkKeys.forEach(gk => {
+        const arr = byGk[gk];
+        const card = document.createElement('div'); card.className = 'expgrp';
+        const head = document.createElement('div'); head.className = 'ghead';
+        const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = gk === '—' ? TX('vid.gkUnassigned') : ('🧤 ' + gk);
+        const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = arr.length + ' ' + TX('vid.f.clips');
+        head.appendChild(nm); head.appendChild(cnt);
+        if (gk !== '—'){
+          const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+          bExp.addEventListener('click', () => exportCombined(arr, p.name + ' - ' + gk));
+          head.appendChild(bExp);
+        }
+        card.appendChild(head);
+        const bySrc = {}; arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
+        Object.keys(bySrc).forEach(src => {
+          const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:8px 0 4px'; sh.textContent = '🎬 ' + src;
+          card.appendChild(sh);
+          bySrc[src].forEach(it => {
+            const row = document.createElement('div'); row.className = 'expitem';
+            const nm2 = document.createElement('span'); nm2.style.flex = '1'; const tg = findTag(it.tagId);
+            nm2.textContent = (it.name || (tg && tg.name) || 'clip') + (it.note ? (' — ' + it.note) : '') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
+            row.appendChild(nm2); card.appendChild(row);
+          });
         });
         box.appendChild(card);
       });
@@ -2179,6 +2257,19 @@ function addEvent(tag){
 
 /* ---------------- modal: nomear o lance ao marcar ---------------- */
 let namingEv = null, namingResume = false;
+function fillGkSelect(sel, current){
+  if (!sel) return;
+  sel.innerHTML = '';
+  const none = document.createElement('option'); none.value = ''; none.textContent = TX('vid.gkNone'); sel.appendChild(none);
+  gkList().forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; if (g === current) o.selected = true; sel.appendChild(o); });
+  if (current && !gkList().includes(current)){ const o = document.createElement('option'); o.value = current; o.textContent = current; o.selected = true; sel.appendChild(o); }
+}
+if ($('gkAddBtn')) $('gkAddBtn').addEventListener('click', async () => {
+  const name = await askText(TX('vid.gkNewPrompt'));
+  if (!name || !name.trim()) return;
+  const n = gkAdd(name.trim());
+  if (n) fillGkSelect($('gkSelect'), n);
+});
 function openNameModal(ev, tag, resume){
   namingEv = ev;
   namingResume = resume;
@@ -2186,6 +2277,7 @@ function openNameModal(ev, tag, resume){
     TX('vid.f.clipDetailsSp') + escapeHtml(tag.name) + ' · ' + fmt(ev.t, true);
   $('nameInput').value = ev.name || '';
   $('noteInput').value = ev.note || '';
+  fillGkSelect($('gkSelect'), ev.gk || '');
   $('nmRange').textContent = TX('vid.f.rangeLbl') + fmt(ev.start) + ' → ' + fmt(ev.end) + TX('vid.f.editTimeHint');
   $('nameModal').classList.add('on');
   setTimeout(() => { $('nameInput').focus(); $('nameInput').select(); }, 30);
@@ -2201,6 +2293,7 @@ function commitName(){
   if (namingEv){
     namingEv.name = $('nameInput').value.trim() || namingEv.name;
     namingEv.note = $('noteInput').value.trim();
+    namingEv.gk = $('gkSelect') ? ($('gkSelect').value || '') : (namingEv.gk || '');
     saveSession();
     renderPlaylists();
   }
@@ -2234,6 +2327,7 @@ let lastClickedId = null;
 /* etiquetas expandidas no painel de clipes. Recolhido por padrao:
    os lances so aparecem quando o usuario clica na seta do grupo. */
 let expandedTags = new Set();
+let _gkFilter = '';   // filtro por goleiro no painel de Lances (vazio = todos)
 /* playlists expandidas (mesma logica das etiquetas) */
 let expandedPls = new Set();
 
@@ -2277,11 +2371,38 @@ function selectedEventObjs(){
 function renderPlaylists(){
   const box = $('playlists');
   box.innerHTML = '';
+
+  /* filtro por goleiro — compacto, só aparece quando há elenco cadastrado */
+  if (gkList().length){
+    const fr = document.createElement('div');
+    fr.style.cssText = 'display:flex;gap:6px;align-items:center;padding:2px 2px 7px;border-bottom:1px solid var(--line,#eee);margin-bottom:6px';
+    const lbl = document.createElement('span'); lbl.textContent = '🧤'; lbl.style.fontSize = '13px'; lbl.style.flex = 'none';
+    const sel = document.createElement('select'); sel.style.cssText = 'flex:1;min-width:0;padding:4px 6px;font-size:12px;border:1px solid var(--line,#ddd);border-radius:5px;background:#fff';
+    const oAll = document.createElement('option'); oAll.value = ''; oAll.textContent = TX('vid.gkFilterAll'); sel.appendChild(oAll);
+    gkList().forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; if (g === _gkFilter) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener('change', () => { _gkFilter = sel.value; renderPlaylists(); });
+    fr.appendChild(lbl); fr.appendChild(sel);
+    if (_gkFilter){
+      const exp = document.createElement('button'); exp.className = 'mini primary'; exp.textContent = '⤓'; exp.title = TX('vid.gkFilterExport'); exp.style.flex = 'none';
+      exp.addEventListener('click', () => {
+        const gkEvs = state.events.filter(e => (e.gk || '') === _gkFilter);
+        if (!gkEvs.length){ log(TX('vid.gkFilterNone'), 'err'); return; }
+        const idset = new Set(gkEvs.map(e => e.id));
+        state.events.forEach(e => { expSel[e.id] = idset.has(e.id); });
+        switchTab('export');
+        log(gkEvs.length + TX('vid.gkFilterExportMsg') + _gkFilter + '".');
+      });
+      fr.appendChild(exp);
+    }
+    box.appendChild(fr);
+  }
+
+  const evSource = _gkFilter ? state.events.filter(e => (e.gk || '') === _gkFilter) : state.events;
   const seen = [];
-  state.events.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
+  evSource.forEach(e => { if (!seen.includes(e.tagId)) seen.push(e.tagId); });
   const groups = seen.map(tagId => ({
     tag: findTag(tagId),
-    evs: state.events.filter(e => e.tagId === tagId).sort((a, b) => a.start - b.start),
+    evs: evSource.filter(e => e.tagId === tagId).sort((a, b) => a.start - b.start),
   }));
 
   // limpa seleção de ids que já não existem
@@ -2289,7 +2410,9 @@ function renderPlaylists(){
   selectedIds.forEach(id => { if (!ids.has(id)) selectedIds.delete(id); });
 
   if (!groups.length){
-    box.innerHTML = '<div class="empty">'+TX('vid.f.noClipsAnalysis')+'</div>';
+    const em = document.createElement('div'); em.className = 'empty';
+    em.textContent = _gkFilter ? TX('vid.gkFilterNone') : TX('vid.f.noClipsAnalysis');
+    box.appendChild(em);
   }
 
   groups.forEach(g => {
@@ -2689,6 +2812,23 @@ function openCtxMenu(x, y){
     }));
     menu.appendChild(ctxItem(TX('vid.f.addToProject') + plural, null, { sub: ppSubs }));
   }
+
+  // atribuir/editar GOLEIRO do(s) lance(s)
+  const gkSubs = [];
+  gkSubs.push(ctxItem(TX('vid.gkNone'), () => { sel.forEach(ev => ev.gk = ''); saveSession(); renderPlaylists(); if (currentTab === 'project') renderProjectTab(); }));
+  gkList().forEach(g => gkSubs.push(ctxItem(g, () => {
+    sel.forEach(ev => ev.gk = g); saveSession(); renderPlaylists();
+    log(n + TX('vid.gkAssigned') + g + '".', 'ok');
+    if (currentTab === 'project') renderProjectTab();
+  })));
+  gkSubs.push(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
+  gkSubs.push(ctxItem(TX('vid.gkNewOpt'), async () => {
+    const nm = await askText(TX('vid.gkNewPrompt')); if (!nm || !nm.trim()) return;
+    const gg = gkAdd(nm.trim()); if (!gg) return;
+    sel.forEach(ev => ev.gk = gg); saveSession(); renderPlaylists();
+    if (currentTab === 'project') renderProjectTab();
+  }));
+  menu.appendChild(ctxItem(TX('vid.gkAssign') + plural, null, { sub: gkSubs }));
 
   menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
 
@@ -5550,6 +5690,7 @@ function pushToCloud(){
         library: libAll(),
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
         projects: { list: state.projects || [], currentId: state.currentProjectId || null },
+        gks: state.gks || [],
         updatedAt: Date.now(),
       };
       if (!_videoDataPath) return;   /* sem contexto do hub: nao grava fora de users/{uid} */
@@ -5600,6 +5741,11 @@ function pullFromCloud(){
           if (typeof renderProjectTab === 'function') renderProjectTab();
           if (typeof updateProjBar === 'function') updateProjBar();
         }
+        if (Array.isArray(data.gks)){
+          state.gks = data.gks;
+          try { localStorage.setItem(GKS_KEY, JSON.stringify(state.gks)); } catch (e) {}
+          if (typeof renderProjectTab === 'function') renderProjectTab();
+        }
         log(TX('vid.msg.cloudSynced'));
         renderLibrary && renderLibrary();
       }
@@ -5615,6 +5761,7 @@ function pullFromCloud(){
 /* ---------------- init ---------------- */
 loadDashboards();
 loadProjects();
+loadGks();
 state.projectMode = false;   /* abre neutro; o lançador/Projeto decide entrar no modo */
 renderDashboards();
 renderTags();
