@@ -5037,6 +5037,23 @@ function libWrite(all){
   catch (e) { log(TX('vid.msg.storageFull'), 'err'); }
   if (typeof pushToCloud === 'function') pushToCloud();
 }
+/* A biblioteca é indexada por "nome|tamanho" do arquivo, e nomes têm PONTO (.mp4).
+   O Firebase NÃO aceita chaves com . # $ [ ] / — então na nuvem gravamos a
+   biblioteca como LISTA (cada item guarda sua própria chave em __key) e
+   reconstruímos o objeto ao ler. Sem isso, a gravação inteira falhava. */
+function libToCloud(){
+  const all = libAll(); const out = [];
+  Object.keys(all).forEach(k => { out.push(Object.assign({ __key: k }, all[k])); });
+  return out;
+}
+function libFromCloud(v){
+  if (Array.isArray(v)){
+    const obj = {};
+    v.forEach(it => { if (it && it.__key){ const c = Object.assign({}, it); const k = c.__key; delete c.__key; obj[k] = c; } });
+    return obj;
+  }
+  return (v && typeof v === 'object') ? v : {};   /* compat: formato antigo (objeto) */
+}
 function sessionKey(){ return state.file ? state.file.name + '|' + state.file.size : null; }
 
 let saveTimer = null;
@@ -5687,7 +5704,7 @@ function pushToCloud(){
   _pushTimer = setTimeout(() => {
     try {
       const payload = {
-        library: libAll(),
+        library: libToCloud(),
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
         projects: { list: state.projects || [], currentId: state.currentProjectId || null },
         gks: state.gks || [],
@@ -5706,7 +5723,7 @@ function pushToCloudNow(){
   if (!_fbReady || !fbDB || !uid || !_cloudLoaded || !_videoDataPath) return Promise.resolve(false);
   try {
     const payload = {
-      library: libAll(),
+      library: libToCloud(),
       dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
       projects: { list: state.projects || [], currentId: state.currentProjectId || null },
       updatedAt: Date.now(),
@@ -5724,8 +5741,8 @@ function pullFromCloud(){
     const data = snap.val();
     try {
       if (data){
-        if (data.library && typeof data.library === 'object'){
-          libWrite(data.library);   // vira a fonte da verdade em memoria
+        if (data.library){
+          libWrite(libFromCloud(data.library));   // decodifica a lista → objeto por "nome|tamanho"
         }
         if (data.dashboards && Array.isArray(data.dashboards.dashboards) && data.dashboards.dashboards.length){
           state.dashboards = data.dashboards.dashboards;
