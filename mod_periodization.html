@@ -67,6 +67,7 @@
             PZ.meso =Array.isArray(v.meso)?v.meso:[];
             PZ.micro=Array.isArray(v.micro)?v.micro:[];
             PZ.events=Array.isArray(v.events)?v.events:[];
+            PZ.comps=Array.isArray(v.comps)?v.comps:[];
           }
           if(!window._uiBooted){window._uiBooted=true;bootUI();} else {try{renderAll();}catch(e){}}
         });
@@ -188,6 +189,25 @@ textarea.fi{resize:vertical;min-height:38px}
         <div><label class="fl" data-i18n="period.evLabel">Label</label><input class="fi" id="ev-label" placeholder="e.g. vs Rival / Cup final" data-i18n-placeholder="period.evPh"></div>
         <div><button class="btn" id="ev-add" data-i18n="period.add">+ Add</button></div>
       </div>
+      <div id="ev-game-opts" style="display:flex;gap:14px;align-items:flex-end;margin-top:8px;flex-wrap:wrap">
+        <div><label class="fl" data-i18n="period.competition">Competition</label>
+          <select class="fi" id="ev-comp" style="min-width:170px"></select>
+        </div>
+        <div><label class="fl" data-i18n="period.badge">Opponent badge</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <img id="ev-badge-prev" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:4px;background:#f4f2ec;display:none">
+            <input type="file" accept="image/*" id="ev-badge" style="font-size:12px;max-width:190px">
+            <button class="btn ghost sm" id="ev-badge-clear" style="display:none">✕</button>
+          </div>
+        </div>
+      </div>
+      <div id="comp-mgr" style="margin-top:10px;border-top:1px solid var(--line,#e6e2d8);padding-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="fl" style="margin:0" data-i18n="period.competitions">Competitions</span>
+        <input class="fi" id="comp-name" placeholder="e.g. State League" style="width:180px" data-i18n-placeholder="period.compPh">
+        <input type="color" id="comp-color" value="#C8102E" style="width:34px;height:30px;border:none;background:none;cursor:pointer" title="Colour">
+        <button class="btn ghost sm" id="comp-add" data-i18n="period.add">+ Add</button>
+        <span id="comp-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-left:4px"></span>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin:6px 0 10px">
       <button class="btn ghost sm" id="cal-prev">‹</button>
@@ -237,15 +257,20 @@ textarea.fi{resize:vertical;min-height:38px}
         <div class="page-title" data-i18n="period.overviewTitle">Overview</div>
         <div class="page-sub" data-i18n="period.overviewSub">Everything you fed in, assembled on one timeline.</div>
       </div>
-      <button class="btn" id="expPdf" style="margin-left:auto" data-i18n="period.exportPdf">⤓ Export PDF</button>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" id="expCalPdf" data-i18n="period.exportCal">⤓ Monthly calendar</button>
+        <button class="btn" id="expPdf" data-i18n="period.exportPdf">⤓ Export PDF</button>
+      </div>
     </div>
-    <div id="overviewBody"></div>
+    <div id="ov-nav" class="calnav" style="margin-top:10px"></div>
+    <div id="ov-cal"></div>
+    <div id="overviewBody" style="margin-top:16px"></div>
   </section>
 </div>
 
 <script>
 /* ═══ STATE ═══ */
-const PZ = { macro:[], meso:[], micro:[], events:[], accent:'#1E4FFF', clubName:'', clubBadge:'', coachName:'' };
+const PZ = { macro:[], meso:[], micro:[], events:[], comps:[], accent:'#1E4FFF', clubName:'', clubBadge:'', coachName:'' };
 const LEVELS = { macro:{arr:'macro', color:'--macro'}, meso:{arr:'meso', color:'--meso'}, micro:{arr:'micro', color:'--micro'} };
 function $(id){return document.getElementById(id);}
 function TXf(k,fb){ try{ return TX(k,fb); }catch(e){ return fb; } }
@@ -253,7 +278,7 @@ function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
 function save(){
-  if(window.fbSet && _PZPATH){ window.fbSet(_PZPATH,{macro:PZ.macro,meso:PZ.meso,micro:PZ.micro,events:PZ.events,updatedAt:Date.now()}).catch(function(e){console.error('FB period:',e);}); }
+  if(window.fbSet && _PZPATH){ window.fbSet(_PZPATH,{macro:PZ.macro,meso:PZ.meso,micro:PZ.micro,events:PZ.events,comps:PZ.comps,updatedAt:Date.now()}).catch(function(e){console.error('FB period:',e);}); }
 }
 
 /* ═══ CRUD ═══ */
@@ -385,6 +410,7 @@ function tableHTML(){
     + '</th><th>'+esc(TXf('period.periodCol','Period'))+'</th><th>'+esc(TXf('period.objective','Objective / content'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function renderOverview(){
+  renderOverviewCal();
   const box=$('overviewBody'); if(!box) return;
   const tl=timelineHTML(), tb=tableHTML();
   if(!tl && !tb){ box.innerHTML='<div class="empty" style="margin-top:14px">'+esc(TXf('period.overviewEmpty','Add phases, blocks or weeks in the Macro/Meso/Micro tabs to see them assembled here.'))+'</div>'; return; }
@@ -395,12 +421,76 @@ function renderOverview(){
 let calYear=null, calMonth=null;
 function evList(){ if(!Array.isArray(PZ.events)) PZ.events=[]; return PZ.events; }
 function evColor(t){ return getComputedStyle(document.documentElement).getPropertyValue(t==='game'?'--game':'--target').trim()||'#888'; }
-function evAdd(date, type, label){
+function evAdd(date, type, label, compId, badge){
   if(!date){ $('ev-date') && $('ev-date').focus(); return; }
-  evList().push({ id:uid(), date:date, type:(type==='target'?'target':'game'), label:(label||'').trim() });
+  var t=(type==='target'?'target':'game');
+  var ev={ id:uid(), date:date, type:t, label:(label||'').trim() };
+  if(t==='game'){ if(compId) ev.compId=compId; if(badge) ev.badge=badge; }
+  evList().push(ev);
   save(); renderCalendar(); renderOverview();
 }
 function evDelete(id){ PZ.events=evList().filter(function(x){return x.id!==id;}); save(); renderCalendar(); renderOverview(); }
+/* ── Competições + cor por competição + escudo ── */
+function compList(){ if(!Array.isArray(PZ.comps)) PZ.comps=[]; return PZ.comps; }
+function compById(id){ return compList().filter(function(c){return c.id===id;})[0]||null; }
+function gameColor(e){ if(e&&e.compId){ var c=compById(e.compId); if(c&&c.color) return c.color; } return evColor('game'); }
+function evPillColor(e){ return (e&&e.type==='target')?evColor('target'):gameColor(e); }
+function evBadge(e,px){ return (e&&e.badge)?'<img src="'+e.badge+'" style="width:'+px+'px;height:'+px+'px;object-fit:contain;border-radius:2px;vertical-align:-2px;margin-right:3px;background:#fff">':''; }
+function compAdd(){
+  var nm=$('comp-name'), cc=$('comp-color'); if(!nm) return;
+  var name=(nm.value||'').trim(); if(!name) { nm.focus(); return; }
+  compList().push({ id:uid(), name:name, color:(cc&&cc.value)||'#C8102E' });
+  nm.value=''; save(); renderComps(); renderCalendar(); renderOverview();
+}
+function compDelete(id){
+  PZ.comps=compList().filter(function(c){return c.id!==id;});
+  evList().forEach(function(e){ if(e.compId===id) delete e.compId; });
+  save(); renderComps(); renderCalendar(); renderOverview();
+}
+function renderComps(){
+  var sel=$('ev-comp');
+  if(sel){ var cur=sel.value;
+    sel.innerHTML='<option value="">'+esc(TXf('period.noComp','— none —'))+'</option>'
+      + compList().map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
+    sel.value=cur;
+  }
+  var chips=$('comp-chips');
+  if(chips){
+    chips.innerHTML=compList().map(function(c){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--card,#fff);border:1px solid var(--line,#e6e2d8);border-radius:20px;padding:2px 8px">'
+        + '<span style="width:11px;height:11px;border-radius:50%;background:'+c.color+'"></span>'+esc(c.name)
+        + '<button class="cchip-x" data-cid="'+c.id+'" style="border:none;background:none;cursor:pointer;color:#b00;font-weight:700;padding:0 0 0 2px">✕</button></span>';
+    }).join('') || '<span style="font-size:12px;color:var(--mute)">'+esc(TXf('period.noComps','No competitions yet.'))+'</span>';
+    chips.querySelectorAll('.cchip-x').forEach(function(b){ b.addEventListener('click', function(){ compDelete(b.dataset.cid); }); });
+  }
+}
+var _pendingBadge=null;
+function _downscaleImg(file, cb){
+  var r=new FileReader();
+  r.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var mx=64, w=img.width, h=img.height, s=Math.min(1,mx/Math.max(w,h));
+      var cw=Math.round(w*s), ch=Math.round(h*s);
+      var cv=document.createElement('canvas'); cv.width=cw; cv.height=ch;
+      cv.getContext('2d').drawImage(img,0,0,cw,ch);
+      try{ cb(cv.toDataURL('image/png')); }catch(e){ cb(r.result); }
+    };
+    img.onerror=function(){ cb(r.result); };
+    img.src=r.result;
+  };
+  r.readAsDataURL(file);
+}
+function _setBadgePreview(url){
+  _pendingBadge=url||null;
+  var pv=$('ev-badge-prev'), cl=$('ev-badge-clear');
+  if(pv){ if(url){pv.src=url;pv.style.display='';}else{pv.style.display='none';} }
+  if(cl) cl.style.display=url?'':'none';
+}
+function _toggleGameOpts(){
+  var t=$('ev-type'), opts=$('ev-game-opts');
+  if(opts) opts.style.display=(t&&t.value==='target')?'none':'flex';
+}
 function eventsOn(iso){ return evList().filter(function(e){return e.date===iso;}); }
 function isoOf(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
 
@@ -425,7 +515,7 @@ function renderCalendar(){
     let yy=calYear, mm=c.m; if(mm<0){mm=11;yy--;} if(mm>11){mm=0;yy++;}
     const iso=isoOf(yy,mm,c.d);
     const other=(c.m!==calMonth);
-    const evh=eventsOn(iso).map(function(e){ return '<div class="calev" style="background:'+evColor(e.type)+'" title="'+esc(e.label)+'">'+esc(e.label||(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target')))+'</div>'; }).join('');
+    const evh=eventsOn(iso).map(function(e){ return '<div class="calev" style="background:'+evPillColor(e)+'" title="'+esc(e.label)+'">'+evBadge(e,15)+esc(e.label||(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target')))+'</div>'; }).join('');
     html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+evh+'</div>';
   });
   html+='</div>';
@@ -439,20 +529,28 @@ function renderCalendar(){
     if(!up.length){ box.innerHTML='<div class="empty">'+esc(TXf('period.calEmpty','No games or target dates yet. Add above or click a day.'))+'</div>'; }
     else{
       box.innerHTML=up.map(function(e){
-        return '<div class="evrow" style="border-left-color:'+evColor(e.type)+'">'
-          + '<span class="pill" style="background:'+evColor(e.type)+'">'+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+'</span>'
+        var cmp=(e.type==='game'&&e.compId)?compById(e.compId):null;
+        return '<div class="evrow" style="border-left-color:'+evPillColor(e)+'">'
+          + '<span class="pill" style="background:'+evPillColor(e)+'">'+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+'</span>'
+          + evBadge(e,20)
           + '<span style="font-weight:600;white-space:nowrap">'+fmtDate(e.date)+'</span>'
-          + '<span style="flex:1">'+esc(e.label||'')+'</span>'
+          + '<span style="flex:1">'+esc(e.label||'')+(cmp?' <span style="color:var(--mute);font-size:12px">· '+esc(cmp.name)+'</span>':'')+'</span>'
           + '<button class="btn ghost sm danger" data-del="'+e.id+'">✕</button></div>';
       }).join('');
       box.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click', function(){ evDelete(b.dataset.del); }); });
     }
   }
+  renderComps(); _toggleGameOpts();
 }
 if($('cal-prev')) $('cal-prev').addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
 if($('cal-next')) $('cal-next').addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
 if($('cal-today')) $('cal-today').addEventListener('click', function(){ const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCalendar(); });
-if($('ev-add')) $('ev-add').addEventListener('click', function(){ evAdd($('ev-date').value, $('ev-type').value, $('ev-label').value); $('ev-label').value=''; });
+if($('ev-add')) $('ev-add').addEventListener('click', function(){ evAdd($('ev-date').value, $('ev-type').value, $('ev-label').value, ($('ev-comp')&&$('ev-comp').value)||'', _pendingBadge); $('ev-label').value=''; _setBadgePreview(null); if($('ev-badge'))$('ev-badge').value=''; });
+if($('ev-type')) $('ev-type').addEventListener('change', _toggleGameOpts);
+if($('ev-badge')) $('ev-badge').addEventListener('change', function(){ var f=this.files&&this.files[0]; if(f) _downscaleImg(f,_setBadgePreview); });
+if($('ev-badge-clear')) $('ev-badge-clear').addEventListener('click', function(){ _setBadgePreview(null); if($('ev-badge'))$('ev-badge').value=''; });
+if($('comp-add')) $('comp-add').addEventListener('click', compAdd);
+if($('comp-name')) $('comp-name').addEventListener('keydown', function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); compAdd(); } });
 
 /* ═══ CALENDÁRIO POR NÍVEL (pintar períodos) ═══ */
 const PALETTE=['#1E4FFF','#0A2A6B','#C8102E','#0a8a3a','#e8901a','#7b2ff7','#00a3a3','#d81b60','#5b7db1','#3a3a3a'];
@@ -497,7 +595,7 @@ function renderLevelCal(level){
         inner+='<div class="perstrip" style="background:'+(it.color||defColor(level))+'" data-pid="'+it.id+'" title="'+esc(it.name)+'">'+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
       }
     });
-    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evColor(e.type)+';font-size:8.5px" title="'+esc(e.label)+'">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</div>'; });
+    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evPillColor(e)+';font-size:8.5px" title="'+esc(e.label)+'">'+(e.badge?evBadge(e,12):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>'; });
     var cls='calcell'+(c.other?' other':'')+(c.iso===todayIso?' today':''); if(sel&&c.iso===sel)cls+=' selstart';
     html+='<div class="'+cls+'" data-iso="'+c.iso+'">'+inner+'</div>';
   });
@@ -538,6 +636,107 @@ function focusCard(level,id){
   setTimeout(function(){el.style.boxShadow='';},1200);
 }
 
+/* ═══ CALENDÁRIO COMBINADO (Overview) + EXPORT MENSAL ═══ */
+function monthCellsFor(y,m){
+  var first=new Date(y,m,1); var startDow=(first.getDay()+6)%7;
+  var dim=new Date(y,m+1,0).getDate(); var prev=new Date(y,m,0).getDate();
+  var cells=[];
+  for(var i=0;i<startDow;i++)cells.push({d:prev-startDow+1+i,m:m-1});
+  for(var d=1;d<=dim;d++)cells.push({d:d,m:m});
+  while(cells.length%7)cells.push({d:cells.length-startDow-dim+1,m:m+1});
+  return cells.map(function(c){var yy=y,mm=c.m;if(mm<0){mm=11;yy--;}if(mm>11){mm=0;yy++;}return {iso:isoOf(yy,mm,c.d),d:c.d,other:(c.m!==m)};});
+}
+function monthGridHTML(y,m,print){
+  var wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
+  var now=new Date(), todayIso=isoOf(now.getFullYear(),now.getMonth(),now.getDate());
+  var cellH=print?'62pt':'74px', bd=print?'.5pt solid #e5e5e5':'1px solid var(--line,#e6e2d8)';
+  var fD=print?'8pt':'11px', fP=print?'6.5pt':'9.5px';
+  var html='<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>';
+  wd.forEach(function(w){ html+='<th style="font-size:'+(print?'8pt':'11px')+';text-transform:uppercase;letter-spacing:.04em;color:#8a8a8a;padding:4px;text-align:center;font-weight:700">'+esc(w)+'</th>'; });
+  html+='</tr></thead><tbody>';
+  var cells=monthCellsFor(y,m);
+  for(var r=0;r*7<cells.length;r++){
+    html+='<tr>';
+    for(var c=0;c<7;c++){
+      var cell=cells[r*7+c];
+      var isToday=(cell.iso===todayIso);
+      var inner='<div style="font-size:'+fD+';font-weight:'+(isToday?'800':'600')+';color:'+(cell.other?'#c4c0b6':(isToday?(print?'#0A2A6B':'var(--accent)'):'#8a8a8a'))+'">'+cell.d+'</div>';
+      ['macro','meso','micro'].forEach(function(lv){
+        sortByStart(itemsOf(lv)).forEach(function(it){
+          if(it.start&&it.end&&cell.iso>=it.start&&cell.iso<=it.end){
+            var nameHere=(cell.iso===it.start)||(cell.d===1&&!cell.other);
+            inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+(it.color||defColor(lv))+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(it.name)+'">'+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
+          }
+        });
+      });
+      eventsOn(cell.iso).forEach(function(e){
+        inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+evPillColor(e)+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+(e.badge?evBadge(e,print?9:11):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>';
+      });
+      html+='<td style="border:'+bd+';height:'+cellH+';vertical-align:top;padding:3px;background:'+(cell.other?'#faf9f4':'#fff')+'">'+inner+'</td>';
+    }
+    html+='</tr>';
+  }
+  return html+'</tbody></table>';
+}
+function calLegend(print){
+  var items=[[lvlColor('macro'),lvlName('macro')],[lvlColor('meso'),lvlName('meso')],[lvlColor('micro'),lvlName('micro')],[evColor('target'),TXf('period.evTarget','Target')]];
+  if(compList().length){ compList().forEach(function(c){ items.push([c.color,c.name]); }); }
+  else { items.push([evColor('game'),TXf('period.evGame','Game')]); }
+  return '<div style="display:flex;flex-wrap:wrap;gap:'+(print?'10pt':'14px')+';font-size:'+(print?'7.5pt':'11px')+';color:#666;margin:'+(print?'3pt 0 7pt':'2px 0 10px')+'">'
+    + items.map(function(i){return '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:11px;height:11px;border-radius:2px;background:'+i[0]+';display:inline-block"></span>'+esc(i[1])+'</span>';}).join('')
+    + '<span style="color:#aaa">'+esc(TXf('period.legendNote','(period colours may vary)'))+'</span></div>';
+}
+let ovYear=null, ovMonth=null;
+function renderOverviewCal(){
+  var nav=$('ov-nav'), grid=$('ov-cal'); if(!grid) return;
+  if(ovYear==null){ var n=new Date(); ovYear=n.getFullYear(); ovMonth=n.getMonth(); }
+  if(nav){ nav.className='calnav';
+    nav.innerHTML='<button class="btn ghost sm" data-n="p">‹</button>'
+      +'<span style="font-weight:700;font-size:16px;min-width:150px;display:inline-block;text-align:center">'+esc(new Date(ovYear,ovMonth,1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'}))+'</span>'
+      +'<button class="btn ghost sm" data-n="n">›</button>'
+      +'<button class="btn ghost sm" data-n="t" style="margin-left:6px">'+esc(TXf('period.today','Today'))+'</button>';
+    var p=nav.querySelector('[data-n=p]'),nx=nav.querySelector('[data-n=n]'),t=nav.querySelector('[data-n=t]');
+    if(p)p.onclick=function(){ovMonth--;if(ovMonth<0){ovMonth=11;ovYear--;}renderOverviewCal();};
+    if(nx)nx.onclick=function(){ovMonth++;if(ovMonth>11){ovMonth=0;ovYear++;}renderOverviewCal();};
+    if(t)t.onclick=function(){var d=new Date();ovYear=d.getFullYear();ovMonth=d.getMonth();renderOverviewCal();};
+  }
+  grid.innerHTML=calLegend(false)+'<div class="ovcal">'+monthGridHTML(ovYear,ovMonth,false)+'</div>';
+}
+function spanMonths(){
+  var ds=[];
+  ['macro','meso','micro'].forEach(function(lv){ itemsOf(lv).forEach(function(it){ if(it.start)ds.push(it.start); if(it.end)ds.push(it.end); }); });
+  evList().forEach(function(e){ if(e.date)ds.push(e.date); });
+  if(!ds.length) return [];
+  ds.sort();
+  var a=ds[0], b=ds[ds.length-1];
+  var y=+a.slice(0,4), m=+a.slice(5,7)-1, ey=+b.slice(0,4), em=+b.slice(5,7)-1;
+  var out=[], guard=0;
+  while((y<ey||(y===ey&&m<=em))&&guard++<160){ out.push([y,m]); m++; if(m>11){m=0;y++;} }
+  return out;
+}
+function exportMonthlyPDF(){
+  var P=_hexOkJs(PZ.accent)?PZ.accent:'#0A2A6B';
+  var cn=PZ.clubName||'FluxGK';
+  var months=spanMonths();
+  if(!months.length){ try{alert(TXf('period.calNothing','Add games, target dates or periods first.'));}catch(e){} return; }
+  var pages=months.map(function(ym){
+    var title=new Date(ym[0],ym[1],1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
+    return '<div class="mpage"><div class="mh"><span class="mh-t" style="color:'+P+'">'+esc(title)+'</span><span class="mh-s">FluxGK · '+esc(cn)+'</span></div>'+calLegend(true)+monthGridHTML(ym[0],ym[1],true)+'</div>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.calPdfTitle','Monthly calendar'))+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'@media screen{body{max-width:1040px;margin:0 auto;padding:20px}.mpage{margin-bottom:26px}}'
+    +'@media print{@page{margin:1cm;size:A4 landscape}.mpage{page-break-after:always}}'
+    +'.mh{display:flex;align-items:baseline;gap:12pt;border-bottom:2pt solid '+P+';padding-bottom:5pt;margin-bottom:4pt}'
+    +'.mh-t{font-size:16pt;font-weight:800;text-transform:capitalize}.mh-s{margin-left:auto;font-size:8.5pt;color:#888;letter-spacing:.05em}'
+    +'.noprint{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e5;padding:12px;display:flex;gap:10px;justify-content:center}@media print{.noprint{display:none}}'
+    +'</style></head><body>'
+    +'<div class="noprint"><button onclick="window.print()" style="padding:9px 22px;background:'+P+';color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600">🖨 '+esc(TXf('period.print','Print / Save as PDF'))+'</button></div>'
+    +pages+'</body></html>';
+  var w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
+if($('expCalPdf')) $('expCalPdf').addEventListener('click', exportMonthlyPDF);
+
 function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderOverview(); }
 
 /* ═══ TABS ═══ */
@@ -575,9 +774,11 @@ function exportPDF(){
     const arr=evList().slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
     if(!arr.length) return '';
     const rows=arr.map(function(e){
-      return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap"><span style="display:inline-block;width:8pt;height:8pt;border-radius:2pt;background:'+evColor(e.type)+'"></span> '+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+'</td>'
+      var cmp=(e.type==='game'&&e.compId)?compById(e.compId):null;
+      var badgeImg=e.badge?'<img src="'+e.badge+'" style="width:12pt;height:12pt;object-fit:contain;vertical-align:-2pt;margin-right:3pt">':'';
+      return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap"><span style="display:inline-block;width:8pt;height:8pt;border-radius:2pt;background:'+evPillColor(e)+'"></span> '+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+(cmp?' · '+esc(cmp.name):'')+'</td>'
         + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap;color:#666">'+fmtDate(e.date)+'</td>'
-        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(e.label||'')+'</td></tr>';
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+badgeImg+esc(e.label||'')+'</td></tr>';
     }).join('');
     return '<div class="sec"><div class="sec-h" style="background:#333">'+esc(TXf('period.evRow','Games / target dates'))+'</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
