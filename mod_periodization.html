@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxGK — Periodization</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="fluxgk-i18n.js"></script>
+<script>
+(function(){
+  console.log('%c[FluxGK] periodization v1.0 — consumidor do hub','color:#E8901A;font-weight:bold');
+  window._HUB=null; window._PZPATH=null; window._fbReady=false; window._uiBooted=false;
+  function _hexOk(c){return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim());}
+
+  window.addEventListener('message',function(e){
+    var d=e.data;
+    if(!d||d.type!=='FLUXGK_CONTEXT')return;
+    if(window.parent!==window && e.source!==window.parent)return;
+    if(!d.uid||!d.dataPath||!d.firebaseConfig){console.error('[FluxGK] period: contexto incompleto',d);return;}
+    window._HUB=d;
+    if(d.lang) FluxGKI18n.setLang(d.lang,false);
+    _PZPATH=d.dataPath+'/periodization';
+    var c=d.club||{},se=d.season||{},co=d.coach||{};
+    PZ.accent=_hexOk(c.color)?c.color.trim():PZ.accent;
+    if(_hexOk(PZ.accent))document.documentElement.style.setProperty('--accent',PZ.accent);
+    PZ.clubName=c.name||''; PZ.clubBadge=c.badge||''; PZ.coachName=co.name||''; window._hubSeason=se.label||'';
+    try{_renderCtxStrip();}catch(err){}
+    if(!_fbReady)_initFB(d.firebaseConfig);
+  });
+  try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'period'},'*'); }catch(e){}
+  window._renderCtxStrip=function(){
+    var set=function(id,v){var el=document.getElementById(id); if(el) el.textContent=v||'—';};
+    set('ctx-club',PZ.clubName); set('ctx-season',window._hubSeason); set('ctx-coach',PZ.coachName);
+    var strip=document.getElementById('ctxStrip');
+    if(strip&&_hexOk(PZ.accent)){strip.style.background=PZ.accent+'14';var ic=strip.querySelector('svg');if(ic)ic.style.color=PZ.accent;}
+  };
+
+  function _initFB(cfg){
+    function ld(src){
+      return new Promise(function(res,rej){
+        var ex=document.querySelector('script[src="'+src+'"]');
+        if(ex && ex.dataset.loaded==='1'){res();return;}
+        if(ex){ex.addEventListener('load',function(){res();});return;}
+        var s=document.createElement('script');s.src=src;
+        s.onload=function(){s.dataset.loaded='1';res();};
+        s.onerror=function(){rej(new Error('falhou: '+src));};
+        document.head.appendChild(s);
+      });
+    }
+    var B='https://www.gstatic.com/firebasejs/9.23.0/';
+    ld(B+'firebase-app-compat.js')
+      .then(function(){return ld(B+'firebase-auth-compat.js');})
+      .then(function(){return ld(B+'firebase-database-compat.js');})
+      .then(function(){
+      if(!firebase.apps.length) firebase.initializeApp(cfg);
+      var db=firebase.database();
+      window.fbSet=function(p,v){return db.ref(p).set(v);};
+      firebase.auth().onAuthStateChanged(function(u){
+        if(!u){console.error('[FluxGK] period: sem sessao. Abra pelo hub.');return;}
+        if(_fbReady)return; _fbReady=true;
+        db.ref(_PZPATH).on('value',function(snap){
+          var v=snap.val();
+          if(v){
+            PZ.macro=Array.isArray(v.macro)?v.macro:[];
+            PZ.meso =Array.isArray(v.meso)?v.meso:[];
+            PZ.micro=Array.isArray(v.micro)?v.micro:[];
+            PZ.events=Array.isArray(v.events)?v.events:[];
+          }
+          if(!window._uiBooted){window._uiBooted=true;bootUI();} else {try{renderAll();}catch(e){}}
+        });
+        db.ref('.info/connected').on('value',function(snap){
+          var dot=document.getElementById('fb-dot'),txt=document.getElementById('fb-status-text');
+          if(!dot)return;
+          if(snap.val()){dot.style.background='#16a34a';if(txt)txt.textContent='live';}
+          else{dot.style.background='#dc2626';if(txt)txt.textContent='offline';}
+        });
+      });
+    }).catch(function(e){console.error('[FluxGK] period: falha ao carregar Firebase',e);});
+  }
+})();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0a0a0a;--paper:#fafaf7;--surface:#fff;--surface2:#f4f4f1;--border:#e5e5e5;--mute:#737373;--accent:#1E4FFF;
+  --macro:#0A2A6B;--meso:#1E4FFF;--micro:#e8901a;--game:#C8102E;--target:#0a8a3a}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px}
+.calwd{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--mute);text-align:center;padding:4px 0}
+.calcell{min-height:66px;border:1px solid var(--border);border-radius:6px;padding:4px 5px;cursor:pointer;background:#fff}
+.calcell:hover{border-color:var(--accent)}
+.calcell.other{background:#faf9f6}
+.calcell.other .dn{color:#c4c4c4}
+.calcell.today{box-shadow:inset 0 0 0 2px var(--accent)}
+.calcell .dn{font-size:11px;font-weight:600;color:var(--mute)}
+.calev{font-size:9.5px;font-weight:600;color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.evrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-left-width:4px;border-radius:6px;margin-bottom:6px;background:#fff}
+.calnav{display:flex;align-items:center;gap:8px;margin:6px 0 10px;flex-wrap:wrap}
+.calcell.selstart{box-shadow:inset 0 0 0 2px var(--accent)}
+.calcell.inrange{background:rgba(30,79,255,.10)}
+.perstrip{font-size:9.5px;font-weight:700;color:#fff;border-radius:3px;padding:1px 5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0}
+.sw{width:22px;height:22px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);cursor:pointer}
+.sw.on{box-shadow:0 0 0 2px var(--ink)}
+.pform{border:1px solid var(--accent);border-radius:8px;padding:12px;margin-bottom:12px;background:#fff}
+html,body{background:var(--paper);color:var(--ink);font-family:'Space Grotesk',sans-serif;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto;padding:16px 22px 60px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:2px}
+.brand{font-weight:800;letter-spacing:.02em;font-size:18px}
+.brand span{color:var(--accent)}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);border:1px solid var(--border);padding:3px 8px;border-radius:4px;background:var(--surface)}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.tabbtn{border:1px solid var(--border);background:var(--surface);padding:7px 14px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer}
+.tabbtn.active{background:var(--ink);border-color:var(--ink);color:#fff}
+#ctxStrip{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:6px;background:rgba(0,0,0,.04);font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a86;margin:8px 0 16px}
+#fb-dot{width:8px;height:8px;border-radius:50%;background:#bbb;margin-left:auto}
+.pane{display:none}
+.pane.active{display:block}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.page-sub{color:var(--mute);font-size:13px;margin:2px 0 16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px}
+.addrow{display:grid;grid-template-columns:1.4fr .8fr .8fr 2fr auto;gap:8px;align-items:end}
+@media(max-width:860px){.addrow{grid-template-columns:1fr 1fr}}
+.fl{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--mute);text-transform:uppercase;margin-bottom:4px;display:block}
+.fi{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:14px;font-family:inherit}
+textarea.fi{resize:vertical;min-height:38px}
+.btn{padding:9px 16px;border:1px solid var(--ink);border-radius:6px;background:var(--ink);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+.btn.ghost{background:#fff;color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.danger{border-color:#dc2626;color:#dc2626;background:#fff}
+.item{border:1px solid var(--border);border-left-width:4px;border-radius:7px;padding:12px;margin-bottom:10px;background:#fff}
+.item .top{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.item .top .nm{flex:1;font-weight:700;font-size:15px;border:none;background:transparent;padding:4px 2px;font-family:inherit}
+.item .dates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.item .dates .fi{max-width:170px}
+.empty{color:var(--mute);font-size:13px;padding:16px;text-align:center;border:1px dashed var(--border);border-radius:8px}
+/* timeline */
+.tlwrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:#fff;padding:12px}
+.tlmonths{position:relative;height:20px;margin-bottom:6px;min-width:640px}
+.tlmonth{position:absolute;top:0;font-size:10px;color:var(--mute);border-left:1px solid var(--border);padding-left:4px;height:100%;font-family:'JetBrains Mono',monospace}
+.tlrow{position:relative;height:38px;margin-bottom:8px;min-width:640px;background:linear-gradient(90deg,#faf9f6,#faf9f6);border-radius:6px}
+.tlrow .lvl{position:absolute;left:-0;top:-16px;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.bar{position:absolute;top:4px;height:30px;border-radius:5px;color:#fff;font-size:11px;font-weight:600;padding:6px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+.tbl th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);padding:8px;border-bottom:2px solid var(--border)}
+.tbl td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+.pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">FLUX<span>GK</span> · <span data-i18n="period.title">PERIODIZATION</span></div>
+    <div class="tag">HUB MODULE — v1.0</div>
+    <nav>
+      <button class="tabbtn active" data-tab="calendar" data-i18n="period.calendar">Calendar</button>
+      <button class="tabbtn" data-tab="macro" data-i18n="period.macro">Macro</button>
+      <button class="tabbtn" data-tab="meso" data-i18n="period.meso">Meso</button>
+      <button class="tabbtn" data-tab="micro" data-i18n="period.micro">Micro</button>
+      <button class="tabbtn" data-tab="overview" data-i18n="period.overview">Overview</button>
+    </nav>
+  </header>
+  <div id="ctxStrip">
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
+    <span id="ctx-club">—</span><span style="opacity:.4">·</span>
+    <span id="ctx-season">—</span><span style="opacity:.4">·</span>
+    <span id="ctx-coach">—</span>
+    <span id="fb-dot"></span><span id="fb-status-text" style="font-size:10px">—</span>
+  </div>
+
+  <!-- CALENDAR -->
+  <section id="pane-calendar" class="pane active">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+      <div>
+        <div class="page-title" data-i18n="period.calTitle">Calendar</div>
+        <div class="page-sub" data-i18n="period.calSub">Mark games and target dates. Then organize the contents around them.</div>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 12px">
+      <div class="addrow" style="grid-template-columns:.9fr 1fr 1.6fr auto">
+        <div><label class="fl" data-i18n="period.evDate">Date</label><input type="date" class="fi" id="ev-date"></div>
+        <div><label class="fl" data-i18n="period.evType">Type</label>
+          <select class="fi" id="ev-type">
+            <option value="game" data-i18n="period.evGame">Game</option>
+            <option value="target" data-i18n="period.evTarget">Target date</option>
+          </select>
+        </div>
+        <div><label class="fl" data-i18n="period.evLabel">Label</label><input class="fi" id="ev-label" placeholder="e.g. vs Rival / Cup final" data-i18n-placeholder="period.evPh"></div>
+        <div><button class="btn" id="ev-add" data-i18n="period.add">+ Add</button></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:6px 0 10px">
+      <button class="btn ghost sm" id="cal-prev">‹</button>
+      <div id="cal-title" style="font-weight:700;font-size:16px;min-width:170px;text-align:center"></div>
+      <button class="btn ghost sm" id="cal-next">›</button>
+      <button class="btn ghost sm" id="cal-today" data-i18n="period.today" style="margin-left:6px">Today</button>
+      <span style="margin-left:auto;display:flex;gap:12px;font-size:11px;color:var(--mute)">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--game);vertical-align:0"></span> <span data-i18n="period.evGame">Game</span></span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--target);vertical-align:0"></span> <span data-i18n="period.evTarget">Target</span></span>
+      </span>
+    </div>
+    <div id="calGrid"></div>
+    <div id="calList" style="margin-top:14px"></div>
+  </section>
+
+  <!-- MACRO -->
+  <section id="pane-macro" class="pane">
+    <div class="page-title" data-i18n="period.macroTitle">Macrocycle — season phases</div>
+    <div class="page-sub" data-i18n="period.cycleSub">Click a start day then an end day on the calendar to paint a period; name the idea, pick a colour and add the contents. Edit anytime.</div>
+    <div id="nav-macro" class="calnav"></div>
+    <div id="cal-macro"></div>
+    <div id="pform-macro"></div>
+    <div id="list-macro" style="margin-top:14px"></div>
+  </section>
+  <!-- MESO -->
+  <section id="pane-meso" class="pane">
+    <div class="page-title" data-i18n="period.mesoTitle">Mesocycles — blocks of weeks</div>
+    <div class="page-sub" data-i18n="period.cycleSub">Click a start day then an end day on the calendar to paint a period; name the idea, pick a colour and add the contents. Edit anytime.</div>
+    <div id="nav-meso" class="calnav"></div>
+    <div id="cal-meso"></div>
+    <div id="pform-meso"></div>
+    <div id="list-meso" style="margin-top:14px"></div>
+  </section>
+  <!-- MICRO -->
+  <section id="pane-micro" class="pane">
+    <div class="page-title" data-i18n="period.microTitle">Microcycles — weeks</div>
+    <div class="page-sub" data-i18n="period.cycleSub">Click a start day then an end day on the calendar to paint a period; name the idea, pick a colour and add the contents. Edit anytime.</div>
+    <div id="nav-micro" class="calnav"></div>
+    <div id="cal-micro"></div>
+    <div id="pform-micro"></div>
+    <div id="list-micro" style="margin-top:14px"></div>
+  </section>
+  <!-- OVERVIEW -->
+  <section id="pane-overview" class="pane">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="page-title" data-i18n="period.overviewTitle">Overview</div>
+        <div class="page-sub" data-i18n="period.overviewSub">Everything you fed in, assembled on one timeline.</div>
+      </div>
+      <button class="btn" id="expPdf" style="margin-left:auto" data-i18n="period.exportPdf">⤓ Export PDF</button>
+    </div>
+    <div id="overviewBody"></div>
+  </section>
+</div>
+
+<script>
+/* ═══ STATE ═══ */
+const PZ = { macro:[], meso:[], micro:[], events:[], accent:'#1E4FFF', clubName:'', clubBadge:'', coachName:'' };
+const LEVELS = { macro:{arr:'macro', color:'--macro'}, meso:{arr:'meso', color:'--meso'}, micro:{arr:'micro', color:'--micro'} };
+function $(id){return document.getElementById(id);}
+function TXf(k,fb){ try{ return TX(k,fb); }catch(e){ return fb; } }
+function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function save(){
+  if(window.fbSet && _PZPATH){ window.fbSet(_PZPATH,{macro:PZ.macro,meso:PZ.meso,micro:PZ.micro,events:PZ.events,updatedAt:Date.now()}).catch(function(e){console.error('FB period:',e);}); }
+}
+
+/* ═══ CRUD ═══ */
+function itemsOf(level){ if(!Array.isArray(PZ[level])) PZ[level]=[]; return PZ[level]; }
+function pzAdd(level, obj){
+  const it = Object.assign({ id:uid(), name:'', start:'', end:'', text:'', color:defColor(level) }, obj||{});
+  itemsOf(level).push(it); save(); renderLevel(level);
+}
+function pzDelete(level, id){ PZ[level]=itemsOf(level).filter(function(x){return x.id!==id;}); save(); renderLevel(level); }
+function pzSet(level, id, field, val){ const it=itemsOf(level).find(function(x){return x.id===id;}); if(it){ it[field]=val; save(); } }
+function sortByStart(arr){ return arr.slice().sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); }); }
+
+/* ═══ RENDER — nível (macro/meso/micro) ═══ */
+function buildAddRow(level){
+  const box = $('add-'+level); if(!box) return;
+  box.innerHTML =
+    '<div class="addrow">'
+    + '<div><label class="fl">'+esc(TXf('period.name','Name'))+'</label><input class="fi" id="nn-'+level+'" placeholder="'+esc(TXf('period.ph.name','e.g. Competitive phase 1'))+'"></div>'
+    + '<div><label class="fl">'+esc(TXf('period.start','Start'))+'</label><input type="date" class="fi" id="ss-'+level+'"></div>'
+    + '<div><label class="fl">'+esc(TXf('period.end','End'))+'</label><input type="date" class="fi" id="ee-'+level+'"></div>'
+    + '<div><label class="fl">'+esc(level==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</label><input class="fi" id="oo-'+level+'" placeholder="'+esc(TXf('period.ph.obj','What to work / focus…'))+'"></div>'
+    + '<div><button class="btn" id="addbtn-'+level+'">'+esc(TXf('period.add','+ Add'))+'</button></div>'
+    + '</div>';
+  $('addbtn-'+level).addEventListener('click', function(){
+    const nm=$('nn-'+level).value.trim(), ss=$('ss-'+level).value, ee=$('ee-'+level).value, oo=$('oo-'+level).value.trim();
+    if(!nm && !oo){ $('nn-'+level).focus(); return; }
+    pzAdd(level,{name:nm,start:ss,end:ee,text:oo});
+    $('nn-'+level).value=''; $('ss-'+level).value=''; $('ee-'+level).value=''; $('oo-'+level).value='';
+  });
+}
+function renderLevel(level){
+  const box = $('list-'+level); if(!box) return;
+  const arr = sortByStart(itemsOf(level));
+  box.innerHTML='';
+  if(!arr.length){ box.innerHTML='<div class="empty">'+esc(TXf('period.emptyLevel','Nothing here yet — click two days on the calendar to create a period.'))+'</div>'; renderLevelCal(level); renderOverview(); return; }
+  arr.forEach(function(it){
+    const col=it.color||defColor(level);
+    const d=document.createElement('div'); d.className='item'; d.style.borderLeftColor=col; d.setAttribute('data-cid',it.id);
+    var swatches=PALETTE.map(function(c){return '<div class="sw'+(c===col?' on':'')+'" data-c="'+c+'" style="background:'+c+'"></div>';}).join('')
+      +'<input type="color" class="cc-custom" value="'+col+'" style="width:28px;height:24px;border:none;background:none;cursor:pointer">';
+    d.innerHTML =
+      '<div class="top"><input class="nm" value="'+esc(it.name)+'" placeholder="'+esc(TXf('period.ph.name','Name'))+'">'
+      + '<button class="btn ghost sm danger" title="'+esc(TXf('period.delete','Delete'))+'">✕</button></div>'
+      + '<div class="dates">'
+      +   '<div><label class="fl">'+esc(TXf('period.start','Start'))+'</label><input type="date" class="fi jd-start" value="'+esc(it.start||'')+'"></div>'
+      +   '<div><label class="fl">'+esc(TXf('period.end','End'))+'</label><input type="date" class="fi jd-end" value="'+esc(it.end||'')+'"></div>'
+      + '</div>'
+      + '<label class="fl">'+esc(TXf('period.color','Colour'))+'</label><div class="swatches jd-sw">'+swatches+'</div>'
+      + '<label class="fl">'+esc(level==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</label>'
+      + '<textarea class="fi jd-text" rows="2">'+esc(it.text||'')+'</textarea>';
+    const nm=d.querySelector('.nm'), st=d.querySelector('.jd-start'), en=d.querySelector('.jd-end'), tx=d.querySelector('.jd-text'), del=d.querySelector('.danger'), cust=d.querySelector('.cc-custom');
+    nm.addEventListener('change',function(){ pzSet(level,it.id,'name',nm.value.trim()); renderLevelCal(level); renderOverview(); });
+    st.addEventListener('change',function(){ pzSet(level,it.id,'start',st.value); renderLevel(level); });
+    en.addEventListener('change',function(){ pzSet(level,it.id,'end',en.value); renderLevel(level); });
+    tx.addEventListener('change',function(){ pzSet(level,it.id,'text',tx.value.trim()); renderOverview(); });
+    function setCol(c){ pzSet(level,it.id,'color',c); d.style.borderLeftColor=c; d.querySelectorAll('.jd-sw .sw').forEach(function(x){x.classList.toggle('on',x.dataset.c===c);}); if(cust)cust.value=c; renderLevelCal(level); renderOverview(); }
+    d.querySelectorAll('.jd-sw .sw').forEach(function(s){ s.addEventListener('click',function(){setCol(s.dataset.c);}); });
+    if(cust) cust.addEventListener('input',function(){ setCol(cust.value); });
+    del.addEventListener('click',async function(){ if(await confirmDel(it.name)) pzDelete(level,it.id); });
+    box.appendChild(d);
+  });
+  renderLevelCal(level);
+  renderOverview();
+}
+function confirmDel(name){ return Promise.resolve(window.confirm(TXf('period.confirmDel','Delete "')+ (name||'') +'"?')); }
+
+/* ═══ RENDER — visão geral (timeline + tabela) ═══ */
+function allItems(){
+  const out=[];
+  ['macro','meso','micro'].forEach(function(lv){ itemsOf(lv).forEach(function(it){ out.push(Object.assign({_lvl:lv},it)); }); });
+  return out;
+}
+function span(){
+  const ds=[]; allItems().forEach(function(it){ if(it.start)ds.push(Date.parse(it.start)); if(it.end)ds.push(Date.parse(it.end)); });
+  evList().forEach(function(e){ if(e.date)ds.push(Date.parse(e.date)); });
+  if(!ds.length) return null;
+  let a=Math.min.apply(null,ds), b=Math.max.apply(null,ds);
+  if(b<=a) b=a+7*864e5;
+  return {a:a,b:b};
+}
+function lvlColor(lv){ return getComputedStyle(document.documentElement).getPropertyValue(LEVELS[lv].color).trim()||'#333'; }
+function lvlName(lv){ return TXf('period.'+lv, lv); }
+function fmtDate(s){ if(!s)return '—'; const d=new Date(s+'T12:00'); return isNaN(d)?s:d.toLocaleDateString(TXf('data.pdf.locale','en-GB'),{day:'2-digit',month:'short',year:'2-digit'}); }
+
+function timelineHTML(){
+  const sp=span();
+  if(!sp) return '';
+  const total=sp.b-sp.a;
+  let months='';
+  const start=new Date(sp.a); start.setDate(1);
+  for(let d=new Date(start); d.getTime()<=sp.b; d.setMonth(d.getMonth()+1)){
+    const left=Math.max(0,(d.getTime()-sp.a)/total*100);
+    months+='<div class="tlmonth" style="left:'+left.toFixed(2)+'%">'+d.toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'short',year:'2-digit'})+'</div>';
+  }
+  let rows='';
+  ['macro','meso','micro'].forEach(function(lv){
+    const col=lvlColor(lv);
+    let bars='';
+    sortByStart(itemsOf(lv)).forEach(function(it){
+      if(!it.start) return;
+      const s=Date.parse(it.start), e=it.end?Date.parse(it.end):s+7*864e5;
+      const left=(s-sp.a)/total*100, w=Math.max(1.5,(e-s)/total*100);
+      bars+='<div class="bar" style="left:'+left.toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+(it.color||col)+'" title="'+esc(it.name)+'">'+esc(it.name||'—')+'</div>';
+    });
+    rows+='<div class="tlrow"><span class="lvl" style="color:'+col+'">'+esc(lvlName(lv))+'</span>'+bars+'</div>';
+  });
+  /* faixa de eventos (jogos / datas-alvo) no topo */
+  let evBars='';
+  evList().forEach(function(e){
+    if(!e.date) return; const t=Date.parse(e.date); const left=(t-sp.a)/total*100;
+    evBars+='<div class="bar" style="left:'+left.toFixed(2)+'%;width:auto;min-width:20px;background:'+evColor(e.type)+';padding:6px 7px" title="'+esc((e.type==='game'?'⚽ ':'★ ')+(e.label||''))+'">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</div>';
+  });
+  const evRow='<div class="tlrow"><span class="lvl">'+esc(TXf('period.evRow','Games / targets'))+'</span>'+evBars+'</div>';
+  return '<div class="tlwrap"><div class="tlmonths">'+months+'</div>'+evRow+rows+'</div>';
+}
+function tableHTML(){
+  const items=allItems().filter(function(it){return it.start||it.end||it.name||it.text;});
+  if(!items.length) return '';
+  items.sort(function(a,b){ return (a.start||'zzz').localeCompare(b.start||'zzz'); });
+  let rows='';
+  items.forEach(function(it){
+    const col=lvlColor(it._lvl);
+    rows+='<tr><td><span class="pill" style="background:'+col+'">'+esc(lvlName(it._lvl))+'</span></td>'
+      + '<td style="font-weight:600">'+esc(it.name||'—')+'</td>'
+      + '<td style="white-space:nowrap;color:var(--mute)">'+fmtDate(it.start)+' → '+fmtDate(it.end)+'</td>'
+      + '<td>'+esc(it.text||'')+'</td></tr>';
+  });
+  return '<table class="tbl"><thead><tr><th>'+esc(TXf('period.level','Level'))+'</th><th>'+esc(TXf('period.name','Name'))
+    + '</th><th>'+esc(TXf('period.periodCol','Period'))+'</th><th>'+esc(TXf('period.objective','Objective / content'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function renderOverview(){
+  const box=$('overviewBody'); if(!box) return;
+  const tl=timelineHTML(), tb=tableHTML();
+  if(!tl && !tb){ box.innerHTML='<div class="empty" style="margin-top:14px">'+esc(TXf('period.overviewEmpty','Add phases, blocks or weeks in the Macro/Meso/Micro tabs to see them assembled here.'))+'</div>'; return; }
+  box.innerHTML=(tl||'')+(tb||'');
+}
+
+/* ═══ CALENDÁRIO ═══ */
+let calYear=null, calMonth=null;
+function evList(){ if(!Array.isArray(PZ.events)) PZ.events=[]; return PZ.events; }
+function evColor(t){ return getComputedStyle(document.documentElement).getPropertyValue(t==='game'?'--game':'--target').trim()||'#888'; }
+function evAdd(date, type, label){
+  if(!date){ $('ev-date') && $('ev-date').focus(); return; }
+  evList().push({ id:uid(), date:date, type:(type==='target'?'target':'game'), label:(label||'').trim() });
+  save(); renderCalendar(); renderOverview();
+}
+function evDelete(id){ PZ.events=evList().filter(function(x){return x.id!==id;}); save(); renderCalendar(); renderOverview(); }
+function eventsOn(iso){ return evList().filter(function(e){return e.date===iso;}); }
+function isoOf(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+
+function renderCalendar(){
+  const grid=$('calGrid'); if(!grid) return;
+  const now=new Date();
+  if(calYear==null){ calYear=now.getFullYear(); calMonth=now.getMonth(); }
+  const first=new Date(calYear,calMonth,1);
+  const title=$('cal-title'); if(title) title.textContent=first.toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
+  const wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
+  let html='<div class="calgrid">';
+  wd.forEach(function(w){ html+='<div class="calwd">'+esc(w)+'</div>'; });
+  const startDow=(first.getDay()+6)%7;                 // segunda = 0
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+  const todayIso=isoOf(now.getFullYear(),now.getMonth(),now.getDate());
+  const cells=[];
+  for(let i=0;i<startDow;i++){ cells.push({d:prevDays-startDow+1+i,m:calMonth-1}); }
+  for(let d=1;d<=daysInMonth;d++){ cells.push({d:d,m:calMonth}); }
+  while(cells.length%7!==0){ cells.push({d:cells.length-startDow-daysInMonth+1,m:calMonth+1}); }
+  cells.forEach(function(c){
+    let yy=calYear, mm=c.m; if(mm<0){mm=11;yy--;} if(mm>11){mm=0;yy++;}
+    const iso=isoOf(yy,mm,c.d);
+    const other=(c.m!==calMonth);
+    const evh=eventsOn(iso).map(function(e){ return '<div class="calev" style="background:'+evColor(e.type)+'" title="'+esc(e.label)+'">'+esc(e.label||(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target')))+'</div>'; }).join('');
+    html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+evh+'</div>';
+  });
+  html+='</div>';
+  grid.innerHTML=html;
+  grid.querySelectorAll('.calcell').forEach(function(cell){
+    cell.addEventListener('click', function(){ const di=$('ev-date'); if(di){ di.value=cell.dataset.iso; di.focus(); } });
+  });
+  const box=$('calList');
+  if(box){
+    const up=evList().slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+    if(!up.length){ box.innerHTML='<div class="empty">'+esc(TXf('period.calEmpty','No games or target dates yet. Add above or click a day.'))+'</div>'; }
+    else{
+      box.innerHTML=up.map(function(e){
+        return '<div class="evrow" style="border-left-color:'+evColor(e.type)+'">'
+          + '<span class="pill" style="background:'+evColor(e.type)+'">'+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+'</span>'
+          + '<span style="font-weight:600;white-space:nowrap">'+fmtDate(e.date)+'</span>'
+          + '<span style="flex:1">'+esc(e.label||'')+'</span>'
+          + '<button class="btn ghost sm danger" data-del="'+e.id+'">✕</button></div>';
+      }).join('');
+      box.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click', function(){ evDelete(b.dataset.del); }); });
+    }
+  }
+}
+if($('cal-prev')) $('cal-prev').addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
+if($('cal-next')) $('cal-next').addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
+if($('cal-today')) $('cal-today').addEventListener('click', function(){ const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCalendar(); });
+if($('ev-add')) $('ev-add').addEventListener('click', function(){ evAdd($('ev-date').value, $('ev-type').value, $('ev-label').value); $('ev-label').value=''; });
+
+/* ═══ CALENDÁRIO POR NÍVEL (pintar períodos) ═══ */
+const PALETTE=['#1E4FFF','#0A2A6B','#C8102E','#0a8a3a','#e8901a','#7b2ff7','#00a3a3','#d81b60','#5b7db1','#3a3a3a'];
+function defColor(level){ return getComputedStyle(document.documentElement).getPropertyValue(LEVELS[level].color).trim()||'#1E4FFF'; }
+const _sel={macro:null,meso:null,micro:null};
+function monthCells(){
+  if(calYear==null){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
+  const first=new Date(calYear,calMonth,1);
+  const startDow=(first.getDay()+6)%7;
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  const prev=new Date(calYear,calMonth,0).getDate();
+  const cells=[];
+  for(let i=0;i<startDow;i++)cells.push({d:prev-startDow+1+i,m:calMonth-1});
+  for(let d=1;d<=dim;d++)cells.push({d:d,m:calMonth});
+  while(cells.length%7)cells.push({d:cells.length-startDow-dim+1,m:calMonth+1});
+  return cells.map(function(c){var yy=calYear,mm=c.m;if(mm<0){mm=11;yy--;}if(mm>11){mm=0;yy++;}return {iso:isoOf(yy,mm,c.d),d:c.d,other:(c.m!==calMonth)};});
+}
+function _navHTML(){
+  return '<button class="btn ghost sm" data-n="p">‹</button>'
+    +'<span style="font-weight:700;font-size:16px;min-width:150px;display:inline-block;text-align:center">'+esc(new Date(calYear,calMonth,1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'}))+'</span>'
+    +'<button class="btn ghost sm" data-n="n">›</button>'
+    +'<button class="btn ghost sm" data-n="t" style="margin-left:6px">'+esc(TXf('period.today','Today'))+'</button>';
+}
+function _wireNav(el,rerender){
+  if(!el)return; var p=el.querySelector('[data-n=p]'),n=el.querySelector('[data-n=n]'),t=el.querySelector('[data-n=t]');
+  if(p)p.onclick=function(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}rerender();};
+  if(n)n.onclick=function(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}rerender();};
+  if(t)t.onclick=function(){var d=new Date();calYear=d.getFullYear();calMonth=d.getMonth();rerender();};
+}
+function renderLevelCal(level){
+  var nav=$('nav-'+level); if(nav){ nav.className='calnav'; nav.innerHTML=_navHTML(); _wireNav(nav,function(){renderLevelCal(level);}); }
+  var grid=$('cal-'+level); if(!grid)return;
+  var now=new Date(),todayIso=isoOf(now.getFullYear(),now.getMonth(),now.getDate());
+  var wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
+  var html='<div class="calgrid">'; wd.forEach(function(w){html+='<div class="calwd">'+esc(w)+'</div>';});
+  var periods=sortByStart(itemsOf(level)); var sel=_sel[level];
+  monthCells().forEach(function(c){
+    var inner='<div class="dn">'+c.d+'</div>';
+    periods.forEach(function(it){
+      if(it.start&&it.end&&c.iso>=it.start&&c.iso<=it.end){
+        var nameHere=(c.iso===it.start)||(c.d===1&&!c.other);
+        inner+='<div class="perstrip" style="background:'+(it.color||defColor(level))+'" data-pid="'+it.id+'" title="'+esc(it.name)+'">'+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
+      }
+    });
+    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evColor(e.type)+';font-size:8.5px" title="'+esc(e.label)+'">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</div>'; });
+    var cls='calcell'+(c.other?' other':'')+(c.iso===todayIso?' today':''); if(sel&&c.iso===sel)cls+=' selstart';
+    html+='<div class="'+cls+'" data-iso="'+c.iso+'">'+inner+'</div>';
+  });
+  html+='</div>';
+  if(sel){ html+='<div style="font-size:12px;color:var(--mute);margin-top:6px">'+esc(TXf('period.selHint','Start selected: '))+fmtDate(sel)+' — '+esc(TXf('period.selHint2','click the end day.'))+' <button class="btn ghost sm" id="selcancel-'+level+'">'+esc(TXf('period.cancel','Cancel'))+'</button></div>'; }
+  grid.innerHTML=html;
+  var sc=$('selcancel-'+level); if(sc)sc.addEventListener('click',function(){_sel[level]=null;renderLevelCal(level);});
+  grid.querySelectorAll('.perstrip').forEach(function(ps){ ps.addEventListener('click',function(ev){ev.stopPropagation();focusCard(level,ps.dataset.pid);}); });
+  grid.querySelectorAll('.calcell').forEach(function(cell){ cell.addEventListener('click',function(){ onLevelDayClick(level,cell.dataset.iso); }); });
+}
+function onLevelDayClick(level,iso){
+  if(!_sel[level]){ _sel[level]=iso; renderLevelCal(level); return; }
+  var a=_sel[level],b=iso; if(b<a){var t=a;a=b;b=t;} _sel[level]=null;
+  openCreateForm(level,a,b);
+}
+function _swatchesHTML(sel){
+  return PALETTE.map(function(c){return '<div class="sw'+(c===sel?' on':'')+'" data-c="'+c+'" style="background:'+c+'"></div>';}).join('')
+    +'<input type="color" id="pf-custom" value="'+(sel||PALETTE[0])+'" style="width:30px;height:26px;border:none;background:none;cursor:pointer" title="'+esc(TXf('period.custom','Custom'))+'">';
+}
+function openCreateForm(level,start,end){
+  var box=$('pform-'+level); if(!box)return; var chosen=defColor(level);
+  box.innerHTML='<div class="pform"><div style="font-weight:700;margin-bottom:8px">'+esc(TXf('period.newPeriod','New period'))+' · '+fmtDate(start)+' → '+fmtDate(end)+'</div>'
+    +'<label class="fl">'+esc(TXf('period.name','Name'))+'</label><input class="fi" id="pf-name" placeholder="'+esc(TXf('period.ph.idea','General idea…'))+'">'
+    +'<label class="fl" style="margin-top:8px">'+esc(TXf('period.color','Colour'))+'</label><div class="swatches" id="pf-sw">'+_swatchesHTML(chosen)+'</div>'
+    +'<label class="fl" style="margin-top:8px">'+esc(level==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</label><textarea class="fi" id="pf-text" rows="2" placeholder="'+esc(TXf('period.ph.obj','What to work / focus…'))+'"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="pf-ok">'+esc(TXf('period.create','Create period'))+'</button><button class="btn ghost" id="pf-cancel">'+esc(TXf('period.cancel','Cancel'))+'</button></div></div>';
+  function pick(c){ chosen=c; box.querySelectorAll('#pf-sw .sw').forEach(function(x){x.classList.toggle('on',x.dataset.c===c);}); var cu=$('pf-custom'); if(cu)cu.value=c; }
+  box.querySelectorAll('#pf-sw .sw').forEach(function(s){ s.addEventListener('click',function(){pick(s.dataset.c);}); });
+  $('pf-custom').addEventListener('input',function(){ chosen=$('pf-custom').value; box.querySelectorAll('#pf-sw .sw').forEach(function(x){x.classList.remove('on');}); });
+  $('pf-ok').addEventListener('click',function(){ pzAdd(level,{name:$('pf-name').value.trim(),start:start,end:end,text:$('pf-text').value.trim(),color:chosen}); box.innerHTML=''; });
+  $('pf-cancel').addEventListener('click',function(){ box.innerHTML=''; });
+  $('pf-name').focus();
+}
+function focusCard(level,id){
+  var el=document.querySelector('#list-'+level+' [data-cid="'+id+'"]'); if(!el)return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.style.transition='box-shadow .2s'; el.style.boxShadow='0 0 0 3px var(--accent)';
+  setTimeout(function(){el.style.boxShadow='';},1200);
+}
+
+function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderOverview(); }
+
+/* ═══ TABS ═══ */
+function switchTab(name){
+  document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===name); });
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.toggle('active', p.id==='pane-'+name); });
+  if(name==='overview') renderOverview();
+  if(name==='calendar') renderCalendar();
+  if(name==='macro'||name==='meso'||name==='micro') renderLevel(name);
+}
+document.querySelectorAll('.tabbtn').forEach(function(b){ b.addEventListener('click', function(){ switchTab(b.dataset.tab); }); });
+
+/* ═══ PDF ═══ */
+function exportPDF(){
+  const P = _hexOkJs(PZ.accent) ? PZ.accent : '#0A2A6B';
+  const cn = PZ.clubName || 'FluxGK';
+  const coa = PZ.coachName || '';
+  const today = new Date().toLocaleDateString(TXf('data.pdf.locale','en-GB'),{day:'numeric',month:'long',year:'numeric'});
+  function sect(lv){
+    const arr=sortByStart(itemsOf(lv)); if(!arr.length) return '';
+    const col=lvlColor(lv);
+    let rows=arr.map(function(it){
+      return '<tr><td style="font-weight:700;padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5"><span style="display:inline-block;width:8pt;height:8pt;border-radius:2pt;background:'+(it.color||col)+'"></span> '+esc(it.name||'—')+'</td>'
+        + '<td style="white-space:nowrap;color:#666;padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+fmtDate(it.start)+' → '+fmtDate(it.end)+'</td>'
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(it.text||'')+'</td></tr>';
+    }).join('');
+    return '<div class="sec"><div class="sec-h" style="background:'+col+'">'+esc(lvlName(lv))+'</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><thead><tr>'
+      + '<th style="text-align:left;font-size:8pt;text-transform:uppercase;color:#737373;padding:6pt 9pt;border-bottom:1.5pt solid #e5e5e5">'+esc(TXf('period.name','Name'))+'</th>'
+      + '<th style="text-align:left;font-size:8pt;text-transform:uppercase;color:#737373;padding:6pt 9pt;border-bottom:1.5pt solid #e5e5e5">'+esc(TXf('period.periodCol','Period'))+'</th>'
+      + '<th style="text-align:left;font-size:8pt;text-transform:uppercase;color:#737373;padding:6pt 9pt;border-bottom:1.5pt solid #e5e5e5">'+esc(lv==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</th>'
+      + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  function sectEvents(){
+    const arr=evList().slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+    if(!arr.length) return '';
+    const rows=arr.map(function(e){
+      return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap"><span style="display:inline-block;width:8pt;height:8pt;border-radius:2pt;background:'+evColor(e.type)+'"></span> '+esc(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target'))+'</td>'
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap;color:#666">'+fmtDate(e.date)+'</td>'
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(e.label||'')+'</td></tr>';
+    }).join('');
+    return '<div class="sec"><div class="sec-h" style="background:#333">'+esc(TXf('period.evRow','Games / target dates'))+'</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
+  }
+  const body = sectEvents()+sect('macro')+sect('meso')+sect('micro');
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.pdf.title','Periodization'))+'</title>'
+    + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + '@media screen{body{max-width:860px;margin:0 auto;padding:24px}}@media print{@page{margin:1.4cm 1.6cm;size:A4}}'
+    + '.cover{background:'+P+';color:#fff;border-radius:6pt;padding:16pt 20pt;margin-bottom:14pt;display:flex;align-items:center;gap:14pt}'
+    + '.cover .h1{font-size:17pt;font-weight:700}.cover .eyebrow{font-size:8pt;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:3pt}'
+    + '.cover .meta{margin-left:auto;text-align:right;font-size:8.5pt;opacity:.85}'
+    + '.sec{margin-bottom:16pt;page-break-inside:avoid}.sec-h{color:#fff;font-size:9pt;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:7pt 12pt;border-radius:4pt 4pt 0 0}'
+    + '.noprint{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e5;padding:12px;display:flex;gap:10px;justify-content:center}@media print{.noprint{display:none}}'
+    + '</style></head><body>'
+    + '<div class="noprint"><button onclick="window.print()" style="padding:9px 22px;background:'+P+';color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600">🖨 '+esc(TXf('period.print','Print / Save as PDF'))+'</button></div>'
+    + '<div class="cover"><div><div class="eyebrow">FluxGK · '+esc(cn)+'</div><div class="h1">'+esc(TXf('period.pdf.title','Periodization'))+'</div></div>'
+    +   '<div class="meta">'+(coa?esc(coa)+'<br>':'')+esc(window._hubSeason||'')+'<br>'+esc(today)+'</div></div>'
+    + (body || '<div style="color:#737373;padding:20pt;text-align:center">'+esc(TXf('period.overviewEmpty','Nothing to export yet.'))+'</div>')
+    + '</body></html>';
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
+function _hexOkJs(c){ return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim()); }
+if($('expPdf')) $('expPdf').addEventListener('click', exportPDF);
+
+/* ═══ BOOT ═══ */
+function bootUI(){
+  if(_hexOkJs(PZ.accent)) document.documentElement.style.setProperty('--accent',PZ.accent);
+  renderAll();
+  try{ FluxGKI18n.apply(); }catch(e){}
+  try{ FluxGKI18n.onChange(function(){ renderAll(); }); }catch(e){}
+}
+/* fora do hub (abrir o arquivo solto): mostra a UI mesmo sem Firebase */
+setTimeout(function(){ if(!window._uiBooted){ window._uiBooted=true; try{bootUI();}catch(e){console.error(e);} } }, 1200);
+</script>
+</body>
+</html>

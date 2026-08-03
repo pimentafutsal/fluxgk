@@ -317,6 +317,7 @@ var PRESETS=['#0a0a0a','#1e3a5f','#7c3aed','#0f6e56','#b91c1c','#c2410c','#1d4ed
 /* n/d/t sao resolvidos por TX() a cada render, para trocar com o idioma */
 var MODS=[
   {k:'planner',i:'<path d="M3 5h18M3 12h18M3 19h18"/>'},
+  {k:'period', i:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'},
   {k:'xg',     i:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>'},
   {k:'stats',  i:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
   {k:'minutes',i:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
@@ -326,7 +327,7 @@ var MODS=[
 function modName(k){return TX('hub.mod.'+k,k);}
 function modDesc(k){return TX('hub.mod.'+k+'.d','');}
 function modTag(k){return TX('hub.mod.'+k+'.t',k.toUpperCase());}
-var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html'};
+var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html',period:'mod_periodization.html'};
 
 var _auth,_rtdb;
 var APP={
