@@ -268,6 +268,7 @@ textarea.fi{resize:vertical;min-height:38px}
         <div class="page-sub" data-i18n="period.overviewSub">Everything you fed in, assembled on one timeline.</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" id="ovSeasonBtn" data-i18n="period.seasonView">⤢ Whole season</button>
         <button class="btn ghost" id="expCalPdf" data-i18n="period.exportCal">⤓ Monthly calendar</button>
         <button class="btn" id="expPdf" data-i18n="period.exportPdf">⤓ Export PDF</button>
       </div>
@@ -371,6 +372,7 @@ function span(){
 }
 function lvlColor(lv){ return getComputedStyle(document.documentElement).getPropertyValue(LEVELS[lv].color).trim()||'#333'; }
 function lvlName(lv){ return TXf('period.'+lv, lv); }
+function lvlAbbr(lv){ return TXf('period.abbr.'+lv, lv==='macro'?'MAC':lv==='meso'?'MES':'MIC'); }
 function fmtDate(s){ if(!s)return '—'; const d=new Date(s+'T12:00'); return isNaN(d)?s:d.toLocaleDateString(TXf('data.pdf.locale','en-GB'),{day:'2-digit',month:'short',year:'2-digit'}); }
 
 function timelineHTML(){
@@ -709,7 +711,8 @@ function monthGridHTML(y,m,print){
         sortByStart(itemsOf(lv)).forEach(function(it){
           if(it.start&&it.end&&cell.iso>=it.start&&cell.iso<=it.end){
             var nameHere=(cell.iso===it.start)||(cell.d===1&&!cell.other);
-            inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+(it.color||defColor(lv))+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(it.name)+'">'+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
+            var tag=nameHere?'<span style="font-weight:800;letter-spacing:.03em;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
+            inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+(it.color||defColor(lv))+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+tag+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
           }
         });
       });
@@ -732,10 +735,21 @@ function calLegend(print){
     + items.map(function(i){return '<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:11px;height:11px;border-radius:2px;background:'+i[0]+';display:inline-block"></span>'+esc(i[1])+'</span>';}).join('')
     + '<span style="color:#aaa">'+esc(TXf('period.legendNote','(period colours may vary)'))+'</span></div>';
 }
-let ovYear=null, ovMonth=null;
+let ovYear=null, ovMonth=null, _ovSeason=false;
 function renderOverviewCal(){
   var nav=$('ov-nav'), grid=$('ov-cal'); if(!grid) return;
   if(ovYear==null){ var n=new Date(); ovYear=n.getFullYear(); ovMonth=n.getMonth(); }
+  var sb=$('ovSeasonBtn'); if(sb) sb.classList.toggle('on', _ovSeason);
+  if(_ovSeason){
+    if(nav) nav.innerHTML='';
+    var months=spanMonths();
+    if(!months.length){ grid.innerHTML=calLegend(false)+'<div class="empty">'+esc(TXf('period.calNothing','Add games, target dates or periods first.'))+'</div>'; return; }
+    grid.innerHTML=calLegend(false)+months.map(function(ym){
+      var title=new Date(ym[0],ym[1],1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
+      return '<div style="font-weight:800;font-size:15px;margin:16px 0 6px;text-transform:capitalize">'+esc(title)+'</div><div class="ovcal">'+monthGridHTML(ym[0],ym[1],false)+'</div>';
+    }).join('');
+    return;
+  }
   if(nav){ nav.className='calnav';
     nav.innerHTML='<button class="btn ghost sm" data-n="p">‹</button>'
       +'<span style="font-weight:700;font-size:16px;min-width:150px;display:inline-block;text-align:center">'+esc(new Date(ovYear,ovMonth,1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'}))+'</span>'
@@ -785,6 +799,7 @@ if($('expCalPdf')) $('expCalPdf').addEventListener('click', exportMonthlyPDF);
 
 function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderDayThemes(); renderOverview(); }
 if($('dt-meso')) $('dt-meso').addEventListener('change', function(){ _dtMeso=this.value; renderDayThemes(); });
+if($('ovSeasonBtn')) $('ovSeasonBtn').addEventListener('click', function(){ _ovSeason=!_ovSeason; this.textContent=(_ovSeason?TXf('period.monthView','⤡ Single month'):TXf('period.seasonView','⤢ Whole season')); renderOverviewCal(); });
 
 /* ═══ TABS ═══ */
 function switchTab(name){
