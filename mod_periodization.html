@@ -508,7 +508,7 @@ function _toggleGameOpts(){
 }
 /* ── Temáticas por dia (micros) ── */
 function dayThemesMap(){ if(!PZ.dayThemes||typeof PZ.dayThemes!=='object') PZ.dayThemes={}; return PZ.dayThemes; }
-function setDayTheme(iso,text){ var m=dayThemesMap(); text=(text||'').trim(); if(text)m[iso]=text; else delete m[iso]; save(); renderOverview(); }
+function setDayTheme(iso,text){ var m=dayThemesMap(); text=(text||'').trim(); if(text)m[iso]=text; else delete m[iso]; save(); renderCalendar(); renderLevelCal('micro'); renderOverview(); }
 function eachDay(start,end,cb){ if(!start||!end)return; var d=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00'), g=0; while(d<=e&&g++<400){ cb(isoOf(d.getFullYear(),d.getMonth(),d.getDate())); d.setDate(d.getDate()+1); } }
 var _dtMeso=null;
 function renderDayThemes(){
@@ -647,16 +647,24 @@ function renderLevelCal(level){
   var now=new Date(),todayIso=isoOf(now.getFullYear(),now.getMonth(),now.getDate());
   var wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
   var html='<div class="calgrid">'; wd.forEach(function(w){html+='<div class="calwd">'+esc(w)+'</div>';});
-  var periods=sortByStart(itemsOf(level)); var sel=_sel[level];
+  var periodsAll={macro:sortByStart(itemsOf('macro')),meso:sortByStart(itemsOf('meso')),micro:sortByStart(itemsOf('micro'))};
+  var sel=_sel[level]; var map=dayThemesMap();
   monthCells().forEach(function(c){
     var inner='<div class="dn">'+c.d+'</div>';
-    periods.forEach(function(it){
-      if(it.start&&it.end&&c.iso>=it.start&&c.iso<=it.end){
-        var nameHere=(c.iso===it.start)||(c.d===1&&!c.other);
-        inner+='<div class="perstrip" style="background:'+(it.color||defColor(level))+'" data-pid="'+it.id+'" title="'+esc(it.name)+'">'+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
-      }
+    ['macro','meso','micro'].forEach(function(lv){
+      periodsAll[lv].forEach(function(it){
+        if(it.start&&it.end&&c.iso>=it.start&&c.iso<=it.end){
+          var nameHere=(c.iso===it.start)||(c.d===1&&!c.other);
+          var tag=nameHere?'<span style="font-weight:800;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
+          var body=tag+(nameHere?esc(it.name||'—'):'&nbsp;');
+          if(lv===level){ inner+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+'" data-pid="'+it.id+'" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+body+'</div>'; }
+          else{ inner+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+';opacity:.45;pointer-events:none" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+body+'</div>'; }
+        }
+      });
     });
-    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evPillColor(e)+';font-size:8.5px" title="'+esc(e.label)+'">'+(e.badge?evBadge(e,12):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>'; });
+    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evPillColor(e)+';font-size:8.5px;pointer-events:none" title="'+esc(e.label)+'">'+(e.badge?evBadge(e,12):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>'; });
+    var th=map[c.iso];
+    if(th){ inner+='<div style="font-size:9px;color:#555;font-style:italic;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none" title="'+esc(th)+'">'+esc(th)+'</div>'; }
     var cls='calcell'+(c.other?' other':'')+(c.iso===todayIso?' today':''); if(sel&&c.iso===sel)cls+=' selstart';
     html+='<div class="'+cls+'" data-iso="'+c.iso+'">'+inner+'</div>';
   });
@@ -664,7 +672,7 @@ function renderLevelCal(level){
   if(sel){ html+='<div style="font-size:12px;color:var(--mute);margin-top:6px">'+esc(TXf('period.selHint','Start selected: '))+fmtDate(sel)+' — '+esc(TXf('period.selHint2','click the end day.'))+' <button class="btn ghost sm" id="selcancel-'+level+'">'+esc(TXf('period.cancel','Cancel'))+'</button></div>'; }
   grid.innerHTML=html;
   var sc=$('selcancel-'+level); if(sc)sc.addEventListener('click',function(){_sel[level]=null;renderLevelCal(level);});
-  grid.querySelectorAll('.perstrip').forEach(function(ps){ ps.addEventListener('click',function(ev){ev.stopPropagation();focusCard(level,ps.dataset.pid);}); });
+  grid.querySelectorAll('.perstrip[data-pid]').forEach(function(ps){ ps.addEventListener('click',function(ev){ev.stopPropagation();focusCard(level,ps.dataset.pid);}); });
   grid.querySelectorAll('.calcell').forEach(function(cell){ cell.addEventListener('click',function(){ onLevelDayClick(level,cell.dataset.iso); }); });
 }
 function onLevelDayClick(level,iso){
