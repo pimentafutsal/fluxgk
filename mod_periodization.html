@@ -68,6 +68,7 @@
             PZ.micro=Array.isArray(v.micro)?v.micro:[];
             PZ.events=Array.isArray(v.events)?v.events:[];
             PZ.comps=Array.isArray(v.comps)?v.comps:[];
+            PZ.dayThemes=(v.dayThemes&&typeof v.dayThemes==='object')?v.dayThemes:{};
           }
           if(!window._uiBooted){window._uiBooted=true;bootUI();} else {try{renderAll();}catch(e){}}
         });
@@ -249,6 +250,15 @@ textarea.fi{resize:vertical;min-height:38px}
     <div id="cal-micro"></div>
     <div id="pform-micro"></div>
     <div id="list-micro" style="margin-top:14px"></div>
+    <div class="card" id="dt-card" style="margin-top:16px;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-weight:700;font-size:14px" data-i18n="period.dayThemes">Daily themes</div>
+        <span style="font-size:12px;color:var(--mute)" data-i18n="period.dayThemesSub">Set a theme for each day, fitting the mesocycle objective.</span>
+        <select class="fi" id="dt-meso" style="min-width:220px;margin-left:auto"></select>
+      </div>
+      <div id="dt-obj" style="font-size:12.5px;color:var(--mute);margin-bottom:8px"></div>
+      <div id="dt-days"></div>
+    </div>
   </section>
   <!-- OVERVIEW -->
   <section id="pane-overview" class="pane">
@@ -270,7 +280,7 @@ textarea.fi{resize:vertical;min-height:38px}
 
 <script>
 /* ═══ STATE ═══ */
-const PZ = { macro:[], meso:[], micro:[], events:[], comps:[], accent:'#1E4FFF', clubName:'', clubBadge:'', coachName:'' };
+const PZ = { macro:[], meso:[], micro:[], events:[], comps:[], dayThemes:{}, accent:'#1E4FFF', clubName:'', clubBadge:'', coachName:'' };
 const LEVELS = { macro:{arr:'macro', color:'--macro'}, meso:{arr:'meso', color:'--meso'}, micro:{arr:'micro', color:'--micro'} };
 function $(id){return document.getElementById(id);}
 function TXf(k,fb){ try{ return TX(k,fb); }catch(e){ return fb; } }
@@ -278,7 +288,7 @@ function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
 function save(){
-  if(window.fbSet && _PZPATH){ window.fbSet(_PZPATH,{macro:PZ.macro,meso:PZ.meso,micro:PZ.micro,events:PZ.events,comps:PZ.comps,updatedAt:Date.now()}).catch(function(e){console.error('FB period:',e);}); }
+  if(window.fbSet && _PZPATH){ window.fbSet(_PZPATH,{macro:PZ.macro,meso:PZ.meso,micro:PZ.micro,events:PZ.events,comps:PZ.comps,dayThemes:PZ.dayThemes,updatedAt:Date.now()}).catch(function(e){console.error('FB period:',e);}); }
 }
 
 /* ═══ CRUD ═══ */
@@ -412,9 +422,9 @@ function tableHTML(){
 function renderOverview(){
   renderOverviewCal();
   const box=$('overviewBody'); if(!box) return;
-  const tb=tableHTML();
-  if(!tb){ box.innerHTML='<div class="empty" style="margin-top:14px">'+esc(TXf('period.overviewEmpty','Add phases, blocks or weeks in the Macro/Meso/Micro tabs to see them assembled here.'))+'</div>'; return; }
-  box.innerHTML='<div style="font-weight:700;font-size:14px;margin:2px 0 8px">'+esc(TXf('period.allPeriods','All periods'))+'</div>'+tb;
+  const tb=tableHTML(), dt=dayThemesTableHTML();
+  if(!tb && !dt){ box.innerHTML='<div class="empty" style="margin-top:14px">'+esc(TXf('period.overviewEmpty','Add phases, blocks or weeks in the Macro/Meso/Micro tabs to see them assembled here.'))+'</div>'; return; }
+  box.innerHTML=(tb?'<div style="font-weight:700;font-size:14px;margin:2px 0 8px">'+esc(TXf('period.allPeriods','All periods'))+'</div>'+tb:'')+dt;
 }
 
 /* ═══ CALENDÁRIO ═══ */
@@ -490,6 +500,40 @@ function _setBadgePreview(url){
 function _toggleGameOpts(){
   var t=$('ev-type'), opts=$('ev-game-opts');
   if(opts) opts.style.display=(t&&t.value==='target')?'none':'flex';
+}
+/* ── Temáticas por dia (micros) ── */
+function dayThemesMap(){ if(!PZ.dayThemes||typeof PZ.dayThemes!=='object') PZ.dayThemes={}; return PZ.dayThemes; }
+function setDayTheme(iso,text){ var m=dayThemesMap(); text=(text||'').trim(); if(text)m[iso]=text; else delete m[iso]; save(); renderOverview(); }
+function eachDay(start,end,cb){ if(!start||!end)return; var d=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00'), g=0; while(d<=e&&g++<400){ cb(isoOf(d.getFullYear(),d.getMonth(),d.getDate())); d.setDate(d.getDate()+1); } }
+var _dtMeso=null;
+function renderDayThemes(){
+  var sel=$('dt-meso'); if(!sel) return;
+  var mesos=sortByStart(itemsOf('meso')).filter(function(m){return m.start&&m.end;});
+  var obj=$('dt-obj'), days=$('dt-days');
+  if(!mesos.length){ sel.innerHTML='<option value="">'+esc(TXf('period.noMeso','— no mesocycle —'))+'</option>'; if(obj)obj.innerHTML=''; if(days)days.innerHTML='<div class="empty">'+esc(TXf('period.dtNeedMeso','Create a mesocycle first (Meso tab), then set daily themes here.'))+'</div>'; return; }
+  if(!_dtMeso || !mesos.some(function(m){return m.id===_dtMeso;})) _dtMeso=mesos[0].id;
+  sel.innerHTML=mesos.map(function(m){return '<option value="'+m.id+'"'+(m.id===_dtMeso?' selected':'')+'>'+esc((m.name||'—')+' · '+fmtDate(m.start)+' → '+fmtDate(m.end))+'</option>';}).join('');
+  var mz=mesos.filter(function(m){return m.id===_dtMeso;})[0];
+  if(obj) obj.innerHTML = mz.text?('<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+(mz.color||lvlColor('meso'))+';vertical-align:0"></span> <b>'+esc(TXf('period.objective','Objective'))+':</b> '+esc(mz.text)):'';
+  var wd=[TXf('period.wd.sun','Sun'),TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat')];
+  var rows=''; var map=dayThemesMap();
+  eachDay(mz.start,mz.end,function(iso){
+    var dt=new Date(iso+'T00:00:00');
+    var evtag=eventsOn(iso).map(function(e){return '<span style="font-size:11px;color:#fff;background:'+evPillColor(e)+';border-radius:3px;padding:1px 5px;margin-left:6px">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</span>';}).join('');
+    rows+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line,#eee)">'
+      +'<div style="min-width:132px;font-size:12.5px"><b>'+esc(wd[dt.getDay()])+'</b> '+fmtDate(iso)+evtag+'</div>'
+      +'<input class="fi dt-in" data-iso="'+iso+'" value="'+esc(map[iso]||'')+'" placeholder="'+esc(TXf('period.dtPh','Theme for the day…'))+'" style="flex:1">'
+      +'</div>';
+  });
+  if(days){ days.innerHTML=rows;
+    days.querySelectorAll('.dt-in').forEach(function(inp){ inp.addEventListener('change', function(){ setDayTheme(inp.dataset.iso, inp.value); }); });
+  }
+}
+function dayThemesTableHTML(){
+  var m=dayThemesMap(); var keys=Object.keys(m).filter(function(k){return (m[k]||'').trim();}).sort();
+  if(!keys.length) return '';
+  var rows=keys.map(function(iso){ return '<tr><td style="white-space:nowrap;color:var(--mute);padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+fmtDate(iso)+'</td><td style="padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+esc(m[iso])+'</td></tr>'; }).join('');
+  return '<div style="font-weight:700;font-size:14px;margin:16px 0 8px">'+esc(TXf('period.dayThemes','Daily themes'))+'</div><table class="tbl" style="width:100%;border-collapse:collapse"><tbody>'+rows+'</tbody></table>';
 }
 function eventsOn(iso){ return evList().filter(function(e){return e.date===iso;}); }
 function isoOf(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
@@ -672,6 +716,8 @@ function monthGridHTML(y,m,print){
       eventsOn(cell.iso).forEach(function(e){
         inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+evPillColor(e)+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+(e.badge?evBadge(e,print?9:11):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>';
       });
+      var _th=dayThemesMap()[cell.iso];
+      if(_th){ inner+='<div style="font-size:'+(print?'6pt':'9px')+';color:#555;font-style:italic;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(_th)+'">'+esc(_th)+'</div>'; }
       html+='<td style="border:'+bd+';height:'+cellH+';vertical-align:top;padding:3px;background:'+(cell.other?'#faf9f4':'#fff')+'">'+inner+'</td>';
     }
     html+='</tr>';
@@ -737,7 +783,8 @@ function exportMonthlyPDF(){
 }
 if($('expCalPdf')) $('expCalPdf').addEventListener('click', exportMonthlyPDF);
 
-function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderOverview(); }
+function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderDayThemes(); renderOverview(); }
+if($('dt-meso')) $('dt-meso').addEventListener('change', function(){ _dtMeso=this.value; renderDayThemes(); });
 
 /* ═══ TABS ═══ */
 function switchTab(name){
@@ -746,6 +793,7 @@ function switchTab(name){
   if(name==='overview') renderOverview();
   if(name==='calendar') renderCalendar();
   if(name==='macro'||name==='meso'||name==='micro') renderLevel(name);
+  if(name==='micro') renderDayThemes();
 }
 document.querySelectorAll('.tabbtn').forEach(function(b){ b.addEventListener('click', function(){ switchTab(b.dataset.tab); }); });
 
@@ -783,7 +831,14 @@ function exportPDF(){
     return '<div class="sec"><div class="sec-h" style="background:#333">'+esc(TXf('period.evRow','Games / target dates'))+'</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
   }
-  const body = sectEvents()+sect('macro')+sect('meso')+sect('micro');
+  function sectDayThemes(){
+    var m=dayThemesMap(); var keys=Object.keys(m).filter(function(k){return (m[k]||'').trim();}).sort();
+    if(!keys.length) return '';
+    var rows=keys.map(function(iso){ return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap;color:#666">'+fmtDate(iso)+'</td><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(m[iso])+'</td></tr>'; }).join('');
+    return '<div class="sec"><div class="sec-h" style="background:'+lvlColor('micro')+'">'+esc(TXf('period.dayThemes','Daily themes'))+'</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
+  }
+  const body = sectEvents()+sect('macro')+sect('meso')+sect('micro')+sectDayThemes();
   const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.pdf.title','Periodization'))+'</title>'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     + '@media screen{body{max-width:860px;margin:0 auto;padding:24px}}@media print{@page{margin:1.4cm 1.6cm;size:A4}}'
