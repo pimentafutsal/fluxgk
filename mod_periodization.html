@@ -215,7 +215,10 @@ textarea.fi{resize:vertical;min-height:38px}
       <div id="cal-title" style="font-weight:700;font-size:16px;min-width:170px;text-align:center"></div>
       <button class="btn ghost sm" id="cal-next">›</button>
       <button class="btn ghost sm" id="cal-today" data-i18n="period.today" style="margin-left:6px">Today</button>
-      <span style="margin-left:auto;display:flex;gap:12px;font-size:11px;color:var(--mute)">
+      <span style="margin-left:auto;display:flex;gap:12px;font-size:11px;color:var(--mute);flex-wrap:wrap">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--macro);vertical-align:0"></span> <span data-i18n="period.macro">Macro</span></span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--meso);vertical-align:0"></span> <span data-i18n="period.meso">Meso</span></span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--micro);vertical-align:0"></span> <span data-i18n="period.micro">Micro</span></span>
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--game);vertical-align:0"></span> <span data-i18n="period.evGame">Game</span></span>
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--target);vertical-align:0"></span> <span data-i18n="period.evTarget">Target</span></span>
       </span>
@@ -561,8 +564,20 @@ function renderCalendar(){
     let yy=calYear, mm=c.m; if(mm<0){mm=11;yy--;} if(mm>11){mm=0;yy++;}
     const iso=isoOf(yy,mm,c.d);
     const other=(c.m!==calMonth);
+    let strips='';
+    ['macro','meso','micro'].forEach(function(lv){
+      sortByStart(itemsOf(lv)).forEach(function(it){
+        if(it.start&&it.end&&iso>=it.start&&iso<=it.end){
+          var nameHere=(iso===it.start)||(c.d===1&&!other);
+          var tag=nameHere?'<span style="font-weight:800;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
+          strips+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+'" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+tag+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
+        }
+      });
+    });
     const evh=eventsOn(iso).map(function(e){ return '<div class="calev" style="background:'+evPillColor(e)+'" title="'+esc(e.label)+'">'+evBadge(e,15)+esc(e.label||(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target')))+'</div>'; }).join('');
-    html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+evh+'</div>';
+    var _th=dayThemesMap()[iso];
+    var thh=_th?'<div style="font-size:9px;color:#555;font-style:italic;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(_th)+'">'+esc(_th)+'</div>':'';
+    html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+strips+evh+thh+'</div>';
   });
   html+='</div>';
   grid.innerHTML=html;
