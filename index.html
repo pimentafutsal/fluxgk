@@ -130,6 +130,9 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .mtnm{font-size:11px;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;letter-spacing:.1em}
 .mfrm{flex:1;border:none;width:100%}
 .mfrm.vidmax{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99999;background:#000}
+.mfs{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);width:32px;height:30px;border-radius:7px;font-size:15px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mfs:hover{background:rgba(255,255,255,.2)}
+#scr-module:fullscreen,#scr-module:-webkit-full-screen{width:100vw;height:100vh;background:#fff}
 
 /* ---------- SHEET ---------- */
 .sh{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:100}
@@ -236,6 +239,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
   <div class="mtbar" id="mtbar">
     <button class="mbck" onclick="closeModule()" data-i18n="hub.backHub">‹ HUB</button>
     <span class="mtnm" id="mtnm"></span>
+    <button class="mfs" id="mfsBtn" onclick="toggleModuleFs()" title="Fullscreen" data-i18n-title="hub.fullscreen" aria-label="Fullscreen">⛶</button>
   </div>
   <iframe class="mfrm" id="mfrm" src="about:blank" allowfullscreen allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
 </div>
@@ -349,6 +353,20 @@ function dataPath(){
 function slug(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,28)||('c'+Date.now());}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById('scr-'+id);if(el)el.classList.add('active');if(id!=='module'){var fr=document.getElementById('mfrm');if(fr)fr.src='about:blank';}}
 function kbAct(e,fn){if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();fn();}}
+function _fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
+function toggleModuleFs(){
+  var el=document.getElementById('scr-module'); if(!el) return;
+  if(!_fsEl()){
+    var req=el.requestFullscreen||el.webkitRequestFullscreen;
+    if(req){ try{ var p=req.call(el); if(p&&p.catch)p.catch(function(){}); }catch(e){} }
+  } else {
+    var exit=document.exitFullscreen||document.webkitExitFullscreen;
+    if(exit){ try{ exit.call(document); }catch(e){} }
+  }
+}
+function _syncFsBtn(){ var b=document.getElementById('mfsBtn'); if(b) b.textContent=_fsEl()?'⤡':'⛶'; }
+document.addEventListener('fullscreenchange',_syncFsBtn);
+document.addEventListener('webkitfullscreenchange',_syncFsBtn);
 var _toastT=null;
 function showToast(msg,ms){var el=document.getElementById('toastEl');el.textContent=msg;el.classList.add('show');if(_toastT)clearTimeout(_toastT);_toastT=setTimeout(function(){el.classList.remove('show');},ms||2500);}
 function raceTimeout(p,ms){return new Promise(function(res){var done=false;var t=setTimeout(function(){if(!done){done=true;res('pending');}},ms);p.then(function(){if(!done){done=true;clearTimeout(t);res('saved');}}).catch(function(e){if(!done){done=true;clearTimeout(t);console.error('[FluxGK] write failed:',e);res('error');}});});}
@@ -797,7 +815,7 @@ function openModule(key){
   fr.src=MOD_FILES[key];
   showScreen('module');
 }
-function closeModule(){showScreen('home');loadStats();}
+function closeModule(){ if(_fsEl()){var exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit){try{exit.call(document);}catch(e){}}} showScreen('home');loadStats();}
 
 /* ---------- BOOT ---------- */
 function ldScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}

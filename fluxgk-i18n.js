@@ -48,7 +48,7 @@
     'hub.statSessions':'Sessions',
     'hub.statMatches':'Matches',
     'hub.statKeepers':'Keepers',
-    'hub.backHub':'‹ HUB',
+    'hub.backHub':'‹ HUB','hub.fullscreen':'Fullscreen',
     'hub.language':'Language',
 
     /* --- hub: clubes e temporadas --- */
@@ -930,7 +930,7 @@
     'hub.statSessions':'Treinos',
     'hub.statMatches':'Jogos',
     'hub.statKeepers':'Goleiros',
-    'hub.backHub':'‹ HUB',
+    'hub.backHub':'‹ HUB','hub.fullscreen':'Tela cheia',
     'hub.language':'Idioma',
 
     /* --- hub: clubes e temporadas --- */
