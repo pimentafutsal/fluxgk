@@ -273,6 +273,22 @@ select.fi option{background:var(--paper)}
   </div>
 </div>
 
+<div id="sessCopyModal" class="overlay" style="z-index:420">
+  <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:8px;width:100%;max-width:760px;margin:auto;overflow:hidden">
+    <div style="background:var(--paper);padding:14px 20px;border-bottom:1px solid var(--faint);display:flex;align-items:center;gap:10px">
+      <div data-i18n="plan.copyFromSessionTitle" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px">Copy exercises from another session</div>
+      <select class="fi" id="sessCopySel" style="min-width:230px;margin-left:auto"></select>
+      <button onclick="closeSessCopy()" style="background:var(--faint);border:none;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:14px;color:var(--mute)">✕</button>
+    </div>
+    <div id="sessCopyGrid" style="padding:16px;max-height:58vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--faint);display:flex;align-items:center;gap:10px">
+      <span class="mono" style="font-size:11px;color:var(--mute)" id="sessCopyCount">0</span>
+      <button class="btn btn-o btn-sm" onclick="sessCopyAll()" data-i18n="plan.copyAll" style="margin-left:auto">Copy all</button>
+      <button class="btn btn-p btn-sm" onclick="closeSessCopy()" data-i18n="common.done">Done</button>
+    </div>
+  </div>
+</div>
+
 <div id="toastEl" class="toast"></div>
 
 <script>
@@ -311,7 +327,10 @@ const PAGES = {
   <hr class="rule">
   <div class="btwn mb14">
     <div><span class="disp" style="font-size:19px">${TX("plan.exercises")}</span><span class="mono" style="font-size:11px;color:var(--mute);margin-left:10px" id="exCount" data-i18n="plan.plannedZero">0 planned</span></div>
-    <button class="btn btn-p" onclick="openWizard()" data-i18n="plan.addExerciseBtn">+ Add Exercise</button>
+    <div class="row" style="gap:8px">
+      <button class="btn btn-o" onclick="openSessCopy()" data-i18n="plan.copyFromSession">⧉ Copy from session</button>
+      <button class="btn btn-p" onclick="openWizard()" data-i18n="plan.addExerciseBtn">+ Add Exercise</button>
+    </div>
   </div>
   <div class="exgrid" id="exGrid">
     <div class="empty"><div style="font-size:36px;opacity:.22;margin-bottom:12px">▭</div><div style="font-weight:600;margin-bottom:5px" data-i18n="plan.noExercises">No exercises yet</div><div style="font-size:13px;color:var(--mute)" data-i18n="plan.startHint">Click "Add Exercise" to start building your session</div></div>
@@ -875,7 +894,9 @@ function renderExercises(){
         ${ex.variations?`<div style="font-size:12px;color:var(--mute);margin-bottom:8px;font-style:italic">↗ ${ex.variations}</div>`:''}
         ${ex.materials?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);margin-bottom:8px">MAT: ${ex.materials}</div>`:''}
         ${ex.goal?`<div class="exc-goal">→ ${ex.goal}</div>`:''}
-        <div class="row" style="margin-top:11px">
+        <div class="row" style="margin-top:11px;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-o btn-sm" onclick="moveEx(${i},-1)" ${i===0?'disabled style="opacity:.35;cursor:default"':''} title="${TX('plan.moveUp')}">↑</button>
+          <button class="btn btn-o btn-sm" onclick="moveEx(${i},1)" ${i===exercises.length-1?'disabled style="opacity:.35;cursor:default"':''} title="${TX('plan.moveDown')}">↓</button>
           <button class="btn btn-o btn-sm" onclick="openWizard(${i})">${TX("common.edit")}</button>
           <button class="btn-danger" onclick="rmEx(${i})">${TX("common.remove")}</button>
         </div>
@@ -883,7 +904,63 @@ function renderExercises(){
     </div>`;
   }).join('');
 }
-function rmEx(i){ exercises.splice(i,1); renderExercises(); }
+function rmEx(i){ exercises.splice(i,1); renderExercises(); refreshPost&&refreshPost(); }
+function moveEx(i,dir){
+  const j=i+dir;
+  if(j<0||j>=exercises.length) return;
+  const t=exercises[i]; exercises[i]=exercises[j]; exercises[j]=t;
+  renderExercises(); refreshPost&&refreshPost();
+}
+
+// ── COPIAR EXERCÍCIOS DE OUTRA SESSÃO ─────────────────────────
+function openSessCopy(){
+  const sel=document.getElementById('sessCopySel');
+  const list=(savedSessions||[]).filter(s=>(s.exercises||[]).length);
+  if(!list.length){ toast(TX('plan.msg.noSessionsToCopy')); return; }
+  sel.innerHTML=list.map((s,i)=>{
+    const dt=s.date||'', nm=s.objective||s.title||TX('plan.pdf.session');
+    return `<option value="${i}">${dt?dt+' · ':''}${String(nm).slice(0,48)} (${(s.exercises||[]).length})</option>`;
+  }).join('');
+  sel.onchange=()=>renderSessCopy(list);
+  document.getElementById('sessCopyModal').classList.add('open');
+  renderSessCopy(list);
+}
+function closeSessCopy(){ document.getElementById('sessCopyModal').classList.remove('open'); }
+function _sessCopyList(){ return (savedSessions||[]).filter(s=>(s.exercises||[]).length); }
+function renderSessCopy(list){
+  list=list||_sessCopyList();
+  const sel=document.getElementById('sessCopySel');
+  const s=list[+(sel.value||0)];
+  const grid=document.getElementById('sessCopyGrid');
+  const cnt=document.getElementById('sessCopyCount');
+  if(!s){ grid.innerHTML=''; return; }
+  const exs=s.exercises||[];
+  if(cnt) cnt.textContent=exs.length+' '+TX('plan.exercises');
+  grid.innerHTML=exs.map((ex,i)=>`
+    <div onclick="copyExFromSession(${+sel.value},${i})" style="border:1px solid var(--faint);border-radius:6px;overflow:hidden;cursor:pointer;background:var(--paper);transition:border-color .15s" onmouseover="this.style.borderColor='var(--ink)'" onmouseout="this.style.borderColor='var(--faint)'">
+      ${ex.img?`<img src="${ex.img}" style="width:100%;height:96px;object-fit:cover;display:block"/>`:`<div style="height:96px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:22px">⚽</div>`}
+      <div style="padding:9px 11px">
+        <div style="font-weight:600;font-size:12.5px;margin-bottom:3px">${ex.name||'—'}</div>
+        <div class="mono" style="font-size:9.5px;color:var(--mute)">${phaseLabel(ex.phase)} · ${ex.duration||0}min</div>
+      </div>
+    </div>`).join('');
+}
+function copyExFromSession(si,ei){
+  const list=_sessCopyList(); const s=list[si]; if(!s) return;
+  const ex=(s.exercises||[])[ei]; if(!ex) return;
+  exercises.push(Object.assign({},ex,{id:Date.now()+Math.floor(Math.random()*1000)}));
+  renderExercises(); refreshPost&&refreshPost();
+  toast(TX('plan.msg.exCopied'));
+}
+function sessCopyAll(){
+  const list=_sessCopyList();
+  const sel=document.getElementById('sessCopySel');
+  const s=list[+(sel.value||0)]; if(!s) return;
+  (s.exercises||[]).forEach((ex,k)=>{ exercises.push(Object.assign({},ex,{id:Date.now()+k})); });
+  renderExercises(); refreshPost&&refreshPost();
+  toast(TX('plan.msg.exCopied'));
+  closeSessCopy();
+}
 
 // ── POST TRAINING — always reflects current session ───────────
 function refreshPost(){

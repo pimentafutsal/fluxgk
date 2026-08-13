@@ -305,6 +305,7 @@
     'plan.variations':'Variations / Progressions','plan.equipment':'Equipment / Materials',
     'plan.saveExercise':'Save Exercise','plan.saveToLib':'Save to Library',
     'plan.pickFromLib':'Pick from Exercise Library','plan.untitled':'Untitled Exercise',
+    'plan.copyFromSession':'⧉ Copy from session','plan.copyFromSessionTitle':'Copy exercises from another session','plan.copyAll':'Copy all','plan.moveUp':'Move up','plan.moveDown':'Move down','common.done':'Done',
     /* sessao */
     'plan.trainingSession':'Training Session','plan.planning':'Planning',
     'plan.date':'Date','plan.time':'Time','plan.type':'Type',
@@ -341,6 +342,7 @@
     'plan.msg.libSaved':'Exercise saved to library','plan.msg.libUpdated':'Library exercise updated',
     'plan.msg.exUpdated':'Exercise updated','plan.msg.exAdded':'Exercise added',
     'plan.msg.savedToLib':'Saved to library ✓','plan.msg.loadedFromLib':'Loaded from library — adjust and save',
+    'plan.msg.exCopied':'Exercise(s) copied to this session ✓','plan.msg.noSessionsToCopy':'No saved sessions with exercises yet.',
     'plan.msg.diagramCaptured':'Diagram captured from Tactical Court',
     'plan.msg.openSessionTab':'Open the Session tab to start planning',
     'plan.msg.openOrSave':'Open or save a session first',
@@ -1187,6 +1189,7 @@
     'plan.variations':'Variações / Progressões','plan.equipment':'Materiais',
     'plan.saveExercise':'Salvar Exercício','plan.saveToLib':'Salvar na Biblioteca',
     'plan.pickFromLib':'Escolher da Biblioteca de Exercícios','plan.untitled':'Exercício sem nome',
+    'plan.copyFromSession':'⧉ Copiar de sessão','plan.copyFromSessionTitle':'Copiar exercícios de outra sessão','plan.copyAll':'Copiar todos','plan.moveUp':'Mover para cima','plan.moveDown':'Mover para baixo','common.done':'Concluído',
     /* sessao */
     'plan.trainingSession':'Sessão de Treino','plan.planning':'Planejamento',
     'plan.date':'Data','plan.time':'Horário','plan.type':'Tipo',
@@ -1223,6 +1226,7 @@
     'plan.msg.libSaved':'Exercício salvo na biblioteca','plan.msg.libUpdated':'Exercício da biblioteca atualizado',
     'plan.msg.exUpdated':'Exercício atualizado','plan.msg.exAdded':'Exercício adicionado',
     'plan.msg.savedToLib':'Salvo na biblioteca ✓','plan.msg.loadedFromLib':'Carregado da biblioteca — ajuste e salve',
+    'plan.msg.exCopied':'Exercício(s) copiado(s) para esta sessão ✓','plan.msg.noSessionsToCopy':'Ainda não há sessões salvas com exercícios.',
     'plan.msg.diagramCaptured':'Diagrama capturado da Quadra Tática',
     'plan.msg.openSessionTab':'Abra a aba Sessão para começar a planejar',
     'plan.msg.openOrSave':'Abra ou salve uma sessão primeiro',
