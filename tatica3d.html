@@ -156,6 +156,7 @@
     </div>
     <div class="row">
       <button data-i18n="tat.straight" class="style-btn" id="d-reta">STRAIGHT (TAB)</button>
+      <button data-i18n="tat.axisLock" class="style-btn" id="d-axis" title="Shift">⊥ AXIS (SHIFT)</button>
     </div>
     <div class="row">
       <div class="swatch on" data-color="#1E4FFF" style="background:#1E4FFF"></div>
@@ -1267,6 +1268,33 @@ window.addEventListener('keydown', e=>{
   }
 });
 
+/* trava de eixo: segurando SHIFT a reta fica presa na vertical/horizontal (ou 45°) */
+let axisLock = false;                       /* trava permanente (botão) */
+let _shiftDown = false;
+window.addEventListener('keydown', e=>{ if(e.key==='Shift') _shiftDown = true; });
+window.addEventListener('keyup',   e=>{ if(e.key==='Shift') _shiftDown = false; });
+window.addEventListener('blur',    ()=>{ _shiftDown = false; });
+function toggleAxisLock(){
+  axisLock = !axisLock;
+  const b = document.getElementById('d-axis');
+  if(b) b.classList.toggle('on', axisLock);
+  toast(axisLock ? TX('tat.msg.axisOn','Axis lock ON — straight lines snap to vertical/horizontal')
+                 : TX('tat.msg.axisOff','Axis lock OFF — free angle (hold Shift to snap)'));
+}
+/* projeta o ponto no eixo mais próximo (0°, 45°, 90°, 135°...) a partir da origem do traço */
+function snapAxis(a, p){
+  const dx = p.x - a.x, dz = p.z - a.z;
+  if(Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6) return p.clone();
+  const step = Math.PI/4;                              /* 45° */
+  const ang  = Math.round(Math.atan2(dz, dx)/step)*step;
+  const ux = Math.cos(ang), uz = Math.sin(ang);
+  const len = dx*ux + dz*uz;                           /* projeção no eixo escolhido */
+  const q = p.clone();
+  q.x = a.x + ux*len;
+  q.z = a.z + uz*len;
+  return q;
+}
+
 function startStroke(p){
   strokePts = [p.clone()];
   const g = new THREE.BufferGeometry().setFromPoints(strokePts);
@@ -1277,7 +1305,8 @@ function startStroke(p){
 function extendStroke(p){
   if(!strokePts.length) return;
   if(straightStroke){
-    strokePts = [strokePts[0], p.clone()];
+    const end = (_shiftDown !== axisLock) ? snapAxis(strokePts[0], p) : p.clone();
+    strokePts = [strokePts[0], end];
     previewLine.geometry.dispose();
     previewLine.geometry = new THREE.BufferGeometry().setFromPoints(strokePts);
     return;
@@ -1479,6 +1508,7 @@ document.querySelectorAll('.style-btn[data-style]').forEach(b=>{
   };
 });
 document.getElementById('d-reta').onclick = toggleStraight;
+if(document.getElementById('d-axis')) document.getElementById('d-axis').onclick = toggleAxisLock;
 document.querySelectorAll('.swatch').forEach(s=>{
   s.onclick = ()=>{
     drawColor = s.dataset.color;

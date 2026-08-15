@@ -884,7 +884,7 @@
     'tat.hoop':'Hoop','tat.pole':'Pole',
     /* desenho */
     'tat.stroke':'STROKE','tat.line':'LINE','tat.arrow':'ARROW','tat.dashed':'DASHED',
-    'tat.straight':'STRAIGHT (TAB)','tat.smaller':'− SMALLER','tat.larger':'+ LARGER',
+    'tat.straight':'STRAIGHT (TAB)','tat.axisLock':'⊥ AXIS (SHIFT)','tat.smaller':'− SMALLER','tat.larger':'+ LARGER',
     'tat.rotL':'⟲ ROTATE','tat.rotR':'ROTATE ⟳','tat.duplicate':'DUPLICATE','tat.delete':'DELETE',
     /* rodape de ajuda */
     'tat.h.click':'Click','tat.h.clickTxt':'a palette item, then click the court to place it ·',
@@ -896,6 +896,7 @@
     'tat.h.del':'Delete','tat.h.delTxt':'removes',
     /* avisos */
     'tat.msg.straightOn':'Straight line ON (TAB toggles off)','tat.msg.straightOff':'Straight line OFF',
+    'tat.msg.axisOn':'Axis lock ON — lines snap to vertical/horizontal (hold Shift for free angle)','tat.msg.axisOff':'Axis lock OFF — free angle (hold Shift to snap)',
     'tat.msg.nothingUndo':'Nothing to undo','tat.msg.clearQ':'Clear the entire court?',
     'tat.msg.cleared':'Court cleared','tat.msg.imgSent':'Image sent to exercise',
     'tat.msg.imgSaved':'Image saved','tat.msg.projSaved':'Project saved (.json)',
@@ -1768,7 +1769,7 @@
     'tat.hoop':'Arco','tat.pole':'Estaca',
     /* desenho */
     'tat.stroke':'TRAÇO','tat.line':'LINHA','tat.arrow':'SETA','tat.dashed':'TRACEJADO',
-    'tat.straight':'RETA (TAB)','tat.smaller':'− MENOR','tat.larger':'+ MAIOR',
+    'tat.straight':'RETA (TAB)','tat.axisLock':'⊥ EIXO (SHIFT)','tat.smaller':'− MENOR','tat.larger':'+ MAIOR',
     'tat.rotL':'⟲ GIRAR','tat.rotR':'GIRAR ⟳','tat.duplicate':'DUPLICAR','tat.delete':'EXCLUIR',
     /* rodape de ajuda */
     'tat.h.click':'Clique','tat.h.clickTxt':'num item da paleta e depois na quadra para posicionar ·',
@@ -1780,6 +1781,7 @@
     'tat.h.del':'Delete','tat.h.delTxt':'remove',
     /* avisos */
     'tat.msg.straightOn':'Linha reta LIGADA (TAB desliga)','tat.msg.straightOff':'Linha reta DESLIGADA',
+    'tat.msg.axisOn':'Trava de eixo LIGADA — retas presas na vertical/horizontal (segure Shift para ângulo livre)','tat.msg.axisOff':'Trava de eixo DESLIGADA — ângulo livre (segure Shift para travar)',
     'tat.msg.nothingUndo':'Nada para desfazer','tat.msg.clearQ':'Limpar a quadra inteira?',
     'tat.msg.cleared':'Quadra limpa','tat.msg.imgSent':'Imagem enviada para o exercício',
     'tat.msg.imgSaved':'Imagem salva','tat.msg.projSaved':'Projeto salvo (.json)',
