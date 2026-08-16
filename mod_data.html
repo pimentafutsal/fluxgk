@@ -426,15 +426,15 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <div id="preWellBeingCard">
   <div class="card">
     <h3 data-i18n="data.pre.wellbeing">Subjective well-being</h3>
-    <div class="field"><label><span data-i18n="data.pre.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">5</span></label>
-      <input type="range" min="1" max="10" value="5" step="1" id="sleep" oninput="updateRange('sleep','sleepVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.sleepLow">1 — Very poor</span><span data-i18n="data.pre.sleepHigh">10 — Excellent</span></div></div>
-    <div class="field"><label><span data-i18n="data.hydration">Hydration</span> <span class="val-badge" id="hydrationVal">5</span></label>
-      <input type="range" min="1" max="10" value="5" step="1" id="hydration" oninput="updateRange('hydration','hydrationVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.hydLow">1 — Dehydrated</span><span data-i18n="data.pre.hydHigh">10 — Well hydrated</span></div></div>
-    <div class="field"><label><span data-i18n="data.recovery">Recovery</span> <span class="val-badge" id="recoveryVal">5</span></label>
-      <input type="range" min="1" max="10" value="5" step="1" id="recovery" oninput="updateRange('recovery','recoveryVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.recLow">1 — Exhausted</span><span data-i18n="data.pre.recHigh">10 — Fully recovered</span></div></div>
+    <div class="field"><label><span data-i18n="data.pre.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="sleep" oninput="updateRange('sleep','sleepVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.sleepLow">1 — Very poor</span><span data-i18n="data.pre.sleepHigh">5 — Excellent</span></div></div>
+    <div class="field"><label><span data-i18n="data.hydration">Hydration</span> <span class="val-badge" id="hydrationVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="hydration" oninput="updateRange('hydration','hydrationVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.hydLow">1 — Dehydrated</span><span data-i18n="data.pre.hydHigh">5 — Well hydrated</span></div></div>
+    <div class="field"><label><span data-i18n="data.recovery">Recovery</span> <span class="val-badge" id="recoveryVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="recovery" oninput="updateRange('recovery','recoveryVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.recLow">1 — Exhausted</span><span data-i18n="data.pre.recHigh">5 — Fully recovered</span></div></div>
   </div>
   </div>
   <button class="btn-primary" onclick="submitPre()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.pre.save">Save pre-training</span></button>
@@ -879,7 +879,7 @@ function rtListen(){
         });
       });
     }
-    if(changed){save();renderAll();}
+    if(changed){ migrateWellbeingScale(); save(); renderAll(); }
   },err=>console.warn("listener:",err));
 }
 
@@ -1056,7 +1056,7 @@ window.openPM=function(id){
           {data:pre.map(s=>s.sleep),borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)",borderWidth:2,pointRadius:2,tension:.3,fill:true},
           {data:pre.map(s=>s.hydration),borderColor:pc,borderWidth:2,pointRadius:2,tension:.3,fill:false},
           {data:pre.map(s=>s.recovery),borderColor:ac,borderWidth:2,pointRadius:2,tension:.3,fill:false}
-        ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:10,ticks:{...base.scales.y.ticks,stepSize:2}}}}});
+        ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
     }
   },60);
   // Reset tabs
@@ -1155,6 +1155,7 @@ window.submitPre=async function(){
     sleep:+document.getElementById("sleep").value,
     hydration:+document.getElementById("hydration").value,
     recovery:+document.getElementById("recovery").value,
+    wbScale:5,                       /* escala do bem-estar: 1-5 */
     time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer};
   saveSession(e);const was=!!editId;editId=null;
   document.getElementById("preFormTitle").textContent=TX("data.pre.title");
@@ -1190,6 +1191,31 @@ function saveSession(e){
   ST.sessions=ST.sessions.filter(s=>s.id!==e.id);ST.sessions.push(e);
   save();renderAll();    // instant — localStorage
   rtSaveSession(e);      // background — RTDB
+}
+
+/* ── MIGRACAO: bem-estar do pre-treino de 1-10 para 1-5 ──────────
+   Registros antigos (sem wbScale) sao convertidos uma unica vez:
+   10->5  9->5  8->4  7->4  6->3  5->3  4->2  3->2  2->1  1->1        */
+function _wb10to5(v){
+  if(v==null||isNaN(v))return v;
+  var n=Math.round(Number(v)/2);
+  if(n<1)n=1; if(n>5)n=5;
+  return n;
+}
+function migrateWellbeingScale(){
+  var n=0;
+  ST.sessions.forEach(function(s){
+    if(!s||s.type!=="pre")return;
+    if(s.wbScale===5)return;                       /* ja convertido */
+    if(s.present===false){ s.wbScale=5; return; }  /* falta: nao tem bem-estar */
+    s.sleep=_wb10to5(s.sleep);
+    s.hydration=_wb10to5(s.hydration);
+    s.recovery=_wb10to5(s.recovery);
+    s.wbScale=5; n++;
+    if(s._pk) rtSaveSession(s);                    /* persiste na nuvem */
+  });
+  if(n){ save(); console.log("[FluxGK] bem-estar convertido para 1-5 em "+n+" registro(s)"); }
+  return n;
 }
 window.editSession=function(id){
   const s=ST.sessions.find(x=>x.id===id);if(!s)return;editId=id;
@@ -1333,7 +1359,7 @@ function renderCharts(post,pre){
         {label:TX("data.sleep"),    data:pre.map(s=>s.sleep),     borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)", borderWidth:2,pointRadius:3,tension:.3,fill:true},
         {label:TX("data.hydration"),data:pre.map(s=>s.hydration), borderColor:"#9B30D9",backgroundColor:"rgba(155,48,217,.07)",borderWidth:2,pointRadius:3,tension:.3,fill:false},
         {label:TX("data.recovery"), data:pre.map(s=>s.recovery),  borderColor:ac,       backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
-      ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:10,ticks:{...base.scales.y.ticks,stepSize:2}}}}});
+      ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
   }
 
   // ── ACWR chart ──
@@ -1741,9 +1767,9 @@ function mkWellChart(id,pre){
   const gw=W-pl-pr,gh=H-pt-pb;
   const labs=pre.map(s=>fd(s.date)),n=labs.length;
   const xc=function(i){return pl+gw/(n>1?n-1:1)*i;};
-  const yv=function(v){return pt+gh*(1-v/10);};
+  const yv=function(v){return pt+gh*(1-v/5);};
   var g="";
-  [0,2,4,6,8,10].forEach(function(v){
+  [0,1,2,3,4,5].forEach(function(v){
     var y=yv(v);
     g+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="rgba(0,0,0,.07)" stroke-width="0.5"/>';
     g+='<text x="'+(pl-3)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" font-size="7" fill="#888" font-family="sans-serif">'+v+'</text>';
@@ -2073,6 +2099,7 @@ function today2(){return new Date().toISOString().split("T")[0];}
   // Hide context bar until a goalkeeper is selected
   const _cb=document.getElementById("ctxBar");if(_cb)_cb.style.display="none";
   // Init Firebase — auth state listener handles everything after
+  try{ migrateWellbeingScale(); }catch(e){ console.warn("wb migrate:",e); }
   applyTheme();renderAll();
   /* ao trocar de idioma, re-renderiza o que e gerado por JS
      (data-i18n do HTML estatico ja e tratado pelo proprio motor) */
