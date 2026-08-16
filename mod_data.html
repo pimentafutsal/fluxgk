@@ -426,15 +426,21 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <div id="preWellBeingCard">
   <div class="card">
     <h3 data-i18n="data.pre.wellbeing">Subjective well-being</h3>
-    <div class="field"><label><span data-i18n="data.pre.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">3</span></label>
+    <div class="field"><label><span data-i18n="data.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">3</span></label>
       <input type="range" min="1" max="5" value="3" step="1" id="sleep" oninput="updateRange('sleep','sleepVal')">
       <div class="scale-labels"><span data-i18n="data.pre.sleepLow">1 — Very poor</span><span data-i18n="data.pre.sleepHigh">5 — Excellent</span></div></div>
-    <div class="field"><label><span data-i18n="data.hydration">Hydration</span> <span class="val-badge" id="hydrationVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="hydration" oninput="updateRange('hydration','hydrationVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.hydLow">1 — Dehydrated</span><span data-i18n="data.pre.hydHigh">5 — Well hydrated</span></div></div>
-    <div class="field"><label><span data-i18n="data.recovery">Recovery</span> <span class="val-badge" id="recoveryVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="recovery" oninput="updateRange('recovery','recoveryVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.recLow">1 — Exhausted</span><span data-i18n="data.pre.recHigh">5 — Fully recovered</span></div></div>
+    <div class="field"><label><span data-i18n="data.fatigue">Fatigue</span> <span class="val-badge" id="fatigueVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="fatigue" oninput="updateRange('fatigue','fatigueVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.fatLow">1 — No fatigue</span><span data-i18n="data.pre.fatHigh">5 — Exhausted</span></div></div>
+    <div class="field"><label><span data-i18n="data.soreness">Muscle soreness</span> <span class="val-badge" id="sorenessVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="soreness" oninput="updateRange('soreness','sorenessVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.sorLow">1 — No soreness</span><span data-i18n="data.pre.sorHigh">5 — Very sore</span></div></div>
+    <div class="field"><label><span data-i18n="data.stress">Stress</span> <span class="val-badge" id="stressVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="stress" oninput="updateRange('stress','stressVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.strLow">1 — Very relaxed</span><span data-i18n="data.pre.strHigh">5 — Very stressed</span></div></div>
+    <div class="field"><label><span data-i18n="data.mood">Mood</span> <span class="val-badge" id="moodVal">3</span></label>
+      <input type="range" min="1" max="5" value="3" step="1" id="mood" oninput="updateRange('mood','moodVal')">
+      <div class="scale-labels"><span data-i18n="data.pre.mooLow">1 — Very poor</span><span data-i18n="data.pre.mooHigh">5 — Excellent</span></div></div>
   </div>
   </div>
   <button class="btn-primary" onclick="submitPre()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.pre.save">Save pre-training</span></button>
@@ -503,8 +509,10 @@ textarea{width:100%;resize:vertical;min-height:110px}
     <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.wbData" id="wellChart" role="img" aria-label="Well-being">Well-being.</canvas></div>
     <div class="chart-legend">
       <div class="legend-item"><span class="legend-dot" style="background:#185FA5"></span><span data-i18n="data.sleep">Sleep</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:#9B30D9"></span><span data-i18n="data.hydration">Hydration</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:var(--a)"></span><span data-i18n="data.recovery">Recovery</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#D97706"></span><span data-i18n="data.fatigue">Fatigue</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#C8102E"></span><span data-i18n="data.soreness">Soreness</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#9B30D9"></span><span data-i18n="data.stress">Stress</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#0a8a3a"></span><span data-i18n="data.mood">Mood</span></div>
     </div></div>
   <div class="chart-wrap"><h3><i class="ti ti-chart-pie"></i> <span data-i18n="data.series.typeDist">Training type distribution</span></h3>
     <div id="typeChartWrap" style="min-height:120px"></div>
@@ -1024,7 +1032,7 @@ window.openPM=function(id){
   } else {
     hl.innerHTML=sorted.map(s=>{
       if(s.type==="pre")
-        return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type pre">PRE</span><span class="sr-detail">Sleep ${s.sleep} · Hyd ${s.hydration} · Rec ${s.recovery}</span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
+        return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type pre">PRE</span><span class="sr-detail">${TX("data.sleep")} ${s.sleep} · ${TX("data.fat")} ${s.fatigue??"—"} · ${TX("data.sor")} ${s.soreness??"—"} · ${TX("data.str")} ${s.stress??"—"} · ${TX("data.moo")} ${s.mood??"—"}</span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
       const zc=s.ua>=600?"zone-high":s.ua>=300?"zone-med":"zone-low";
       return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type post">POST</span><span class="sr-detail">RPE ${s.pse} · ${s.duration}min</span><span style="margin:0 3px"><span class="zone-badge ${zc}">${s.ua} AU</span></span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
     }).join("");
@@ -1054,8 +1062,10 @@ window.openPM=function(id){
       _pmCH.well=new Chart(document.getElementById("pmWC"),{type:"line",
         data:{labels:lb,datasets:[
           {data:pre.map(s=>s.sleep),borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)",borderWidth:2,pointRadius:2,tension:.3,fill:true},
-          {data:pre.map(s=>s.hydration),borderColor:pc,borderWidth:2,pointRadius:2,tension:.3,fill:false},
-          {data:pre.map(s=>s.recovery),borderColor:ac,borderWidth:2,pointRadius:2,tension:.3,fill:false}
+          {data:pre.map(s=>s.fatigue),borderColor:"#D97706",borderWidth:2,pointRadius:2,tension:.3,fill:false},
+          {data:pre.map(s=>s.soreness),borderColor:"#C8102E",borderWidth:2,pointRadius:2,tension:.3,fill:false},
+          {data:pre.map(s=>s.stress),borderColor:"#9B30D9",borderWidth:2,pointRadius:2,tension:.3,fill:false},
+          {data:pre.map(s=>s.mood),borderColor:"#0a8a3a",borderWidth:2,pointRadius:2,tension:.3,fill:false}
         ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
     }
   },60);
@@ -1153,8 +1163,10 @@ window.submitPre=async function(){
   }
   const e={id:editId||"pre_"+Date.now(),date,type:"pre",
     sleep:+document.getElementById("sleep").value,
-    hydration:+document.getElementById("hydration").value,
-    recovery:+document.getElementById("recovery").value,
+    fatigue:+document.getElementById("fatigue").value,
+    soreness:+document.getElementById("soreness").value,
+    stress:+document.getElementById("stress").value,
+    mood:+document.getElementById("mood").value,
     wbScale:5,                       /* escala do bem-estar: 1-5 */
     time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer};
   saveSession(e);const was=!!editId;editId=null;
@@ -1206,15 +1218,23 @@ function migrateWellbeingScale(){
   var n=0;
   ST.sessions.forEach(function(s){
     if(!s||s.type!=="pre")return;
-    if(s.wbScale===5)return;                       /* ja convertido */
-    if(s.present===false){ s.wbScale=5; return; }  /* falta: nao tem bem-estar */
-    s.sleep=_wb10to5(s.sleep);
-    s.hydration=_wb10to5(s.hydration);
-    s.recovery=_wb10to5(s.recovery);
-    s.wbScale=5; n++;
-    if(s._pk) rtSaveSession(s);                    /* persiste na nuvem */
+    var touched=false;
+    /* 1) escala 1-10 -> 1-5 (uma unica vez, marcada por wbScale) */
+    if(s.wbScale!==5){
+      if(s.present!==false) s.sleep=_wb10to5(s.sleep);
+      s.wbScale=5; touched=true;
+    }
+    /* 2) hidratacao e recuperacao foram removidas do questionario */
+    if("hydration" in s){ delete s.hydration; touched=true; }
+    if("recovery"  in s){ delete s.recovery;  touched=true; }
+    if(touched){
+      n++;
+      if(s._pk && _rf && _db && _uid){              /* remove tambem na nuvem */
+        _set(uPath("sessions/"+s._pk+"/"+s.id), (function(){var d={...s};delete d._pk;return d;})());
+      }
+    }
   });
-  if(n){ save(); console.log("[FluxGK] bem-estar convertido para 1-5 em "+n+" registro(s)"); }
+  if(n){ save(); console.log("[FluxGK] bem-estar migrado em "+n+" registro(s)"); }
   return n;
 }
 window.editSession=function(id){
@@ -1225,7 +1245,7 @@ window.editSession=function(id){
     document.getElementById("preDate").value=s.date;
     if(s.time)setAmPmTime("pre",s.time);
     if(s.trainingType)document.getElementById("preType").value=s.trainingType;
-    if(s.type==="pre"){["sleep","hydration","recovery"].forEach(k=>{document.getElementById(k).value=s[k];document.getElementById(k+"Val").textContent=s[k];});}
+    if(s.type==="pre"){["sleep","fatigue","soreness","stress","mood"].forEach(k=>{const el=document.getElementById(k);if(!el)return;const v=(s[k]==null?3:s[k]);el.value=v;document.getElementById(k+"Val").textContent=v;});}
     document.getElementById("cancelEditPre").style.display="block";
     // Restore attendance
     const _pEl=document.getElementById("attendancePresent");
@@ -1276,8 +1296,8 @@ function renderDashboard(){
   const totalSessions=post.length+absences.length;
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
-  const aSl=pre.length?(pre.reduce((a,s)=>a+s.sleep,0)/pre.length).toFixed(1):"—";
-  const aRec=pre.length?(pre.reduce((a,s)=>a+s.recovery,0)/pre.length).toFixed(1):"—";
+  const _avg=(k)=>{const v=pre.filter(s=>s[k]!=null);return v.length?(v.reduce((a,s)=>a+s[k],0)/v.length).toFixed(1):"—";};
+  const aSl=_avg("sleep"), aFat=_avg("fatigue"), aSor=_avg("soreness"), aStr=_avg("stress"), aMoo=_avg("mood");
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   // Attendance strip: all session days sorted
   const attDays=[...post.map(s=>({d:s.date,present:true})),...absences.map(s=>({d:s.date,present:false}))].sort((a,b)=>a.d.localeCompare(b.d));
@@ -1296,8 +1316,11 @@ function renderDashboard(){
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgAU")}</div><div class="mc-val">${aUA||"—"}</div><div class="mc-sub">${TX("data.m.perSession")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgRPE")}</div><div class="mc-val">${aPSE}</div><div class="mc-sub">${TX("data.m.cr10")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgDur")}</div><div class="mc-val">${aDur}</div><div class="mc-sub">${TX("data.m.minutes")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSleep")}</div><div class="mc-val">${aSl}</div><div class="mc-sub">${TX("data.m.outOf10")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgRec")}</div><div class="mc-val">${aRec}</div><div class="mc-sub">${TX("data.m.outOf10")}</div></div>`;
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSleep")}</div><div class="mc-val">${aSl}</div><div class="mc-sub">${TX("data.m.outOf5up")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgFat")}</div><div class="mc-val">${aFat}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSor")}</div><div class="mc-val">${aSor}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgStr")}</div><div class="mc-val">${aStr}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.avgMoo")}</div><div class="mc-val">${aMoo}</div><div class="mc-sub">${TX("data.m.outOf5up")}</div></div>`;
   if(attHtml){const ar=document.getElementById("metricsRow");if(ar)ar.insertAdjacentHTML("beforeend",'<div style="grid-column:1/-1"><div data-i18n="data.pre.attendance" style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt);margin-bottom:4px">Attendance</div>'+attHtml+'</div>');}
   renderCharts(post,pre);
 }
@@ -1357,8 +1380,10 @@ function renderCharts(post,pre){
     CH.well=new Chart(document.getElementById("wellChart"),{type:"line",
       data:{labels:lb,datasets:[
         {label:TX("data.sleep"),    data:pre.map(s=>s.sleep),     borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)", borderWidth:2,pointRadius:3,tension:.3,fill:true},
-        {label:TX("data.hydration"),data:pre.map(s=>s.hydration), borderColor:"#9B30D9",backgroundColor:"rgba(155,48,217,.07)",borderWidth:2,pointRadius:3,tension:.3,fill:false},
-        {label:TX("data.recovery"), data:pre.map(s=>s.recovery),  borderColor:ac,       backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
+        {label:TX("data.fatigue"),  data:pre.map(s=>s.fatigue),   borderColor:"#D97706",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
+        {label:TX("data.soreness"), data:pre.map(s=>s.soreness),  borderColor:"#C8102E",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
+        {label:TX("data.stress"),   data:pre.map(s=>s.stress),    borderColor:"#9B30D9",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
+        {label:TX("data.mood"),     data:pre.map(s=>s.mood),      borderColor:"#0a8a3a",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
       ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
   }
 
@@ -1401,7 +1426,7 @@ function renderHistory(){
     const dt=fd(s.date)+(s.time?" · "+s.time:"");
     const type=s.trainingType||pre.trainingType||"";
     const zc=s.ua>=600?"zone-high":s.ua>=300?"zone-med":"zone-low";
-    const wb=pre.sleep?(" · Sleep "+pre.sleep+" · Hyd "+pre.hydration+" · Rec "+pre.recovery):"";
+    const wb=pre.sleep?(" · "+TX("data.sleep")+" "+pre.sleep+" · "+TX("data.fat")+" "+(pre.fatigue==null?"—":pre.fatigue)+" · "+TX("data.sor")+" "+(pre.soreness==null?"—":pre.soreness)+" · "+TX("data.str")+" "+(pre.stress==null?"—":pre.stress)+" · "+TX("data.moo")+" "+(pre.mood==null?"—":pre.mood)):"";
     return'<div class="session-row">'
       +'<span class="sr-date">'+dt+'</span>'
       +'<span class="sr-type post">SESSION</span>'
@@ -1424,7 +1449,7 @@ function renderHistory(){
     return'<div class="session-row" style="opacity:.75;border-left:3px solid var(--a)">'
       +'<span class="sr-date">'+dt+'</span>'
       +'<span class="sr-type pre" style="background:var(--al);color:var(--a)">PENDING</span>'
-      +'<span class="sr-detail">'+(type?type+" · ":"")+TX("data.sleep")+" "+s.sleep+" · "+TX("data.hyd")+" "+s.hydration+" · "+TX("data.rec")+" "+s.recovery+'</span>'
+      +'<span class="sr-detail">'+(type?type+" · ":"")+TX("data.sleep")+" "+s.sleep+" · "+TX("data.fat")+" "+(s.fatigue==null?"—":s.fatigue)+" · "+TX("data.sor")+" "+(s.soreness==null?"—":s.soreness)+" · "+TX("data.str")+" "+(s.stress==null?"—":s.stress)+" · "+TX("data.moo")+" "+(s.mood==null?"—":s.mood)+'</span>'
       +actionBtns(s.id)+'</div>';
   });
   // Merge all rows sorted by date desc
@@ -1698,13 +1723,12 @@ function calcM(ss){
   const post=ss.filter(s=>s.type==="post"),pre=ss.filter(s=>s.type==="pre"),absences=ss.filter(s=>s.type==="absence");
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
-  const aSl=pre.length?(pre.reduce((a,s)=>a+s.sleep,0)/pre.length).toFixed(1):"—";
-  const aHy=pre.length?(pre.reduce((a,s)=>a+s.hydration,0)/pre.length).toFixed(1):"—";
-  const aRec=pre.length?(pre.reduce((a,s)=>a+s.recovery,0)/pre.length).toFixed(1):"—";
+  const _avgP=(k)=>{const v=pre.filter(s=>s[k]!=null);return v.length?(v.reduce((a,s)=>a+s[k],0)/v.length).toFixed(1):"—";};
+  const aSl=_avgP("sleep"), aFat=_avgP("fatigue"), aSor=_avgP("soreness"), aStr=_avgP("stress"), aMoo=_avgP("mood");
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   let acwr="—";
   if(post.length>=4){const ubd={};post.forEach(s=>{ubd[s.date]=(ubd[s.date]||0)+s.ua;});const dates=Object.keys(ubd).sort(),vals=dates.map(d=>ubd[d]),i=vals.length-1;const ac=vals.slice(Math.max(0,i-6),i+1).reduce((a,v)=>a+v,0)/Math.min(7,i+1),ch=vals.slice(Math.max(0,i-27),i+1).reduce((a,v)=>a+v,0)/Math.min(28,i+1);if(ch>0)acwr=(ac/ch).toFixed(2);}
-  return{post,pre,absences,tUA,aUA,aPSE,aSl,aHy,aRec,aDur,acwr};
+  return{post,pre,absences,tUA,aUA,aPSE,aSl,aFat,aSor,aStr,aMoo,aDur,acwr};
 }
 function zpill(ua){if(!ua||ua==="—")return"—";if(ua<300)return`<span class="zpill zl">${TX("data.pdf.zoneLow")}</span>`;if(ua<600)return`<span class="zpill zm">${TX("data.pdf.zoneMod")}</span>`;return`<span class="zpill zh">${TX("data.pdf.zoneHigh")}</span>`;}
 function acls(v){if(v==="—")return"";const n=parseFloat(v);if(n>=.8&&n<=1.3)return"aok";if(n<.8)return"awk";return"abad";}
@@ -1776,16 +1800,18 @@ function mkWellChart(id,pre){
   });
   var series=[
     {data:pre.map(s=>s.sleep),    color:"#185FA5"},
-    {data:pre.map(s=>s.hydration),color:"#9B30D9"},
-    {data:pre.map(s=>s.recovery), color:"#D97706"}
+    {data:pre.map(s=>s.fatigue),  color:"#D97706"},
+    {data:pre.map(s=>s.soreness), color:"#C8102E"},
+    {data:pre.map(s=>s.stress),   color:"#9B30D9"},
+    {data:pre.map(s=>s.mood),     color:"#0a8a3a"}
   ];
   var lines="",dots="",legend="";
   series.forEach(function(s,si){
-    var pts=s.data.map(function(v,i){return xc(i).toFixed(1)+","+yv(v).toFixed(1);}).join(" ");
-    lines+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" stroke-linejoin="round"/>';
-    s.data.forEach(function(v,i){dots+='<circle cx="'+xc(i).toFixed(1)+'" cy="'+yv(v).toFixed(1)+'" r="2.5" fill="'+s.color+'"/>';});
-    var labels=[TX("data.sleep"),TX("data.hydration"),TX("data.recovery")];
-    var lx=pl+si*72,ly=H-5;
+    var pts=s.data.map(function(v,i){return v==null?null:(xc(i).toFixed(1)+","+yv(v).toFixed(1));}).filter(Boolean).join(" ");
+    if(pts) lines+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" stroke-linejoin="round"/>';
+    s.data.forEach(function(v,i){if(v==null)return;dots+='<circle cx="'+xc(i).toFixed(1)+'" cy="'+yv(v).toFixed(1)+'" r="2.5" fill="'+s.color+'"/>';});
+    var labels=[TX("data.sleep"),TX("data.fat"),TX("data.sor"),TX("data.str"),TX("data.moo")];
+    var lx=pl+si*46,ly=H-5;
     legend+='<rect x="'+lx+'" y="'+(ly-6)+'" width="10" height="3" fill="'+s.color+'" rx="1"/>';
     legend+='<text x="'+(lx+13)+'" y="'+(ly-3)+'" font-size="6.5" fill="#666" font-family="sans-serif">'+labels[si]+'</text>';
   });
@@ -1925,9 +1951,11 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
       <div class="rpt-m"><div class="ml">${TX("data.pdf.avgAUsession")}</div><div class="mv">${m.aUA||"—"}</div><div class="ms">${TX("data.m.au")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thAvgRPE")}</div><div class="mv">${m.aPSE}</div><div class="ms">${TX("data.pdf.cr10borg")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.m.avgDur")}</div><div class="mv">${m.aDur||"—"}</div><div class="ms">${TX("data.m.minutes")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgSleep")}</div><div class="mv">${m.aSl}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgHyd")}</div><div class="mv">${m.aHy}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgRec")}</div><div class="mv">${m.aRec}</div><div class="ms">${TX("data.m.outOf10")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgSleep")}</div><div class="mv">${m.aSl}</div><div class="ms">${TX("data.m.outOf5up")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgFat")}</div><div class="mv">${m.aFat}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgSor")}</div><div class="mv">${m.aSor}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgStr")}</div><div class="mv">${m.aStr}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.m.avgMoo")}</div><div class="mv">${m.aMoo}</div><div class="ms">${TX("data.m.outOf5up")}</div></div>
     </div>`;
   if(!ss.length){html+=`<div style="padding:14pt;text-align:center;color:#888;font-size:9.5pt;background:#f8f8f6;border-radius:4pt">${TX("data.pdf.noSessions")}</div>`;html+=`</div>`;return html;}
   if(cfg.ua&&m.post.length){const cid=uid+"_ua";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.pdf.chartUA")} · ${period.label}</h4><canvas id="${cid}" width="560" height="180"></canvas></div></div>`;chartQueue.push(function(){mkUAChart(cid,m.post,0,0,P);});}
@@ -2019,8 +2047,8 @@ window.generateReport=async function(){
     periods.forEach((period,pi)=>{
       html+=`<div class="rpt-period-block"><div class="period-hdr" style="border-color:${P}"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>`;
       // Comparison table
-      html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th><th>${TX("data.pdf.thAvgSleep")}</th><th>${TX("data.pdf.thAvgRec")}</th><th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
-      players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td><td>${m.aSl}</td><td>${m.aRec}</td><td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
+      html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th><th>${TX("data.pdf.thAvgSleep")}</th><th>${TX("data.fat")}</th><th>${TX("data.sor")}</th><th>${TX("data.str")}</th><th>${TX("data.moo")}</th><th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
+      players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td><td>${m.aSl}</td><td>${m.aFat}</td><td>${m.aSor}</td><td>${m.aStr}</td><td>${m.aMoo}</td><td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
       html+=`</tbody></table>`;
       // Group time series
       if(cfg.ua){
