@@ -812,7 +812,9 @@ function openModule(key){
     if(fr.src==='about:blank')return;
     setTimeout(function(){pushContext(fr.contentWindow);},600);  /* rede de seguranca */
   };
-  fr.src=MOD_FILES[key];
+  /* cache-busting: o iframe e carregado por JS depois do load, entao o
+     "recarregar sem cache" do navegador nao o alcanca. O ?v= garante versao nova. */
+  fr.src=MOD_FILES[key]+(MOD_FILES[key].indexOf('?')<0?'?':'&')+'v='+Date.now();
   showScreen('module');
 }
 function closeModule(){ if(_fsEl()){var exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit){try{exit.call(document);}catch(e){}}} showScreen('home');loadStats();}
