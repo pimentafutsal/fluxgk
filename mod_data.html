@@ -426,21 +426,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <div id="preWellBeingCard">
   <div class="card">
     <h3 data-i18n="data.pre.wellbeing">Subjective well-being</h3>
-    <div class="field"><label><span data-i18n="data.sleep">Sleep quality</span> <span class="val-badge" id="sleepVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="sleep" oninput="updateRange('sleep','sleepVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.sleepLow">1 — Very poor</span><span data-i18n="data.pre.sleepHigh">5 — Excellent</span></div></div>
-    <div class="field"><label><span data-i18n="data.fatigue">Fatigue</span> <span class="val-badge" id="fatigueVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="fatigue" oninput="updateRange('fatigue','fatigueVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.fatLow">1 — No fatigue</span><span data-i18n="data.pre.fatHigh">5 — Exhausted</span></div></div>
-    <div class="field"><label><span data-i18n="data.soreness">Muscle soreness</span> <span class="val-badge" id="sorenessVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="soreness" oninput="updateRange('soreness','sorenessVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.sorLow">1 — No soreness</span><span data-i18n="data.pre.sorHigh">5 — Very sore</span></div></div>
-    <div class="field"><label><span data-i18n="data.stress">Stress</span> <span class="val-badge" id="stressVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="stress" oninput="updateRange('stress','stressVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.strLow">1 — Very relaxed</span><span data-i18n="data.pre.strHigh">5 — Very stressed</span></div></div>
-    <div class="field"><label><span data-i18n="data.mood">Mood</span> <span class="val-badge" id="moodVal">3</span></label>
-      <input type="range" min="1" max="5" value="3" step="1" id="mood" oninput="updateRange('mood','moodVal')">
-      <div class="scale-labels"><span data-i18n="data.pre.mooLow">1 — Very poor</span><span data-i18n="data.pre.mooHigh">5 — Excellent</span></div></div>
+    <div id="preFieldsBox"></div>
   </div>
   </div>
   <button class="btn-primary" onclick="submitPre()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.pre.save">Save pre-training</span></button>
@@ -472,6 +458,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
       <div><div data-i18n="data.post.au" class="ua-sub">Arbitrary units (AU)</div>
         <div data-i18n="data.post.rpeXdur" style="font-size:11px;color:var(--mt)">RPE × Duration</div>
         <div id="uaZone" style="margin-top:4px"></div></div></div></div>
+  <div id="postFieldsCard" class="card" style="display:none"><h3 data-i18n="data.post.extra">Additional parameters</h3><div id="postFieldsBox"></div></div>
     <button class="btn-primary accent" onclick="submitPost()"><i class="ti ti-device-floppy"></i> <span data-i18n="data.post.save">Save post-training</span></button>
   <button class="btn-cancel" id="cancelEditPost" onclick="cancelEdit('post')"><i class="ti ti-x"></i> <span data-i18n="data.cancelEdit">Cancel editing</span></button>
 </div>
@@ -508,11 +495,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
   <div class="chart-wrap"><h3><i class="ti ti-activity"></i> <span data-i18n="data.series.wellbeing">Pre-training well-being</span></h3>
     <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.wbData" id="wellChart" role="img" aria-label="Well-being">Well-being.</canvas></div>
     <div class="chart-legend">
-      <div class="legend-item"><span class="legend-dot" style="background:#185FA5"></span><span data-i18n="data.sleep">Sleep</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:#D97706"></span><span data-i18n="data.fatigue">Fatigue</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:#C8102E"></span><span data-i18n="data.soreness">Soreness</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:#9B30D9"></span><span data-i18n="data.stress">Stress</span></div>
-      <div class="legend-item"><span class="legend-dot" style="background:#0a8a3a"></span><span data-i18n="data.mood">Mood</span></div>
+      <span id="wbLegend" style="display:contents"></span>
     </div></div>
   <div class="chart-wrap"><h3><i class="ti ti-chart-pie"></i> <span data-i18n="data.series.typeDist">Training type distribution</span></h3>
     <div id="typeChartWrap" style="min-height:120px"></div>
@@ -636,6 +619,16 @@ textarea{width:100%;resize:vertical;min-height:110px}
     <div class="srow"><label data-i18n="data.set.logo">Logo URL</label><input type="text" class="sinp" id="cfgLogo" placeholder="https://…/logo.png"></div>
     <p class="info-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> <span data-i18n="data.set.logoTip1">Host logo free at</span> <a href="https://imgbb.com" target="_blank">imgbb.com</a><span data-i18n="data.set.logoTip2">, paste link above.</span></p>
     <button class="btn-sec" onclick="applyBranding()" style="width:100%;justify-content:center"><i class="ti ti-check"></i> <span data-i18n="data.set.apply">Apply branding</span></button></div>
+  <div class="msec"><h3><i class="ti ti-adjustments"></i> <span data-i18n="data.set.fields">Questionnaire parameters</span></h3>
+    <p class="info-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> <span data-i18n="data.set.fieldsTip">Create, rename, reorder or switch off what you collect. Turning a parameter off keeps the data already collected.</span></p>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="btn-sec" id="fldTabPre" onclick="setFieldTab('pre')" style="flex:1;justify-content:center"><span data-i18n="data.tab.pre">Pre</span></button>
+      <button class="btn-sec" id="fldTabPost" onclick="setFieldTab('post')" style="flex:1;justify-content:center"><span data-i18n="data.tab.post">Post</span></button>
+    </div>
+    <div id="fieldEditor"></div>
+    <button class="btn-sec" onclick="addField()" style="width:100%;justify-content:center;margin-top:8px"><i class="ti ti-plus"></i> <span data-i18n="data.set.addField">Add parameter</span></button>
+    <button class="btn-sec" onclick="resetFields()" style="width:100%;justify-content:center;margin-top:6px;color:var(--mt)"><i class="ti ti-rotate"></i> <span data-i18n="data.set.resetFields">Restore defaults</span></button>
+  </div>
   <div class="msec"><h3><i class="ti ti-cloud"></i> <span data-i18n="data.set.cloud">Cloud database</span></h3>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="db-badge" id="dbBadge"><i class="ti ti-cloud-off" style="font-size:12px"></i> <span data-i18n="data.set.notConnected">Not connected</span></span>
@@ -703,7 +696,158 @@ textarea{width:100%;resize:vertical;min-height:110px}
 
 
 
-const ST={players:{},sessions:[],currentPlayer:"",filterWeeks:4,brand:{name:"",sub:"",color:"#1D9E75",logo:""},fb:{on:false,cfg:null},trainingTypes:[TX("data.type.gk"),TX("data.type.team"),TX("data.type.gym")]};
+const ST={players:{},sessions:[],currentPlayer:"",filterWeeks:4,brand:{name:"",sub:"",color:"#1D9E75",logo:""},fb:{on:false,cfg:null},trainingTypes:[TX("data.type.gk"),TX("data.type.team"),TX("data.type.gym")],wbFields:null,postFields:null};
+
+/* ══════════════════════════════════════════════════════════════
+   PARAMETROS CONFIGURAVEIS (pre e pos)
+   Cada item: {key,label,min,max,lowLabel,highLabel,dir,color,active}
+   dir: "up" = maior e melhor · "down" = maior e pior
+   As chaves dos 5 itens de fabrica sao as mesmas ja gravadas nas
+   coletas antigas, entao o historico continua sendo lido.
+   ══════════════════════════════════════════════════════════════ */
+function defaultWbFields(){return[
+  {key:"sleep",   label:TX("data.sleep","Sleep quality"), min:1,max:5,lowLabel:TX("data.pre.sleepLow","1 — Very poor"), highLabel:TX("data.pre.sleepHigh","5 — Excellent"),   dir:"up",  color:"#185FA5",active:true},
+  {key:"fatigue", label:TX("data.fatigue","Fatigue"),     min:1,max:5,lowLabel:TX("data.pre.fatLow","1 — No fatigue"),   highLabel:TX("data.pre.fatHigh","5 — Exhausted"),      dir:"down",color:"#D97706",active:true},
+  {key:"soreness",label:TX("data.soreness","Soreness"),   min:1,max:5,lowLabel:TX("data.pre.sorLow","1 — No soreness"),  highLabel:TX("data.pre.sorHigh","5 — Very sore"),      dir:"down",color:"#C8102E",active:true},
+  {key:"stress",  label:TX("data.stress","Stress"),       min:1,max:5,lowLabel:TX("data.pre.strLow","1 — Very relaxed"), highLabel:TX("data.pre.strHigh","5 — Very stressed"),  dir:"down",color:"#9B30D9",active:true},
+  {key:"mood",    label:TX("data.mood","Mood"),           min:1,max:5,lowLabel:TX("data.pre.mooLow","1 — Very poor"),    highLabel:TX("data.pre.mooHigh","5 — Excellent"),      dir:"up",  color:"#0a8a3a",active:true}
+];}
+function wbFields(){ if(!Array.isArray(ST.wbFields)||!ST.wbFields.length) ST.wbFields=defaultWbFields(); return ST.wbFields; }
+function postFields(){ if(!Array.isArray(ST.postFields)) ST.postFields=[]; return ST.postFields; }
+function activeWb(){ return wbFields().filter(f=>f.active!==false); }
+function activePost(){ return postFields().filter(f=>f.active!==false); }
+/* ── helpers usados por graficos, medias, historico e PDF ── */
+function wbAxisMax(){ var m=1; activeWb().forEach(function(f){ if(Number(f.max)>m)m=Number(f.max); }); return m; }
+function wbAxisStep(m){ return m<=5?1:(m<=10?2:Math.ceil(m/5)); }
+function fieldAvg(list,f){ var v=list.filter(function(s){return s[f.key]!=null;}); return v.length?(v.reduce(function(a,s){return a+s[f.key];},0)/v.length).toFixed(1):"—"; }
+function dirSub(f){ return (f.dir==="down")?TX("data.m.outOf5dn","lower better"):TX("data.m.outOf5up","higher better"); }
+/* resumo curto usado nas linhas do historico */
+function wbSummary(s){
+  var parts=activeWb().map(function(f){ return _esc(f.label)+" "+(s[f.key]==null?"—":s[f.key]); });
+  return parts.join(" · ");
+}
+/* ── monta os sliders a partir da configuracao ── */
+function _esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function _fieldSlider(f){
+  var mid=Math.round((Number(f.min)+Number(f.max))/2);
+  return '<div class="field"><label><span>'+_esc(f.label)+'</span> <span class="val-badge" id="fv_'+f.key+'">'+mid+'</span></label>'
+    +'<input type="range" min="'+Number(f.min)+'" max="'+Number(f.max)+'" value="'+mid+'" step="1" id="fi_'+f.key+'" '
+    +'style="accent-color:'+(f.color||"#185FA5")+'" oninput="updateRange(\'fi_'+f.key+'\',\'fv_'+f.key+'\')">'
+    +'<div class="scale-labels"><span>'+_esc(f.lowLabel||f.min)+'</span><span>'+_esc(f.highLabel||f.max)+'</span></div></div>';
+}
+function buildPreFields(){
+  var box=document.getElementById("preFieldsBox"); if(!box)return;
+  var list=activeWb();
+  box.innerHTML=list.length?list.map(_fieldSlider).join("")
+    :'<div style="font-size:12px;color:var(--mt)">'+TX("data.noFields","No parameters configured — add them in Settings.")+'</div>';
+}
+function buildPostFields(){
+  var box=document.getElementById("postFieldsBox"),card=document.getElementById("postFieldsCard");
+  if(!box||!card)return;
+  var list=activePost();
+  card.style.display=list.length?"":"none";
+  box.innerHTML=list.map(_fieldSlider).join("");
+}
+function readFields(list){
+  var o={};
+  list.forEach(function(f){ var el=document.getElementById("fi_"+f.key); if(el) o[f.key]=+el.value; });
+  return o;
+}
+function fillFields(list,s){
+  list.forEach(function(f){
+    var el=document.getElementById("fi_"+f.key),b=document.getElementById("fv_"+f.key);
+    if(!el)return;
+    var v=(s&&s[f.key]!=null)?s[f.key]:Math.round((Number(f.min)+Number(f.max))/2);
+    el.value=v; if(b)b.textContent=v;
+  });
+}
+/* ══ EDITOR DE PARAMETROS (Configuracoes) ══ */
+var _fldTab="pre";
+function _fldList(){ return _fldTab==="post"?postFields():wbFields(); }
+function saveFields(){
+  save();
+  if(_rf&&_db&&_uid){ _set(uPath("config/wbFields"),wbFields()); _set(uPath("config/postFields"),postFields()); }
+  buildPreFields(); buildPostFields(); renderFieldEditor(); renderAll();
+}
+window.setFieldTab=function(t){
+  _fldTab=(t==="post"?"post":"pre");
+  var a=document.getElementById("fldTabPre"),b=document.getElementById("fldTabPost");
+  if(a)a.style.opacity=_fldTab==="pre"?"1":".5";
+  if(b)b.style.opacity=_fldTab==="post"?"1":".5";
+  renderFieldEditor();
+};
+function renderFieldEditor(){
+  var box=document.getElementById("fieldEditor"); if(!box)return;
+  var a=document.getElementById("fldTabPre"),b=document.getElementById("fldTabPost");
+  if(a)a.style.opacity=_fldTab==="pre"?"1":".5";
+  if(b)b.style.opacity=_fldTab==="post"?"1":".5";
+  var list=_fldList();
+  if(!list.length){ box.innerHTML='<div style="font-size:12px;color:var(--mt);padding:8px 0">'+TX("data.noFields","No parameters yet — add one below.")+'</div>'; return; }
+  box.innerHTML=list.map(function(f,i){
+    return '<div style="border:0.5px solid var(--bd2);border-radius:var(--rm);padding:10px;margin-bottom:8px;background:var(--bg2)">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+        +'<span style="width:11px;height:11px;border-radius:3px;background:'+(f.color||"#185FA5")+';flex-shrink:0"></span>'
+        +'<input type="text" class="sinp" value="'+_esc(f.label)+'" oninput="fldSet('+i+',\'label\',this.value)" style="flex:1;min-width:0">'
+        +'<button class="btn-sec" title="↑" onclick="fldMove('+i+',-1)" style="padding:5px 8px">↑</button>'
+        +'<button class="btn-sec" title="↓" onclick="fldMove('+i+',1)" style="padding:5px 8px">↓</button>'
+        +'<button class="btn-sec" onclick="fldDel('+i+')" style="padding:5px 8px;color:#B91C1C">✕</button>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fMin","Min")+'<input type="number" class="sinp" value="'+Number(f.min)+'" onchange="fldSet('+i+',\'min\',+this.value)"></label>'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fMax","Max")+'<input type="number" class="sinp" value="'+Number(f.max)+'" onchange="fldSet('+i+',\'max\',+this.value)"></label>'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fDir","Direction")+'<select class="sinp" onchange="fldSet('+i+',\'dir\',this.value)">'
+          +'<option value="up"'+(f.dir!=="down"?" selected":"")+'>'+TX("data.set.dirUp","Higher = better")+'</option>'
+          +'<option value="down"'+(f.dir==="down"?" selected":"")+'>'+TX("data.set.dirDown","Higher = worse")+'</option></select></label>'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fColor","Colour")+'<input type="color" class="sinp" value="'+(f.color||"#185FA5")+'" onchange="fldSet('+i+',\'color\',this.value)" style="padding:2px;height:34px"></label>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fLow","Low end label")+'<input type="text" class="sinp" value="'+_esc(f.lowLabel||"")+'" oninput="fldSet('+i+',\'lowLabel\',this.value)"></label>'
+        +'<label style="font-size:11px;color:var(--mt)">'+TX("data.set.fHigh","High end label")+'<input type="text" class="sinp" value="'+_esc(f.highLabel||"")+'" oninput="fldSet('+i+',\'highLabel\',this.value)"></label>'
+      +'</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;cursor:pointer">'
+        +'<input type="checkbox" '+(f.active!==false?"checked":"")+' onchange="fldSet('+i+',\'active\',this.checked)">'+TX("data.set.fActive","Collect this parameter")+'</label>'
+      +'</div>';
+  }).join("");
+}
+window.fldSet=function(i,k,v){
+  var list=_fldList(); if(!list[i])return;
+  if(k==="min"||k==="max"){ v=Math.round(v); if(isNaN(v))return; }
+  list[i][k]=v;
+  if(list[i].min>=list[i].max) list[i].max=list[i].min+1;
+  if(k==="label"||k==="lowLabel"||k==="highLabel"){ save(); if(_rf&&_db&&_uid){_set(uPath("config/"+(_fldTab==="post"?"postFields":"wbFields")),list);} buildPreFields(); buildPostFields(); }
+  else saveFields();
+};
+window.fldMove=function(i,d){
+  var list=_fldList(),j=i+d; if(j<0||j>=list.length)return;
+  var t=list[i];list[i]=list[j];list[j]=t; saveFields();
+};
+window.fldDel=function(i){
+  var list=_fldList(); if(!list[i])return;
+  if(!confirm(TX("data.set.fDelConfirm","Remove this parameter? Data already collected is kept, it just stops being shown.")+"\n\n"+list[i].label))return;
+  list.splice(i,1); saveFields();
+};
+window.addField=function(){
+  var list=_fldList();
+  var label=prompt(TX("data.set.fNewName","Parameter name:"),"");
+  if(!label||!label.trim())return;
+  var taken=wbFields().map(f=>f.key).concat(postFields().map(f=>f.key),
+    ["id","date","type","time","trainingType","present","postId","ts","pse","duration","ua","preId","wbScale"]);
+  list.push({key:mkFieldKey(label.trim(),taken),label:label.trim(),min:1,max:5,
+    lowLabel:"1",highLabel:"5",dir:"up",color:"#185FA5",active:true});
+  saveFields();
+};
+window.resetFields=function(){
+  if(!confirm(TX("data.set.fResetConfirm","Restore the default parameters? Your custom ones will be removed from the form (collected data is kept).")))return;
+  if(_fldTab==="post") ST.postFields=[]; else ST.wbFields=defaultWbFields();
+  saveFields();
+};
+/* chave segura: sem ponto/cifrao/colchete (restricao do Firebase) e sem colisao */
+function mkFieldKey(label,taken){
+  var base=(label||"campo").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24)||"campo";
+  var k=base,i=2; while(taken.indexOf(k)>-1){ k=base+"_"+(i++); }
+  return k;
+}
 let db=null,fbF=null,selPSE=null,editId=null,customPeriods=[],allChartInst=[];
 
 const PSE_LBL=["1 — Rest","2 — Very easy","3 — Easy","4 — Moderate","5 — Somewhat hard","6 — Hard","7 — Very hard","8 — Very, very hard","9 — Extremely hard","10 — Maximum effort"];
@@ -853,6 +997,8 @@ async function rtPushAll(){
     upd[uPath("sessions/"+s._pk+"/"+s.id)]=d;
   });
   if(ST.brand&&(ST.brand.name||ST.brand.color||ST.brand.logo))upd[uPath("config/branding")]=ST.brand;
+  upd[uPath("config/wbFields")]=wbFields();
+  upd[uPath("config/postFields")]=postFields();
   if(!Object.keys(upd).length){dotG();return;}
   dotY();
   try{await _rf.update(_rf.ref(_db,"/"),upd);dotG();}
@@ -866,6 +1012,12 @@ function rtListen(){
   _rf.onValue(_rf.ref(_db,uPath("").replace(/\/$/,"")),snap=>{
     const rem=snap.val();if(!rem)return;
     let changed=false;
+    if(rem.config&&Array.isArray(rem.config.wbFields)&&rem.config.wbFields.length){
+      if(JSON.stringify(rem.config.wbFields)!==JSON.stringify(ST.wbFields)){ST.wbFields=rem.config.wbFields;changed=true;try{buildPreFields();renderFieldEditor();}catch(e){}}
+    }
+    if(rem.config&&Array.isArray(rem.config.postFields)){
+      if(JSON.stringify(rem.config.postFields)!==JSON.stringify(ST.postFields)){ST.postFields=rem.config.postFields;changed=true;try{buildPostFields();renderFieldEditor();}catch(e){}}
+    }
     if(rem.config&&rem.config.branding){
       const rb=rem.config.branding;
       const brandChanged=JSON.stringify(rb)!==JSON.stringify(ST.brand);
@@ -1032,7 +1184,7 @@ window.openPM=function(id){
   } else {
     hl.innerHTML=sorted.map(s=>{
       if(s.type==="pre")
-        return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type pre">PRE</span><span class="sr-detail">${TX("data.sleep")} ${s.sleep} · ${TX("data.fat")} ${s.fatigue??"—"} · ${TX("data.sor")} ${s.soreness??"—"} · ${TX("data.str")} ${s.stress??"—"} · ${TX("data.moo")} ${s.mood??"—"}</span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
+        return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type pre">PRE</span><span class="sr-detail">${wbSummary(s)}</span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
       const zc=s.ua>=600?"zone-high":s.ua>=300?"zone-med":"zone-low";
       return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type post">POST</span><span class="sr-detail">RPE ${s.pse} · ${s.duration}min</span><span style="margin:0 3px"><span class="zone-badge ${zc}">${s.ua} AU</span></span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
     }).join("");
@@ -1061,12 +1213,8 @@ window.openPM=function(id){
       const lb=pre.map(s=>fd(s.date));
       _pmCH.well=new Chart(document.getElementById("pmWC"),{type:"line",
         data:{labels:lb,datasets:[
-          {data:pre.map(s=>s.sleep),borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)",borderWidth:2,pointRadius:2,tension:.3,fill:true},
-          {data:pre.map(s=>s.fatigue),borderColor:"#D97706",borderWidth:2,pointRadius:2,tension:.3,fill:false},
-          {data:pre.map(s=>s.soreness),borderColor:"#C8102E",borderWidth:2,pointRadius:2,tension:.3,fill:false},
-          {data:pre.map(s=>s.stress),borderColor:"#9B30D9",borderWidth:2,pointRadius:2,tension:.3,fill:false},
-          {data:pre.map(s=>s.mood),borderColor:"#0a8a3a",borderWidth:2,pointRadius:2,tension:.3,fill:false}
-        ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
+          ...activeWb().map(function(f,fi){return {data:pre.map(s=>s[f.key]),borderColor:(f.color||"#185FA5"),backgroundColor:fi===0?"rgba(24,95,165,.07)":"transparent",borderWidth:2,pointRadius:2,tension:.3,fill:fi===0};})
+        ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:wbAxisMax(),ticks:{...base.scales.y.ticks,stepSize:wbAxisStep(wbAxisMax())}}}}});
     }
   },60);
   // Reset tabs
@@ -1161,14 +1309,9 @@ window.submitPre=async function(){
     showToast(was?TX("data.msg.absenceUpdated"):TX("data.msg.absenceSaved"));
     return;
   }
-  const e={id:editId||"pre_"+Date.now(),date,type:"pre",
-    sleep:+document.getElementById("sleep").value,
-    fatigue:+document.getElementById("fatigue").value,
-    soreness:+document.getElementById("soreness").value,
-    stress:+document.getElementById("stress").value,
-    mood:+document.getElementById("mood").value,
-    wbScale:5,                       /* escala do bem-estar: 1-5 */
-    time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer};
+  const e=Object.assign({id:editId||"pre_"+Date.now(),date,type:"pre"},
+    readFields(activeWb()),
+    {wbScale:5,time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer});
   saveSession(e);const was=!!editId;editId=null;
   document.getElementById("preFormTitle").textContent=TX("data.pre.title");
   document.getElementById("cancelEditPre").style.display="none";
@@ -1186,8 +1329,9 @@ window.submitPost=async function(){
   const time=preS.time||"";
   const trainingType=preS.trainingType||"";
   const postId=editId||"post_"+Date.now();
-  const e={id:postId,date,type:"post",pse:selPSE,duration:dur,ua:selPSE*dur,
-    time,trainingType,preId,ts:Date.now(),_pk:ST.currentPlayer};
+  const e=Object.assign({id:postId,date,type:"post",pse:selPSE,duration:dur,ua:selPSE*dur},
+    readFields(activePost()),
+    {time,trainingType,preId,ts:Date.now(),_pk:ST.currentPlayer});
   saveSession(e);
   const preIdx=ST.sessions.findIndex(function(s){return s.id===preId;});
   if(preIdx>=0){ST.sessions[preIdx].postId=postId;save();}
@@ -1245,7 +1389,7 @@ window.editSession=function(id){
     document.getElementById("preDate").value=s.date;
     if(s.time)setAmPmTime("pre",s.time);
     if(s.trainingType)document.getElementById("preType").value=s.trainingType;
-    if(s.type==="pre"){["sleep","fatigue","soreness","stress","mood"].forEach(k=>{const el=document.getElementById(k);if(!el)return;const v=(s[k]==null?3:s[k]);el.value=v;document.getElementById(k+"Val").textContent=v;});}
+    if(s.type==="pre"){ buildPreFields(); fillFields(activeWb(),s); }
     document.getElementById("cancelEditPre").style.display="block";
     // Restore attendance
     const _pEl=document.getElementById("attendancePresent");
@@ -1264,6 +1408,7 @@ window.editSession=function(id){
     },50);
     document.getElementById("duration").value=s.duration;
     selP(s.pse);
+    buildPostFields(); fillFields(activePost(),s);
     document.getElementById("cancelEditPost").style.display="block";
   }
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1296,8 +1441,7 @@ function renderDashboard(){
   const totalSessions=post.length+absences.length;
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
-  const _avg=(k)=>{const v=pre.filter(s=>s[k]!=null);return v.length?(v.reduce((a,s)=>a+s[k],0)/v.length).toFixed(1):"—";};
-  const aSl=_avg("sleep"), aFat=_avg("fatigue"), aSor=_avg("soreness"), aStr=_avg("stress"), aMoo=_avg("mood");
+  const _wbCards=activeWb().map(f=>`<div class="metric-card"><div class="mc-label">${_esc(f.label)}</div><div class="mc-val">${fieldAvg(pre,f)}</div><div class="mc-sub">${dirSub(f)}</div></div>`).join("");
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   // Attendance strip: all session days sorted
   const attDays=[...post.map(s=>({d:s.date,present:true})),...absences.map(s=>({d:s.date,present:false}))].sort((a,b)=>a.d.localeCompare(b.d));
@@ -1316,11 +1460,7 @@ function renderDashboard(){
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgAU")}</div><div class="mc-val">${aUA||"—"}</div><div class="mc-sub">${TX("data.m.perSession")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgRPE")}</div><div class="mc-val">${aPSE}</div><div class="mc-sub">${TX("data.m.cr10")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgDur")}</div><div class="mc-val">${aDur}</div><div class="mc-sub">${TX("data.m.minutes")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSleep")}</div><div class="mc-val">${aSl}</div><div class="mc-sub">${TX("data.m.outOf5up")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgFat")}</div><div class="mc-val">${aFat}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgSor")}</div><div class="mc-val">${aSor}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgStr")}</div><div class="mc-val">${aStr}</div><div class="mc-sub">${TX("data.m.outOf5dn")}</div></div>
-    <div class="metric-card"><div class="mc-label">${TX("data.m.avgMoo")}</div><div class="mc-val">${aMoo}</div><div class="mc-sub">${TX("data.m.outOf5up")}</div></div>`;
+    `+_wbCards;
   if(attHtml){const ar=document.getElementById("metricsRow");if(ar)ar.insertAdjacentHTML("beforeend",'<div style="grid-column:1/-1"><div data-i18n="data.pre.attendance" style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt);margin-bottom:4px">Attendance</div>'+attHtml+'</div>');}
   renderCharts(post,pre);
 }
@@ -1379,12 +1519,10 @@ function renderCharts(post,pre){
     const lb=pre.map(s=>fd(s.date));
     CH.well=new Chart(document.getElementById("wellChart"),{type:"line",
       data:{labels:lb,datasets:[
-        {label:TX("data.sleep"),    data:pre.map(s=>s.sleep),     borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.07)", borderWidth:2,pointRadius:3,tension:.3,fill:true},
-        {label:TX("data.fatigue"),  data:pre.map(s=>s.fatigue),   borderColor:"#D97706",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
-        {label:TX("data.soreness"), data:pre.map(s=>s.soreness),  borderColor:"#C8102E",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
-        {label:TX("data.stress"),   data:pre.map(s=>s.stress),    borderColor:"#9B30D9",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false},
-        {label:TX("data.mood"),     data:pre.map(s=>s.mood),      borderColor:"#0a8a3a",backgroundColor:"transparent",          borderWidth:2,pointRadius:3,tension:.3,fill:false}
-      ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:5,ticks:{...base.scales.y.ticks,stepSize:1}}}}});
+        ...activeWb().map(function(f,fi){return {label:f.label,data:pre.map(s=>s[f.key]),borderColor:(f.color||"#185FA5"),backgroundColor:fi===0?"rgba(24,95,165,.07)":"transparent",borderWidth:2,pointRadius:3,tension:.3,fill:fi===0};})
+      ]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:wbAxisMax(),ticks:{...base.scales.y.ticks,stepSize:wbAxisStep(wbAxisMax())}}}}});
+    var _lg=document.getElementById("wbLegend");
+    if(_lg) _lg.innerHTML=activeWb().map(function(f){return '<div class="legend-item"><span class="legend-dot" style="background:'+(f.color||"#185FA5")+'"></span><span>'+_esc(f.label)+'</span></div>';}).join("");
   }
 
   // ── ACWR chart ──
@@ -1426,7 +1564,7 @@ function renderHistory(){
     const dt=fd(s.date)+(s.time?" · "+s.time:"");
     const type=s.trainingType||pre.trainingType||"";
     const zc=s.ua>=600?"zone-high":s.ua>=300?"zone-med":"zone-low";
-    const wb=pre.sleep?(" · "+TX("data.sleep")+" "+pre.sleep+" · "+TX("data.fat")+" "+(pre.fatigue==null?"—":pre.fatigue)+" · "+TX("data.sor")+" "+(pre.soreness==null?"—":pre.soreness)+" · "+TX("data.str")+" "+(pre.stress==null?"—":pre.stress)+" · "+TX("data.moo")+" "+(pre.mood==null?"—":pre.mood)):"";
+    const wb=pre.sleep?(" · "+wbSummary(pre)):"";
     return'<div class="session-row">'
       +'<span class="sr-date">'+dt+'</span>'
       +'<span class="sr-type post">SESSION</span>'
@@ -1449,7 +1587,7 @@ function renderHistory(){
     return'<div class="session-row" style="opacity:.75;border-left:3px solid var(--a)">'
       +'<span class="sr-date">'+dt+'</span>'
       +'<span class="sr-type pre" style="background:var(--al);color:var(--a)">PENDING</span>'
-      +'<span class="sr-detail">'+(type?type+" · ":"")+TX("data.sleep")+" "+s.sleep+" · "+TX("data.fat")+" "+(s.fatigue==null?"—":s.fatigue)+" · "+TX("data.sor")+" "+(s.soreness==null?"—":s.soreness)+" · "+TX("data.str")+" "+(s.stress==null?"—":s.stress)+" · "+TX("data.moo")+" "+(s.mood==null?"—":s.mood)+'</span>'
+      +'<span class="sr-detail">'+(type?type+" · ":"")+wbSummary(s)+'</span>'
       +actionBtns(s.id)+'</div>';
   });
   // Merge all rows sorted by date desc
@@ -1723,12 +1861,11 @@ function calcM(ss){
   const post=ss.filter(s=>s.type==="post"),pre=ss.filter(s=>s.type==="pre"),absences=ss.filter(s=>s.type==="absence");
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
-  const _avgP=(k)=>{const v=pre.filter(s=>s[k]!=null);return v.length?(v.reduce((a,s)=>a+s[k],0)/v.length).toFixed(1):"—";};
-  const aSl=_avgP("sleep"), aFat=_avgP("fatigue"), aSor=_avgP("soreness"), aStr=_avgP("stress"), aMoo=_avgP("mood");
+  const wb={}; activeWb().forEach(function(f){ wb[f.key]=fieldAvg(pre,f); });
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   let acwr="—";
   if(post.length>=4){const ubd={};post.forEach(s=>{ubd[s.date]=(ubd[s.date]||0)+s.ua;});const dates=Object.keys(ubd).sort(),vals=dates.map(d=>ubd[d]),i=vals.length-1;const ac=vals.slice(Math.max(0,i-6),i+1).reduce((a,v)=>a+v,0)/Math.min(7,i+1),ch=vals.slice(Math.max(0,i-27),i+1).reduce((a,v)=>a+v,0)/Math.min(28,i+1);if(ch>0)acwr=(ac/ch).toFixed(2);}
-  return{post,pre,absences,tUA,aUA,aPSE,aSl,aFat,aSor,aStr,aMoo,aDur,acwr};
+  return{post,pre,absences,tUA,aUA,aPSE,wb,aDur,acwr};
 }
 function zpill(ua){if(!ua||ua==="—")return"—";if(ua<300)return`<span class="zpill zl">${TX("data.pdf.zoneLow")}</span>`;if(ua<600)return`<span class="zpill zm">${TX("data.pdf.zoneMod")}</span>`;return`<span class="zpill zh">${TX("data.pdf.zoneHigh")}</span>`;}
 function acls(v){if(v==="—")return"";const n=parseFloat(v);if(n>=.8&&n<=1.3)return"aok";if(n<.8)return"awk";return"abad";}
@@ -1791,27 +1928,24 @@ function mkWellChart(id,pre){
   const gw=W-pl-pr,gh=H-pt-pb;
   const labs=pre.map(s=>fd(s.date)),n=labs.length;
   const xc=function(i){return pl+gw/(n>1?n-1:1)*i;};
-  const yv=function(v){return pt+gh*(1-v/5);};
+  var _mx=wbAxisMax();
+  const yv=function(v){return pt+gh*(1-v/_mx);};
   var g="";
-  [0,1,2,3,4,5].forEach(function(v){
+  var _ticks=[];for(var _t=0;_t<=_mx;_t+=wbAxisStep(_mx))_ticks.push(_t);
+  _ticks.forEach(function(v){
     var y=yv(v);
     g+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="rgba(0,0,0,.07)" stroke-width="0.5"/>';
     g+='<text x="'+(pl-3)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" font-size="7" fill="#888" font-family="sans-serif">'+v+'</text>';
   });
-  var series=[
-    {data:pre.map(s=>s.sleep),    color:"#185FA5"},
-    {data:pre.map(s=>s.fatigue),  color:"#D97706"},
-    {data:pre.map(s=>s.soreness), color:"#C8102E"},
-    {data:pre.map(s=>s.stress),   color:"#9B30D9"},
-    {data:pre.map(s=>s.mood),     color:"#0a8a3a"}
-  ];
+  var _flds=activeWb();
+  var series=_flds.map(function(f){return {data:pre.map(function(s){return s[f.key];}),color:(f.color||"#185FA5")};});
   var lines="",dots="",legend="";
   series.forEach(function(s,si){
     var pts=s.data.map(function(v,i){return v==null?null:(xc(i).toFixed(1)+","+yv(v).toFixed(1));}).filter(Boolean).join(" ");
     if(pts) lines+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" stroke-linejoin="round"/>';
     s.data.forEach(function(v,i){if(v==null)return;dots+='<circle cx="'+xc(i).toFixed(1)+'" cy="'+yv(v).toFixed(1)+'" r="2.5" fill="'+s.color+'"/>';});
-    var labels=[TX("data.sleep"),TX("data.fat"),TX("data.sor"),TX("data.str"),TX("data.moo")];
-    var lx=pl+si*46,ly=H-5;
+    var labels=_flds.map(function(f){return f.label;});
+    var lx=pl+si*Math.max(34,Math.floor((W-pl-8)/Math.max(1,_flds.length))),ly=H-5;
     legend+='<rect x="'+lx+'" y="'+(ly-6)+'" width="10" height="3" fill="'+s.color+'" rx="1"/>';
     legend+='<text x="'+(lx+13)+'" y="'+(ly-3)+'" font-size="6.5" fill="#666" font-family="sans-serif">'+labels[si]+'</text>';
   });
@@ -1951,11 +2085,7 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
       <div class="rpt-m"><div class="ml">${TX("data.pdf.avgAUsession")}</div><div class="mv">${m.aUA||"—"}</div><div class="ms">${TX("data.m.au")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thAvgRPE")}</div><div class="mv">${m.aPSE}</div><div class="ms">${TX("data.pdf.cr10borg")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.m.avgDur")}</div><div class="mv">${m.aDur||"—"}</div><div class="ms">${TX("data.m.minutes")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgSleep")}</div><div class="mv">${m.aSl}</div><div class="ms">${TX("data.m.outOf5up")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgFat")}</div><div class="mv">${m.aFat}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgSor")}</div><div class="mv">${m.aSor}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgStr")}</div><div class="mv">${m.aStr}</div><div class="ms">${TX("data.m.outOf5dn")}</div></div>
-      <div class="rpt-m"><div class="ml">${TX("data.m.avgMoo")}</div><div class="mv">${m.aMoo}</div><div class="ms">${TX("data.m.outOf5up")}</div></div>
+      ${activeWb().map(f=>`<div class="rpt-m"><div class="ml">${_esc(f.label)}</div><div class="mv">${m.wb[f.key]||"—"}</div><div class="ms">${dirSub(f)}</div></div>`).join("")}
     </div>`;
   if(!ss.length){html+=`<div style="padding:14pt;text-align:center;color:#888;font-size:9.5pt;background:#f8f8f6;border-radius:4pt">${TX("data.pdf.noSessions")}</div>`;html+=`</div>`;return html;}
   if(cfg.ua&&m.post.length){const cid=uid+"_ua";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.pdf.chartUA")} · ${period.label}</h4><canvas id="${cid}" width="560" height="180"></canvas></div></div>`;chartQueue.push(function(){mkUAChart(cid,m.post,0,0,P);});}
@@ -2047,8 +2177,8 @@ window.generateReport=async function(){
     periods.forEach((period,pi)=>{
       html+=`<div class="rpt-period-block"><div class="period-hdr" style="border-color:${P}"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>`;
       // Comparison table
-      html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th><th>${TX("data.pdf.thAvgSleep")}</th><th>${TX("data.fat")}</th><th>${TX("data.sor")}</th><th>${TX("data.str")}</th><th>${TX("data.moo")}</th><th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
-      players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td><td>${m.aSl}</td><td>${m.aFat}</td><td>${m.aSor}</td><td>${m.aStr}</td><td>${m.aMoo}</td><td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
+      html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th>${activeWb().map(f=>`<th>${_esc(f.label)}</th>`).join("")}<th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
+      players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td>${activeWb().map(f=>`<td>${m.wb[f.key]||"—"}</td>`).join("")}<td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
       html+=`</tbody></table>`;
       // Group time series
       if(cfg.ua){
@@ -2128,12 +2258,14 @@ function today2(){return new Date().toISOString().split("T")[0];}
   const _cb=document.getElementById("ctxBar");if(_cb)_cb.style.display="none";
   // Init Firebase — auth state listener handles everything after
   try{ migrateWellbeingScale(); }catch(e){ console.warn("wb migrate:",e); }
+  try{ buildPreFields(); buildPostFields(); renderFieldEditor(); }catch(e){ console.warn("fields:",e); }
   applyTheme();renderAll();
   /* ao trocar de idioma, re-renderiza o que e gerado por JS
      (data-i18n do HTML estatico ja e tratado pelo proprio motor) */
   FluxGKI18n.onChange(function(){
     try{ buildPSE(); }catch(e){}
     try{ renderTypeSelects(); }catch(e){}
+    try{ buildPreFields(); buildPostFields(); renderFieldEditor(); }catch(e){}
     try{ renderAll(); }catch(e){}
   });
   window.addEventListener("message",function(ev){
