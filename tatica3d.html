@@ -1249,6 +1249,25 @@ function clampCourt(p){
   return p;
 }
 
+/* reduz a captura e converte para JPEG — mantem a proporcao original.
+   maxW = largura maxima em pixels · q = qualidade (0..1)                */
+function _compressCapture(srcCanvas, maxW, q){
+  try{
+    var w=srcCanvas.width, h=srcCanvas.height;
+    var sc=Math.min(1, maxW/w);
+    var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
+    var c=document.createElement('canvas'); c.width=cw; c.height=ch;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch);      /* JPEG nao tem transparencia */
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.drawImage(srcCanvas,0,0,cw,ch);
+    return c.toDataURL('image/jpeg', q);
+  }catch(e){
+    console.warn('[FluxGK] compressao falhou, usando PNG:',e);
+    return srcCanvas.toDataURL('image/png');
+  }
+}
+
 /* ============================================================
    DESENHO sobre a quadra
    ============================================================ */
@@ -1617,7 +1636,10 @@ function captureReport(){
   const _prevBg = scene.background;              // fundo BRANCO só na captura (combina com a página do PDF)
   scene.background = new THREE.Color(0xffffff);
   renderer.render(scene, capCam);
-  const url = renderer.domElement.toDataURL('image/png');
+  /* JPEG comprimido em vez de PNG cru: o PNG de 1600px passava de 1MB e estourava
+     o armazenamento do navegador na biblioteca de exercicios. O fundo e branco e
+     o desenho e chapado, entao a perda do JPEG e imperceptivel aqui.            */
+  const url = _compressCapture(renderer.domElement, 1000, 0.88);
   scene.background = _prevBg;
 
   /* restaura EXATAMENTE o que o usuário estava vendo */

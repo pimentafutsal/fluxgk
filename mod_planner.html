@@ -503,6 +503,7 @@ window.addEventListener('message', function(e){
   _PATH.sessions  = d.dataPath + '/planner/sessions';
   _PATH.exercises = 'users/' + d.uid + '/library/exercises';
   console.log('[FluxGK] planner: sessoes em', _PATH.sessions);
+  try{ setTimeout(flushPending,300); }catch(err){}   /* caminho chegou: sobe a fila */
 
   var c=d.club||{}, se=d.season||{}, co=d.coach||{};
   if(_hexOk(c.color)){ _clubColor=c.color.trim(); try{_applyClubColor(_clubColor);}catch(err){} }
@@ -652,6 +653,16 @@ function setExImg(dataUrl){
   document.getElementById('exImgPreview').src=dataUrl;
   document.getElementById('imgPreviewWrap').style.display='block';
   document.getElementById('imgPlaceholder').style.display='none';
+  /* imagens enviadas do computador tambem sao reduzidas — uma foto de celular
+     tem varios MB e sozinha estouraria o armazenamento do navegador */
+  if(dataUrl && dataUrl.indexOf('image/jpeg')===-1 || (dataUrl||'').length>400000){
+    _shrinkDataUrl(dataUrl,1000,0.88).then(function(sm){
+      if(sm && sm.length < dataUrl.length){
+        _currentImgData=sm;
+        var p=document.getElementById('exImgPreview'); if(p)p.src=sm;
+      }
+    });
+  }
 }
 function clearExImg(){
   _currentImgData=null;
@@ -706,6 +717,8 @@ function confirmEx(){
     materials: document.getElementById('exMat').value.trim(),
     img:       _currentImgData||null,
   };
+  /* nunca gravar undefined: o Firebase rejeita a escrita inteira */
+  if(_currentImgData && _currentImgData.indexOf('image/jpeg')>-1) ex.imgQ='jpeg';
   if(_wizMode==='lib'){
     ex.id = _libEditId || Date.now();
     const li = savedExercises.findIndex(e=>e.id===ex.id);
@@ -724,11 +737,120 @@ function confirmEx(){
 }
 
 // ── EXERCISE LIBRARY ──────────────────────────────────────────
-function _persistExercise(ex){
-  localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
-  if(fbDatabase){
-    dotY(); fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex).then(dotG).catch(dotR);
+/* Guarda local = apenas APOIO (indice sem imagens). As imagens ficam na nuvem.
+   Motivo: o navegador reserva ~5MB por site; um diagrama embutido consumia esse
+   teto em poucas dezenas de exercicios e o erro de espaco cheio interrompia a
+   funcao ANTES de gravar na nuvem — o exercicio se perdia sem aviso.          */
+var _libQuotaWarned=false;
+function _libLocalSave(){
+  try{
+    var slim=savedExercises.map(function(e){ var c=Object.assign({},e); delete c.img; return c; });
+    localStorage.setItem('fluxgk_exercises', JSON.stringify(slim));
+  }catch(err){
+    try{ localStorage.removeItem('fluxgk_exercises'); }catch(e2){}
+    if(!_libQuotaWarned){
+      _libQuotaWarned=true;
+      console.warn('[FluxGK] armazenamento local cheio — a biblioteca segue na nuvem.',err);
+      toast(TX('plan.msg.localFull','Local storage full — library saved to the cloud.'));
+    }
   }
+}
+/* ══════════════════════════════════════════════════════════════
+   GRAVACAO PROTEGIDA NA NUVEM
+   Antes: se a conexao (ou o caminho vindo do hub) ainda nao tivesse
+   chegado, a gravacao ia para um caminho invalido e falhava calada —
+   o exercicio parecia salvo e sumia. Agora nada e escrito sem conexao
+   pronta: fica numa fila e sobe sozinho assim que a conexao aparece.
+   ══════════════════════════════════════════════════════════════ */
+var _pendingEx=[];              /* exercicios aguardando a nuvem */
+var _pendingSess=[];            /* sessoes aguardando a nuvem   */
+function _cloudReady(){ return !!(fbDatabase && _fbReady && _PATH && _PATH.exercises && _PATH.sessions); }
+function _pendingCount(){ return _pendingEx.length+_pendingSess.length; }
+function _queueEx(ex){
+  _pendingEx=_pendingEx.filter(function(x){return x.id!==ex.id;});
+  _pendingEx.push(ex); dotR();
+}
+function _queueSess(s){
+  _pendingSess=_pendingSess.filter(function(x){return x.id!==s.id;});
+  _pendingSess.push(s); dotR();
+}
+function flushPending(){
+  if(!_cloudReady()||!_pendingCount()) return;
+  var exs=_pendingEx.slice(), sss=_pendingSess.slice();
+  _pendingEx=[]; _pendingSess=[];
+  dotY();
+  var jobs=[];
+  exs.forEach(function(ex){ jobs.push(fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex).catch(function(e){ _queueEx(ex); throw e; })); });
+  sss.forEach(function(s){ jobs.push(fbDatabase.ref(_PATH.sessions+'/'+s.id).set(s).catch(function(e){ _queueSess(s); throw e; })); });
+  Promise.allSettled(jobs).then(function(r){
+    var falhou=r.filter(function(x){return x.status==='rejected';}).length;
+    if(falhou){ dotR(); console.warn('[FluxGK] '+falhou+' item(ns) ainda pendente(s)'); }
+    else{ dotG(); toast(TX('plan.msg.syncedNow','Pending items synced to the cloud ✓')); }
+  });
+}
+/* tenta reenviar periodicamente e quando a conexao volta */
+setInterval(function(){ if(_pendingCount()) flushPending(); }, 15000);
+window.addEventListener('online', flushPending);
+/* avisa se o usuario fechar com algo por gravar */
+window.addEventListener('beforeunload', function(e){
+  if(_pendingCount()){ e.preventDefault(); e.returnValue=''; return ''; }
+});
+
+function _persistExercise(ex){
+  /* nuvem primeiro: e a fonte de verdade e nao pode depender do espaco local */
+  if(_cloudReady()){
+    dotY(); fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex).then(dotG).catch(function(e){
+      console.error('[FluxGK] falha ao salvar exercicio na nuvem:',e);
+      _queueEx(ex);                       /* nao perde: tenta de novo sozinho */
+      toast(TX('plan.msg.cloudRetry','No connection — saved here and will sync automatically. Keep this tab open.'),6000);
+    });
+  } else {
+    _queueEx(ex);
+    toast(TX('plan.msg.cloudWait','Still connecting — the exercise is queued and will be saved automatically. Keep this tab open.'),6000);
+  }
+  _libLocalSave();
+}
+/* ── recompressao unica dos diagramas antigos (PNG pesado -> JPEG leve) ──
+   Roda uma vez por exercicio; a marca imgQ evita repetir. Regrava na nuvem. */
+function _shrinkDataUrl(dataUrl, maxW, q){
+  return new Promise(function(res){
+    try{
+      var img=new Image();
+      img.onload=function(){
+        try{
+          var sc=Math.min(1, maxW/img.width);
+          var cw=Math.max(1,Math.round(img.width*sc)), ch=Math.max(1,Math.round(img.height*sc));
+          var c=document.createElement('canvas'); c.width=cw; c.height=ch;
+          var ctx=c.getContext('2d');
+          ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch);
+          ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+          ctx.drawImage(img,0,0,cw,ch);
+          res(c.toDataURL('image/jpeg', q));
+        }catch(e){ res(null); }
+      };
+      img.onerror=function(){ res(null); };
+      img.src=dataUrl;
+    }catch(e){ res(null); }
+  });
+}
+async function recompressLibrary(){
+  if(!Array.isArray(savedExercises)||!savedExercises.length) return;
+  var alvo=savedExercises.filter(function(e){ return e && e.img && e.imgQ!=='jpeg'; });
+  if(!alvo.length) return;
+  var antes=0, depois=0, n=0;
+  for(var i=0;i<alvo.length;i++){
+    var ex=alvo[i];
+    antes+=(ex.img||'').length;
+    var novo=await _shrinkDataUrl(ex.img, 1000, 0.88);
+    if(novo && novo.length < (ex.img||'').length){ ex.img=novo; }
+    ex.imgQ='jpeg';                       /* marca mesmo se nao encolheu, para nao repetir */
+    depois+=(ex.img||'').length; n++;
+    if(_cloudReady()){ try{ fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex); }catch(e){} }
+  }
+  _libLocalSave();
+  if(_currentPage==='exlib') renderExLib();
+  console.log('[FluxGK] biblioteca recomprimida: '+n+' diagrama(s), '
+    +Math.round(antes/1024)+'KB -> '+Math.round(depois/1024)+'KB');
 }
 function renderExLib(){
   const grid=document.getElementById('exLibGrid');
@@ -773,8 +895,10 @@ function rmLibEx(i){
   const ex=savedExercises[i]; if(!ex) return;
   if(!confirm(TX('common.delete')+' "'+ex.name+'"?')) return;
   savedExercises.splice(i,1);
-  localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
-  if(fbDatabase){dotY();fbDatabase.ref(_PATH.exercises+'/'+ex.id).remove().then(dotG).catch(dotR);}
+  _libLocalSave();
+  if(_cloudReady()){dotY();fbDatabase.ref(_PATH.exercises+'/'+ex.id).remove().then(dotG)
+    .catch(function(e){dotR();console.error(e);toast(TX('plan.msg.delFail','Could not delete in the cloud — it may come back. Try again when connected.'),6000);});}
+  else { toast(TX('plan.msg.delWait','Still connecting — delete again in a moment so it is removed from the cloud too.'),6000); }
   renderExLib();
 }
 
@@ -1098,12 +1222,13 @@ function saveEditedSession(id){
   s.postNext       = document.getElementById('es_nxt').value;
   savedSessions[idx] = s;
   localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
-  if(fbDatabase){
+  if(_cloudReady()){
     dotY(); fbDatabase.ref(_PATH.sessions+'/'+id).set(s)
       .then(()=>{dotG();toast(TX('plan.msg.syncedCloud'));})
-      .catch(e=>{dotR();toast(TX('plan.msg.updatedLocal'));console.error(e);});
+      .catch(e=>{_queueSess(s);toast(TX('plan.msg.cloudRetry'),6000);console.error(e);});
   } else {
-    toast(TX('plan.msg.updatedLocal'));
+    _queueSess(s);
+    toast(TX('plan.msg.cloudWait'),6000);
   }
   document.getElementById('editSessionModal').remove();
   renderLibrary();
@@ -1161,7 +1286,9 @@ function deleteSession(id){
   if(!confirm(TX('plan.msg.deleteSession'))) return;
   savedSessions=savedSessions.filter(s=>s.id!=id);
   localStorage.setItem('fluxgk_sessions',JSON.stringify(savedSessions));
-  if(fbDatabase){dotY();fbDatabase.ref(_PATH.sessions+'/'+id).remove().then(dotG).catch(dotR);}
+  if(_cloudReady()){dotY();fbDatabase.ref(_PATH.sessions+'/'+id).remove().then(dotG)
+    .catch(function(e){dotR();console.error(e);toast(TX('plan.msg.delFail'),6000);});}
+  else { toast(TX('plan.msg.delWait'),6000); }
   selectedSessions.delete(id);
   renderLibrary();
   toast(TX('plan.msg.sessionDeleted'));
@@ -1405,6 +1532,7 @@ function _initFirebase(cfg){
     firebase.auth().onAuthStateChanged(function(u){
       if(!u){ console.error('[FluxGK] planner: sem sessao. Faca login pelo hub.'); return; }
       if(!_fbReady){ _fbReady=true; console.log('[FluxGK] planner: autenticado como', u.uid); }
+      setTimeout(flushPending,300);      /* sobe o que ficou na fila */
     });
     if(status){ status.textContent='☁️ '+TX('plan.connected'); status.style.color='var(--ok)'; }
     _updateFirebaseBanner(true);
@@ -1440,7 +1568,8 @@ function _initFirebase(cfg){
           savedExercises = [];
         }
       }
-      localStorage.setItem('fluxgk_exercises', JSON.stringify(savedExercises));
+      _libLocalSave();
+      recompressLibrary();
       if(_currentPage==='exlib') renderExLib();
     });
 
@@ -1669,9 +1798,12 @@ function _persistSessionToLibrary(){
   const idx = savedSessions.findIndex(x=>x.id===session.id);
   if(idx>=0) savedSessions[idx]=session; else savedSessions.unshift(session);
   _editingSessionId = session.id;   /* a partir daqui, Post-Training atualiza ESTA */
-  if(fbDatabase){
+  if(_cloudReady()){
     dotY(); fbDatabase.ref(_PATH.sessions+'/'+session.id).set(session)
-      .then(()=>{dotG();}).catch(e=>{dotR();console.error(e);});
+      .then(()=>{dotG();}).catch(e=>{_queueSess(session);console.error(e);});
+  } else {
+    _queueSess(session);
+    toast(TX('plan.msg.cloudWait'),6000);
   }
   return session;
 }
