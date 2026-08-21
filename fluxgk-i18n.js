@@ -110,6 +110,9 @@
     'hub.mod.data':'Load Control',
     'hub.mod.data.d':'Training load and wellness',
     'hub.mod.data.t':'DATA-DRIVEN',
+    'hub.mod.profile':'GK Profile',
+    'hub.mod.profile.d':'Assessment, development and reports',
+    'hub.mod.profile.t':'GK PROFILE',
 
     /* --- hub: avisos --- */
     'hub.msg.saved':'Saved',
@@ -1014,6 +1017,9 @@
     'hub.mod.data':'Controle de Carga',
     'hub.mod.data.d':'Carga de treino e bem-estar',
     'hub.mod.data.t':'BASEADO EM DADOS',
+    'hub.mod.profile':'Perfil do Goleiro',
+    'hub.mod.profile.d':'Avaliação, evolução e relatórios',
+    'hub.mod.profile.t':'PERFIL GK',
 
     /* --- hub: avisos --- */
     'hub.msg.saved':'Salvo',
