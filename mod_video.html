@@ -42,8 +42,15 @@
 
   main{
     flex:1;display:block;
-    padding:20px 24px;max-width:1280px;width:100%;margin:0 auto;
+    padding:20px 24px;max-width:1800px;width:100%;margin:0 auto;  /* modulo especial: mais largo que o padrao do sistema */
   }
+  /* O VideoLab e um modulo especial: em tela cheia (ou preenchendo a janela)
+     a area de trabalho usa TODA a largura — video e menus laterais juntos.  */
+  body.app-fs main{max-width:none;padding:14px 18px}
+  body.app-fs #lmLeft{max-height:none}
+  body.app-fs #lmLayout{height:calc(100vh - 130px)}
+  body.app-fs.hide-header #lmLayout{height:calc(100vh - 74px)}
+  body.app-fs #lmLeft{height:100%}
   .tabpane{display:none}
   .tabpane.active{display:block}
 
@@ -59,17 +66,18 @@
   #lmLeft{align-self:stretch;display:flex;flex-direction:column;position:relative;
     border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden;max-height:84vh}
   /* pegador de redimensionamento na borda direita */
-  #lmGrip{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;z-index:5}
+  #lmGrip{position:absolute;top:0;right:0;width:12px;height:100%;cursor:col-resize;z-index:20;touch-action:none}
   #lmGrip::after{content:'';position:absolute;top:50%;right:2px;transform:translateY(-50%);
     width:3px;height:38px;border-radius:2px;background:var(--line)}
-  #lmGrip:hover::after{background:var(--blue)}
+  #lmGrip:hover::after{background:var(--blue);width:5px;height:56px}
+  body.lmresizing #lmGrip::after{background:var(--blue);width:5px;height:56px}
   body.lmresizing{cursor:col-resize;user-select:none}
   #lmCenter{min-width:0}
   .zhead{
     font-size:11px;font-weight:600;letter-spacing:.12em;padding:9px 12px;
     border-bottom:1px solid var(--line);background:var(--paper);color:var(--muted);flex:none;
   }
-  #lmLeftSlot{overflow-y:auto;padding:10px}
+  #lmLeftSlot{overflow-y:auto;padding:10px 16px 10px 10px}
   #lmBottomSlot{padding:12px}
   /* dentro das zonas, os corpos de painel viram conteúdo simples */
   #lmLeftSlot .fpsection:first-child{margin-top:0;border-top:none;padding-top:0}
@@ -1836,6 +1844,52 @@ function toggleAppFullscreen(){
   } catch (e) { hubExpand(true); }
 }
 $('appFullscreen').addEventListener('click', toggleAppFullscreen);
+
+/* ══════════════════════════════════════════════════════════════
+   LARGURA DA COLUNA DE LANCES — arrastar a borda
+   O pegador (#lmGrip) existia no HTML/CSS mas nunca foi ligado ao
+   JavaScript: por isso arrastar nao fazia nada. Agora funciona,
+   guarda a largura escolhida e volta ao padrao com duplo clique.
+   ══════════════════════════════════════════════════════════════ */
+const LMW_KEY = 'fluxgk_videolab_leftw_v1';
+const LMW_MIN = 260, LMW_DEF = 440;
+function lmMax(){ return Math.max(LMW_MIN, Math.round(window.innerWidth * 0.62)); }
+function lmSet(px, salvar){
+  const w = Math.max(LMW_MIN, Math.min(lmMax(), Math.round(px)));
+  document.documentElement.style.setProperty('--lmleft', w + 'px');
+  if (salvar){ try { localStorage.setItem(LMW_KEY, String(w)); } catch (e) {} }
+  return w;
+}
+(function initLmWidth(){
+  let w = LMW_DEF;
+  try { const v = parseInt(localStorage.getItem(LMW_KEY), 10); if (v > 0) w = v; } catch (e) {}
+  lmSet(w, false);
+  const grip = $('lmGrip'), left = $('lmLeft');
+  if (!grip || !left) return;
+  let arrastando = false;
+  grip.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    arrastando = true;
+    try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+    document.body.classList.add('lmresizing');
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (!arrastando) return;
+    /* largura = posicao do mouse menos a borda esquerda do painel */
+    lmSet(e.clientX - left.getBoundingClientRect().left, false);
+  });
+  const soltar = (e) => {
+    if (!arrastando) return;
+    arrastando = false;
+    try { grip.releasePointerCapture(e.pointerId); } catch (err) {}
+    document.body.classList.remove('lmresizing');
+    const atual = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--lmleft'), 10);
+    if (atual > 0) lmSet(atual, true);      /* guarda so ao soltar */
+  };
+  grip.addEventListener('pointerup', soltar);
+  grip.addEventListener('pointercancel', soltar);
+  grip.addEventListener('dblclick', () => { lmSet(LMW_DEF, true); log(TX('vid.lm.reset', 'Panel width reset.')); });
+})();
 /* Esc só é necessário para o plano B (a tela cheia real o navegador já trata) */
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _vidMax) hubExpand(false); });
 $('toggleHeader').addEventListener('click', () => {

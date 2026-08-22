@@ -706,6 +706,7 @@
     'vid.fileNameLbl':'File name','vid.ph.fileName':'e.g. Qadsia 1x2 Nasr','vid.chooseFolder':'Choose where to save (ask for the folder)',
     'vid.f.folderBlockedHub':'Folder picker is blocked inside the hub — saved to Downloads. Open the lab in its own tab (⤢ New tab) to pick a folder.',
     /* biblioteca */
+    'vid.lm.reset':'Panel width reset.',
     'vid.bk.title':'Backup','vid.bk.sub':'Save a copy of everything you marked — clips, drawings, playlists, dashboards, projects and goalkeepers. The video files are not included: they stay on your computer.',
     'vid.bk.export':'⤓ Export backup','vid.bk.import':'⤒ Import backup','vid.bk.stats':'In this backup:','vid.bk.videos':'video(s)','vid.bk.dash':'dashboards','vid.bk.proj':'projects',
     'vid.bk.done':'Backup saved to your Downloads folder.','vid.bk.failed':'Could not generate the backup.','vid.bk.badFile':'This file is not a VideoLab backup.',
@@ -1618,6 +1619,7 @@
     'vid.fileNameLbl':'Nome do arquivo','vid.ph.fileName':'ex.: Qadsia 1x2 Nasr','vid.chooseFolder':'Escolher onde salvar (perguntar a pasta)',
     'vid.f.folderBlockedHub':'A escolha de pasta é bloqueada dentro do hub — salvo em Downloads. Abra o lab em aba própria (⤢ Nova aba) para escolher a pasta.',
     /* biblioteca */
+    'vid.lm.reset':'Largura do painel restaurada.',
     'vid.bk.title':'Backup','vid.bk.sub':'Guarde uma cópia de tudo que você marcou — lances, desenhos, playlists, dashboards, projetos e goleiros. Os vídeos não entram: eles continuam no seu computador.',
     'vid.bk.export':'⤓ Exportar backup','vid.bk.import':'⤒ Importar backup','vid.bk.stats':'Neste backup:','vid.bk.videos':'vídeo(s)','vid.bk.dash':'dashboards','vid.bk.proj':'projetos',
     'vid.bk.done':'Backup salvo na sua pasta de Downloads.','vid.bk.failed':'Não foi possível gerar o backup.','vid.bk.badFile':'Este arquivo não é um backup do VideoLab.',
