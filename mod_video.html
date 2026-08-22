@@ -48,13 +48,22 @@
   .tabpane.active{display:block}
 
   /* ---------- layout LongoMatch (3 zonas) ---------- */
+  /* O VideoLab e um modulo especial: a coluna dos lances pode passar do
+     padrao de largura do sistema. A largura fica numa variavel e o usuario
+     arrasta a borda para ajustar (o valor e lembrado).                  */
   #lmLayout{
     display:grid;
-    grid-template-columns:300px minmax(0,1fr);
+    grid-template-columns:var(--lmleft,440px) minmax(0,1fr);
     gap:14px;align-items:start;
   }
-  #lmLeft{align-self:stretch;display:flex;flex-direction:column;
+  #lmLeft{align-self:stretch;display:flex;flex-direction:column;position:relative;
     border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden;max-height:84vh}
+  /* pegador de redimensionamento na borda direita */
+  #lmGrip{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;z-index:5}
+  #lmGrip::after{content:'';position:absolute;top:50%;right:2px;transform:translateY(-50%);
+    width:3px;height:38px;border-radius:2px;background:var(--line)}
+  #lmGrip:hover::after{background:var(--blue)}
+  body.lmresizing{cursor:col-resize;user-select:none}
   #lmCenter{min-width:0}
   .zhead{
     font-size:11px;font-weight:600;letter-spacing:.12em;padding:9px 12px;
@@ -292,8 +301,15 @@
     display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);
     font-size:13px;min-width:0;
   }
-  /* nome ocupa o espaco livre e trunca em vez de empurrar/estourar a largura */
-  .erow .ename{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+  /* LANCE EM DUAS LINHAS: nome em cima (o que identifica o lance) e
+     tempos embaixo. Antes o nome dividia a linha com os tempos e os
+     botoes, e num painel estreito era espremido ate sumir.            */
+  .erow .einfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+  .erow .ename{font-weight:600;line-height:1.3;white-space:normal;overflow-wrap:anywhere;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+  .erow .enote{font-size:11px;line-height:1.3;color:var(--muted);font-style:italic;
+    white-space:normal;overflow-wrap:anywhere;margin-top:1px}
+  .erow .emeta{display:flex;align-items:center;gap:8px;min-width:0}
   .erow .et,.erow .er{flex:none}
   .erow:last-child{border-bottom:none}
   .erow.current{background:#f2f5ff}
@@ -559,6 +575,7 @@
     <aside id="lmLeft">
       <div data-i18n="vid.clips" class="zhead">CLIPS</div>
       <div id="lmLeftSlot"></div>
+      <div id="lmGrip" title="Arraste para ajustar a largura · duplo clique para o padrão"></div>
     </aside>
     <div id="lmCenter">
     <div id="dropzone">
@@ -799,6 +816,24 @@
       <h2 data-i18n="vid.matchLibrary">Match library</h2>
       <div class="body" id="library">
         <div data-i18n="vid.noMatches" class="empty">No matches saved yet.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="vid.bk.title">Backup</h2>
+      <div class="body">
+        <div data-i18n="vid.bk.sub" class="empty" style="text-align:left;margin:0 0 10px">
+          Save a copy of everything you marked — clips, drawings, playlists, dashboards, projects and goalkeepers.
+          The video files themselves are not included: they stay on your computer.
+        </div>
+        <div id="bkStats" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="primary" id="bkExport" data-i18n="vid.bk.export">⤓ Export backup</button>
+          <button class="ghost" id="bkImportBtn" data-i18n="vid.bk.import">⤒ Import backup</button>
+          <input type="file" id="bkImportFile" accept="application/json,.json" style="display:none">
+        </div>
+        <div data-i18n="vid.bk.mergeNote" class="empty" style="text-align:left;margin:10px 0 0;font-size:12px">
+          Importing never deletes: items from the file are added, and existing ones are only updated if the backup copy is newer.
+        </div>
       </div>
     </div>
   </section>
@@ -2506,8 +2541,10 @@ function renderPlaylists(){
 
       const nEl = document.createElement('span');
       nEl.className = 'ename';
-      nEl.textContent = ev.name || (g.tag.name + ' ' + (i + 1));
-      nEl.title = TX('vid.tt.rename');
+      const _nm = ev.name || (g.tag.name + ' ' + (i + 1));
+      nEl.textContent = _nm;
+      /* o titulo mostra o nome inteiro (util se o painel estiver estreito) */
+      nEl.title = _nm + ' · ' + TX('vid.tt.rename');
       nEl.addEventListener('click', async () => {
         const nv = await askText(TX('vid.tt.clipName'), ev.name || '');
         if (nv === null) return;
@@ -2552,7 +2589,22 @@ function renderPlaylists(){
         setTimeout(() => { setDrawMode(true); log(TX('vid.f.drawModeOn')); }, 250);
       });
 
-      row.appendChild(tEl); row.appendChild(nEl); row.appendChild(rEl); row.appendChild(sp);
+      /* nome em cima (destaque) e tempos embaixo: o nome fica legivel
+         mesmo com o painel estreito, sem depender de abrir o lance    */
+      const info = document.createElement('div'); info.className = 'einfo';
+      const meta = document.createElement('div'); meta.className = 'emeta';
+      meta.appendChild(tEl); meta.appendChild(rEl);
+      info.appendChild(nEl);
+      /* observacao do lance aparece logo abaixo do nome, sem precisar abrir */
+      if (ev.note && String(ev.note).trim()){
+        const noteEl = document.createElement('div');
+        noteEl.className = 'enote';
+        noteEl.textContent = String(ev.note).trim();
+        noteEl.title = String(ev.note).trim();
+        info.appendChild(noteEl);
+      }
+      info.appendChild(meta);
+      row.appendChild(info); row.appendChild(sp);
       row.appendChild(bDraw); row.appendChild(bEdit); row.appendChild(bMenu);
       clipsBox.appendChild(row);
     });
@@ -2931,7 +2983,7 @@ function switchTab(name){
   document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   syncPanels();
-  if (name === 'library') renderLibrary();
+  if (name === 'library'){ renderLibrary(); try{ renderBkStats(); }catch(e){} }
   if (name === 'dash') renderDashTab();
   if (name === 'export') renderExportTab();
   if (name === 'project') renderProjectTab();
@@ -5055,6 +5107,122 @@ function libFromCloud(v){
   return (v && typeof v === 'object') ? v : {};   /* compat: formato antigo (objeto) */
 }
 function sessionKey(){ return state.file ? state.file.name + '|' + state.file.size : null; }
+
+/* ══════════════════════════════════════════════════════════════
+   BACKUP — exportar / importar
+   Guarda TUDO que foi marcado (sessões da biblioteca, dashboards,
+   projetos e goleiros) num arquivo .json. Os vídeos NAO entram:
+   eles ficam no seu computador e continuam sendo abertos por você.
+   A importação nunca apaga: mescla, e só substitui um item quando
+   a cópia do arquivo for mais recente.
+   ══════════════════════════════════════════════════════════════ */
+function bkCollect(){
+  return {
+    _fluxgk: 'videolab-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    club: (window._fluxgkClubName || ''),
+    library: libAll(),                       /* sessões por vídeo: cortes, desenhos, playlists */
+    dashboards: state.dashboards || [],
+    currentDashId: state.currentDashId || null,
+    projects: state.projects || [],
+    currentProjectId: state.currentProjectId || null,
+    gks: state.gks || []
+  };
+}
+function bkStatsText(){
+  const lib = libAll();
+  const keys = Object.keys(lib);
+  let clips = 0, draws = 0;
+  keys.forEach(k => {
+    const s = lib[k] || {};
+    clips += Array.isArray(s.events) ? s.events.length : 0;
+    draws += Array.isArray(s.drawings) ? s.drawings.length : 0;
+  });
+  return TX('vid.bk.stats', 'In this backup:') + ' ' +
+    keys.length + ' ' + TX('vid.bk.videos', 'video(s)') + ' · ' +
+    clips + ' ' + TX('vid.f.clips', 'clips') + ' · ' +
+    draws + ' ' + TX('vid.f.drawings', 'drawings') + ' · ' +
+    (state.dashboards || []).length + ' ' + TX('vid.bk.dash', 'dashboards') + ' · ' +
+    (state.projects || []).length + ' ' + TX('vid.bk.proj', 'projects');
+}
+function renderBkStats(){
+  const el = $('bkStats');
+  if (el) el.textContent = bkStatsText();
+}
+function bkExport(){
+  try {
+    const data = bkCollect();
+    const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0')
+      + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+    a.href = url;
+    a.download = 'fluxgk-videolab-backup-' + stamp + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    log(TX('vid.bk.done', 'Backup saved to your Downloads folder.'), 'ok');
+  } catch (e) {
+    console.error(e);
+    log(TX('vid.bk.failed', 'Could not generate the backup.'), 'err');
+  }
+}
+/* mescla listas com id, mantendo o mais recente quando houver conflito */
+function bkMergeById(atual, doArquivo){
+  const out = Array.isArray(atual) ? atual.slice() : [];
+  (Array.isArray(doArquivo) ? doArquivo : []).forEach(item => {
+    if (!item || item.id == null) return;
+    const i = out.findIndex(x => x && x.id === item.id);
+    if (i < 0) { out.push(item); return; }
+    const a = out[i].updatedAt || out[i].savedAt || 0;
+    const b = item.updatedAt || item.savedAt || 0;
+    if (b > a) out[i] = item;                 /* só troca se o backup for mais novo */
+  });
+  return out;
+}
+function bkImport(data){
+  if (!data || data._fluxgk !== 'videolab-backup'){
+    log(TX('vid.bk.badFile', 'This file is not a VideoLab backup.'), 'err');
+    return false;
+  }
+  /* 1) sessões por vídeo */
+  const atual = libAll();
+  const vindo = (data.library && typeof data.library === 'object') ? data.library : {};
+  let novos = 0, atualizados = 0;
+  Object.keys(vindo).forEach(k => {
+    const b = vindo[k]; if (!b) return;
+    const a = atual[k];
+    if (!a) { atual[k] = b; novos++; return; }
+    if ((b.savedAt || 0) > (a.savedAt || 0)) { atual[k] = b; atualizados++; }
+  });
+  libWrite(atual);
+  /* 2) dashboards, projetos e goleiros */
+  state.dashboards = bkMergeById(state.dashboards, data.dashboards);
+  state.projects   = bkMergeById(state.projects,   data.projects);
+  state.gks        = bkMergeById(state.gks,        data.gks);
+  try { persistDashboards(); } catch (e) {}
+  try { localStorage.setItem(PROJ_KEY, JSON.stringify({ projects: state.projects, currentId: state.currentProjectId })); } catch (e) {}
+  try { localStorage.setItem(GKS_KEY, JSON.stringify(state.gks)); } catch (e) {}
+  if (typeof pushToCloud === 'function') pushToCloud();
+  try { renderLibrary && renderLibrary(); } catch (e) {}
+  try { renderPlaylists && renderPlaylists(); } catch (e) {}
+  try { renderBkStats(); } catch (e) {}
+  log(TX('vid.bk.imported', 'Backup imported:') + ' ' + novos + ' ' + TX('vid.bk.added', 'new') +
+      ' · ' + atualizados + ' ' + TX('vid.bk.updated', 'updated'), 'ok');
+  return true;
+}
+if ($('bkExport')) $('bkExport').addEventListener('click', bkExport);
+if ($('bkImportBtn')) $('bkImportBtn').addEventListener('click', () => { const f = $('bkImportFile'); if (f) f.click(); });
+if ($('bkImportFile')) $('bkImportFile').addEventListener('change', function(){
+  const file = this.files && this.files[0];
+  this.value = '';
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => { try { bkImport(JSON.parse(e.target.result)); } catch (err) { console.error(err); log(TX('vid.bk.badFile', 'This file is not a VideoLab backup.'), 'err'); } };
+  r.readAsText(file);
+});
 
 let saveTimer = null;
 function saveSession(){
