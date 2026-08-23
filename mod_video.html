@@ -343,6 +343,7 @@
   .ctxitem:hover > .ctxsub{display:block}
   .erow .et{font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
   .erow .er{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .erow .eord{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:20px;text-align:right;flex:none}
   .empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
 
   /* ---------- painéis flutuantes ---------- */
@@ -2750,7 +2751,7 @@ function renderPlaylists(){
       bPlay.className = 'mini';
       bPlay.textContent = TX('vid.f.playlistBtn');
       bPlay.disabled = !evs.length;
-      bPlay.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(evs.slice().sort((a,b)=>a.start-b.start), pl.name); });
+      bPlay.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(evs.slice(), pl.name); });   /* ordem da playlist */
       const bExp = document.createElement('button');
       bExp.className = 'mini primary';
       bExp.textContent = TX('vid.f.export');
@@ -2762,6 +2763,7 @@ function renderPlaylists(){
         e.stopPropagation();
         const ids = new Set(evs.map(ev => ev.id));
         state.events.forEach(ev => { expSel[ev.id] = ids.has(ev.id); });
+        _expOrder = evs.map(ev => ev.id);          /* exporta na ordem da playlist */
         switchTab('export');
         log(TX('vid.f.exportOpenedSp') + evs.length + TX('vid.f.adjustExportSp'));
       });
@@ -2788,7 +2790,7 @@ function renderPlaylists(){
         em.textContent = TX('vid.f.playlistEmpty');
         plClips.appendChild(em);
       }
-      evs.slice().sort((a,b)=>a.start-b.start).forEach(ev => {
+      evs.forEach((ev, _ord) => {
         const tag = findTag(ev.tagId);
         const row = document.createElement('div');
         row.className = 'erow';
@@ -2823,7 +2825,28 @@ function renderPlaylists(){
           renderPlaylists();
         });
 
-        row.appendChild(dotEl); row.appendChild(tEl); row.appendChild(nEl); row.appendChild(sp); row.appendChild(bRm);
+        /* ordem da apresentacao: mover este lance para cima / para baixo */
+        const ordEl = document.createElement('span');
+        ordEl.className = 'eord';
+        ordEl.textContent = (_ord + 1) + '.';
+        ordEl.title = TX('vid.tt.plOrder', 'Position in the playlist');
+
+        const bUp = document.createElement('button');
+        bUp.className = 'mini ghost';
+        bUp.textContent = '↑';
+        bUp.title = TX('vid.tt.plUp', 'Move up');
+        bUp.disabled = (_ord === 0);
+        bUp.addEventListener('click', (e) => { e.stopPropagation(); plMove(pl, ev.id, -1); });
+
+        const bDn = document.createElement('button');
+        bDn.className = 'mini ghost';
+        bDn.textContent = '↓';
+        bDn.title = TX('vid.tt.plDown', 'Move down');
+        bDn.disabled = (_ord === evs.length - 1);
+        bDn.addEventListener('click', (e) => { e.stopPropagation(); plMove(pl, ev.id, 1); });
+
+        row.appendChild(ordEl); row.appendChild(dotEl); row.appendChild(tEl); row.appendChild(nEl);
+        row.appendChild(sp); row.appendChild(bUp); row.appendChild(bDn); row.appendChild(bRm);
         plClips.appendChild(row);
       });
       wrap.appendChild(plClips);
@@ -2831,6 +2854,17 @@ function renderPlaylists(){
       box.appendChild(wrap);
     });
   }
+}
+
+/* move um lance dentro da playlist (a ordem vive em pl.evIds) */
+function plMove(pl, evId, dir){
+  if (!pl || !Array.isArray(pl.evIds)) return;
+  const i = pl.evIds.indexOf(evId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= pl.evIds.length) return;
+  const t = pl.evIds[i]; pl.evIds[i] = pl.evIds[j]; pl.evIds[j] = t;
+  saveSession();
+  renderPlaylists();
 }
 
 /* =====================================================================
@@ -4635,7 +4669,7 @@ function renderExportTab(){
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = evs.every(e => expSel[e.id]);
-      cb.addEventListener('change', () => { evs.forEach(e => expSel[e.id] = cb.checked); renderExportTab(); });
+      cb.addEventListener('change', () => { evs.forEach(e => expSel[e.id] = cb.checked); _expOrder = null; renderExportTab(); });
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.style.background = tag.color;
@@ -4650,7 +4684,7 @@ function renderExportTab(){
         const c = document.createElement('input');
         c.type = 'checkbox';
         c.checked = !!expSel[ev.id];
-        c.addEventListener('change', () => { expSel[ev.id] = c.checked; });
+        c.addEventListener('change', () => { expSel[ev.id] = c.checked; _expOrder = null; updateExpNote(); });
         const nm2 = document.createElement('span');
         nm2.textContent = ev.name || (tag.name + ' ' + (i + 1));
         const rg = document.createElement('span');
@@ -4671,8 +4705,16 @@ function renderExportTab(){
   updateExpNote();
 }
 
+/* Ordem opcional vinda de uma playlist. Se estiver definida, a exportacao
+   segue a sequencia que voce montou; senao, segue a ordem do jogo (tempo). */
+let _expOrder = null;
 function selectedEvents(){
-  return allEvents().filter(e => expSel[e.id]);
+  const sel = allEvents().filter(e => expSel[e.id]);
+  if (!_expOrder || !_expOrder.length) return sel;
+  const pos = new Map(_expOrder.map((id, i) => [id, i]));
+  const dentro = sel.filter(e => pos.has(e.id)).sort((a, b) => pos.get(a.id) - pos.get(b.id));
+  const fora   = sel.filter(e => !pos.has(e.id));   /* marcados a mais ficam no fim, por tempo */
+  return dentro.concat(fora);
 }
 function updateExpNote(){
   const note = $('expNote');
