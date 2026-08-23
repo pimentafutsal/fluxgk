@@ -4940,6 +4940,7 @@ async function exportReencodedDirect(evs, outName){
   } finally {
     exporting = false;
     hideProgress();
+    restoreTabAfterRecording();
   }
 }
 
@@ -4985,11 +4986,29 @@ async function exportReencoded(evs){
   } finally {
     exporting = false;
     hideProgress();
+    restoreTabAfterRecording();
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   O gravador desenha o <video> num canvas. Se a aba Analise estiver
+   escondida (display:none), o navegador para de produzir quadros e o
+   arquivo sai PRETO — um mp4 de poucos KB. Por isso, durante a
+   gravacao voltamos para a aba do video e restauramos no fim.
+   ══════════════════════════════════════════════════════════════ */
+let _tabAntesDaGravacao = null;
+function ensureVideoVisible(){
+  if (_tabAntesDaGravacao === null) _tabAntesDaGravacao = currentTab;
+  if (currentTab !== 'analise') switchTab('analise');
+}
+function restoreTabAfterRecording(){
+  if (_tabAntesDaGravacao && _tabAntesDaGravacao !== 'analise') switchTab(_tabAntesDaGravacao);
+  _tabAntesDaGravacao = null;
 }
 
 function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, idx, total){
   return new Promise((resolve, reject) => {
+    ensureVideoVisible();   /* sem isto o canvas grava quadros pretos */
     const c = document.createElement('canvas');
     c.width = outW; c.height = outH;
     const cx = c.getContext('2d');
@@ -5009,9 +5028,17 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     catch (e) { reject(new Error('Browser does not support recording in ' + mime)); return; }
 
     const chunks = [];
+    let _frames = 0, _t0 = performance.now(), _pretos = 0;
     rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
     rec.onstop = () => {
       const blob = new Blob(chunks, { type: mime });
+      const dur = ((performance.now() - _t0) / 1000).toFixed(1);
+      /* diagnostico: se gravou pouco tempo OU so quadros pretos, o arquivo sai vazio */
+      log('Gravacao: ' + dur + 's · ' + _frames + ' quadros · ' + _pretos + ' sem imagem · ' +
+          (blob.size / 1048576).toFixed(2) + ' MB');
+      if (_frames && _pretos / _frames > 0.5){
+        log(TX('vid.msg.blackFrames', 'Warning: the video did not render during recording — keep this tab visible and do not minimise the window while exporting.'), 'err');
+      }
       saveBlob(blob, name + '.' + ext, mime).then((saved) => {
         if (saved === null) log(TX('vid.msg.noFileSaved'));
         else log('Exported (re-encoded): ' + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)', 'ok');
@@ -5051,6 +5078,9 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       applyFraming();
       cx.drawImage(video, ox, oy, dw, dh);
       cx.restore();
+      _frames++;
+      /* o video so entrega imagem a partir de readyState 2; abaixo disso o quadro sai preto */
+      if (video.readyState < 2) _pretos++;
 
       // 2) desenho — recebe o MESMO enquadramento do vídeo (ao vivo a camada de
       //    desenho também dá zoom junto com o vídeo, então fica consistente).
