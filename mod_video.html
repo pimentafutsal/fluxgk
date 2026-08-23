@@ -603,6 +603,7 @@
           <button id="zoomOut" title="Zoom out" data-i18n-title="vid.tt.zoomOut">−</button>
           <div class="zlevel" id="zoomLevel">100%</div>
           <button id="zoomIn" title="Zoom in" data-i18n-title="vid.tt.zoomIn">+</button>
+          <button id="panHint" title="Zoomed in: drag the image to reposition · Alt + arrows for fine adjustment" data-i18n-title="vid.tt.pan" style="display:none">✥</button>
           <button id="zoomReset" title="Reset to 100%" data-i18n-title="vid.tt.reset100">⟲</button>
           <button id="fsBtn" title="Fullscreen" data-i18n-title="vid.tt.fs">⛶</button>
         </div>
@@ -1806,10 +1807,30 @@ function setZoom(z, px, py){
   drawCanvas.style.transform = 'translate(' + state.panX + 'px,' + state.panY + 'px) scale(' + state.zoom + ')';
   $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
   stage.classList.toggle('zoomed', state.zoom > 1);
+  /* o indicador de reposicionamento so aparece quando ha o que reposicionar */
+  const ph = $('panHint'); if (ph) ph.style.display = state.zoom > 1 ? '' : 'none';
 }
-$('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.25));
-$('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.25));
+/* Zoom pelos botoes MANTENDO o ponto que esta enquadrado.
+   Antes o deslocamento (pan) ficava fixo em pixels enquanto a escala mudava:
+   por isso, ao aproximar, a jogada "escorregava" para fora do quadro.
+   Com a proporcao pan*(novoZoom/zoomAtual), o que esta no centro continua no centro. */
+function zoomBy(fator){
+  const z = state.zoom;
+  const nz = Math.max(1, Math.min(MAXZOOM, z * fator));
+  if (nz === z) return;
+  setZoom(nz, state.panX * (nz / z), state.panY * (nz / z));
+}
+$('zoomIn').addEventListener('click', () => zoomBy(1.25));
+$('zoomOut').addEventListener('click', () => zoomBy(1 / 1.25));
 $('zoomReset').addEventListener('click', () => setZoom(1, 0, 0));
+
+/* Reposicionar sem o mouse: Alt + setas movem o enquadramento.
+   Util para ajuste fino durante a apresentacao ao goleiro.            */
+function nudgePan(dx, dy){
+  if (state.zoom <= 1) return false;
+  setZoom(state.zoom, state.panX + dx, state.panY + dy);
+  return true;
+}
 $('fsBtn').addEventListener('click', () => {
   if (isAppFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
   const el = stage;
@@ -1981,6 +2002,13 @@ document.addEventListener('keydown', (e) => {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
   if (!state.file) return;
+  /* Alt + setas = reposicionar a imagem ampliada (nao mexe no tempo) */
+  if (e.altKey && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(e.key) > -1){
+    const passo = e.shiftKey ? 80 : 25;
+    const dx = e.key === 'ArrowLeft' ? passo : e.key === 'ArrowRight' ? -passo : 0;
+    const dy = e.key === 'ArrowUp' ? passo : e.key === 'ArrowDown' ? -passo : 0;
+    if (nudgePan(dx, dy)) { e.preventDefault(); return; }
+  }
   if (e.code === 'Space'){ e.preventDefault(); togglePlay(); }
   else if (e.key === 'ArrowLeft'){ e.preventDefault(); seekClamped(video.currentTime - 5); }
   else if (e.key === 'ArrowRight'){ e.preventDefault(); seekClamped(video.currentTime + 5); }
