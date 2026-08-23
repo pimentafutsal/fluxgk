@@ -344,6 +344,13 @@
   .erow .et{font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
   .erow .er{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
   .erow .eord{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:20px;text-align:right;flex:none}
+  /* arrastar para reordenar dentro da playlist */
+  .erow.pldrag{cursor:grab}
+  .erow.pldrag:active{cursor:grabbing}
+  .erow.pldrag .eord::before{content:'⋮⋮';margin-right:4px;color:var(--line);letter-spacing:-2px}
+  .erow.dragging{opacity:.45}
+  .erow.dropbefore{box-shadow:inset 0 3px 0 var(--blue)}
+  .erow.dropafter{box-shadow:inset 0 -3px 0 var(--blue)}
   .empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
 
   /* ---------- painéis flutuantes ---------- */
@@ -2813,47 +2820,120 @@ function renderPlaylists(){
         const sp = document.createElement('span');
         sp.className = 'spacer';
 
-        /* remover ESTE lance da playlist (nao apaga o lance, so tira daqui) */
-        const bRm = document.createElement('button');
-        bRm.className = 'mini ghost danger';
-        bRm.textContent = '✕';
-        bRm.title = TX('vid.tt.removeFromPlaylist');
-        bRm.addEventListener('click', (e) => {
-          e.stopPropagation();
-          pl.evIds = pl.evIds.filter(id => id !== ev.id);
-          saveSession();
-          renderPlaylists();
-        });
-
-        /* ordem da apresentacao: mover este lance para cima / para baixo */
+        /* numero da ordem + alca de arraste */
         const ordEl = document.createElement('span');
         ordEl.className = 'eord';
         ordEl.textContent = (_ord + 1) + '.';
-        ordEl.title = TX('vid.tt.plOrder', 'Position in the playlist');
+        ordEl.title = TX('vid.tt.plDrag', 'Drag to reorder · right-click for options');
 
-        const bUp = document.createElement('button');
-        bUp.className = 'mini ghost';
-        bUp.textContent = '↑';
-        bUp.title = TX('vid.tt.plUp', 'Move up');
-        bUp.disabled = (_ord === 0);
-        bUp.addEventListener('click', (e) => { e.stopPropagation(); plMove(pl, ev.id, -1); });
+        /* ── ARRASTAR PARA REORDENAR ── */
+        row.draggable = true;
+        row.dataset.evid = ev.id;
+        row.dataset.plid = pl.id;
+        row.classList.add('pldrag');
+        row.addEventListener('dragstart', (e) => {
+          _plDrag = { plId: pl.id, evId: ev.id };
+          row.classList.add('dragging');
+          try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(ev.id)); } catch (err) {}
+        });
+        row.addEventListener('dragend', () => {
+          _plDrag = null;
+          plClips.querySelectorAll('.erow').forEach(r => r.classList.remove('dragging', 'dropbefore', 'dropafter'));
+        });
+        row.addEventListener('dragover', (e) => {
+          if (!_plDrag || _plDrag.plId !== pl.id || _plDrag.evId === ev.id) return;
+          e.preventDefault();
+          try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+          const r = row.getBoundingClientRect();
+          const depois = (e.clientY - r.top) > r.height / 2;
+          row.classList.toggle('dropafter', depois);
+          row.classList.toggle('dropbefore', !depois);
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('dropbefore', 'dropafter'));
+        row.addEventListener('drop', (e) => {
+          if (!_plDrag || _plDrag.plId !== pl.id) return;
+          e.preventDefault();
+          const r = row.getBoundingClientRect();
+          const depois = (e.clientY - r.top) > r.height / 2;
+          plReorder(pl, _plDrag.evId, ev.id, depois);
+        });
 
-        const bDn = document.createElement('button');
-        bDn.className = 'mini ghost';
-        bDn.textContent = '↓';
-        bDn.title = TX('vid.tt.plDown', 'Move down');
-        bDn.disabled = (_ord === evs.length - 1);
-        bDn.addEventListener('click', (e) => { e.stopPropagation(); plMove(pl, ev.id, 1); });
+        /* ── BOTAO DIREITO: opcoes do lance nesta playlist ── */
+        row.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openPlaylistItemMenu(e.clientX, e.clientY, pl, ev, tag);
+        });
 
         row.appendChild(ordEl); row.appendChild(dotEl); row.appendChild(tEl); row.appendChild(nEl);
-        row.appendChild(sp); row.appendChild(bUp); row.appendChild(bDn); row.appendChild(bRm);
         plClips.appendChild(row);
+      });
+      /* soltar no espaco vazio abaixo = mandar para o fim */
+      plClips.addEventListener('dragover', (e) => { if (_plDrag && _plDrag.plId === pl.id) e.preventDefault(); });
+      plClips.addEventListener('drop', (e) => {
+        if (!_plDrag || _plDrag.plId !== pl.id) return;
+        if (e.target.closest('.erow')) return;      /* ja tratado pela linha */
+        e.preventDefault();
+        const ult = pl.evIds[pl.evIds.length - 1];
+        if (ult !== _plDrag.evId) plReorder(pl, _plDrag.evId, ult, true);
       });
       wrap.appendChild(plClips);
 
       box.appendChild(wrap);
     });
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PLAYLIST: arrastar para reordenar · botao direito para opcoes
+   A ordem vive em pl.evIds — arrastar apenas reposiciona o id.
+   ══════════════════════════════════════════════════════════════ */
+let _plDrag = null;
+
+/* coloca "arrastado" antes ou depois de "alvo" */
+function plReorder(pl, arrastadoId, alvoId, depois){
+  if (!pl || !Array.isArray(pl.evIds)) return;
+  if (arrastadoId === alvoId) return;
+  const lista = pl.evIds.slice();
+  const de = lista.indexOf(arrastadoId);
+  if (de < 0) return;
+  lista.splice(de, 1);                          /* tira da posicao antiga */
+  let para = lista.indexOf(alvoId);
+  if (para < 0) para = lista.length - 1;
+  lista.splice(para + (depois ? 1 : 0), 0, arrastadoId);
+  pl.evIds = lista;
+  saveSession();
+  renderPlaylists();
+}
+
+/* menu do botao direito sobre um lance da playlist */
+function openPlaylistItemMenu(x, y, pl, ev, tag){
+  const menu = $('ctxMenu');
+  menu.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'ctxhead';
+  head.textContent = (ev.name || (tag ? tag.name : TX('vid.f.clip', 'clip'))) + ' · ' + fmt(ev.t, true);
+  menu.appendChild(head);
+  menu.appendChild(ctxItem(TX('vid.ctx.openClip', 'Open clip'), () => openClip(ev, tag)));
+  menu.appendChild(ctxItem(TX('vid.ctx.toTop', 'Move to top'), () => {
+    const primeiro = pl.evIds[0];
+    if (primeiro !== ev.id) plReorder(pl, ev.id, primeiro, false);
+  }));
+  menu.appendChild(ctxItem(TX('vid.ctx.toEnd', 'Move to end'), () => {
+    const ultimo = pl.evIds[pl.evIds.length - 1];
+    if (ultimo !== ev.id) plReorder(pl, ev.id, ultimo, true);
+  }));
+  menu.appendChild(ctxItem(TX('vid.tt.removeFromPlaylist', 'Remove from playlist'), () => {
+    pl.evIds = pl.evIds.filter(id => id !== ev.id);
+    saveSession();
+    renderPlaylists();
+    log(TX('vid.f.removedFromPl', 'Clip removed from the playlist (the clip itself was kept).'));
+  }, { danger: true }));
+  menu.classList.add('on');
+  menu.style.left = '0px'; menu.style.top = '0px';
+  const r = menu.getBoundingClientRect();
+  menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
 }
 
 /* move um lance dentro da playlist (a ordem vive em pl.evIds) */

@@ -807,6 +807,7 @@
     'vid.tt.drawClip':'Draw on this clip','vid.tt.exportGroup':'Export all clips of this tag',
     'vid.tt.removeFromPlaylist':'Remove from this playlist','vid.f.playlistEmpty':'No clips in this playlist yet.',
     'vid.tt.plOrder':'Position in the playlist','vid.tt.plUp':'Move up','vid.tt.plDown':'Move down','vid.f.orderNote':'Exporting in the playlist order.',
+    'vid.tt.plDrag':'Drag to reorder · right-click for options','vid.ctx.openClip':'Open clip','vid.ctx.toTop':'Move to top','vid.ctx.toEnd':'Move to end','vid.f.removedFromPl':'Clip removed from the playlist (the clip itself was kept).','vid.f.clip':'clip',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'No clips tagged. Tag clips in the Analysis tab to export.',
     'vid.f.noClipsAnalysis':'No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.',
@@ -1723,6 +1724,7 @@
     'vid.tt.drawClip':'Desenhar neste lance','vid.tt.exportGroup':'Exportar todos os lances desta etiqueta',
     'vid.tt.removeFromPlaylist':'Remover desta playlist','vid.f.playlistEmpty':'Nenhum lance nesta playlist ainda.',
     'vid.tt.plOrder':'Posição na playlist','vid.tt.plUp':'Mover para cima','vid.tt.plDown':'Mover para baixo','vid.f.orderNote':'Exportando na ordem da playlist.',
+    'vid.tt.plDrag':'Arraste para reordenar · botão direito para opções','vid.ctx.openClip':'Abrir lance','vid.ctx.toTop':'Mover para o início','vid.ctx.toEnd':'Mover para o fim','vid.f.removedFromPl':'Lance retirado da playlist (o lance em si foi mantido).','vid.f.clip':'lance',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'Nenhum clipe marcado. Marque clipes na aba Análise para exportar.',
     'vid.f.noClipsAnalysis':'Nenhum clipe marcado ainda. Carregue um vídeo na aba Análise e clique numa tag durante a reprodução.',
