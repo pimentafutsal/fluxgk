@@ -1325,6 +1325,14 @@ window.submitPost=async function(){
   if(!preId){showToast(TX("data.msg.pickPre"),"err");return;}
   const preS=ST.sessions.find(function(s){return s.id===preId;});
   if(!preS){showToast(TX("data.msg.preNotFound"),"err");return;}
+  /* trava de seguranca: o pre TEM de ser do goleiro selecionado.
+     Sem isto, uma lista desatualizada fechava o pre de OUTRO atleta e
+     deixava o pos deste solto (o "pos-treino isolado").               */
+  if(preS._pk!==ST.currentPlayer){
+    renderOpenPreSessions();
+    showToast(TX("data.msg.preOtherGk","This pre-training belongs to another goalkeeper — the list was refreshed. Pick it again."),"err");
+    return;
+  }
   const date=preS.date;
   const time=preS.time||"";
   const trainingType=preS.trainingType||"";
@@ -1733,8 +1741,11 @@ function renderOpenPreSessions(){
   const sel=document.getElementById("postLinkPre");
   const msg=document.getElementById("postNoPreMsg");
   if(!sel)return;
+  /* guarda a escolha atual para nao atrapalhar quem esta no meio do preenchimento;
+     se ela for de OUTRO goleiro, some naturalmente ao reconstruir a lista */
+  const prev=sel.value;
   sel.innerHTML='<option data-i18n="data.post.selectPre" value="">-- Select a pre-training session --</option>';
-  if(!ST.currentPlayer){return;}
+  if(!ST.currentPlayer){ sel.style.display="none"; if(msg)msg.style.display="block"; return; }
   // Open pre = has no postId
   const openPres=ST.sessions.filter(function(s){
     return s._pk===ST.currentPlayer&&s.type==="pre"&&!s.postId;
@@ -1751,8 +1762,10 @@ function renderOpenPreSessions(){
       opt.textContent=fd(s.date)+(s.time?" "+s.time:"")+(s.trainingType?" · "+s.trainingType:"");
       sel.appendChild(opt);
     });
-    // Auto-select most recent
-    if(openPres.length===1)sel.value=openPres[0].id;
+    /* mantem a escolha anterior se ela ainda pertencer a ESTE goleiro;
+       senao, seleciona sozinho (1 aberto) ou o mais recente             */
+    if(prev&&openPres.some(function(s){return String(s.id)===String(prev);})) sel.value=prev;
+    else sel.value=openPres[0].id;
   }
 }
 
@@ -1770,7 +1783,7 @@ function renderAll(){
     const activeSec=document.querySelector(".section.active");
     const activeId=activeSec?activeSec.id.replace("sec-",""):"pre";
     if(cb&&activeId!=="squad") cb.style.display="flex";
-  }renderTypeSelects();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
+  }renderTypeSelects();renderOpenPreSessions();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
 
 // ── STATUS/TOAST ──
 function showStatus(m,t){const e=document.getElementById("statusBar");e.textContent=m;e.className="status-bar show "+(t||"");}
