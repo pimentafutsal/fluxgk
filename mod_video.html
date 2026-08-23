@@ -2061,11 +2061,14 @@ function enforceClipBounds(){
 }
 
 function openClip(ev, tag, edit){
+  if (!ev) return;
+  /* etiqueta ausente (apagada ou nao encontrada) travava a abertura do lance */
+  tag = tag || findTag(ev.tagId) || { name: TX('vid.f.clip', 'clip'), color: '#8a8a8a' };
   stopPlaylist();
   cancelFreeze();
   switchTab('analise');
   state.clip = { ev: ev, tag: tag, editing: false, viewStart: ev.start, viewEnd: ev.end };
-  $('clipDot').style.background = tag.color;
+  $('clipDot').style.background = tag.color || '#8a8a8a';
   $('clipName').textContent = ev.name ? (ev.name + ' — ' + tag.name) : tag.name;
   updateClipRange();
   $('clipBar').classList.add('on');
@@ -2826,6 +2829,13 @@ function renderPlaylists(){
         ordEl.textContent = (_ord + 1) + '.';
         ordEl.title = TX('vid.tt.plDrag', 'Drag to reorder · right-click for options');
 
+        /* clicar em QUALQUER lugar da linha abre o lance (menos se estiver arrastando) */
+        row.addEventListener('click', (e) => {
+          if (row.dataset.moved === '1'){ row.dataset.moved = '0'; return; }
+          if (e.target.closest('button')) return;
+          openClip(ev, tag);
+        });
+
         /* ── ARRASTAR PARA REORDENAR ── */
         row.draggable = true;
         row.dataset.evid = ev.id;
@@ -2833,11 +2843,13 @@ function renderPlaylists(){
         row.classList.add('pldrag');
         row.addEventListener('dragstart', (e) => {
           _plDrag = { plId: pl.id, evId: ev.id };
+          row.dataset.moved = '1';        /* houve arraste: o clique seguinte nao abre */
           row.classList.add('dragging');
           try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(ev.id)); } catch (err) {}
         });
         row.addEventListener('dragend', () => {
           _plDrag = null;
+          setTimeout(() => { row.dataset.moved = '0'; }, 0);
           plClips.querySelectorAll('.erow').forEach(r => r.classList.remove('dragging', 'dropbefore', 'dropafter'));
         });
         row.addEventListener('dragover', (e) => {
@@ -4860,7 +4872,7 @@ $('expRun').addEventListener('click', async () => {
     if (perFile){
       for (let i = 0; i < evs.length; i++){
         const ev = evs[i];
-        const tag = findTag(ev.tagId);
+        const tag = findTag(ev.tagId) || { name: 'lance', color: '#8a8a8a' };   /* etiqueta apagada nao pode travar a exportacao */
         const base = ev.name ? safeName(ev.name) : (safeName(tag.name) + '_lance' + (i + 1));
         await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)));
       }
@@ -4886,7 +4898,8 @@ async function exportReencodedDirect(evs, outName){
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
     const base = (outName || 'fluxgk_lance.mp4').replace(/\.(mp4|webm)$/i, '');
     log(TX('vid.f.exportingFraming'));
-    await recordGroup(evs.slice().sort((a, b) => a.start - b.start), vw, vh, mime, ext, 8e6,
+    /* NAO reordenar: a sequencia recebida (playlist) e a que vale no video final */
+    await recordGroup(evs.slice(), vw, vh, mime, ext, 8e6,
       false, false, '', true, base, 1, 1);
   } catch (err) {
     if (err && err.message === 'CANCELLED') log(TX('vid.msg.exportCanceled2'), 'err');
@@ -4927,7 +4940,7 @@ async function exportReencoded(evs){
     for (let gi = 0; gi < groups.length; gi++){
       if (cancelRequested) throw new Error('CANCELLED');
       const group = groups[gi];
-      const tag = findTag(group[0].tagId);
+      const tag = findTag(group[0].tagId) || { name: 'lance', color: '#8a8a8a' };
       const name = perFile
         ? (group[0].name ? safeName(group[0].name) : safeName(tag.name) + '_lance' + (gi + 1))
         : (_exportBaseName || 'fluxgk_compilado');
@@ -5645,9 +5658,9 @@ async function exportEvents(events, outName, label){
   log('Starting export: ' + label + ' (' + events.length + ' clip' + (events.length > 1 ? 's' : '') + ')…');
 
   try {
+    /* mantem a ordem recebida (playlist); o corte por keyframe nao exige ordem */
     const ranges = events
-      .map(e => ({ start: Math.max(0, e.start), end: Math.max(e.start + 0.5, e.end) }))
-      .sort((a, b) => a.start - b.start);
+      .map(e => ({ start: Math.max(0, e.start), end: Math.max(e.start + 0.5, e.end) }));
 
     const buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label));
     const blob = new Blob([buffer], { type: 'video/mp4' });
