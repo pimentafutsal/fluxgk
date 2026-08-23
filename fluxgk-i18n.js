@@ -808,6 +808,8 @@
     'vid.tt.removeFromPlaylist':'Remove from this playlist','vid.f.playlistEmpty':'No clips in this playlist yet.',
     'vid.tt.plOrder':'Position in the playlist','vid.tt.plUp':'Move up','vid.tt.plDown':'Move down','vid.f.orderNote':'Exporting in the playlist order.',
     'vid.tt.plDrag':'Drag to reorder · right-click for options','vid.ctx.openClip':'Open clip','vid.ctx.toTop':'Move to top','vid.ctx.toEnd':'Move to end','vid.f.removedFromPl':'Clip removed from the playlist (the clip itself was kept).','vid.f.clip':'clip',
+    'vid.tt.freezeAdd':'Freeze this frame (pause) — no drawing needed','vid.f.freezeAdded':'Freeze added at ','vid.f.freezeUpdated':'Freeze updated at ','vid.f.freezeOnly':'freeze',
+    'vid.tt.freezeSec':'Freeze duration, in seconds',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'No clips tagged. Tag clips in the Analysis tab to export.',
     'vid.f.noClipsAnalysis':'No clips tagged yet. Load a video in the Analysis tab and click a tag during playback.',
@@ -1725,6 +1727,8 @@
     'vid.tt.removeFromPlaylist':'Remover desta playlist','vid.f.playlistEmpty':'Nenhum lance nesta playlist ainda.',
     'vid.tt.plOrder':'Posição na playlist','vid.tt.plUp':'Mover para cima','vid.tt.plDown':'Mover para baixo','vid.f.orderNote':'Exportando na ordem da playlist.',
     'vid.tt.plDrag':'Arraste para reordenar · botão direito para opções','vid.ctx.openClip':'Abrir lance','vid.ctx.toTop':'Mover para o início','vid.ctx.toEnd':'Mover para o fim','vid.f.removedFromPl':'Lance retirado da playlist (o lance em si foi mantido).','vid.f.clip':'lance',
+    'vid.tt.freezeAdd':'Congelar este quadro (pausa) — sem precisar desenhar','vid.f.freezeAdded':'Congelamento em ','vid.f.freezeUpdated':'Congelamento atualizado em ','vid.f.freezeOnly':'pausa',
+    'vid.tt.freezeSec':'Duração do congelamento, em segundos',
     /* fragmentos concatenados */
     'vid.f.noClipsExport':'Nenhum clipe marcado. Marque clipes na aba Análise para exportar.',
     'vid.f.noClipsAnalysis':'Nenhum clipe marcado ainda. Carregue um vídeo na aba Análise e clique numa tag durante a reprodução.',

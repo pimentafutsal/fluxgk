@@ -169,12 +169,17 @@
 
   .zoomctl{
     position:absolute;top:10px;right:10px;display:flex;gap:6px;align-items:center;
-    background:rgba(10,10,10,.6);padding:6px 8px;border-radius:6px;opacity:0;transition:opacity .15s;z-index:5;
+    background:rgba(10,10,10,.6);padding:6px 8px;border-radius:6px;opacity:.75;transition:opacity .15s;z-index:5;
   }
-  #stage:hover .zoomctl, #stage.zoomed .zoomctl{opacity:1}
+  /* sempre visivel (era so no hover): o tempo do congelamento precisa estar a vista */
+  #stage:hover .zoomctl, #stage.zoomed .zoomctl, .zoomctl:focus-within{opacity:1}
   .zoomctl button{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;padding:4px 9px;border-radius:4px}
   .zoomctl button:hover{background:rgba(255,255,255,.28)}
   .zoomctl .zlevel{font-family:'JetBrains Mono',monospace;font-size:11px;color:#fff;min-width:42px;text-align:center}
+  .zoomctl #freezeSec{width:42px;padding:3px 4px;border:none;border-radius:4px;text-align:center;
+    background:rgba(255,255,255,.14);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px}
+  .zoomctl #freezeSec:focus{outline:1px solid rgba(255,255,255,.5)}
+  .zoomctl .zunit{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.7)}
 
   .pbar{
     display:flex;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap;
@@ -611,6 +616,10 @@
           <button id="zoomOut" title="Zoom out" data-i18n-title="vid.tt.zoomOut">−</button>
           <div class="zlevel" id="zoomLevel">100%</div>
           <button id="zoomIn" title="Zoom in" data-i18n-title="vid.tt.zoomIn">+</button>
+          <button id="freezeAdd" title="Freeze this frame (pause) — no drawing needed" data-i18n-title="vid.tt.freezeAdd">⏸</button>
+          <input type="number" id="freezeSec" value="3" min="1" max="60" step="1"
+                 title="Freeze duration in seconds" data-i18n-title="vid.tt.freezeSec">
+          <span class="zunit">s</span>
           <button id="panHint" title="Zoomed in: drag the image to reposition · Alt + arrows for fine adjustment" data-i18n-title="vid.tt.pan" style="display:none">✥</button>
           <button id="zoomReset" title="Reset to 100%" data-i18n-title="vid.tt.reset100">⟲</button>
           <button id="fsBtn" title="Fullscreen" data-i18n-title="vid.tt.fs">⛶</button>
@@ -652,9 +661,6 @@
           <button id="drawUndo" title="Undo last stroke" data-i18n-title="vid.tt.undo">↩</button>
           <button id="drawClear" title="Erase all strokes on screen" data-i18n-title="vid.tt.eraseAll">Clear</button>
           <span class="sep"></span>
-          <label data-i18n="vid.freeze" class="dlabel" for="freezeSec">freeze</label>
-          <input type="number" id="freezeSec" value="3" min="1" max="60" step="1">
-          <span class="dlabel">s</span>
           <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration" data-i18n-title="vid.tt.saveAtTime">💾 Save at time</button>
           <button id="drawSnap" title="Save current frame + drawing as a PNG image" data-i18n-title="vid.tt.savePng">⤓ PNG</button>
           <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)" data-i18n-title="vid.tt.exitDraw">✕</button>
@@ -4273,6 +4279,31 @@ $('drawSave').addEventListener('click', () => {
   setDrawMode(false);
 });
 
+/* ══════════════════════════════════════════════════════════════
+   FREEZE SEM DESENHO
+   Congela o quadro atual por alguns segundos, sem precisar desenhar
+   nada. Entra na mesma linha do tempo dos desenhos, entao vale na
+   reproducao e tambem na exportacao.
+   ══════════════════════════════════════════════════════════════ */
+function addFreezeOnly(){
+  if (!state.file){ log(TX('vid.msg.loadFirstDot'), 'err'); return; }
+  const t = video.currentTime;
+  const f = Math.min(60, Math.max(0.5, parseFloat($('freezeSec') && $('freezeSec').value) || 3));
+  /* ja existe algo marcado neste mesmo instante? entao so ajusta a duracao */
+  const existente = (state.drawings || []).find(d => Math.abs(d.t - t) < 0.05);
+  if (existente){
+    existente.freeze = f;
+    log(TX('vid.f.freezeUpdated', 'Freeze updated at ') + fmt(t, true) + ' — ' + f + 's.', 'ok');
+  } else {
+    state.drawings.push({ id: Date.now(), t: t, freeze: f, shapes: [] });
+    log(TX('vid.f.freezeAdded', 'Freeze added at ') + fmt(t, true) + ' — ' + f + 's.', 'ok');
+  }
+  video.pause();
+  saveSession();
+  renderDrawList();
+}
+if ($('freezeAdd')) $('freezeAdd').addEventListener('click', (e) => { e.stopPropagation(); addFreezeOnly(); });
+
 function cloneShape(s){
   return JSON.parse(JSON.stringify(s)); // preserva todas as propriedades (opacity, text, mag, hasBg, etc.)
 }
@@ -4326,7 +4357,9 @@ function renderDrawList(){
 
     const info = document.createElement('span');
     info.className = 'er';
-    info.textContent = d.shapes.length + ' stroke' + (d.shapes.length > 1 ? 's' : '');
+    /* pausa pura aparece como "freeze", nao como "0 stroke" */
+    const nSh = (d.shapes || []).length;
+    info.textContent = nSh ? (nSh + ' stroke' + (nSh > 1 ? 's' : '')) : ('⏸ ' + TX('vid.f.freezeOnly', 'freeze'));
 
     const sp = document.createElement('span');
     sp.className = 'spacer';
@@ -5060,9 +5093,12 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     const playedDrawings = new Set(); // desenhos já exibidos (não repetir)
 
     function activeDrawingAt(t){
-      if (!_expWithDraw || !state.drawings) return null;
+      if (!state.drawings) return null;
       for (const d of state.drawings){
         if (playedDrawings.has(d.id)) continue;
+        /* pausa pura (sem desenho) vale sempre; desenhos respeitam a opcao "incluir desenhos" */
+        const puroFreeze = !d.shapes || !d.shapes.length;
+        if (!puroFreeze && !_expWithDraw) continue;
         if (t >= d.t - 0.06 && t <= d.t + 0.5){ // chegou no instante do desenho
           return d;
         }
