@@ -319,7 +319,6 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div data-i18n="st.gameInfo" style="font-weight:700;font-size:15px;margin-bottom:18px;">Game Information</div>
       <div class="g2 mb16">
         <div><div data-i18n="st.date" class="label">Date *</div><input type="date" id="rec-date"></div>
-        <div><div data-i18n="st.season" class="label">Season *</div><input type="text" id="rec-season" placeholder="e.g. 2025-26"></div>
         <div><div data-i18n="st.opponent" class="label">Opponent *</div><select id="rec-opp"><option data-i18n="st.selectOpponent" value="">Select opponent…</option></select></div>
         <div><div data-i18n="st.competition" class="label">Competition</div><select id="rec-comp"><option data-i18n="st.selectComp" value="">Select competition…</option></select></div>
       </div>
@@ -330,7 +329,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="g2" style="align-items:start;">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-          <div data-i18n="st.shotNum" style="font-weight:700;font-size:15px;">Shot #<span id="shot-form-num">1</span></div>
+          <div style="font-weight:700;font-size:15px;"><span data-i18n="st.shotNum">Shot #</span><span id="shot-form-num">1</span></div>
           <button data-i18n="st.reviewSave" class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
         </div>
         <div class="g2" style="gap:16px;">
@@ -404,7 +403,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="g2" style="align-items:start;">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-          <div data-i18n="st.offNum" style="font-weight:700;font-size:15px;">Offensive action #<span id="off-form-num">1</span></div>
+          <div style="font-weight:700;font-size:15px;"><span data-i18n="st.offNum">Offensive action #</span><span id="off-form-num">1</span></div>
           <button data-i18n="st.reviewSave" class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
         </div>
         <div data-i18n="st.offHint" class="page-sub" style="margin:-8px 0 14px;">Register goalkeeper offensive actions: type, moment and result.</div>
@@ -842,7 +841,6 @@ function populateRecordSelects(){
   if(CUR.opponent) document.getElementById('rec-opp').value=CUR.opponent;
   if(CUR.competition) document.getElementById('rec-comp').value=CUR.competition;
   if(CUR.date) document.getElementById('rec-date').value=CUR.date;
-  if(CUR.season) document.getElementById('rec-season').value=CUR.season;
   // populate sf-gk (per-shot GK selector)
   populateShotGkSelect();
 }
@@ -992,15 +990,20 @@ function navToRecord(){
 }
 function recNextToShots(){
   CUR.date=document.getElementById('rec-date').value;
-  CUR.season=document.getElementById('rec-season').value;
+  /* a temporada vem do hub (clube + temporada ativos) — nao se pergunta de novo */
+  CUR.season=window._hubSeason||CUR.season||'';
   CUR.opponent=document.getElementById('rec-opp').value;
   CUR.competition=document.getElementById('rec-comp').value;
   if(!CUR.date||!CUR.opponent){alert(TX('st.msg.dateOpp'));return;}
   recTab('shots'); renderShotsList(); updateShotNum(); populateShotGkSelect();
 }
 function updateShotNum(){
-  document.getElementById('shot-form-num').textContent=editShotIdx!==null?editShotIdx+1:CUR.shots.length+1;
-  document.getElementById('rec-shot-count').textContent=CUR.shots.length;
+  /* elementos ausentes nao podem interromper o salvamento (era o bug: a lista
+     lateral e o contador paravam de atualizar porque esta funcao lancava erro) */
+  const n=document.getElementById('shot-form-num');
+  if(n) n.textContent=editShotIdx!==null?editShotIdx+1:CUR.shots.length+1;
+  const c=document.getElementById('rec-shot-count');
+  if(c) c.textContent=CUR.shots.length;
 }
 function clearShotForm(){
   document.getElementById('sf-minute').value='';
@@ -1022,7 +1025,8 @@ function saveShot(){
   const shot={...SF, minute:document.getElementById('sf-minute').value, gk:gkVal};
   if(editShotIdx!==null) CUR.shots[editShotIdx]=shot;
   else CUR.shots.push(shot);
-  clearShotForm(); renderShotsList(); updateShotNum();
+  try{ clearShotForm(); }catch(e){ console.error('clearShotForm:',e); }
+  renderShotsList(); updateShotNum();
 }
 function renderShotsList(){
   const el=document.getElementById('shots-list');
@@ -1415,7 +1419,6 @@ function openGameInRecord(id){
   showPage('record');
   // Pre-fill meta fields (after selects are populated by showPage)
   document.getElementById('rec-date').value=CUR.date||'';
-  document.getElementById('rec-season').value=CUR.season||'';
   const oppEl=document.getElementById('rec-opp');
   if(oppEl) oppEl.value=CUR.opponent||'';
   const compEl=document.getElementById('rec-comp');

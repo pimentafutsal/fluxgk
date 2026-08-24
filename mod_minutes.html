@@ -273,7 +273,6 @@ tr:hover td{background:var(--surface2);}
       <div><div data-i18n="min.competition" class="label">Competition</div><select id="g-comp"><option data-i18n="min.selectComp" value="">Select competition…</option></select></div>
     </div>
     <div class="g3 mb16">
-      <div><div data-i18n="min.season" class="label">Season</div><select id="g-season"><option data-i18n="min.selectSeason" value="">Select season…</option></select></div>
       <div><div data-i18n="min.totalGameMin" class="label">Total Game Minutes</div><input type="number" id="g-total-min" value="40" min="1" max="70" placeholder="e.g. 40 or 50 with OT" data-i18n-placeholder="min.ph.totalMin"></div>
       <div style="display:flex;flex-direction:column;justify-content:flex-end;">
         <div data-i18n="min.halfDuration" class="label">Half Duration</div>
@@ -763,7 +762,8 @@ function collectGameData(){
   const date=document.getElementById('g-date').value;
   const opp=document.getElementById('g-opp').value;
   const comp=document.getElementById('g-comp').value;
-  const season=document.getElementById('g-season').value;
+  /* a temporada vem do hub (clube + temporada ativos) — nao se pergunta de novo */
+  const season=window._hubSeason||'';
   const totalMin=parseInt(document.getElementById('g-total-min').value)||40;
   const halfMin=parseInt(document.getElementById('g-half-min').value)||20;
   const hasOT=otOn();
@@ -815,7 +815,6 @@ function resetGameForm(){
   document.getElementById('g-date').value='';
   document.getElementById('g-opp').value='';
   document.getElementById('g-comp').value='';
-  document.getElementById('g-season').value='';
   document.getElementById('g-total-min').value='40';
   document.getElementById('g-half-min').value='20';
   const otcb=document.getElementById('g-has-ot'); if(otcb)otcb.checked=false;
@@ -917,7 +916,6 @@ function editGame(id){
   document.getElementById('g-date').value=g.date||'';
   document.getElementById('g-opp').value=g.opp||'';
   document.getElementById('g-comp').value=g.comp||'';
-  document.getElementById('g-season').value=g.season||'';
   document.getElementById('g-total-min').value=g.totalMin||40;
   document.getElementById('g-half-min').value=g.halfMin||20;
   const otcb=document.getElementById('g-has-ot'); if(otcb)otcb.checked=!!g.hasOT;
