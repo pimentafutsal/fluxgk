@@ -823,6 +823,7 @@
             <div class="exprow check">
               <label><input type="checkbox" id="expChooseFolder" checked> <span data-i18n="vid.chooseFolder">Choose where to save (ask for the folder)</span></label>
             </div>
+            <div id="expOrderNote" class="expnote" style="display:none;align-items:center;gap:8px;background:#eef3ff;border:1px solid #cfe0ff;border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:12px"></div>
             <div id="expNote" class="expnote"></div>
             <div class="exprow" style="margin-top:14px">
               <button data-i18n="vid.export" class="primary" id="expRun" style="flex:1">⤓ Export</button>
@@ -2780,6 +2781,7 @@ function renderPlaylists(){
         const ids = new Set(evs.map(ev => ev.id));
         state.events.forEach(ev => { expSel[ev.id] = ids.has(ev.id); });
         _expOrder = evs.map(ev => ev.id);          /* exporta na ordem da playlist */
+        _expOrderName = pl.name;
         switchTab('export');
         log(TX('vid.f.exportOpenedSp') + evs.length + TX('vid.f.adjustExportSp'));
       });
@@ -4794,7 +4796,7 @@ function renderExportTab(){
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = evs.every(e => expSel[e.id]);
-      cb.addEventListener('change', () => { evs.forEach(e => expSel[e.id] = cb.checked); _expOrder = null; renderExportTab(); });
+      cb.addEventListener('change', () => { evs.forEach(e => expSel[e.id] = cb.checked); renderExportTab(); });
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.style.background = tag.color;
@@ -4809,7 +4811,7 @@ function renderExportTab(){
         const c = document.createElement('input');
         c.type = 'checkbox';
         c.checked = !!expSel[ev.id];
-        c.addEventListener('change', () => { expSel[ev.id] = c.checked; _expOrder = null; updateExpNote(); });
+        c.addEventListener('change', () => { expSel[ev.id] = c.checked; updateExpNote(); });
         const nm2 = document.createElement('span');
         nm2.textContent = ev.name || (tag.name + ' ' + (i + 1));
         const rg = document.createElement('span');
@@ -4832,7 +4834,7 @@ function renderExportTab(){
 
 /* Ordem opcional vinda de uma playlist. Se estiver definida, a exportacao
    segue a sequencia que voce montou; senao, segue a ordem do jogo (tempo). */
-let _expOrder = null;
+let _expOrder = null, _expOrderName = '';
 function selectedEvents(){
   const sel = allEvents().filter(e => expSel[e.id]);
   if (!_expOrder || !_expOrder.length) return sel;
@@ -4845,6 +4847,25 @@ function updateExpNote(){
   const note = $('expNote');
   const n = selectedEvents().length;
   const reenc = expNeedsReencode();
+  /* deixa claro que a sequencia da playlist esta valendo (e como desligar) */
+  const ordBox = $('expOrderNote');
+  if (ordBox){
+    if (_expOrder && _expOrder.length){
+      ordBox.style.display = '';
+      ordBox.innerHTML = '';
+      const t = document.createElement('span');
+      t.textContent = '⇅ ' + TX('vid.f.usingPlOrder', 'Exporting in the order of the playlist') +
+                      (_expOrderName ? ' “' + _expOrderName + '”' : '') + '. ';
+      const b = document.createElement('button');
+      b.className = 'mini ghost';
+      b.textContent = TX('vid.f.useTimeOrder', 'Use match order');
+      b.addEventListener('click', () => { _expOrder = null; _expOrderName = ''; renderExportTab(); });
+      ordBox.appendChild(t); ordBox.appendChild(b);
+    } else {
+      ordBox.style.display = 'none';
+      ordBox.innerHTML = '';
+    }
+  }
   let txt = n + ' clip(s) selected. ';
   if (!n){ txt = TX('vid.msg.pickClip'); }
   else if (reenc){
@@ -4881,7 +4902,7 @@ $('expRun').addEventListener('click', async () => {
   // nome do arquivo escolhido pelo treinador (ou um padrão sensato)
   const typed = cleanFileName($('expName') ? $('expName').value : '');
   const fallback = (evs.length === 1
-    ? (evs[0].name ? safeName(evs[0].name) : safeName(findTag(evs[0].tagId).name) + '_lance')
+    ? (evs[0].name ? safeName(evs[0].name) : safeName((findTag(evs[0].tagId) || { name: 'lance' }).name) + '_lance')
     : 'fluxgk_compilado');
   _exportBaseName = typed || fallback;
   const chooseFolder = $('expChooseFolder') ? $('expChooseFolder').checked : false;
