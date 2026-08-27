@@ -931,6 +931,7 @@
     'tat.h.keeps':'keeps the drill ·','tat.h.tab':'TAB','tat.h.tabTxt':'toggles straight line ·',
     'tat.h.rotates':'rotates ·','tat.h.resizes':'resizes ·',
     'tat.h.del':'Delete','tat.h.delTxt':'removes',
+    'tat.h.selDraw':'SELECT','tat.h.selDrawTxt':'click a stroke to move it; drag the white dot to bend it into a curve',
     /* avisos */
     'tat.msg.straightOn':'Straight line ON (TAB toggles off)','tat.msg.straightOff':'Straight line OFF',
     'tat.msg.axisOn':'Axis lock ON — lines snap to vertical/horizontal (hold Shift for free angle)','tat.msg.axisOff':'Axis lock OFF — free angle (hold Shift to snap)',
@@ -1853,6 +1854,7 @@
     'tat.h.keeps':'mantém o exercício ·','tat.h.tab':'TAB','tat.h.tabTxt':'alterna linha reta ·',
     'tat.h.rotates':'gira ·','tat.h.resizes':'redimensiona ·',
     'tat.h.del':'Delete','tat.h.delTxt':'remove',
+    'tat.h.selDraw':'SELECIONAR','tat.h.selDrawTxt':'clique num traço para movê-lo; arraste a bolinha branca para curvá-lo',
     /* avisos */
     'tat.msg.straightOn':'Linha reta LIGADA (TAB desliga)','tat.msg.straightOff':'Linha reta DESLIGADA',
     'tat.msg.axisOn':'Trava de eixo LIGADA — retas presas na vertical/horizontal (segure Shift para ângulo livre)','tat.msg.axisOff':'Trava de eixo DESLIGADA — ângulo livre (segure Shift para travar)',
