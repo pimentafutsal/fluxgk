@@ -1256,6 +1256,8 @@ document.addEventListener("click",e=>{
   const tgt=e.target;
   const editBtn=tgt.dataset&&tgt.dataset.edit?tgt:tgt.parentElement&&tgt.parentElement.dataset&&tgt.parentElement.dataset.edit?tgt.parentElement:null;
   if(editBtn&&editBtn.dataset.edit){editSession(editBtn.dataset.edit);return;}
+  const preBtn=tgt.dataset&&tgt.dataset.editpre?tgt:tgt.parentElement&&tgt.parentElement.dataset&&tgt.parentElement.dataset.editpre?tgt.parentElement:null;
+  if(preBtn&&preBtn.dataset.editpre){editSession(preBtn.dataset.editpre);return;}
   const delBtn=tgt.dataset&&tgt.dataset.del?tgt:tgt.parentElement&&tgt.parentElement.dataset&&tgt.parentElement.dataset.del?tgt.parentElement:null;
   if(delBtn&&delBtn.dataset.del){deleteSession(delBtn.dataset.del);return;}
 });
@@ -1309,10 +1311,28 @@ window.submitPre=async function(){
     showToast(was?TX("data.msg.absenceUpdated"):TX("data.msg.absenceSaved"));
     return;
   }
+  /* ao EDITAR, preserva o vinculo com o pos-treino (antes virava null e o
+     treino concluido perdia o par, reabrindo o pre indevidamente)          */
+  const anterior = editId ? ST.sessions.find(function(x){return x.id===editId;}) : null;
   const e=Object.assign({id:editId||"pre_"+Date.now(),date,type:"pre"},
     readFields(activeWb()),
-    {wbScale:5,time,trainingType,present:true,postId:null,ts:Date.now(),_pk:ST.currentPlayer});
-  saveSession(e);const was=!!editId;editId=null;
+    {wbScale:5,time,trainingType,present:true,
+     postId:(anterior&&anterior.postId)||null,
+     ts:Date.now(),_pk:ST.currentPlayer});
+  saveSession(e);
+  /* corrigiu data/hora/tipo? o pos-treino ligado acompanha, para nao descasar */
+  if(e.postId){
+    const post=ST.sessions.find(function(x){return x.id===e.postId;});
+    if(post){
+      const mudou = post.date!==e.date || post.time!==e.time || post.trainingType!==e.trainingType;
+      if(mudou){
+        post.date=e.date; post.time=e.time; post.trainingType=e.trainingType;
+        saveSession(post);
+        showToast(TX("data.msg.postSynced","Linked post-training updated as well."));
+      }
+    }
+  }
+  const was=!!editId;editId=null;
   document.getElementById("preFormTitle").textContent=TX("data.pre.title");
   document.getElementById("cancelEditPre").style.display="none";
   showToast(was?TX("data.msg.sessionUpdated"):TX("data.msg.preSaved"));
@@ -1578,7 +1598,11 @@ function renderHistory(){
       +'<span class="sr-type post">SESSION</span>'
       +'<span class="sr-detail">'+(type?type+" · ":"")+"RPE "+s.pse+" · "+s.duration+"min"+wb+'</span>'
       +'<span style="margin:0 3px"><span class="zone-badge '+zc+'">'+s.ua+' AU</span></span>'
-      +actionBtns(s.id)+'</div>';
+      +'<span class="sr-actions">'
+      +  (s.preId?'<button class="act-btn e" data-editpre="'+s.preId+'" title="'+TX("data.act.editPre","Edit pre-training (date, time, well-being)")+'"><i class="ti ti-clipboard-text"></i></button>':'')
+      +  '<button class="act-btn e" data-edit="'+s.id+'" title="'+TX("data.act.edit")+'"><i class="ti ti-pencil"></i></button>'
+      +  '<button class="act-btn d" data-del="'+s.id+'" title="'+TX("data.act.delete")+'"><i class="ti ti-trash"></i></button>'
+      +'</span></div>';
   });
   const absenceRows=absences.map(function(s){
     const dt=fd(s.date)+(s.time?" · "+s.time:"");
