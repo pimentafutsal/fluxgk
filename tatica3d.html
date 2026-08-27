@@ -1383,6 +1383,14 @@ function buildDrawingMeshes(group){
     head.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
     group.add(head);
   }
+  /* AREA DE TOQUE: um tubo grosso e transparente em volta do traco.
+     Sem isto era preciso acertar 5 cm de espessura para selecionar/arrastar. */
+  const pts3 = pts.map(p=>new THREE.Vector3(p.x, 0.025, p.z));
+  const hit = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts3), Math.max(8, pts3.length*2), 0.40, 6, false),
+    new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+  hit.userData.isHitArea = true;
+  group.add(hit);
 }
 
 function finishStroke(){
@@ -1392,42 +1400,13 @@ function finishStroke(){
   group.userData = {isDrawing:true, style:drawStyle, color:drawColor,
                     canBend: straightStroke || strokePts.length === 2,   /* reta pode virar curva */
                     pts:strokePts.map(p=>[+p.x.toFixed(3), +p.z.toFixed(3)])};
-
-  if(drawStyle === 'tracejada'){
-    /* divide a curva em segmentos alternados */
-    const pts3 = strokePts.map(p=>new THREE.Vector3(p.x,0.025,p.z));
-    const curve = new THREE.CatmullRomCurve3(pts3);
-    const len = curve.getLength();
-    const dash = 0.55, gap = 0.4;
-    let d = 0;
-    while(d < len){
-      const d2 = Math.min(d+dash, len);
-      const seg = [];
-      for(let k=0;k<=4;k++) seg.push(curve.getPointAt(Math.min(1,(d + (d2-d)*k/4)/len)));
-      const m = new THREE.Mesh(
-        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seg), 8, 0.05, 8, false),
-        new THREE.MeshStandardMaterial({color:drawColor, roughness:0.5}));
-      group.add(m);
-      d += dash + gap;
-    }
-  } else {
-    group.add(tubeFromPts(strokePts, drawColor));
-  }
-
-  if(drawStyle === 'seta'){
-    const a = strokePts[strokePts.length-2], b = strokePts[strokePts.length-1];
-    const dir = new THREE.Vector3(b.x-a.x, 0, b.z-a.z).normalize();
-    const head = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 12),
-                                new THREE.MeshStandardMaterial({color:drawColor, roughness:0.5}));
-    head.position.set(b.x, 0.025, b.z);
-    head.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
-    group.add(head);
-  }
+  buildDrawingMeshes(group);          /* mesma rotina usada ao mover/curvar */
   scene.add(group);
   drawings.push(group);
   undoStack.push({type:'draw', ref:group});
   strokePts = [];
 }
+
 /* ══════════════════════════════════════════════════════════════
    EDITAR DESENHOS — mover o traco inteiro e curvar uma reta
    No modo SELECIONAR, clicar num traco o seleciona. Aparecem alcas:
@@ -1446,14 +1425,35 @@ const bendRing = new THREE.Mesh(
 bendRing.rotation.x = -Math.PI/2; bendRing.renderOrder = 1000; bendRing.visible = false;
 scene.add(bendRing);
 
+/* meio REAL do traco (metade do comprimento), nao o indice do meio:
+   numa reta guardada com 2 pontos, o indice 1 era a PONTA — a alca
+   aparecia na extremidade em vez do centro.                        */
 function drawingCenterPt(g){
   const pts = g.userData.pts;
-  return pts[Math.floor(pts.length/2)];
+  if(pts.length === 2){
+    return [(pts[0][0]+pts[1][0])/2, (pts[0][1]+pts[1][1])/2];
+  }
+  let total = 0; const acum = [0];
+  for(let i=1;i<pts.length;i++){
+    total += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+    acum.push(total);
+  }
+  if(total === 0) return pts[0];
+  const meio = total/2;
+  for(let i=1;i<pts.length;i++){
+    if(acum[i] >= meio){
+      const seg = acum[i]-acum[i-1] || 1;
+      const t = (meio-acum[i-1])/seg;
+      return [pts[i-1][0] + (pts[i][0]-pts[i-1][0])*t,
+              pts[i-1][1] + (pts[i][1]-pts[i-1][1])*t];
+    }
+  }
+  return pts[pts.length-1];
 }
 function highlightDrawing(g, on){
   if(!g) return;
   g.children.forEach(ch=>{
-    if(!ch.material) return;
+    if(!ch.material || ch.userData.isHitArea) return;
     if(on){
       if(ch.userData._oc === undefined) ch.userData._oc = ch.material.color.getHex();
       ch.material.color.setHex(0x1E4FFF);
@@ -1474,17 +1474,15 @@ function selectDrawing(g){
   bendRing.position.set(c[0], 0.36, c[1]);
   bendHandle.visible = podeCurvar; bendRing.visible = podeCurvar;
 }
-/* curva a reta fazendo a linha passar pelo ponto arrastado */
+/* curva a reta fazendo a linha PASSAR pelo ponto arrastado */
 function bendDrawingTo(g, p){
   const pts = g.userData.pts;
   const A = new THREE.Vector3(pts[0][0], 0, pts[0][1]);
   const B = new THREE.Vector3(pts[pts.length-1][0], 0, pts[pts.length-1][1]);
   const M = new THREE.Vector3(p.x, 0, p.z);
-  /* ponto de controle: dobro do afastamento, para a curva PASSAR pelo cursor */
   const C = new THREE.Vector3(2*M.x - (A.x+B.x)/2, 0, 2*M.z - (A.z+B.z)/2);
   const q = new THREE.QuadraticBezierCurve3(A, C, B);
-  const N = 26;
-  const novos = [];
+  const N = 26, novos = [];
   for(let i=0;i<=N;i++){
     const v = q.getPoint(i/N);
     novos.push([+v.x.toFixed(3), +v.z.toFixed(3)]);
@@ -1503,10 +1501,8 @@ function moveDrawingBy(g, dx, dz){
 }
 function pickBendHandle(e){
   if(!selDrawing || !bendHandle.visible) return false;
-  const r = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((e.clientX - r.left)/r.width)*2 - 1;
-  pointer.y = -((e.clientY - r.top)/r.height)*2 + 1;
-  raycaster.setFromCamera(pointer, activeCamera);
+  setNDC(e);
+  raycaster.setFromCamera(ndc, activeCamera);
   return raycaster.intersectObject(bendHandle, false).length > 0;
 }
 
