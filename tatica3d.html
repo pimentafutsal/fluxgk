@@ -1180,7 +1180,7 @@ function attachProxy2D(obj, kind){
     if(d.rot) body.rotation.y = d.rot;   // alinha o modelo 3D ao ícone 2D
     const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h),
       new THREE.MeshBasicMaterial({map:iconTexture(d.cw, d.ch, d.draw), transparent:true, depthWrite:false}));
-    m.rotation.x = -Math.PI/2; m.position.y = 0.05;
+    m.rotation.x = -Math.PI/2; m.position.y = 0.15;   /* idem para cones, barreiras etc. */
     m.renderOrder = ++proxyOrder;
     obj.add(m);
     obj.userData.proxy = m;
@@ -1202,7 +1202,7 @@ function attachProxy2D(obj, kind){
   const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 36),
     new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
   disc.rotation.x = -Math.PI/2;
-  disc.position.y = 0.06;
+  disc.position.y = 0.16;   /* acima dos tracos: o desenho passa POR BAIXO do jogador */
   disc.renderOrder = 500 + (++proxyOrder);
   obj.add(disc);
   obj.userData.proxy = disc;
@@ -1271,6 +1271,9 @@ function _compressCapture(srcCanvas, maxW, q){
 /* ============================================================
    DESENHO sobre a quadra
    ============================================================ */
+/* altura e espessura dos tracos: propositalmente ABAIXO dos icones dos
+   jogadores (0.15/0.16), para o desenho passar por baixo das figuras */
+const DRAW_Y = 0.02, DRAW_R = 0.045;
 let strokePts = [];
 let previewLine = null;
 let straightStroke = false;
@@ -1336,9 +1339,9 @@ function extendStroke(p){
   previewLine.geometry = new THREE.BufferGeometry().setFromPoints(strokePts);
 }
 function tubeFromPts(pts, color){
-  const pts3 = pts.map(p=>new THREE.Vector3(p.x, 0.025, p.z));
+  const pts3 = pts.map(p=>new THREE.Vector3(p.x, DRAW_Y, p.z));
   const curve = new THREE.CatmullRomCurve3(pts3);
-  const geo = new THREE.TubeGeometry(curve, Math.max(8, pts3.length*3), 0.05, 8, false);
+  const geo = new THREE.TubeGeometry(curve, Math.max(8, pts3.length*3), DRAW_R, 8, false);
   return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:color, roughness:0.5}));
 }
 /* remove as malhas de um desenho, preservando o grupo e o userData */
@@ -1357,7 +1360,7 @@ function buildDrawingMeshes(group){
   if(pts.length < 2) return;
   clearDrawingMeshes(group);
   if(style === 'tracejada'){
-    const pts3 = pts.map(p=>new THREE.Vector3(p.x,0.025,p.z));
+    const pts3 = pts.map(p=>new THREE.Vector3(p.x,DRAW_Y,p.z));
     const curve = new THREE.CatmullRomCurve3(pts3);
     const len = curve.getLength();
     const dash = 0.55, gap = 0.4;
@@ -1367,7 +1370,7 @@ function buildDrawingMeshes(group){
       const seg = [];
       for(let k=0;k<=4;k++) seg.push(curve.getPointAt(Math.min(1,(d + (d2-d)*k/4)/len)));
       group.add(new THREE.Mesh(
-        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seg), 8, 0.05, 8, false),
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seg), 8, DRAW_R, 8, false),
         new THREE.MeshStandardMaterial({color:color, roughness:0.5})));
       d += dash + gap;
     }
@@ -1379,13 +1382,13 @@ function buildDrawingMeshes(group){
     const dir = new THREE.Vector3(b.x-a.x, 0, b.z-a.z).normalize();
     const head = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 12),
                                 new THREE.MeshStandardMaterial({color:color, roughness:0.5}));
-    head.position.set(b.x, 0.025, b.z);
+    head.position.set(b.x, DRAW_Y, b.z);
     head.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
     group.add(head);
   }
   /* AREA DE TOQUE: um tubo grosso e transparente em volta do traco.
      Sem isto era preciso acertar 5 cm de espessura para selecionar/arrastar. */
-  const pts3 = pts.map(p=>new THREE.Vector3(p.x, 0.025, p.z));
+  const pts3 = pts.map(p=>new THREE.Vector3(p.x, DRAW_Y, p.z));
   const hit = new THREE.Mesh(
     new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts3), Math.max(8, pts3.length*2), 0.40, 6, false),
     new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
@@ -1413,26 +1416,30 @@ function finishStroke(){
    · a bolinha do MEIO curva a reta (Bezier quadratica)
    · arrastar o proprio traco move tudo
    ══════════════════════════════════════════════════════════════ */
-let selDrawing = null, dragDrawing = false, dragBend = false, dragLast = null;
-const bendHandle = new THREE.Mesh(
-  new THREE.SphereGeometry(0.34, 20, 14),
-  new THREE.MeshBasicMaterial({color:0xffffff, depthTest:false}));
-bendHandle.renderOrder = 999; bendHandle.visible = false;
-scene.add(bendHandle);
-const bendRing = new THREE.Mesh(
-  new THREE.TorusGeometry(0.34, 0.07, 10, 24),
-  new THREE.MeshBasicMaterial({color:0x1E4FFF, depthTest:false}));
-bendRing.rotation.x = -Math.PI/2; bendRing.renderOrder = 1000; bendRing.visible = false;
-scene.add(bendRing);
+let selDrawing = null, dragDrawing = false, dragHandle = -1, dragLast = null;
 
-/* meio REAL do traco (metade do comprimento), nao o indice do meio:
-   numa reta guardada com 2 pontos, o indice 1 era a PONTA — a alca
-   aparecia na extremidade em vez do centro.                        */
+/* alças: uma bolinha por ponto de controle */
+const handleGroup = new THREE.Group();
+scene.add(handleGroup);
+function makeHandle(){
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(0.30, 18, 12),
+    new THREE.MeshBasicMaterial({color:0xffffff, depthTest:false}));
+  m.renderOrder = 999;
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.30, 0.06, 8, 20),
+    new THREE.MeshBasicMaterial({color:0x1E4FFF, depthTest:false}));
+  ring.rotation.x = -Math.PI/2; ring.position.y = 0.01; ring.renderOrder = 1000;
+  m.add(ring);
+  return m;
+}
+function clearHandles(){
+  [...handleGroup.children].forEach(h=>{ handleGroup.remove(h); });
+}
+/* meio REAL do traco (metade do comprimento) */
 function drawingCenterPt(g){
   const pts = g.userData.pts;
-  if(pts.length === 2){
-    return [(pts[0][0]+pts[1][0])/2, (pts[0][1]+pts[1][1])/2];
-  }
+  if(pts.length === 2) return [(pts[0][0]+pts[1][0])/2, (pts[0][1]+pts[1][1])/2];
   let total = 0; const acum = [0];
   for(let i=1;i<pts.length;i++){
     total += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
@@ -1442,13 +1449,51 @@ function drawingCenterPt(g){
   const meio = total/2;
   for(let i=1;i<pts.length;i++){
     if(acum[i] >= meio){
-      const seg = acum[i]-acum[i-1] || 1;
-      const t = (meio-acum[i-1])/seg;
-      return [pts[i-1][0] + (pts[i][0]-pts[i-1][0])*t,
-              pts[i-1][1] + (pts[i][1]-pts[i-1][1])*t];
+      const seg = acum[i]-acum[i-1] || 1, t = (meio-acum[i-1])/seg;
+      return [pts[i-1][0] + (pts[i][0]-pts[i-1][0])*t, pts[i-1][1] + (pts[i][1]-pts[i-1][1])*t];
     }
   }
   return pts[pts.length-1];
+}
+/* pontos de controle: comecam em inicio · meio · fim */
+function ensureCtrl(g){
+  if(!Array.isArray(g.userData.ctrl) || g.userData.ctrl.length < 2){
+    const pts = g.userData.pts;
+    g.userData.ctrl = [pts[0].slice(), drawingCenterPt(g).slice ? drawingCenterPt(g).slice() : drawingCenterPt(g), pts[pts.length-1].slice()];
+  }
+  return g.userData.ctrl;
+}
+/* reconstroi o traco passando por TODOS os pontos de controle */
+function rebuildFromCtrl(g){
+  const c = ensureCtrl(g);
+  const v = c.map(a=>new THREE.Vector3(a[0], 0, a[1]));
+  let out;
+  if(v.length === 2){
+    out = [[+v[0].x.toFixed(3), +v[0].z.toFixed(3)], [+v[1].x.toFixed(3), +v[1].z.toFixed(3)]];
+  } else {
+    const curve = new THREE.CatmullRomCurve3(v, false, 'catmullrom', 0.5);
+    const N = Math.max(24, (c.length-1)*14);
+    out = [];
+    for(let i=0;i<=N;i++){
+      const q = curve.getPoint(i/N);
+      out.push([+q.x.toFixed(3), +q.z.toFixed(3)]);
+    }
+  }
+  g.userData.pts = out;
+  buildDrawingMeshes(g);
+  highlightDrawing(g, true);
+  layoutHandles(g);
+}
+function layoutHandles(g){
+  clearHandles();
+  if(!g || !g.userData.canBend) return;
+  const c = ensureCtrl(g);
+  c.forEach((a,i)=>{
+    const h = makeHandle();
+    h.position.set(a[0], 0.42, a[1]);
+    h.userData.idx = i;
+    handleGroup.add(h);
+  });
 }
 function highlightDrawing(g, on){
   if(!g) return;
@@ -1466,44 +1511,44 @@ function highlightDrawing(g, on){
 function selectDrawing(g){
   if(selDrawing && selDrawing !== g) highlightDrawing(selDrawing, false);
   selDrawing = g || null;
-  if(!selDrawing){ bendHandle.visible = false; bendRing.visible = false; return; }
+  if(!selDrawing){ clearHandles(); return; }
   highlightDrawing(selDrawing, true);
-  const podeCurvar = !!selDrawing.userData.canBend;
-  const c = drawingCenterPt(selDrawing);
-  bendHandle.position.set(c[0], 0.35, c[1]);
-  bendRing.position.set(c[0], 0.36, c[1]);
-  bendHandle.visible = podeCurvar; bendRing.visible = podeCurvar;
-}
-/* curva a reta fazendo a linha PASSAR pelo ponto arrastado */
-function bendDrawingTo(g, p){
-  const pts = g.userData.pts;
-  const A = new THREE.Vector3(pts[0][0], 0, pts[0][1]);
-  const B = new THREE.Vector3(pts[pts.length-1][0], 0, pts[pts.length-1][1]);
-  const M = new THREE.Vector3(p.x, 0, p.z);
-  const C = new THREE.Vector3(2*M.x - (A.x+B.x)/2, 0, 2*M.z - (A.z+B.z)/2);
-  const q = new THREE.QuadraticBezierCurve3(A, C, B);
-  const N = 26, novos = [];
-  for(let i=0;i<=N;i++){
-    const v = q.getPoint(i/N);
-    novos.push([+v.x.toFixed(3), +v.z.toFixed(3)]);
-  }
-  g.userData.pts = novos;
-  buildDrawingMeshes(g);
-  highlightDrawing(g, true);
+  layoutHandles(selDrawing);
 }
 function moveDrawingBy(g, dx, dz){
   g.userData.pts = g.userData.pts.map(a=>[+(a[0]+dx).toFixed(3), +(a[1]+dz).toFixed(3)]);
+  if(Array.isArray(g.userData.ctrl))
+    g.userData.ctrl = g.userData.ctrl.map(a=>[+(a[0]+dx).toFixed(3), +(a[1]+dz).toFixed(3)]);
   buildDrawingMeshes(g);
   highlightDrawing(g, true);
-  const c = drawingCenterPt(g);
-  bendHandle.position.set(c[0], 0.35, c[1]);
-  bendRing.position.set(c[0], 0.36, c[1]);
+  layoutHandles(g);
 }
-function pickBendHandle(e){
-  if(!selDrawing || !bendHandle.visible) return false;
+/* qual alca esta sob o cursor? devolve o indice ou -1 */
+function pickHandle(e){
+  if(!selDrawing || !handleGroup.children.length) return -1;
   setNDC(e);
   raycaster.setFromCamera(ndc, activeCamera);
-  return raycaster.intersectObject(bendHandle, false).length > 0;
+  const hits = raycaster.intersectObjects(handleGroup.children, true);
+  if(!hits.length) return -1;
+  let o = hits[0].object;
+  while(o && o.userData.idx === undefined) o = o.parent;
+  return o ? o.userData.idx : -1;
+}
+/* duplo clique sobre o traco = ACRESCENTA um ponto de controle ali */
+function addCtrlPointAt(g, p){
+  const c = ensureCtrl(g);
+  let melhor = 1, dist = Infinity;
+  for(let i=1;i<c.length;i++){
+    const ax=c[i-1][0], az=c[i-1][1], bx=c[i][0], bz=c[i][1];
+    const vx=bx-ax, vz=bz-az, L=vx*vx+vz*vz || 1;
+    let t=((p.x-ax)*vx+(p.z-az)*vz)/L; t=Math.max(0,Math.min(1,t));
+    const px=ax+vx*t, pz=az+vz*t;
+    const d=Math.hypot(p.x-px, p.z-pz);
+    if(d<dist){ dist=d; melhor=i; }
+  }
+  c.splice(melhor, 0, [+p.x.toFixed(3), +p.z.toFixed(3)]);
+  rebuildFromCtrl(g);
+  toast(TX('tat.msg.pointAdded','Point added — drag it to shape the curve.'));
 }
 
 function removeDrawing(g){
@@ -1536,8 +1581,9 @@ renderer.domElement.addEventListener('pointerdown', e=>{
     return;
   }
   if(mode === 'select'){
-    /* 1) a alca de curvar tem prioridade */
-    if(pickBendHandle(e)){ dragBend = true; dragLast = floorPoint(e); return; }
+    /* 1) as alcas de curvatura tem prioridade */
+    const hIdx = pickHandle(e);
+    if(hIdx >= 0){ dragHandle = hIdx; return; }
     /* 2) objeto (goleiro, cone, bola...) */
     const hit = pickPlaceable(e);
     if(hit){ selectDrawing(null); selectObj(hit); dragging = true; return; }
@@ -1583,10 +1629,14 @@ window.addEventListener('pointermove', e=>{
     return;
   }
   if(!pointerDown) return;
-  if(dragBend && selDrawing){
+  if(dragHandle >= 0 && selDrawing){
     const p = floorPoint(e);
-    if(p){ clampCourt(p); bendDrawingTo(selDrawing, p);
-      bendHandle.position.set(p.x, 0.35, p.z); bendRing.position.set(p.x, 0.36, p.z); }
+    if(p){
+      clampCourt(p);
+      const c = ensureCtrl(selDrawing);
+      c[dragHandle] = [+p.x.toFixed(3), +p.z.toFixed(3)];
+      rebuildFromCtrl(selDrawing);
+    }
     return;
   }
   if(dragDrawing && selDrawing){
@@ -1609,9 +1659,29 @@ window.addEventListener('pointermove', e=>{
   }
 });
 
+/* duplo clique num traco selecionado ACRESCENTA um ponto de curvatura;
+   duplo clique numa alca REMOVE aquele ponto (se sobrar pelo menos 2)   */
+renderer.domElement.addEventListener('dblclick', (e)=>{
+  if(mode !== 'select') return;
+  const idx = pickHandle(e);
+  if(idx >= 0 && selDrawing){
+    const c = ensureCtrl(selDrawing);
+    if(c.length > 2){ c.splice(idx,1); rebuildFromCtrl(selDrawing);
+      toast(TX('tat.msg.pointRemoved','Point removed.')); }
+    e.preventDefault(); return;
+  }
+  const d = pickDrawing(e);
+  if(d && d.userData.canBend){
+    selectDrawing(d);
+    const p = floorPoint(e);
+    if(p){ clampCourt(p); addCtrlPointAt(d, p); }
+    e.preventDefault();
+  }
+});
+
 window.addEventListener('pointerup', ()=>{
   pointerDown = false; dragging = false;
-  dragDrawing = false; dragBend = false; dragLast = null;
+  dragDrawing = false; dragHandle = -1; dragLast = null;
   camCtl.rotating = false; camCtl.panning = false;
   if(mode === 'draw') finishStroke();
 });
@@ -1743,8 +1813,8 @@ function captureReport(){
      as alcas de curvar e o anel de selecao                              */
   const _selDrawAntes = selDrawing;
   if(selDrawing) highlightDrawing(selDrawing, false);
-  const _bendAntes = bendHandle.visible, _ringAntes = bendRing.visible, _selRingAntes = selRing.visible;
-  bendHandle.visible = false; bendRing.visible = false; selRing.visible = false;
+  const _handlesAntes = handleGroup.visible, _selRingAntes = selRing.visible;
+  handleGroup.visible = false; selRing.visible = false;
 
   renderer.setPixelRatio(1);
 
@@ -1794,7 +1864,7 @@ function captureReport(){
   /* restaura EXATAMENTE o que o usuário estava vendo */
   is2D = prev2D; orient2D = prevOrient; activeCamera = prevActive;
   if(_selDrawAntes) highlightDrawing(_selDrawAntes, true);
-  bendHandle.visible = _bendAntes; bendRing.visible = _ringAntes; selRing.visible = _selRingAntes;
+  handleGroup.visible = _handlesAntes; selRing.visible = _selRingAntes;
   applyViewMode(); syncProxies();
   renderer.setPixelRatio(prevRatio);
   renderer.setSize(size.x, size.y, false);
@@ -1862,7 +1932,7 @@ $('b-save').onclick = ()=>{
   const data = {
     app:'FluxGK Tatica 3D', v:1,
     objetos: placeables.map(o=>({k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3), r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3)})),
-    desenhos: drawings.map(d=>({s:d.userData.style, c:d.userData.color, p:d.userData.pts, b:!!d.userData.canBend}))
+    desenhos: drawings.map(d=>({s:d.userData.style, c:d.userData.color, p:d.userData.pts, b:!!d.userData.canBend, k:d.userData.ctrl||null}))
   };
   const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
   const a = document.createElement('a');
@@ -1893,7 +1963,10 @@ $('fileinput').addEventListener('change', e=>{
           strokePts = d.p.map(pt=>new THREE.Vector3(pt[0],0,pt[1]));
           finishStroke();
           const g = drawings[drawings.length-1];
-          if(g) g.userData.canBend = (d.b !== undefined) ? !!d.b : (d.p.length === 2);
+          if(g){
+            g.userData.canBend = (d.b !== undefined) ? !!d.b : (d.p.length === 2);
+            if(Array.isArray(d.k) && d.k.length >= 2) g.userData.ctrl = d.k;  /* pontos de curvatura */
+          }
         });
       });
       undoStack.length = 0;
