@@ -48,6 +48,7 @@
     'hub.statSessions':'Sessions',
     'hub.statMatches':'Matches',
     'hub.statKeepers':'Keepers',
+    'hub.list.noSessions':'No sessions recorded yet.','hub.list.noMatches':'No matches recorded yet.','hub.list.noKeepers':'No goalkeepers registered yet.','hub.list.present':'present','hub.list.absent':'absent','hub.list.sessionsDone':'sessions',
     'hub.backHub':'‹ HUB','hub.fullscreen':'Fullscreen',
     'hub.language':'Language',
 
@@ -971,6 +972,7 @@
     'hub.statSessions':'Treinos',
     'hub.statMatches':'Jogos',
     'hub.statKeepers':'Goleiros',
+    'hub.list.noSessions':'Nenhuma sessão registrada ainda.','hub.list.noMatches':'Nenhum jogo registrado ainda.','hub.list.noKeepers':'Nenhum goleiro cadastrado ainda.','hub.list.present':'presentes','hub.list.absent':'faltas','hub.list.sessionsDone':'sessões',
     'hub.backHub':'‹ HUB','hub.fullscreen':'Tela cheia',
     'hub.language':'Idioma',
 

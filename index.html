@@ -79,7 +79,9 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
 .hgreet{font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.02em}
 .hgsub{font-size:12px;color:var(--mute);font-family:'JetBrains Mono',monospace;margin-top:3px;margin-bottom:20px}
 .hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:24px}
-.hst{background:#fff;border:1px solid var(--faint);border-radius:11px;padding:13px}
+.hst{background:#fff;border:1px solid var(--faint);border-radius:11px;padding:13px;cursor:pointer;transition:border-color .12s,transform .12s}
+.hst:hover{border-color:#d4d4d4;transform:translateY(-1px)}
+.hst:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .hsv{font-size:21px;font-weight:700;color:var(--ink);font-family:'JetBrains Mono',monospace}
 .hsl{font-size:9px;color:var(--mute);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .mgrid{display:grid;gap:9px}
@@ -220,9 +222,9 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
     <div class="hgreet" id="htime" data-i18n="hub.welcome">Welcome</div>
     <div class="hgsub"><span id="hcoach" data-i18n="common.coach">Coach</span> · <span id="hmeth">—</span></div>
     <div class="hstats">
-      <div class="hst"><div class="hsv" id="st-sess">-</div><div class="hsl" data-i18n="hub.statSessions">Sessions</div></div>
-      <div class="hst"><div class="hsv" id="st-match">-</div><div class="hsl" data-i18n="hub.statMatches">Matches</div></div>
-      <div class="hst"><div class="hsv" id="st-gk">-</div><div class="hsl" data-i18n="hub.statKeepers">Keepers</div></div>
+      <div class="hst" role="button" tabindex="0" onclick="openStatList('sess')" onkeydown="kbAct(event,function(){openStatList('sess')})"><div class="hsv" id="st-sess">-</div><div class="hsl" data-i18n="hub.statSessions">Sessions</div></div>
+      <div class="hst" role="button" tabindex="0" onclick="openStatList('match')" onkeydown="kbAct(event,function(){openStatList('match')})"><div class="hsv" id="st-match">-</div><div class="hsl" data-i18n="hub.statMatches">Matches</div></div>
+      <div class="hst" role="button" tabindex="0" onclick="openStatList('gk')" onkeydown="kbAct(event,function(){openStatList('gk')})"><div class="hsv" id="st-gk">-</div><div class="hsl" data-i18n="hub.statKeepers">Keepers</div></div>
     </div>
     <div class="mgrid" id="mgrid"></div>
     <div class="langrow">
@@ -242,6 +244,15 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
     <button class="mfs" id="mfsBtn" onclick="toggleModuleFs()" title="Fullscreen" data-i18n-title="hub.fullscreen" aria-label="Fullscreen">⛶</button>
   </div>
   <iframe class="mfrm" id="mfrm" src="about:blank" allowfullscreen allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
+</div>
+
+<!-- LISTAGEM: sessoes / jogos / goleiros -->
+<div class="sh" id="sh-list">
+  <div class="shc">
+    <div class="shh"><span class="sht" id="list-title">—</span><button class="shclose" onclick="closeStatList()" aria-label="Close" data-i18n-aria="common.close">✕</button></div>
+    <div id="list-sub" class="sect" style="margin-bottom:10px"></div>
+    <div id="list-body"><div class="empty" data-i18n="common.loading">Loading…</div></div>
+  </div>
 </div>
 
 <!-- SWITCH: clube + temporada -->
@@ -509,6 +520,94 @@ function loadStats(){
   _rtdb.ref(p+'/load/players').get().then(function(s){document.getElementById('st-gk').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
 }
 function refresh(){applyIdentity();loadStats();}
+
+/* ══════════════════════════════════════════════════════════════
+   LISTAGENS DO PAINEL — clicar num numero abre tudo que ha por tras
+   Sessoes e goleiros vem do Controle de Carga; jogos, da Minutagem.
+   ══════════════════════════════════════════════════════════════ */
+function closeStatList(){document.getElementById('sh-list').classList.remove('open');}
+function _fdBR(iso){
+  if(!iso||iso.length<10)return iso||'—';
+  return iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4);
+}
+function _listRow(cor, sigla, titulo, sub, tag){
+  return '<div class="lrow" style="cursor:default">'
+    + '<div class="ldot" style="background:'+cor+'"><span>'+sigla+'</span></div>'
+    + '<div class="ltx"><div class="lnm">'+titulo+'</div><div class="lsb">'+(sub||'')+'</div></div>'
+    + (tag?'<span class="ltag">'+tag+'</span>':'')
+    + '</div>';
+}
+async function openStatList(kind){
+  var p=dataPath();
+  if(!p){showToast(TX('hub.msg.clubSeasonFirst'));return;}
+  var sh=document.getElementById('sh-list'),
+      tt=document.getElementById('list-title'),
+      sb=document.getElementById('list-sub'),
+      bd=document.getElementById('list-body');
+  tt.textContent = kind==='sess'?TX('hub.statSessions'):kind==='match'?TX('hub.statMatches'):TX('hub.statKeepers');
+  sb.textContent = (club()&&club().meta&&club().meta.name||'')+' · '+((season()||{}).label||'');
+  bd.innerHTML='<div class="empty">'+TX('common.loading','Loading…')+'</div>';
+  sh.classList.add('open');
+  try{
+    if(kind==='sess'){
+      var snap=await _rtdb.ref(p+'/load/sessions').get();
+      var v=snap.val()||{}, ev={};
+      Object.keys(v).forEach(function(pk){
+        var byGk=v[pk]||{};
+        Object.keys(byGk).forEach(function(id){
+          var r=byGk[id]; if(!r||!r.date)return;
+          var k=r.date+'|'+(r.time||'')+'|'+(r.trainingType||'');
+          if(!ev[k]) ev[k]={date:r.date,time:r.time||'',tipo:r.trainingType||'',pres:0,falt:0,ua:0,n:0};
+          if(r.type==='absence'||r.present===false) ev[k].falt++;
+          else if(r.type==='post'){ ev[k].pres++; if(r.ua){ev[k].ua+=r.ua;ev[k].n++;} }
+        });
+      });
+      var lista=Object.keys(ev).map(function(k){return ev[k];})
+        .sort(function(a,b){return (b.date+b.time).localeCompare(a.date+a.time);});
+      if(!lista.length){bd.innerHTML='<div class="empty">'+TX('hub.list.noSessions','No sessions recorded yet.')+'</div>';return;}
+      bd.innerHTML=lista.map(function(e){
+        var sub=[e.tipo, e.pres+' '+TX('hub.list.present','present'), e.falt?e.falt+' '+TX('hub.list.absent','absent'):''].filter(Boolean).join(' · ');
+        var media=e.n?Math.round(e.ua/e.n)+' AU':'';
+        return _listRow('#0f6e56','TR',_fdBR(e.date)+(e.time?' · '+e.time:''),sub,media);
+      }).join('');
+    }
+    else if(kind==='match'){
+      var snap2=await _rtdb.ref(p+'/minutes/games').get();
+      var g=snap2.val()||{};
+      var jogos=Object.keys(g).map(function(id){return g[id];}).filter(function(x){return x&&x.date;})
+        .sort(function(a,b){return b.date.localeCompare(a.date);});
+      if(!jogos.length){bd.innerHTML='<div class="empty">'+TX('hub.list.noMatches','No matches recorded yet.')+'</div>';return;}
+      bd.innerHTML=jogos.map(function(j){
+        var gks=j.gkData?Object.keys(j.gkData).filter(function(k){return j.gkData[k]&&j.gkData[k].selected;}):[];
+        var sub=[j.comp||'', gks.length?gks.join(', '):''].filter(Boolean).join(' · ');
+        return _listRow('#b91c1c','VS', _fdBR(j.date)+' — '+(j.opp||'—'), sub, (j.totalMin||'')+(j.totalMin?'min':''));
+      }).join('');
+    }
+    else{
+      var snap3=await _rtdb.ref(p+'/load/players').get();
+      var pl=snap3.val()||{};
+      var snap4=await _rtdb.ref(p+'/load/sessions').get();
+      var sess=snap4.val()||{};
+      var ids=Object.keys(pl);
+      if(!ids.length){bd.innerHTML='<div class="empty">'+TX('hub.list.noKeepers','No goalkeepers registered yet.')+'</div>';return;}
+      bd.innerHTML=ids.map(function(id){
+        var g2=pl[id]||{}, nome=g2.name||id;
+        var regs=sess[id]||{}, treinos=0, faltas=0;
+        Object.keys(regs).forEach(function(k){
+          var r=regs[k]; if(!r)return;
+          if(r.type==='post') treinos++;
+          if(r.type==='absence'||r.present===false) faltas++;
+        });
+        var ini=(nome||'GK').slice(0,2).toUpperCase();
+        var sub=treinos+' '+TX('hub.list.sessionsDone','sessions')+(faltas?' · '+faltas+' '+TX('hub.list.absent','absent'):'');
+        return _listRow('#1e3a5f',ini,nome,sub,'');
+      }).join('');
+    }
+  }catch(err){
+    console.error('[FluxGK] lista:',err);
+    bd.innerHTML='<div class="empty">'+TX('hub.msg.loadFail')+'</div>';
+  }
+}
 
 /* ---------- IDIOMA (EN / PT) ---------- */
 function markLangButtons(){
