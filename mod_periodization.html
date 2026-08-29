@@ -591,6 +591,12 @@ function dayCellHTML(iso, other, opt){
       + 'overflow-wrap:anywhere;word-break:break-word" title="'+esc(t)+'">'+esc(t)+'</div>';
   }
   var cobre = function(it){ return it.start && it.end && iso >= it.start && iso <= it.end; };
+  /* JOGOS E DATAS-ALVO PRIMEIRO: sao a ancora do planejamento, entao
+     aparecem no topo do dia, antes de qualquer ciclo ou tematica.     */
+  eventsOn(iso).forEach(function(e){
+    var img = e.badge ? evBadge(e, print?9:12) : (e.type==='game'?'⚽ ':'★ ');
+    out += '<div class="calev" style="background:'+evPillColor(e)+';font-size:'+fP+';pointer-events:none;margin-bottom:2px" title="'+esc(e.label)+'">'+img+esc(e.label||'')+'</div>';
+  });
   sortByStart(itemsOf('macro')).forEach(function(it){ if(cobre(it)) out += strip(it,'macro'); });
   var raiz = dayThemesRoot();
   sortByStart(itemsOf('meso')).forEach(function(it){
@@ -600,10 +606,6 @@ function dayCellHTML(iso, other, opt){
     if(t && String(t).trim()) out += temaHTML(String(t).trim(), it.color || defColor('meso'));
   });
   sortByStart(itemsOf('micro')).forEach(function(it){ if(cobre(it)) out += strip(it,'micro'); });
-  eventsOn(iso).forEach(function(e){
-    var img = e.badge ? evBadge(e, print?9:12) : (e.type==='game'?'⚽ ':'★ ');
-    out += '<div class="calev" style="background:'+evPillColor(e)+';font-size:'+fP+';pointer-events:none" title="'+esc(e.label)+'">'+img+esc(e.label||'')+'</div>';
-  });
   var solto = raiz[DT_SEM_MESO] && raiz[DT_SEM_MESO][iso];
   if(solto && String(solto).trim()) out += temaHTML(String(solto).trim(), '#8a8a8a');
   return out;
