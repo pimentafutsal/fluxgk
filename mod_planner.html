@@ -413,6 +413,7 @@ const PAGES = {
       <div class="lbl mt8">${TX("plan.sessLibSub")}</div>
     </div>
     <div class="row">
+      <button class="btn btn-o" onclick="toggleLibOrder()" id="libOrderBtn" title="${TX("plan.tt.libOrder")}">${TX("plan.orderNewest")}</button>
       <button class="btn btn-o" onclick="exportSelected()" id="exportSelBtn" style="display:none">${TX("plan.exportSelected")}</button>
       <button class="btn btn-p" onclick="exportAll()">${TX("plan.exportAll")}</button>
     </div>
@@ -1234,6 +1235,27 @@ function saveEditedSession(id){
   renderLibrary();
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ORDEM POR DATA — a biblioteca ordenava pela hora de CRIACAO (id),
+   entao um treino do dia 31/08 salvo depois aparecia atras do 02/09.
+   Aqui a chave e sempre a DATA do treino (e o horario, se houver).
+   ══════════════════════════════════════════════════════════════ */
+function _sessKey(s){ return (s && s.date ? s.date : '0000-00-00') + 'T' + ((s && s.time) ? s.time : '00:00'); }
+function sessionsByDate(list, asc){
+  return (list||[]).slice().sort(function(a,b){
+    var d = _sessKey(a).localeCompare(_sessKey(b));
+    if(d !== 0) return asc ? d : -d;
+    return asc ? ((a.id||0)-(b.id||0)) : ((b.id||0)-(a.id||0));
+  });
+}
+let _libAsc = false;   /* biblioteca: mais recentes primeiro (padrao) */
+function toggleLibOrder(){
+  _libAsc = !_libAsc;
+  const b = document.getElementById('libOrderBtn');
+  if(b) b.textContent = _libAsc ? TX('plan.orderOldest') : TX('plan.orderNewest');
+  renderLibrary();
+}
+
 function renderLibrary(){
   const grid=document.getElementById('libraryGrid');
   if(!grid) return; // page not injected yet
@@ -1246,7 +1268,10 @@ function renderLibrary(){
     document.getElementById('exportSelBtn').style.display='none';
     return;
   }
-  grid.innerHTML=savedSessions.map((s,i)=>{
+  const _bo = document.getElementById('libOrderBtn');
+  if(_bo) _bo.textContent = _libAsc ? TX('plan.orderOldest') : TX('plan.orderNewest');
+  const _ordenadas = sessionsByDate(savedSessions, _libAsc);
+  grid.innerHTML=_ordenadas.map((s,i)=>{
     const d=new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const stars='★'.repeat(s.rating||0)+'☆'.repeat(5-(s.rating||0));
     const objColor=s.objMet==='full'?'var(--ok)':s.objMet==='partial'?'var(--cau)':'var(--risk)';
@@ -1485,11 +1510,11 @@ function exportSession(id){
 function exportSelected(){
   const toExport=savedSessions.filter(s=>selectedSessions.has(s.id));
   if(!toExport.length){ toast(TX('plan.msg.pickSession')); return; }
-  openReport(toExport);
+  openReport(sessionsByDate(toExport, true));    /* PDF em ordem cronologica */
 }
 function exportAll(){
   if(!savedSessions.length){ toast(TX('plan.msg.noSaved')); return; }
-  openReport(savedSessions);
+  openReport(sessionsByDate(savedSessions, true));
 }
 function openReport(sessions){
   const html=buildReportHTML(sessions);

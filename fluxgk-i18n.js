@@ -348,6 +348,7 @@
     /* bibliotecas */
     'plan.sessLibSub':'All saved sessions · export single or multiple',
     'plan.exportSelected':'Export Selected','plan.exportAll':'Export All',
+    'plan.orderNewest':'↓ Newest first','plan.orderOldest':'↑ Oldest first','plan.tt.libOrder':'Flip the date order (the PDF always comes out chronologically)',
     'plan.noSessions':'No saved sessions yet',
     'plan.noSessionsHint':'Close a session from the Post-Training tab to save it here',
     'plan.exLibSub':'Reusable exercises · create once, use in any session',
@@ -1273,6 +1274,7 @@
     /* bibliotecas */
     'plan.sessLibSub':'Todas as sessões salvas · exporte uma ou várias',
     'plan.exportSelected':'Exportar Selecionadas','plan.exportAll':'Exportar Todas',
+    'plan.orderNewest':'↓ Mais recentes','plan.orderOldest':'↑ Mais antigos','plan.tt.libOrder':'Inverter a ordem por data (o PDF sai sempre em ordem cronológica)',
     'plan.noSessions':'Nenhuma sessão salva ainda',
     'plan.noSessionsHint':'Encerre uma sessão na aba Pós-treino para salvá-la aqui',
     'plan.exLibSub':'Exercícios reutilizáveis · crie uma vez, use em qualquer sessão',
