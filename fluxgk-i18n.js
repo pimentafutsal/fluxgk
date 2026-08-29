@@ -920,7 +920,7 @@
     'tat.players':'Players','tat.gk':'Goalkeeper','tat.player':'Player','tat.opponent':'Opponent',
     'tat.ball':'Ball','tat.equipment':'Equipment','tat.cone':'Cone','tat.discCone':'Disc cone',
     'tat.auxGoal':'Aux. goal','tat.mannequin':'Mannequin','tat.hurdle':'Hurdle','tat.ladder':'Ladder',
-    'tat.hoop':'Hoop','tat.pole':'Pole',
+    'tat.hoop':'Hoop','tat.pole':'Pole','tat.plate':'Weight plate',
     /* desenho */
     'tat.stroke':'STROKE','tat.line':'LINE','tat.arrow':'ARROW','tat.dashed':'DASHED',
     'tat.straight':'STRAIGHT (TAB)','tat.axisLock':'⊥ AXIS (SHIFT)','tat.smaller':'− SMALLER','tat.larger':'+ LARGER',
@@ -1845,7 +1845,7 @@
     'tat.players':'Jogadores','tat.gk':'Goleiro','tat.player':'Jogador','tat.opponent':'Adversário',
     'tat.ball':'Bola','tat.equipment':'Materiais','tat.cone':'Cone','tat.discCone':'Chapéu chinês',
     'tat.auxGoal':'Baliza aux.','tat.mannequin':'Boneco','tat.hurdle':'Barreira','tat.ladder':'Escada',
-    'tat.hoop':'Arco','tat.pole':'Estaca',
+    'tat.hoop':'Arco','tat.pole':'Estaca','tat.plate':'Anilha',
     /* desenho */
     'tat.stroke':'TRAÇO','tat.line':'LINHA','tat.arrow':'SETA','tat.dashed':'TRACEJADO',
     'tat.straight':'RETA (TAB)','tat.axisLock':'⊥ EIXO (SHIFT)','tat.smaller':'− MENOR','tat.larger':'+ MAIOR',

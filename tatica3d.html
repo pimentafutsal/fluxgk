@@ -145,6 +145,7 @@
     <button class="pitem" data-kind="escada"><span class="dot" style="background:#f5c518"></span><span data-i18n="tat.ladder">Ladder</span></button>
     <button class="pitem" data-kind="arco"><span class="dot" style="background:#1E4FFF"></span><span data-i18n="tat.hoop">Hoop</span></button>
     <button class="pitem" data-kind="vara"><span class="dot" style="background:#f5c518"></span><span data-i18n="tat.pole">Pole</span></button>
+    <button class="pitem" data-kind="anilha"><span class="dot" style="background:#2b2b2b"></span><span data-i18n="tat.plate">Weight plate</span></button>
   </div>
 
   <div id="drawpanel">
@@ -716,6 +717,25 @@ function buildEscada(){
   });
   return shadowAll(g);
 }
+/* ANILHA deitada no chao: disco baixo com furo central, como uma anilha
+   de academia apoiada no piso (usada como marcador/apoio no treino).   */
+function buildAnilha(){
+  const g = new THREE.Group();
+  const corpo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.115, 0.055, 12, 30),
+    std(0x2b2b2b, 0.5));
+  corpo.rotation.x = -Math.PI/2;
+  corpo.position.y = 0.055;
+  g.add(corpo);
+  /* miolo colorido para leitura rapida no 3D */
+  const aro = new THREE.Mesh(
+    new THREE.TorusGeometry(0.115, 0.018, 10, 30),
+    std(0xC8102E, 0.45));
+  aro.rotation.x = -Math.PI/2;
+  aro.position.y = 0.101;
+  g.add(aro);
+  return shadowAll(g);
+}
 function buildArco(){
   const g = new THREE.Group();
   const t = new THREE.Mesh(new THREE.TorusGeometry(0.35,0.022,10,32), std(0x1E4FFF,0.55));
@@ -795,7 +815,8 @@ const BUILDERS = {
   barreira:  buildBarreira,
   escada:    buildEscada,
   arco:      buildArco,
-  vara:      buildVara
+  vara:      buildVara,
+  anilha:    buildAnilha
 };
 
 /* ============================================================
@@ -1089,6 +1110,19 @@ const ICON_DEFS = {
     x.fillStyle = '#5d83ff'; x.fill(); x.strokeStyle = '#141414'; x.lineWidth = 6; x.stroke();
     x.beginPath(); x.ellipse(128,118,18,8,0,0,Math.PI*2);
     x.fillStyle = '#0e2a66'; x.fill();
+  }},
+  anilha: {cw:256, ch:256, w:0.62, h:0.62, draw:(x)=>{
+    /* vista de cima: anilha deitada — disco escuro com furo central */
+    outlined(x, ()=>{x.beginPath(); x.arc(128,128,98,0,Math.PI*2);}, '#2b2b2b');
+    x.beginPath(); x.arc(128,128,86,0,Math.PI*2);
+    x.strokeStyle = '#C8102E'; x.lineWidth = 13; x.stroke();
+    /* furo */
+    x.save();
+    x.globalCompositeOperation = 'destination-out';
+    x.beginPath(); x.arc(128,128,34,0,Math.PI*2); x.fill();
+    x.restore();
+    x.beginPath(); x.arc(128,128,34,0,Math.PI*2);
+    x.strokeStyle = '#141414'; x.lineWidth = 6; x.stroke();
   }},
   minitrave: {cw:512, ch:300, w:1.6, h:0.94, fixed:true, rot:Math.PI/2, draw:(x)=>{
     /* baliza vista de cima: travessão LARGO na frente (mais perto da câmera),
