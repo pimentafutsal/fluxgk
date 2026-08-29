@@ -510,8 +510,105 @@ function _toggleGameOpts(){
   if(opts) opts.style.display=(t&&t.value==='target')?'none':'flex';
 }
 /* ── Temáticas por dia (micros) ── */
-function dayThemesMap(){ if(!PZ.dayThemes||typeof PZ.dayThemes!=='object') PZ.dayThemes={}; return PZ.dayThemes; }
-function setDayTheme(iso,text){ var m=dayThemesMap(); text=(text||'').trim(); if(text)m[iso]=text; else delete m[iso]; save(); renderCalendar(); renderLevelCal('micro'); renderOverview(); }
+/* ══════════════════════════════════════════════════════════════
+   TEMATICAS POR DIA — agora POR MESOCICLO
+   Antes eram guardadas so por data: com dois mesos nas mesmas datas
+   (ex.: "Kazakhstan Cup" e "JAIME - SEMEY"), os dois mostravam o
+   mesmo conteudo. Agora: dayThemes[mesoId][data] = texto.
+   ══════════════════════════════════════════════════════════════ */
+const DT_SEM_MESO = '__sem_meso';
+function dayThemesRoot(){
+  if(!PZ.dayThemes || typeof PZ.dayThemes!=='object') PZ.dayThemes={};
+  /* migracao do formato antigo (data -> texto): joga cada tematica no
+     PRIMEIRO meso que cobre aquela data; sem meso, vai para o balde geral */
+  var chaves=Object.keys(PZ.dayThemes);
+  var antigo=chaves.some(function(k){ return typeof PZ.dayThemes[k]==='string'; });
+  if(antigo){
+    var novo={}; var n=0;
+    chaves.forEach(function(k){
+      var v=PZ.dayThemes[k];
+      if(typeof v!=='string'){ novo[k]=v; return; }        /* ja e por meso */
+      var dono=sortByStart(itemsOf('meso')).filter(function(m){
+        return m.start&&m.end&&k>=m.start&&k<=m.end;
+      })[0];
+      var id=dono?dono.id:DT_SEM_MESO;
+      if(!novo[id]) novo[id]={};
+      novo[id][k]=v; n++;
+    });
+    PZ.dayThemes=novo;
+    if(n){ console.log('[FluxGK] '+n+' tematica(s) reorganizada(s) por mesociclo'); save(); }
+  }
+  return PZ.dayThemes;
+}
+function themesOfMeso(mesoId){
+  var r=dayThemesRoot();
+  if(!r[mesoId]||typeof r[mesoId]!=='object') r[mesoId]={};
+  return r[mesoId];
+}
+/* tematicas que existem num dia, com o meso a que pertencem */
+function themesOnDay(iso){
+  var r=dayThemesRoot(), out=[];
+  sortByStart(itemsOf('meso')).forEach(function(m){
+    var t=r[m.id]&&r[m.id][iso];
+    if(t&&String(t).trim()) out.push({meso:m, text:String(t).trim(), color:m.color||lvlColor('meso')});
+  });
+  var g=r[DT_SEM_MESO]&&r[DT_SEM_MESO][iso];
+  if(g&&String(g).trim()) out.push({meso:null, text:String(g).trim(), color:'#8a8a8a'});
+  return out;
+}
+function setDayTheme(mesoId,iso,text){
+  var m=themesOfMeso(mesoId||DT_SEM_MESO);
+  text=(text||'').trim();
+  if(text)m[iso]=text; else delete m[iso];
+  save(); renderCalendar(); renderLevelCal('micro'); renderOverview();
+}
+/* conteudo de um dia no calendario, na ordem hierarquica:
+   MACRO · [MESO + suas tematicas] · MICRO · jogos · tematicas sem meso.
+   A tematica sai logo ABAIXO do meso a que pertence e na cor dele —
+   assim "verde embaixo de verde, laranja embaixo de laranja".        */
+function dayCellHTML(iso, other, opt){
+  opt = opt || {};
+  var print = !!opt.print, level = opt.level || null;
+  var fP = print ? '6.5pt' : '9.5px';
+  var fT = print ? '6pt'   : '9px';
+  var out = '';
+  function strip(it, lv){
+    var nameHere = (iso === it.start) || (opt.firstOfMonth && !other);
+    var tag = nameHere ? '<span style="font-weight:800;opacity:.92">'+esc(lvlAbbr(lv))+' </span>' : '';
+    var corpo = tag + (nameHere ? esc(it.name || '—') : '&nbsp;');
+    var cor = it.color || defColor(lv);
+    var titulo = esc(lvlName(lv)) + ': ' + esc(it.name);
+    if(opt.plain){
+      return '<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+cor+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+titulo+'">'+corpo+'</div>';
+    }
+    var editavel = (level && lv === level);
+    return '<div class="perstrip" style="background:'+cor+(editavel?'':';opacity:.45;pointer-events:none')+'"'
+      + (editavel ? ' data-pid="'+it.id+'"' : '') + ' title="'+titulo+'">'+corpo+'</div>';
+  }
+  function temaHTML(t, cor){
+    return '<div style="border-left:3px solid '+cor+';padding-left:5px;font-size:'+fT
+      + ';line-height:1.25;color:#555;font-style:italic;margin-top:2px;white-space:normal;'
+      + 'overflow-wrap:anywhere;word-break:break-word" title="'+esc(t)+'">'+esc(t)+'</div>';
+  }
+  var cobre = function(it){ return it.start && it.end && iso >= it.start && iso <= it.end; };
+  sortByStart(itemsOf('macro')).forEach(function(it){ if(cobre(it)) out += strip(it,'macro'); });
+  var raiz = dayThemesRoot();
+  sortByStart(itemsOf('meso')).forEach(function(it){
+    if(!cobre(it)) return;
+    out += strip(it,'meso');
+    var t = raiz[it.id] && raiz[it.id][iso];
+    if(t && String(t).trim()) out += temaHTML(String(t).trim(), it.color || defColor('meso'));
+  });
+  sortByStart(itemsOf('micro')).forEach(function(it){ if(cobre(it)) out += strip(it,'micro'); });
+  eventsOn(iso).forEach(function(e){
+    var img = e.badge ? evBadge(e, print?9:12) : (e.type==='game'?'⚽ ':'★ ');
+    out += '<div class="calev" style="background:'+evPillColor(e)+';font-size:'+fP+';pointer-events:none" title="'+esc(e.label)+'">'+img+esc(e.label||'')+'</div>';
+  });
+  var solto = raiz[DT_SEM_MESO] && raiz[DT_SEM_MESO][iso];
+  if(solto && String(solto).trim()) out += temaHTML(String(solto).trim(), '#8a8a8a');
+  return out;
+}
+
 function eachDay(start,end,cb){ if(!start||!end)return; var d=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00'), g=0; while(d<=e&&g++<400){ cb(isoOf(d.getFullYear(),d.getMonth(),d.getDate())); d.setDate(d.getDate()+1); } }
 var _dtMeso=null;
 function renderDayThemes(){
@@ -524,7 +621,7 @@ function renderDayThemes(){
   var mz=mesos.filter(function(m){return m.id===_dtMeso;})[0];
   if(obj) obj.innerHTML = mz.text?('<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+(mz.color||lvlColor('meso'))+';vertical-align:0"></span> <b>'+esc(TXf('period.objective','Objective'))+':</b> '+esc(mz.text)):'';
   var wd=[TXf('period.wd.sun','Sun'),TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat')];
-  var rows=''; var map=dayThemesMap();
+  var rows=''; var map=themesOfMeso(_dtMeso);   /* tematicas DESTE meso */
   eachDay(mz.start,mz.end,function(iso){
     var dt=new Date(iso+'T00:00:00');
     var evtag=eventsOn(iso).map(function(e){return '<span style="font-size:11px;color:#fff;background:'+evPillColor(e)+';border-radius:3px;padding:1px 5px;margin-left:6px">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</span>';}).join('');
@@ -534,13 +631,28 @@ function renderDayThemes(){
       +'</div>';
   });
   if(days){ days.innerHTML=rows;
-    days.querySelectorAll('.dt-in').forEach(function(inp){ inp.addEventListener('change', function(){ setDayTheme(inp.dataset.iso, inp.value); }); });
+    days.querySelectorAll('.dt-in').forEach(function(inp){ inp.addEventListener('change', function(){ setDayTheme(_dtMeso, inp.dataset.iso, inp.value); }); });
   }
 }
 function dayThemesTableHTML(){
-  var m=dayThemesMap(); var keys=Object.keys(m).filter(function(k){return (m[k]||'').trim();}).sort();
-  if(!keys.length) return '';
-  var rows=keys.map(function(iso){ return '<tr><td style="white-space:nowrap;color:var(--mute);padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+fmtDate(iso)+'</td><td style="padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+esc(m[iso])+'</td></tr>'; }).join('');
+  var raiz=dayThemesRoot(), linhas=[];
+  sortByStart(itemsOf('meso')).forEach(function(mz){
+    var mm=raiz[mz.id]||{};
+    Object.keys(mm).filter(function(k){return (mm[k]||'').trim();}).sort().forEach(function(iso){
+      linhas.push({iso:iso, txt:mm[iso], nome:mz.name||'—', cor:mz.color||lvlColor('meso')});
+    });
+  });
+  var g=raiz[DT_SEM_MESO]||{};
+  Object.keys(g).filter(function(k){return (g[k]||'').trim();}).sort().forEach(function(iso){
+    linhas.push({iso:iso, txt:g[iso], nome:TXf('period.noMesoTag','no mesocycle'), cor:'#8a8a8a'});
+  });
+  if(!linhas.length) return '';
+  linhas.sort(function(a,b){ return a.iso.localeCompare(b.iso); });
+  var rows=linhas.map(function(l){
+    return '<tr><td style="white-space:nowrap;color:var(--mute);padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+fmtDate(l.iso)+'</td>'
+      + '<td style="white-space:nowrap;padding:5px 9px;border-bottom:1px solid var(--line,#eee)"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+l.cor+'"></span> '+esc(l.nome)+'</td>'
+      + '<td style="padding:5px 9px;border-bottom:1px solid var(--line,#eee)">'+esc(l.txt)+'</td></tr>';
+  }).join('');
   return '<div style="font-weight:700;font-size:14px;margin:16px 0 8px">'+esc(TXf('period.dayThemes','Daily themes'))+'</div><table class="tbl" style="width:100%;border-collapse:collapse"><tbody>'+rows+'</tbody></table>';
 }
 function eventsOn(iso){ return evList().filter(function(e){return e.date===iso;}); }
@@ -567,20 +679,8 @@ function renderCalendar(){
     let yy=calYear, mm=c.m; if(mm<0){mm=11;yy--;} if(mm>11){mm=0;yy++;}
     const iso=isoOf(yy,mm,c.d);
     const other=(c.m!==calMonth);
-    let strips='';
-    ['macro','meso','micro'].forEach(function(lv){
-      sortByStart(itemsOf(lv)).forEach(function(it){
-        if(it.start&&it.end&&iso>=it.start&&iso<=it.end){
-          var nameHere=(iso===it.start)||(c.d===1&&!other);
-          var tag=nameHere?'<span style="font-weight:800;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
-          strips+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+'" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+tag+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
-        }
-      });
-    });
-    const evh=eventsOn(iso).map(function(e){ return '<div class="calev" style="background:'+evPillColor(e)+'" title="'+esc(e.label)+'">'+evBadge(e,15)+esc(e.label||(e.type==='game'?TXf('period.evGame','Game'):TXf('period.evTarget','Target')))+'</div>'; }).join('');
-    var _th=dayThemesMap()[iso];
-    var thh=_th?'<div class="daytheme" title="'+esc(_th)+'">'+esc(_th)+'</div>':'';
-    html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+strips+evh+thh+'</div>';
+    var corpo=dayCellHTML(iso, other, {firstOfMonth:(c.d===1), level:'meso'});
+    html+='<div class="calcell'+(other?' other':'')+(iso===todayIso?' today':'')+'" data-iso="'+iso+'"><div class="dn">'+c.d+'</div>'+corpo+'</div>';
   });
   html+='</div>';
   grid.innerHTML=html;
@@ -651,23 +751,10 @@ function renderLevelCal(level){
   var wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
   var html='<div class="calgrid">'; wd.forEach(function(w){html+='<div class="calwd">'+esc(w)+'</div>';});
   var periodsAll={macro:sortByStart(itemsOf('macro')),meso:sortByStart(itemsOf('meso')),micro:sortByStart(itemsOf('micro'))};
-  var sel=_sel[level]; var map=dayThemesMap();
+  var sel=_sel[level];
   monthCells().forEach(function(c){
-    var inner='<div class="dn">'+c.d+'</div>';
-    ['macro','meso','micro'].forEach(function(lv){
-      periodsAll[lv].forEach(function(it){
-        if(it.start&&it.end&&c.iso>=it.start&&c.iso<=it.end){
-          var nameHere=(c.iso===it.start)||(c.d===1&&!c.other);
-          var tag=nameHere?'<span style="font-weight:800;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
-          var body=tag+(nameHere?esc(it.name||'—'):'&nbsp;');
-          if(lv===level){ inner+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+'" data-pid="'+it.id+'" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+body+'</div>'; }
-          else{ inner+='<div class="perstrip" style="background:'+(it.color||defColor(lv))+';opacity:.45;pointer-events:none" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+body+'</div>'; }
-        }
-      });
-    });
-    eventsOn(c.iso).forEach(function(e){ inner+='<div class="calev" style="background:'+evPillColor(e)+';font-size:8.5px;pointer-events:none" title="'+esc(e.label)+'">'+(e.badge?evBadge(e,12):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>'; });
-    var th=map[c.iso];
-    if(th){ inner+='<div class="daytheme" title="'+esc(th)+'">'+esc(th)+'</div>'; }
+    var inner='<div class="dn">'+c.d+'</div>'
+      + dayCellHTML(c.iso, c.other, {firstOfMonth:(c.d===1), level:level});
     var cls='calcell'+(c.other?' other':'')+(c.iso===todayIso?' today':''); if(sel&&c.iso===sel)cls+=' selstart';
     html+='<div class="'+cls+'" data-iso="'+c.iso+'">'+inner+'</div>';
   });
@@ -733,20 +820,7 @@ function monthGridHTML(y,m,print){
       var cell=cells[r*7+c];
       var isToday=(cell.iso===todayIso);
       var inner='<div style="font-size:'+fD+';font-weight:'+(isToday?'800':'600')+';color:'+(cell.other?'#c4c0b6':(isToday?(print?'#0A2A6B':'var(--accent)'):'#8a8a8a'))+'">'+cell.d+'</div>';
-      ['macro','meso','micro'].forEach(function(lv){
-        sortByStart(itemsOf(lv)).forEach(function(it){
-          if(it.start&&it.end&&cell.iso>=it.start&&cell.iso<=it.end){
-            var nameHere=(cell.iso===it.start)||(cell.d===1&&!cell.other);
-            var tag=nameHere?'<span style="font-weight:800;letter-spacing:.03em;opacity:.92">'+esc(lvlAbbr(lv))+' </span>':'';
-            inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+(it.color||defColor(lv))+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+esc(lvlName(lv))+': '+esc(it.name)+'">'+tag+(nameHere?esc(it.name||'—'):'&nbsp;')+'</div>';
-          }
-        });
-      });
-      eventsOn(cell.iso).forEach(function(e){
-        inner+='<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+evPillColor(e)+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+(e.badge?evBadge(e,print?9:11):(e.type==='game'?'⚽ ':'★ '))+esc(e.label||'')+'</div>';
-      });
-      var _th=dayThemesMap()[cell.iso];
-      if(_th){ inner+='<div style="font-size:'+(print?'6pt':'9px')+';line-height:1.25;color:#555;font-style:italic;margin-top:2px;white-space:normal;overflow-wrap:anywhere;word-break:break-word" title="'+esc(_th)+'">'+esc(_th)+'</div>'; }
+      inner += dayCellHTML(cell.iso, cell.other, {print:print, plain:true, firstOfMonth:(cell.d===1)});
       html+='<td style="border:'+bd+';height:'+cellH+';vertical-align:top;padding:3px;background:'+(cell.other?'#faf9f4':'#fff')+'">'+inner+'</td>';
     }
     html+='</tr>';
@@ -873,9 +947,24 @@ function exportPDF(){
       + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
   }
   function sectDayThemes(){
-    var m=dayThemesMap(); var keys=Object.keys(m).filter(function(k){return (m[k]||'').trim();}).sort();
-    if(!keys.length) return '';
-    var rows=keys.map(function(iso){ return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap;color:#666">'+fmtDate(iso)+'</td><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(m[iso])+'</td></tr>'; }).join('');
+    var raiz=dayThemesRoot(), linhas=[];
+    sortByStart(itemsOf('meso')).forEach(function(mz){
+      var mm=raiz[mz.id]||{};
+      Object.keys(mm).filter(function(k){return (mm[k]||'').trim();}).sort().forEach(function(iso){
+        linhas.push({iso:iso, txt:mm[iso], nome:mz.name||'—', cor:mz.color||lvlColor('meso')});
+      });
+    });
+    var gg=raiz[DT_SEM_MESO]||{};
+    Object.keys(gg).filter(function(k){return (gg[k]||'').trim();}).sort().forEach(function(iso){
+      linhas.push({iso:iso, txt:gg[iso], nome:TXf('period.noMesoTag','no mesocycle'), cor:'#8a8a8a'});
+    });
+    if(!linhas.length) return '';
+    linhas.sort(function(a,b){ return a.iso.localeCompare(b.iso); });
+    var rows=linhas.map(function(l){
+      return '<tr><td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap;color:#666">'+fmtDate(l.iso)+'</td>'
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5;white-space:nowrap"><span style="display:inline-block;width:8pt;height:8pt;border-radius:2pt;background:'+l.cor+'"></span> '+esc(l.nome)+'</td>'
+        + '<td style="padding:7pt 9pt;border-bottom:.5pt solid #e5e5e5">'+esc(l.txt)+'</td></tr>';
+    }).join('');
     return '<div class="sec"><div class="sec-h" style="background:'+lvlColor('micro')+'">'+esc(TXf('period.dayThemes','Daily themes'))+'</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
   }
