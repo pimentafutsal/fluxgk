@@ -33,11 +33,18 @@
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
-    ST.accent=_sHexOk(c.color)?c.color.trim():ST.accent;
-    if(_sHexOk(ST.accent))document.documentElement.style.setProperty('--accent',ST.accent);
-    ST.clubName=c.name||'';
     window._hubSeason=se.label||''; window._hubCoach=co.name||'';
-    try{_renderCtxStrip();}catch(err){}
+    var _applyCtx=function(){
+      var st=null; try{ st=ST; }catch(e){ st=null; }
+      if(!st){ setTimeout(_applyCtx,40); return; }
+      try{
+        st.accent=_sHexOk(c.color)?c.color.trim():st.accent;
+        if(_sHexOk(st.accent))document.documentElement.style.setProperty('--accent',st.accent);
+        st.clubName=c.name||'';
+        _renderCtxStrip();
+      }catch(err){ console.warn('[FluxGK] stats ctx',err); }
+    };
+    _applyCtx();
     if(!_fbReady)_initStatsFB(d.firebaseConfig);
   });
   try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'stats'},'*'); }catch(e){}
@@ -298,6 +305,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div data-i18n="st.offTotals" class="card-title">Offensive actions — totals</div>
       <div id="dash-off-kpis" class="g2" style="margin-top:10px"></div>
     </div>
+  </div>
 </div>
 
 <!-- RECORD GAME -->
