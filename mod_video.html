@@ -1356,14 +1356,16 @@ function renderProjectTab(){
   box.innerHTML = '';
   if (p){
     /* ---- projeto aberto: cabeçalho + agregado por etiqueta (tema) ---- */
-    if (newWrap) newWrap.style.display = 'none';
+    /* o campo de criar projeto CONTINUA visivel: da para abrir outro sem
+       precisar fechar este (nada se perde ao alternar).                  */
+    if (newWrap) newWrap.style.display = '';
     const bar = document.createElement('div'); bar.className = 'ghead'; bar.style.gap = '8px';
     const nmInp = document.createElement('input'); nmInp.value = p.name; nmInp.maxLength = 60;
     nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
     nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ p.name = v.slice(0, 60); projPersist(); } });
     const bWork = document.createElement('button'); bWork.className = 'mini primary'; bWork.textContent = TX('vid.proj.goBench');
     bWork.addEventListener('click', () => { state.projectMode = true; updateProjBar(); switchTab('analise'); log(TX('vid.proj.benchHint')); });
-    const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close');
+    const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close'); bClose.title = TX('vid.proj.closeTip','Closes the view only — the project stays saved.');
     bClose.addEventListener('click', () => { projClose(); renderProjectTab(); });
     const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
     bDel.addEventListener('click', async () => {
@@ -1373,6 +1375,27 @@ function renderProjectTab(){
     });
     bar.appendChild(nmInp); bar.appendChild(bWork); bar.appendChild(bClose); bar.appendChild(bDel);
     box.appendChild(bar);
+
+    /* ---- alternar entre projetos sem fechar o atual ---- */
+    const outros = projList().filter(x => x.id !== p.id);
+    if (outros.length){
+      const sw = document.createElement('div');
+      sw.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:8px';
+      const lb = document.createElement('span');
+      lb.style.cssText = 'font-size:12px;color:var(--muted)';
+      lb.textContent = TX('vid.proj.switchTo', 'Switch to') + ':';
+      sw.appendChild(lb);
+      outros.forEach(o => {
+        const b2 = document.createElement('button');
+        b2.className = 'mini ghost';
+        const nc = projAllClips(o).length;
+        b2.textContent = (o.name || 'Projeto') + ' (' + nc + ')';
+        b2.title = TX('vid.proj.switchHint', 'Open this project — the current one stays saved.');
+        b2.addEventListener('click', () => { projOpen(o.id); updateProjBar(); renderProjectTab(); });
+        sw.appendChild(b2);
+      });
+      box.appendChild(sw);
+    }
 
     /* pasta vinculada + lista de vídeos para abrir direto na bancada */
     const fRow = document.createElement('div');
