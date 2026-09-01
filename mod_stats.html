@@ -291,6 +291,13 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
     <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
+  <div class="g3 mb16" style="margin-top:16px">
+    <div class="card"><div data-i18n="st.offByType" class="card-title">Offensive actions — type</div><canvas id="ch-offtype" height="190"></canvas></div>
+    <div class="card"><div data-i18n="st.offByResult" class="card-title">Offensive actions — result</div><canvas id="ch-offres" height="190"></canvas></div>
+    <div class="card">
+      <div data-i18n="st.offTotals" class="card-title">Offensive actions — totals</div>
+      <div id="dash-off-kpis" class="g2" style="margin-top:10px"></div>
+    </div>
 </div>
 
 <!-- RECORD GAME -->
@@ -326,6 +333,10 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
         <div data-i18n="st.shotsLink" class="label">Link to the shots video</div>
         <input type="url" id="rec-link" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh">
         <div data-i18n="st.shotsLinkHint" style="font-size:11px;color:var(--mute);margin-top:5px;">Optional — appears as a clickable link in the game report.</div>
+      </div>
+      <div class="mb16">
+        <div data-i18n="st.offLink" class="label">Link to the offensive actions video</div>
+        <input type="url" id="rec-offlink" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh">
       </div>
       <button data-i18n="st.nextShots" class="btn btn-accent" onclick="recNextToShots()">Next: Record Shots →</button>
     </div>
@@ -423,10 +434,6 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
             <div class="mc-group" id="off-type-group"></div>
           </div>
           <div style="grid-column:1/-1;">
-            <div data-i18n="st.gameMoment" class="label">Game Moment</div>
-            <div class="mc-group" id="off-moment-group"></div>
-          </div>
-          <div style="grid-column:1/-1;">
             <div data-i18n="st.offResult" class="label">Result *</div>
             <div class="mc-group" id="off-result-group"></div>
           </div>
@@ -446,6 +453,10 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="card mb16">
       <div data-i18n="st.gameSummary" style="font-weight:700;font-size:15px;margin-bottom:16px;">Game Summary</div>
       <div class="g5 mb20" id="review-kpis"></div>
+    </div>
+    <div class="card mb16">
+      <div data-i18n="st.offSummary" style="font-weight:700;font-size:15px;margin-bottom:14px;">Offensive actions</div>
+      <div id="review-off"></div>
     </div>
     <div style="display:flex;gap:10px;">
       <button data-i18n="st.saveGame" id="review-save-btn" class="btn btn-accent" onclick="saveGame()">✓ Save Game</button>
@@ -847,6 +858,7 @@ function populateRecordSelects(){
   if(CUR.competition) document.getElementById('rec-comp').value=CUR.competition;
   if(CUR.date) document.getElementById('rec-date').value=CUR.date;
   if(document.getElementById('rec-link')) document.getElementById('rec-link').value=CUR.shotsLink||'';
+  if(document.getElementById('rec-offlink')) document.getElementById('rec-offlink').value=CUR.offLink||'';
   // populate sf-gk (per-shot GK selector)
   populateShotGkSelect();
 }
@@ -1001,6 +1013,7 @@ function recNextToShots(){
   CUR.opponent=document.getElementById('rec-opp').value;
   CUR.competition=document.getElementById('rec-comp').value;
   CUR.shotsLink=(document.getElementById('rec-link')?document.getElementById('rec-link').value:'').trim();
+  CUR.offLink=(document.getElementById('rec-offlink')?document.getElementById('rec-offlink').value:'').trim();
   if(!CUR.date||!CUR.opponent){alert(TX('st.msg.dateOpp'));return;}
   recTab('shots'); renderShotsList(); updateShotNum(); populateShotGkSelect();
 }
@@ -1088,8 +1101,8 @@ function delShot(idx){
    treinador (ST.offtypes, ST.moments, ST.offresults). data-val guarda o valor
    gravado (canonico); o texto e stLbl(). Reaplica a selecao atual (OA). */
 function renderOffForms(){
+  /* momento de jogo NAO se aplica a acao ofensiva do goleiro */
   [['type','off-type-group',ST.offtypes],
-   ['moment','off-moment-group',ST.moments],
    ['result','off-result-group',ST.offresults]].forEach(function(cfg){
     var field=cfg[0], el=document.getElementById(cfg[1]), list=_asArr(cfg[2]);
     if(!el) return;
@@ -1191,6 +1204,38 @@ function buildReview(){
     <div class="kpi"><div class="kpi-n" style="color:var(--red)">${s.goals}</div><div class="kpi-l">${TX("st.goals")}</div></div>
     <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">${TX("st.saveRate")}</div></div>
     <div class="kpi"><div class="kpi-n">${s.out}</div><div class="kpi-l">Out</div></div>`;
+  /* ── acoes ofensivas tambem entram na revisao (antes ficavam de fora) ── */
+  const _oa=_asArr(CUR.offActions);
+  const boxOA=document.getElementById('review-off');
+  if(boxOA){
+    if(!_oa.length){
+      boxOA.innerHTML='<div style="color:var(--mute);font-size:13px">'+TX('st.noOff','No offensive actions recorded.')+'</div>';
+    } else {
+      const porTipo={}, porRes={};
+      _oa.forEach(function(a2){
+        if(a2.type)   porTipo[a2.type]=(porTipo[a2.type]||0)+1;
+        if(a2.result) porRes[a2.result]=(porRes[a2.result]||0)+1;
+      });
+      const chip=function(k,v,cor){return '<span class="badge" style="margin:0 6px 6px 0;'+(cor?'background:'+cor+';color:#fff;':'')+'">'+stLbl(k)+': '+v+'</span>';};
+      boxOA.innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;margin-bottom:10px">'
+        + '<span class="badge" style="background:var(--accent);color:#fff;margin-right:8px">'+_oa.length+' '+TX('st.offActions','offensive actions')+'</span>'
+        + Object.keys(porRes).map(function(k){return chip(k,porRes[k]);}).join('')
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--mute);margin-bottom:6px">'+TX('st.offType','Action type')+'</div>'
+        + '<div style="display:flex;flex-wrap:wrap">'+Object.keys(porTipo).map(function(k){return chip(k,porTipo[k]);}).join('')+'</div>'
+        + '<div style="margin-top:12px;max-height:220px;overflow:auto">'
+        + _oa.map(function(a2,i){
+            return '<div class="session-row" style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2)">'
+              + '<span style="font-family:var(--mono);font-size:11px;color:var(--mute);min-width:26px">#'+(i+1)+'</span>'
+              + '<span style="font-weight:600;font-size:13px;min-width:44px">'+(a2.minute?a2.minute+"'":'—')+'</span>'
+              + '<span style="flex:1;font-size:13px">'+stLbl(a2.type||'—')+(a2.gk?' · '+a2.gk:'')+'</span>'
+              + '<span style="font-size:12px;color:var(--mute)">'+stLbl(a2.result||'—')+'</span>'
+              + '</div>';
+          }).join('')
+        + '</div>';
+    }
+  }
   const saveBtn=document.getElementById('review-save-btn');
   if(saveBtn) saveBtn.textContent=isEdit?TX('st.updateGame'):TX('st.saveGame');
 }
@@ -1308,8 +1353,14 @@ function showHistShotForm(gameId,idx){
      que renderList/renderSkillMomentGroups e as listas de finalizacoes possam
      usa-los. Antes ficavam presos aqui dentro e quebravam esses chamadores. */
 
+  /* usa as listas configuradas pelo treinador e garante que o valor JA gravado
+     apareca como opcao — antes a lista era fixa em ingles e um lance gravado
+     como "Transicao"/"Protecao de Baliza" nao aparecia selecionado nem editavel */
   function mcBtns(field,opts,cur){
-    return opts.map(o=>`<button class="mc-btn${cur===o?' active':''}" onclick="histMcSel(this,'${field}','${o}')">${stLbl(o)}</button>`).join('');
+    const base=_asArr(opts&&opts.length?opts:[]);
+    const lista=base.slice();
+    if(cur && lista.indexOf(cur)<0) lista.push(cur);
+    return lista.map(o=>`<button class="mc-btn${cur===o?' active':''}" onclick="histMcSel(this,'${field}','${String(o).replace(/'/g,"\\'")}')">${stLbl(o)}</button>`).join('');
   }
   function gkOpts(cur){
     return `<option value="">GK (optional)…</option>`+ST.gks.map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
@@ -1333,11 +1384,11 @@ function showHistShotForm(gameId,idx){
         </div>
         <div>
           <div class="label">${TX("st.gameMoment")}</div>
-          <div class="mc-group" id="hf-moment-${gameId}">${mcBtns('moment',['Leaving pressure','Organized attack','Transition','Ball stop','Special game'],s.moment)}</div>
+          <div class="mc-group" id="hf-moment-${gameId}">${mcBtns('moment',ST.moments,s.moment)}</div>
         </div>
         <div>
           <div class="label">${TX("st.skillType")}</div>
-          <div class="mc-group" id="hf-skill-${gameId}">${mcBtns('skill',['1vs1','Goal protection','2nd post'],s.skill)}</div>
+          <div class="mc-group" id="hf-skill-${gameId}">${mcBtns('skill',ST.skills,s.skill)}</div>
         </div>
         <div>
           <div class="label">${TX("st.result")}</div>
@@ -1432,6 +1483,8 @@ function openGameInRecord(id){
   if(compEl) compEl.value=CUR.competition||'';
   const linkEl=document.getElementById('rec-link');
   if(linkEl) linkEl.value=CUR.shotsLink||'';
+  const offLinkEl=document.getElementById('rec-offlink');
+  if(offLinkEl) offLinkEl.value=CUR.offLink||'';
   // Show banner
   const banner=document.getElementById('rec-edit-banner');
   if(banner) banner.style.display='flex';
@@ -1494,10 +1547,17 @@ function mkChart(id,type,labels,data,colors,horiz){
   else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
   CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#f5f5f5':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
 }
+/* Ordena pelos rotulos conhecidos, MAS nunca descarta o que existe nos dados.
+   Antes filtrava so pela lista fixa em ingles: como as coletas guardam o
+   rotulo escolhido (ex.: "Transicao", "Protecao de Baliza"), os graficos de
+   Momento e Tipo apareciam vazios ou so com "1vs1".                        */
 function orderedChart(id,type,obj,order,colors,horiz){
-  const labels=order?order.filter(l=>obj[l]!=null):Object.keys(obj);
+  const presentes=Object.keys(obj);
+  const conhecidos=(order||[]).filter(l=>obj[l]!=null);
+  const extras=presentes.filter(l=>!(order||[]).includes(l)).sort();
+  const labels=conhecidos.concat(extras);
   const data=labels.map(l=>obj[l]||0);
-  mkChart(id,type,labels,data,colors,horiz);
+  mkChart(id,type,labels.map(l=>stLbl(l)),data,colors,horiz);
 }
 
 // ═══ HEATMAPS ═════════════════════════════════════════════════════
@@ -1608,6 +1668,18 @@ function renderDashboard(){
   orderedChart('ch-moment','bar',countBy(shots,'moment'),MOMENT_ORDER,null,false);
   orderedChart('ch-skill','doughnut',countBy(shots,'skill'),SKILL_ORDER,null,false);
   orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
+  /* ── acoes ofensivas do goleiro (mesmos filtros do painel) ── */
+  let offs=games.flatMap(g=>_asArr(g.offActions));
+  if(f.gk) offs=offs.filter(o=>o.gk===f.gk);
+  orderedChart('ch-offtype','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
+  orderedChart('ch-offres','bar',countBy(offs,'result'),ST.offresults,null,false);
+  const okEl=document.getElementById('dash-off-kpis');
+  if(okEl){
+    const porRes=countBy(offs,'result');
+    const topo=Object.keys(porRes).sort(function(a2,b2){return porRes[b2]-porRes[a2];}).slice(0,3);
+    okEl.innerHTML='<div class="kpi"><div class="kpi-n">'+offs.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
+      + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
+  }
   document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total);
   document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total);
 }
@@ -1644,7 +1716,7 @@ function buildReport(){
   el.innerHTML='';
   if(games.length===0){el.innerHTML='<div style="color:var(--mute);padding:24px;text-align:center;">'+TX("st.noGamesFilter")+'</div>';return;}
   if(reportType==='game'){
-    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null,g.shotsLink)));
+    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null,g.shotsLink,g.offLink)));
   } else {
     const key=reportType==='competition'?'competition':reportType==='opponent'?'opponent':reportType==='season'?'season':'gk';
     const groups={};
@@ -1654,7 +1726,7 @@ function buildReport(){
     });
   }
 }
-function makeReportBlock(title,subtitle,shots,games,shotsLink){
+function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink){
   const s=calcStats(shots);
   const uid='r'+Math.random().toString(36).slice(2,8);
   const div=document.createElement('div'); div.className='card mb16';
@@ -1663,7 +1735,8 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink){
       <div>
         <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${title}</div>
         <div style="font-size:11px;color:var(--mute);margin-top:3px;">${subtitle}</div>
-        ${shotsLink?`<a href="${shotsLink}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchShots')}</a>`:''}
+        ${shotsLink?`<a href="${shotsLink}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;margin-right:12px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchShots')}</a>`:''}
+        ${offLink?`<a href="${offLink}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchOff')}</a>`:''}
       </div>
       <span class="badge ${s.savePct>=70?'badge-green':s.savePct>=50?'badge-amber':'badge-red'}" style="font-size:11px;padding:5px 12px;">${s.savePct}% saves</span>
     </div>
@@ -1865,6 +1938,10 @@ function exportReport(){
       ${g.shotsLink?`<div style="margin:8px 0 2px;font-size:12px;">
         <a href="${g.shotsLink}" target="_blank" rel="noopener" style="color:${a};text-decoration:none;font-weight:600;">▶ ${TX('st.watchShots')}</a>
         <span style="color:#aaa;font-size:10px;margin-left:8px;word-break:break-all;">${g.shotsLink}</span>
+      </div>`:''}
+      ${g.offLink?`<div style="margin:2px 0 2px;font-size:12px;">
+        <a href="${g.offLink}" target="_blank" rel="noopener" style="color:${a};text-decoration:none;font-weight:600;">▶ ${TX('st.watchOff')}</a>
+        <span style="color:#aaa;font-size:10px;margin-left:8px;word-break:break-all;">${g.offLink}</span>
       </div>`:''}
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0;">
         <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.total}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${TX("st.shots")}</div></div>
