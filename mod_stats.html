@@ -203,22 +203,22 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .badge-amber{background:#fef3c7;color:#b45309;}
 .rtype-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px;}
     .ms-wrap{position:relative;flex:1;min-width:130px;}
-    .ms-trigger{width:100%;padding:7px 10px;border:1px solid var(--bdr);border-radius:var(--r);background:var(--bg);font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--ink);user-select:none;}
+    .ms-trigger{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--ink);user-select:none;}
     .ms-trigger:hover{border-color:var(--accent);}
     .ms-trigger .ms-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .ms-trigger .ms-arrow{font-size:9px;color:var(--mute);flex-shrink:0;transition:transform .15s;}
     .ms-trigger.open .ms-arrow{transform:rotate(180deg);}
-    .ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:999;max-height:220px;overflow-y:auto;}
+    .ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:999;max-height:220px;overflow-y:auto;}
     .ms-dropdown.open{display:block;}
     .ms-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:13px;}
-    .ms-opt:hover{background:var(--bg2);}
+    .ms-opt:hover{background:var(--surface2);}
     .ms-opt input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0;cursor:pointer;}
-    .ms-all{border-bottom:1px solid var(--bdr);font-weight:600;font-size:11px;color:var(--mute);letter-spacing:.06em;}
-    .rep-toggle-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr);}
+    .ms-all{border-bottom:1px solid var(--border);font-weight:600;font-size:11px;color:var(--mute);letter-spacing:.06em;}
+    .rep-toggle-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
     .rep-toggle-label{font-size:13px;color:var(--ink);}
     .toggle-sw{position:relative;width:36px;height:20px;flex-shrink:0;}
     .toggle-sw input{opacity:0;width:0;height:0;position:absolute;}
-    .toggle-sw .slider{position:absolute;inset:0;background:var(--bdr);border-radius:20px;transition:.2s;cursor:pointer;}
+    .toggle-sw .slider{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s;cursor:pointer;}
     .toggle-sw .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
     .toggle-sw input:checked+.slider{background:var(--accent);}
     .toggle-sw input:checked+.slider:before{transform:translateX(16px);}
@@ -755,8 +755,8 @@ function renderList(key){
     if(key==='clubs'){
       const badge=ST.clubBadges[item]||'';
       const imgHtml=badge
-        ?`<img src="${badge}" style="width:26px;height:26px;object-fit:contain;border-radius:4px;margin-right:6px;border:1px solid var(--bdr);">`
-        :`<div style="width:26px;height:26px;border-radius:4px;background:var(--bg2);border:1px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center;margin-right:6px;font-size:9px;color:var(--mute);flex-shrink:0;">IMG</div>`;
+        ?`<img src="${badge}" style="width:26px;height:26px;object-fit:contain;border-radius:4px;margin-right:6px;border:1px solid var(--border);">`
+        :`<div style="width:26px;height:26px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin-right:6px;font-size:9px;color:var(--mute);flex-shrink:0;">IMG</div>`;
       d.innerHTML=`<div style="display:flex;align-items:center;flex:1;gap:0;">
         ${imgHtml}
         <span style="font-size:13px;flex:1;">${item}</span>
@@ -1234,7 +1234,7 @@ function buildReview(){
         + '<div style="display:flex;flex-wrap:wrap">'+Object.keys(porTipo).map(function(k){return chip(k,porTipo[k]);}).join('')+'</div>'
         + '<div style="margin-top:12px;max-height:220px;overflow:auto">'
         + _oa.map(function(a2,i){
-            return '<div class="session-row" style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2)">'
+            return '<div class="session-row" style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border2)">'
               + '<span style="font-family:var(--mono);font-size:11px;color:var(--mute);min-width:26px">#'+(i+1)+'</span>'
               + '<span style="font-weight:600;font-size:13px;min-width:44px">'+(a2.minute?a2.minute+"'":'—')+'</span>'
               + '<span style="flex:1;font-size:13px">'+stLbl(a2.type||'—')+(a2.gk?' · '+a2.gk:'')+'</span>'
