@@ -225,7 +225,10 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .rtype-btn{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:16px 12px;cursor:pointer;transition:all .15s;text-align:center;}
 .rtype-btn:hover{border-color:#bbb;}
 .rtype-btn.active{border-color:var(--ink);background:rgba(10,10,10,.04);}
-.rtype-icon{font-size:20px;margin-bottom:6px;}
+.rtype-icon{display:flex;align-items:center;justify-content:center;margin-bottom:9px;color:var(--mute);transition:color .15s;}
+.rtype-icon svg{width:23px;height:23px;display:block;}
+.rtype-btn.active .rtype-icon{color:var(--accent);}
+.rtype-btn:hover .rtype-icon{color:var(--ink);}
 .rtype-name{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--mute);}
 .rtype-btn.active .rtype-name{color:var(--ink);}
 /* Loading screen */
@@ -493,24 +496,14 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   <div data-i18n="st.tab.reports" class="page-title">Reports</div>
   <div data-i18n="st.rptSub" class="page-sub">Generate and export detailed analytical reports as PDF.</div>
   <div class="rtype-grid">
-    <div class="rtype-btn active" onclick="selReportType(this,'game')"><div class="rtype-icon">🎮</div><div data-i18n="st.byGame" class="rtype-name">By Game</div></div>
-    <div class="rtype-btn" onclick="selReportType(this,'competition')"><div class="rtype-icon">🏆</div><div data-i18n="st.byComp" class="rtype-name">By Competition</div></div>
-    <div class="rtype-btn" onclick="selReportType(this,'opponent')"><div class="rtype-icon">🆚</div><div data-i18n="st.byOpponent" class="rtype-name">By Opponent</div></div>
-    <div class="rtype-btn" onclick="selReportType(this,'season')"><div class="rtype-icon">📅</div><div data-i18n="st.bySeason" class="rtype-name">By Season</div></div>
-    <div class="rtype-btn" onclick="selReportType(this,'gk')"><div class="rtype-icon">🧤</div><div data-i18n="st.byGk" class="rtype-name">By Goalkeeper</div></div>
+    <div class="rtype-btn active" onclick="selReportType(this,'game')"><div class="rtype-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.3l3.5 2.55-1.34 4.1H9.84L8.5 9.85z"/><path d="M12 3.1v4.2M20.6 9.75l-5.1.1M18.1 19.1l-2.9-4.15M5.9 19.1l2.9-4.15M3.4 9.75l5.1.1"/></svg></div><div data-i18n="st.byGame" class="rtype-name">By Game</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'competition')"><div class="rtype-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 4h9.6v4.9a4.8 4.8 0 0 1-9.6 0z"/><path d="M7.2 6.1H4.4v1.2a3.4 3.4 0 0 0 3.1 3.4"/><path d="M16.8 6.1h2.8v1.2a3.4 3.4 0 0 1-3.1 3.4"/><path d="M12 13.7v3.6"/><path d="M8.6 20.6h6.8"/><path d="M9.9 20.6l.4-3.3h3.4l.4 3.3"/></svg></div><div data-i18n="st.byComp" class="rtype-name">By Competition</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'opponent')"><div class="rtype-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 6.2l4.6 5.8-4.6 5.8"/><path d="M19.8 6.2l-4.6 5.8 4.6 5.8"/><path d="M12 3.6v3.2M12 10.4v3.2M12 17.2v3.2"/></svg></div><div data-i18n="st.byOpponent" class="rtype-name">By Opponent</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'season')"><div class="rtype-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="5" width="17.6" height="15.8" rx="2.4"/><path d="M3.2 9.9h17.6"/><path d="M8.2 2.9v4M15.8 2.9v4"/><path d="M7.4 13.6h2M11 13.6h2M14.6 13.6h2M7.4 17h2M11 17h2"/></svg></div><div data-i18n="st.bySeason" class="rtype-name">By Season</div></div>
+    <div class="rtype-btn" onclick="selReportType(this,'gk')"><div class="rtype-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="10.6" width="10.8" height="10.2" rx="2.6"/><path d="M8.7 10.6V7.3a1.2 1.2 0 0 1 2.4 0v3.3"/><path d="M11.1 10.6V6.2a1.2 1.2 0 0 1 2.4 0v4.4"/><path d="M13.5 10.6V7.7a1.2 1.2 0 0 1 2.4 0v2.9"/><path d="M6.6 15.5l-1.5-1.6a1.5 1.5 0 0 1 2.1-2.1l.9.9"/></svg></div><div data-i18n="st.byGk" class="rtype-name">By Goalkeeper</div></div>
   </div>
   <div class="card mb20">
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-      <div class="ms-wrap" id="rep-filter-season-wrap">
-        <div data-i18n="st.season2" class="label">Season</div>
-        <div class="ms-trigger" id="ms-season-trigger" onclick="msToggle('season')">
-          <span data-i18n="st.allSeasons" class="ms-label" id="ms-season-label">All Seasons</span><span class="ms-arrow">▼</span>
-        </div>
-        <div class="ms-dropdown" id="ms-season-dropdown">
-          <label class="ms-opt ms-all"><input type="checkbox" id="ms-season-all" checked onchange="msAllToggle('season',this)"> <span data-i18n="st.allSeasons">All Seasons</span></label>
-          <div id="ms-season-items"></div>
-        </div>
-      </div>
       <div class="ms-wrap" id="rep-filter-game-wrap">
         <div data-i18n="st.game" class="label">Game</div>
         <div class="ms-trigger" id="ms-game-trigger" onclick="msToggle('game')">
@@ -878,7 +871,6 @@ function populateShotGkSelect(selectedGk){
   if(cur){ SF.gk=cur; }
 }
 function populateReportFilters(){
-  msFill('season', getSeasons());
   msFill('opp', ST.clubs);
   msFill('comp', ST.comps);
   msFill('gk', ST.gks);
@@ -1704,13 +1696,11 @@ function selReportType(btn,type){
   buildReport();
 }
 function getReportGames(){
-  const seasons=msGetSelected('season');
   const gameIds=msGetSelected('game');
   const opps=msGetSelected('opp');
   const comps=msGetSelected('comp');
   const gks=msGetSelected('gk');
   return ST.games.filter(g=>{
-    if(seasons.length&&!seasons.includes(g.season)) return false;
     if(gameIds.length&&!gameIds.includes(String(g.id))) return false;
     if(opps.length&&!opps.includes(g.opponent)) return false;
     if(comps.length&&!comps.includes(g.competition)) return false;
