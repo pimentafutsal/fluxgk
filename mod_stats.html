@@ -352,12 +352,12 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       </div>
       <div class="mb16">
         <div data-i18n="st.shotsLink" class="label">Link to the shots video</div>
-        <input type="url" id="rec-link" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh">
+        <input type="url" id="rec-link" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh" oninput="recSyncMeta()">
         <div data-i18n="st.shotsLinkHint" style="font-size:11px;color:var(--mute);margin-top:5px;">Optional — appears as a clickable link in the game report.</div>
       </div>
       <div class="mb16">
         <div data-i18n="st.offLink" class="label">Link to the offensive actions video</div>
-        <input type="url" id="rec-offlink" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh">
+        <input type="url" id="rec-offlink" placeholder="https://… (YouTube, Drive, Vimeo)" data-i18n-placeholder="st.shotsLinkPh" oninput="recSyncMeta()">
       </div>
       <button data-i18n="st.nextShots" class="btn btn-accent" onclick="recNextToShots()">Next: Record Shots →</button>
     </div>
@@ -1055,6 +1055,10 @@ function selCourt(btn,zone){
 
 // ═══ RECORD ═══════════════════════════════════════════════════════
 function recTab(t){
+  /* sair da aba de identificacao sempre grava o que estava digitado */
+  if(document.getElementById('rec-phase-meta')&&document.getElementById('rec-phase-meta').style.display!=='none'){
+    try{ recSyncMeta(); }catch(e){}
+  }
   ['meta','shots','off','review'].forEach(n=>{
     document.getElementById('rec-phase-'+n).style.display=n===t?'':'none';
     const tab=document.getElementById('rec-tab-'+n); if(tab) tab.classList.toggle('active',n===t);
@@ -1081,14 +1085,20 @@ function navToRecord(){
   }
   showPage('record');
 }
-function recNextToShots(){
-  CUR.date=document.getElementById('rec-date').value;
-  /* a temporada vem do hub (clube + temporada ativos) — nao se pergunta de novo */
+/* Le os campos da aba de identificacao para dentro de CUR. Precisa rodar tambem
+   no "Salvar" e a cada digitacao nos links: antes so era chamada no botao
+   "Next -> shots", entao quem colava o link e salvava direto perdia o valor. */
+function recSyncMeta(){
+  const g=id=>document.getElementById(id);
+  if(g('rec-date')) CUR.date=g('rec-date').value;
   CUR.season=window._hubSeason||CUR.season||'';
-  CUR.opponent=document.getElementById('rec-opp').value;
-  CUR.competition=document.getElementById('rec-comp').value;
-  CUR.shotsLink=(document.getElementById('rec-link')?document.getElementById('rec-link').value:'').trim();
-  CUR.offLink=(document.getElementById('rec-offlink')?document.getElementById('rec-offlink').value:'').trim();
+  if(g('rec-opp')) CUR.opponent=g('rec-opp').value;
+  if(g('rec-comp')) CUR.competition=g('rec-comp').value;
+  if(g('rec-link')) CUR.shotsLink=g('rec-link').value.trim();
+  if(g('rec-offlink')) CUR.offLink=g('rec-offlink').value.trim();
+}
+function recNextToShots(){
+  recSyncMeta();
   if(!CUR.date||!CUR.opponent){alert(TX('st.msg.dateOpp'));return;}
   recTab('shots'); renderShotsList(); updateShotNum(); populateShotGkSelect();
 }
@@ -1315,6 +1325,7 @@ function buildReview(){
   if(saveBtn) saveBtn.textContent=isEdit?TX('st.updateGame'):TX('st.saveGame');
 }
 function saveGame(){
+  recSyncMeta();
   if(!CUR.date||!CUR.opponent){alert(TX('st.msg.dateOppBack'));return;}
   if(editingGameId!==null){
     const gameToSave={...CUR,id:editingGameId};
@@ -2058,6 +2069,18 @@ function exportReport(){
 
   const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
+  /* Links de video por jogo: antes so apareciam nas paginas individuais (modo
+     "exportar cada jogo"), entao um relatorio de um jogo so saia sem os links. */
+  const comLinks=games.filter(g=>g.shotsLink||g.offLink);
+  const videosHtml=comLinks.length?`<div class="sec">
+      <div class="sec-title">${TX('st.pdf.videos','Videos')}</div>
+      ${comLinks.sort((x,y)=>new Date(x.date)-new Date(y.date)).map(g=>`<div style="margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#111;margin-bottom:3px;">${g.date} &nbsp;vs&nbsp; ${g.opponent||'—'}</div>
+        ${g.shotsLink?`<div style="font-size:11px;margin-left:8px;"><a href="${g.shotsLink}" target="_blank" rel="noopener" style="color:${a};text-decoration:none;font-weight:600;">▶ ${TX('st.watchShots')}</a><span style="color:#aaa;font-size:9px;margin-left:8px;word-break:break-all;">${g.shotsLink}</span></div>`:''}
+        ${g.offLink?`<div style="font-size:11px;margin-left:8px;"><a href="${g.offLink}" target="_blank" rel="noopener" style="color:${a};text-decoration:none;font-weight:600;">▶ ${TX('st.watchOff')}</a><span style="color:#aaa;font-size:9px;margin-left:8px;word-break:break-all;">${g.offLink}</span></div>`:''}
+      </div>`).join('')}
+    </div>`:'';
+
   // ── PER-GAME SECTIONS (used when split toggle is ON) ───────────────
   function gameSection(g){
     const gs=calcStats(g.shots);
@@ -2188,6 +2211,8 @@ function exportReport(){
         <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">${TX("st.saveRate")}</div></div>
       </div>
     </div>
+
+    ${videosHtml}
 
     <div class="sec">
       <div class="sec-title">${TX("st.pdf.shotAnalysis")}</div>
