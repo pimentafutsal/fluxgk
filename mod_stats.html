@@ -30,6 +30,7 @@
     _SPATH.moments=d.dataPath+'/stats/moments';
     _SPATH.offtypes=d.dataPath+'/stats/offtypes';
     _SPATH.offresults=d.dataPath+'/stats/offresults';
+    _SPATH.results=d.dataPath+'/stats/results';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
@@ -105,6 +106,15 @@
     db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
     db.ref(_SPATH.offtypes).on('value',function(snap){var v=snap.val();if(v)ST.offtypes=_asArr(v);try{renderOffForms();renderList('offtypes');}catch(e){}});
     db.ref(_SPATH.offresults).on('value',function(snap){var v=snap.val();if(v)ST.offresults=_asArr(v);try{renderOffForms();renderList('offresults');}catch(e){}});
+    db.ref(_SPATH.results).on('value',function(snap){
+      var v=_asArr(snap.val());
+      if(!v.length) return;
+      /* gravado como [{v:rotulo,k:tipo}] — nomes livres nao podem virar chave no Firebase */
+      ST.results=v.map(function(x){return (x&&x.v!=null)?x.v:x;});
+      ST.resultKinds={};
+      v.forEach(function(x){ if(x&&x.v!=null) ST.resultKinds[x.v]=x.k||''; });
+      try{renderSkillMomentGroups();renderList('results');}catch(e){}
+    });
     db.ref(_SPATH.opponents).on('value',function(snap){
       var v=snap.val();
       if(v){ST.clubs=Object.values(v).map(function(c){return c.name||c;});
@@ -588,6 +598,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div id="skills-list"></div>
     </div>
     <div class="card">
+      <div data-i18n="st.resultsTitle" class="card-title">Shot results</div>
+      <div data-i18n="st.resultsSub" class="page-sub" style="margin:-4px 0 10px;">Rename or create your own results. Choose what each one counts as so the save rate stays correct.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-result-input" placeholder="Add result…" data-i18n-placeholder="st.ph.result" onkeydown="if(event.key==='Enter')addItem('results','add-result-input','results-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('results','add-result-input','results-list')">Add</button>
+      </div>
+      <div id="results-list"></div>
+    </div>
+    <div class="card">
       <div data-i18n="st.momentsTitle" class="card-title">Game moments</div>
       <div data-i18n="st.momentsSub" class="page-sub" style="margin:-4px 0 10px;">Characterize with your own game moments.</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -644,6 +663,11 @@ const ST = {
      Semeadas com padrões neutros; o momento reusa ST.moments. */
   offtypes:['Throw','Kick','Pass'],
   offresults:['Goal','Assist','Kept possession','Lost possession'],
+  /* Resultados da finalizacao: caracterizaveis pelo treinador. Cada rotulo carrega
+     um "tipo" (save/goal/blocked/out/post/'') que alimenta os KPIs e o % de defesas,
+     para que renomear em portugues nao quebre nenhuma conta. */
+  results:['Save','Blocked','Out','Goal conceded','Post'],
+  resultKinds:{'Save':'save','Blocked':'blocked','Out':'out','Goal conceded':'goal','Post':'post'},
   _seeded:false,
   gks:[],
   games:[],
@@ -681,6 +705,10 @@ function persist(){
   /* acoes ofensivas: tipos e desfechos caracterizaveis pelo treinador */
   if(_SPATH.offtypes)   window.fbSet(_SPATH.offtypes,   ST.offtypes||[]).catch(e=>console.error('FB offtypes:',e));
   if(_SPATH.offresults) window.fbSet(_SPATH.offresults, ST.offresults||[]).catch(e=>console.error('FB offresults:',e));
+  /* resultados da finalizacao + o tipo de cada um */
+  if(_SPATH.results) window.fbSet(_SPATH.results,
+      (ST.results||[]).map(function(v){return {v:v,k:(ST.resultKinds&&ST.resultKinds[v])||''};})
+    ).catch(e=>console.error('FB results:',e));
   /* adversarios: por clube (compartilhado com o xG) */
   var opp={};
   (ST.clubs||[]).forEach(function(name){
@@ -735,10 +763,10 @@ function applyAccent(color){
 function renderSettings(){
   /* identidade (nome, cor) vem do hub — nao se edita aqui.
      esta pagina agora e so cadastro de adversarios, competicoes e goleiros. */
-  ['clubs','comps','gks','offtypes','offresults'].forEach(k=>renderList(k));
+  ['clubs','comps','gks','results','skills','moments','offtypes','offresults'].forEach(k=>renderList(k));
 }
 function renderList(key){
-  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',skills:'skills-list',moments:'moments-list',offtypes:'offtypes-list',offresults:'offresults-list'}[key];
+  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',results:'results-list',skills:'skills-list',moments:'moments-list',offtypes:'offtypes-list',offresults:'offresults-list'}[key];
   const el=document.getElementById(listId); if(!el) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   el.innerHTML='';
@@ -759,6 +787,20 @@ function renderList(key){
         </label>
         <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>
       </div>`;
+    } else if(key==='results'){
+      /* cada resultado carrega um "conta como" que alimenta KPIs e % de defesas */
+      const kind=(ST.resultKinds&&ST.resultKinds[item])||RESULT_KIND_DEFAULT[item]||'';
+      const opcoes=[['save','Save'],['goal','Goal conceded'],['blocked','Blocked'],['out','Out'],['post','Post'],['','']];
+      const sel=opcoes.map(function(o){
+        const rot=o[0]===''?_txf('st.countsNothing','Does not count'):stLbl(o[1]);
+        return '<option value="'+o[0]+'"'+(kind===o[0]?' selected':'')+'>'+rot+'</option>';
+      }).join('');
+      d.innerHTML=`<span style="font-size:13px;flex:1;">${stLbl(item)}</span>
+        <span style="font-size:10px;color:var(--mute);margin-right:6px;white-space:nowrap;">${_txf('st.countsAs','counts as')}</span>
+        <select style="font-size:12px;padding:3px 6px;margin-right:8px;" onchange="setResultKind(${i},this.value)">${sel}</select>
+        <button class="list-del" style="margin-right:4px;" title="${_txf('st.rename','Rename')}" onclick="renameResult(${i})">✎</button>
+        <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+      d.style.display='flex'; d.style.alignItems='center';
     } else {
       /* skills/moments/offtypes/offresults mostram o rotulo traduzido dos padroes; personalizados passam direto */
       const label=(key==='skills'||key==='moments'||key==='offtypes'||key==='offresults')?stLbl(item):item;
@@ -766,6 +808,37 @@ function renderList(key){
     }
     el.appendChild(d);
   });
+}
+/* Renomear um resultado reescreve tambem as finalizacoes ja gravadas, senao os
+   jogos antigos continuariam com o rotulo antigo e apareceriam como uma categoria
+   solta nos graficos e relatorios. */
+function renameResult(i){
+  const antigo=(ST.results||[])[i]; if(antigo==null) return;
+  const novo=(prompt(_txf('st.renameResultAsk','New name for')+' "'+stLbl(antigo)+'":', stLbl(antigo))||'').trim();
+  if(!novo||novo===antigo) return;
+  if(ST.results.includes(novo)){ alert(_txf('st.renameDup','That name already exists.')); return; }
+  const kind=(ST.resultKinds&&ST.resultKinds[antigo])||RESULT_KIND_DEFAULT[antigo]||'';
+  ST.results[i]=novo;
+  ST.resultKinds=ST.resultKinds||{};
+  delete ST.resultKinds[antigo];
+  ST.resultKinds[novo]=kind;
+  let tocados=0;
+  (ST.games||[]).forEach(function(g){
+    let mudou=false;
+    _asArr(g.shots).forEach(function(sh){ if(sh.result===antigo){ sh.result=novo; mudou=true; tocados++; } });
+    if(mudou) persistGame(g);
+  });
+  _asArr(CUR&&CUR.shots).forEach(function(sh){ if(sh.result===antigo) sh.result=novo; });
+  persist();
+  try{ renderList('results'); renderSkillMomentGroups(); renderDashboard(); }catch(e){}
+  alert(_txf('st.renameDone','Renamed. Shots updated:')+' '+tocados);
+}
+function setResultKind(i,kind){
+  const v=(ST.results||[])[i]; if(v==null) return;
+  ST.resultKinds=ST.resultKinds||{};
+  ST.resultKinds[v]=kind||'';
+  persist();
+  try{renderDashboard();}catch(e){}
 }
 function uploadClubBadge(clubName, input){
   const file=input.files[0]; if(!file) return;
@@ -816,10 +889,12 @@ function addItem(key,inputId,listId){
   const inp=document.getElementById(inputId); if(!inp) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   const v=inp.value.trim(); if(!v||ST[key].includes(v)){inp.focus();return;}
-  ST[key].push(v); inp.value=''; persist();
+  ST[key].push(v); inp.value='';
+  if(key==='results'){ ST.resultKinds=ST.resultKinds||{}; if(ST.resultKinds[v]==null) ST.resultKinds[v]=RESULT_KIND_DEFAULT[v]||''; }
+  persist();
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
-  if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='skills'||key==='moments'||key==='results') try{renderSkillMomentGroups();}catch(e){}
   if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 function removeItem(key,idx){
@@ -827,7 +902,7 @@ function removeItem(key,idx){
   ST[key].splice(idx,1); persist();
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
-  if(key==='skills'||key==='moments') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='skills'||key==='moments'||key==='results') try{renderSkillMomentGroups();}catch(e){}
   if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 
@@ -955,7 +1030,7 @@ function mcSel(btn,field,val){
    data-val guarda o valor gravado (canonico); o texto e stLbl() (traduz os
    padroes, deixa passar os personalizados). Reaplica a selecao atual (SF). */
 function renderSkillMomentGroups(){
-  [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills]].forEach(function(cfg){
+  [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills],['result','sf-result-group',ST.results]].forEach(function(cfg){
     var field=cfg[0], el=document.getElementById(cfg[1]), list=_asArr(cfg[2]);
     if(!el) return;
     el.innerHTML='';
@@ -1203,7 +1278,7 @@ function buildReview(){
     <div class="kpi"><div class="kpi-n" style="color:var(--green)">${s.saves}</div><div class="kpi-l">${TX("st.saves")}</div></div>
     <div class="kpi"><div class="kpi-n" style="color:var(--red)">${s.goals}</div><div class="kpi-l">${TX("st.goals")}</div></div>
     <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">${TX("st.saveRate")}</div></div>
-    <div class="kpi"><div class="kpi-n">${s.out}</div><div class="kpi-l">Out</div></div>`;
+    <div class="kpi"><div class="kpi-n">${s.out}</div><div class="kpi-l">${stLbl("Out")}</div></div>`;
   /* ── acoes ofensivas tambem entram na revisao (antes ficavam de fora) ── */
   const _oa=_asArr(CUR.offActions);
   const boxOA=document.getElementById('review-off');
@@ -1392,7 +1467,7 @@ function showHistShotForm(gameId,idx){
         </div>
         <div>
           <div class="label">${TX("st.result")}</div>
-          <div class="mc-group" id="hf-result-${gameId}">${mcBtns('result',['Save','Blocked','Out','Goal conceded','Post'],s.result)}</div>
+          <div class="mc-group" id="hf-result-${gameId}">${mcBtns('result',ST.results,s.result)}</div>
         </div>
         <div>
           <div class="label">${TX("st.hDistance")}</div>
@@ -1511,13 +1586,19 @@ function deleteGame(id){
 }
 
 // ═══ STATS HELPERS ════════════════════════════════════════════════
+/* tipo de um resultado: usa o mapa configurado pelo treinador; se o rotulo for um
+   dos padroes em ingles, cai no proprio nome. Rotulos novos sem tipo nao entram
+   nos KPIs, mas continuam contando no total e aparecendo nos graficos. */
+const RESULT_KIND_DEFAULT={'Save':'save','Goal conceded':'goal','Blocked':'blocked','Out':'out','Post':'post'};
+function resKind(v){
+  if(v==null||v==='') return '';
+  var m=(typeof ST!=='undefined'&&ST.resultKinds)||{};
+  return m[v]||RESULT_KIND_DEFAULT[v]||'';
+}
 function calcStats(shots){
   const total=shots.length;
-  const saves=shots.filter(s=>s.result==='Save').length;
-  const goals=shots.filter(s=>s.result==='Goal conceded').length;
-  const blocked=shots.filter(s=>s.result==='Blocked').length;
-  const out=shots.filter(s=>s.result==='Out').length;
-  const post=shots.filter(s=>s.result==='Post').length;
+  const n=k=>shots.filter(s=>resKind(s.result)===k).length;
+  const saves=n('save'),goals=n('goal'),blocked=n('blocked'),out=n('out'),post=n('post');
   const onTarget=saves+goals;const savePct=onTarget?Math.round(saves/onTarget*100):0;
   return {total,saves,goals,blocked,out,post,savePct};
 }
@@ -1529,7 +1610,13 @@ function pctOf(n,t){return t?Math.round(n/t*100):0;}
 // ═══ CHARTS ═══════════════════════════════════════════════════════
 function acc(){return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e8ff00';}
 const RESULT_COLORS=[acc(),'#d4d4d4','#a3a3a3','#dc2626','#d97706'];
+/* cor por tipo, para que o grafico continue coerente com rotulos personalizados */
+const KIND_COLORS={save:null,out:'#d4d4d4',blocked:'#a3a3a3',goal:'#dc2626',post:'#d97706'};
+function resultColor(v){ var k=resKind(v); return (k&&KIND_COLORS[k]!==undefined)?(KIND_COLORS[k]||acc()):'#888'; }
 const RESULT_ORDER=['Save','Out','Blocked','Goal conceded','Post'];
+/* Ordem de exibicao: usa a lista que o treinador configurou (ST.moments/ST.skills),
+   cai para o padrao em ingles so quando a lista esta vazia. */
+function cfgOrder(lista,padrao){ return (lista&&lista.length)?lista.slice():padrao.slice(); }
 const HDIST_ORDER=['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'];
 const MOMENT_ORDER=['Leaving pressure','Organized attack','Transition','Ball stop','Special game'];
 const SKILL_ORDER=['Goal protection','1vs1','2nd post'];
@@ -1557,7 +1644,8 @@ function orderedChart(id,type,obj,order,colors,horiz){
   const extras=presentes.filter(l=>!(order||[]).includes(l)).sort();
   const labels=conhecidos.concat(extras);
   const data=labels.map(l=>obj[l]||0);
-  mkChart(id,type,labels.map(l=>stLbl(l)),data,colors,horiz);
+  const cores=(typeof colors==='function')?labels.map(colors):colors;
+  mkChart(id,type,labels.map(l=>stLbl(l)),data,cores,horiz);
 }
 
 // ═══ HEATMAPS ═════════════════════════════════════════════════════
@@ -1664,9 +1752,9 @@ function renderDashboard(){
   document.getElementById('kpi-saves').textContent=s.saves;
   document.getElementById('kpi-goals').textContent=s.goals;
   document.getElementById('kpi-savepct').textContent=s.total?s.savePct+'%':'—';
-  orderedChart('ch-result','bar',countBy(shots,'result'),RESULT_ORDER,RESULT_COLORS,false);
-  orderedChart('ch-moment','bar',countBy(shots,'moment'),MOMENT_ORDER,null,false);
-  orderedChart('ch-skill','doughnut',countBy(shots,'skill'),SKILL_ORDER,null,false);
+  orderedChart('ch-result','bar',countBy(shots,'result'),cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
+  orderedChart('ch-moment','bar',countBy(shots,'moment'),cfgOrder(ST.moments,MOMENT_ORDER),null,false);
+  orderedChart('ch-skill','doughnut',countBy(shots,'skill'),cfgOrder(ST.skills,SKILL_ORDER),null,false);
   orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
   /* ── acoes ofensivas do goleiro (mesmos filtros do painel) ── */
   let offs=games.flatMap(g=>_asArr(g.offActions));
@@ -1753,9 +1841,9 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.total}</div><div class="kpi-l">${TX("st.shots")}</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--green);">${s.saves}</div><div class="kpi-l">${TX("st.saves")}</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--red);">${s.goals}</div><div class="kpi-l">${TX("st.goals")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.out}</div><div class="kpi-l">Out</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.post}</div><div class="kpi-l">Post</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.blocked}</div><div class="kpi-l">${stLbl("Blocked")}</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.out}</div><div class="kpi-l">${stLbl("Out")}</div></div>
+      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.post}</div><div class="kpi-l">${stLbl("Post")}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
       <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="170"></canvas></div>
@@ -1783,9 +1871,9 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       </div></div>`:''}`;
   setTimeout(()=>{
     const rc=countBy(shots,'result'),mc=countBy(shots,'moment'),kc=countBy(shots,'skill'),dc=countBy(shots,'hDistance');
-    orderedChart(uid+'r','bar',rc,RESULT_ORDER,RESULT_COLORS,false);
-    orderedChart(uid+'m','bar',mc,MOMENT_ORDER,null,false);
-    orderedChart(uid+'k','doughnut',kc,SKILL_ORDER,null,false);
+    orderedChart(uid+'r','bar',rc,cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
+    orderedChart(uid+'m','bar',mc,cfgOrder(ST.moments,MOMENT_ORDER),null,false);
+    orderedChart(uid+'k','doughnut',kc,cfgOrder(ST.skills,SKILL_ORDER),null,false);
     orderedChart(uid+'d','bar',dc,HDIST_ORDER,null,true);
     if(offs.length){
       orderedChart(uid+'ot','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
@@ -1824,6 +1912,12 @@ function exportReport(){
     const extras=Object.keys(obj).filter(k=>!(order||[]).includes(k)).sort();
     return conhecidos.concat(extras);
   }
+  /* igual a ordKeys, mas mantem os itens da lista configurada mesmo com zero */
+  function ordTodos(obj,order){
+    const base=(order||[]).slice();
+    const extras=Object.keys(obj).filter(k=>!base.includes(k)).sort();
+    return base.concat(extras);
+  }
   function offBars(list,campo,order,cor){
     const c=countBy(list,campo), ks=ordKeys(c,order);
     if(!ks.length) return '<div style="font-size:11px;color:#aaa;">—</div>';
@@ -1843,14 +1937,18 @@ function exportReport(){
   }
 
   const RC=countBy(shots,'result'),MC=countBy(shots,'moment'),KC=countBy(shots,'skill'),DC=countBy(shots,'hDistance');
-  const resultsHtml=RESULT_ORDER.map((k,i)=>RC[k]?bar(k,RC[k],s.total,[...RESULT_COLORS][i]):bar(k,0,s.total,RESULT_COLORS[i])).join('');
-  const momentHtml=MOMENT_ORDER.map(k=>bar(k,MC[k]||0,s.total,a)).join('');
+  const resultsHtml=(()=>{
+    const ks=ordTodos(RC,cfgOrder(ST.results,RESULT_ORDER));
+    return ks.map(k=>bar(stLbl(k),RC[k]||0,s.total,resultColor(k))).join('');
+  })();
+  const momentHtml=ordTodos(MC,cfgOrder(ST.moments,MOMENT_ORDER)).map(k=>bar(stLbl(k),MC[k]||0,s.total,a)).join('');
   // Skill Type — donut chart (SVG, matches system chart style)
   const skillHtml=(()=>{
-    const vals=SKILL_ORDER.map(k=>KC[k]||0);
+    const labels=ordTodos(KC,cfgOrder(ST.skills,SKILL_ORDER));
+    const vals=labels.map(k=>KC[k]||0);
     const total=vals.reduce((a,b)=>a+b,0)||1;
-    const colors=[a,'#555','#999'];
-    const labels=SKILL_ORDER;
+    const PAL=[a,'#555','#999','#bbb','#777','#333','#aaa'];
+    const colors=labels.map((_,i)=>PAL[i%PAL.length]);
     // SVG donut
     const cx=80,cy=80,r=58,ir=36;
     let paths='',startAngle=-Math.PI/2;
@@ -1867,7 +1965,7 @@ function exportReport(){
     });
     const legend=labels.map((l,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
       <div style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></div>
-      <span style="font-size:11px;color:#555;font-family:monospace;">${l}</span>
+      <span style="font-size:11px;color:#555;font-family:monospace;">${stLbl(l)}</span>
       <span style="font-size:11px;font-weight:600;margin-left:auto;">${vals[i]}</span>
       <span style="font-size:10px;color:#999;width:32px;text-align:right;">${pctOf(vals[i],vals.reduce((a,b)=>a+b,0))}%</span>
     </div>`).join('');
@@ -1876,7 +1974,7 @@ function exportReport(){
       <div style="flex:1;">${legend}</div>
     </div>`;
   })();
-  const hdistHtml=HDIST_ORDER.map(k=>bar(k,DC[k]||0,s.total,'#444')).join('');
+  const hdistHtml=ordTodos(DC,HDIST_ORDER).map(k=>bar(stLbl(k),DC[k]||0,s.total,'#444')).join('');
 
   const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const gcounts=gzones.map(z=>shots.filter(sh=>sh.goalZone===z.id).length);
@@ -1944,7 +2042,7 @@ function exportReport(){
     const key={competition:'competition',opponent:'opponent',season:'season',gk:'gk'}[reportType];
     const groups={};
     games.forEach(g=>{const k=g[key]||'?';if(!groups[k])groups[k]=[];groups[k].push(g);});
-    tableHead='<th>'+TX("st.group")+'</th><th style="text-align:center">'+TX("st.games")+'</th><th style="text-align:center">'+TX("st.shots")+'</th><th style="text-align:center">'+TX("st.saves")+'</th><th style="text-align:center">'+TX("st.goals")+'</th><th style="text-align:center">Blocked</th><th style="text-align:center">Out</th><th style="text-align:center">'+TX("st.savePct")+'</th>';
+    tableHead='<th>'+TX("st.group")+'</th><th style="text-align:center">'+TX("st.games")+'</th><th style="text-align:center">'+TX("st.shots")+'</th><th style="text-align:center">'+TX("st.saves")+'</th><th style="text-align:center">'+TX("st.goals")+'</th><th style="text-align:center">'+stLbl("Blocked")+'</th><th style="text-align:center">'+stLbl("Out")+'</th><th style="text-align:center">'+TX("st.savePct")+'</th>';
     tableRows=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,gList])=>{
       const gs=calcStats(gList.flatMap(g=>g.shots));
       return `<tr><td style="font-weight:600;">${k}</td>
@@ -1994,8 +2092,8 @@ function exportReport(){
         <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.total}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${TX("st.shots")}</div></div>
         <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#16a34a;">${gs.saves}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${TX("st.saves")}</div></div>
         <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#dc2626;">${gs.goals}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${TX("st.goals")}</div></div>
-        <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.blocked}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Blocked</div></div>
-        <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.out}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Out</div></div>
+        <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.blocked}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${stLbl("Blocked")}</div></div>
+        <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.out}</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${stLbl("Out")}</div></div>
         <div style="border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;">${gs.savePct}%</div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;">${TX("st.saveRatePct")}</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
@@ -2086,7 +2184,7 @@ function exportReport(){
         <div class="kpi"><div class="kpi-n k">${s.total}</div><div class="kpi-l">${TX("st.shots")}</div></div>
         <div class="kpi"><div class="kpi-n g">${s.saves}</div><div class="kpi-l">${TX("st.saves")}</div></div>
         <div class="kpi"><div class="kpi-n r">${s.goals}</div><div class="kpi-l">${TX("st.goals")}</div></div>
-        <div class="kpi"><div class="kpi-n k">${s.blocked}</div><div class="kpi-l">Blocked</div></div>
+        <div class="kpi"><div class="kpi-n k">${s.blocked}</div><div class="kpi-l">${stLbl("Blocked")}</div></div>
         <div class="kpi"><div class="kpi-n">${s.savePct}%</div><div class="kpi-l">${TX("st.saveRate")}</div></div>
       </div>
     </div>
@@ -2147,7 +2245,7 @@ function bootUI(){
   renderOffForms();
   renderList('skills'); renderList('moments'); renderList('offtypes'); renderList('offresults');
   /* ao trocar de idioma, re-traduz os rotulos padrao dos botoes e das listas */
-  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderOffForms(); renderList('skills'); renderList('moments'); renderList('offtypes'); renderList('offresults'); }); }catch(e){}
+  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderOffForms(); renderList('skills'); renderList('moments'); renderList('results'); renderList('offtypes'); renderList('offresults'); }); }catch(e){}
   renderDashboard();
   // Sync settings inputs
   const cn=document.getElementById('set-club-name'); if(cn) cn.value=ST.clubName;

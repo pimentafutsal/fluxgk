@@ -624,6 +624,7 @@
     /* placeholders */
     'st.ph.club':'Add club name…','st.ph.comp':'Add competition…','st.ph.gk':'Add goalkeeper name…',
     'st.skillsTitle':'Technical actions','st.skillsSub':'Characterize with your own technical actions.',
+    'st.resultsTitle':'Shot results','st.resultsSub':'Rename or create your own results. Choose what each one counts as so the save rate stays correct.','st.ph.result':'Add result…','st.countsAs':'counts as','st.countsNothing':'Does not count','st.rename':'Rename','st.renameResultAsk':'New name for','st.renameDup':'That name already exists.','st.renameDone':'Renamed. Shots updated:',
     'st.momentsTitle':'Game moments','st.momentsSub':'Characterize with your own game moments.',
     'st.ph.skill':'Add technical action…','st.ph.moment':'Add game moment…',
     /* --- ações ofensivas (offensive actions) --- */
@@ -1551,6 +1552,7 @@
     /* placeholders */
     'st.ph.club':'Adicionar nome do clube…','st.ph.comp':'Adicionar competição…','st.ph.gk':'Adicionar nome do goleiro…',
     'st.skillsTitle':'Ações técnicas','st.skillsSub':'Caracterize com suas próprias ações técnicas.',
+    'st.resultsTitle':'Resultados da finalização','st.resultsSub':'Renomeie ou crie seus próprios resultados. Escolha o que cada um representa para o % de defesas continuar correto.','st.ph.result':'Adicionar resultado…','st.countsAs':'conta como','st.countsNothing':'Não contabiliza','st.rename':'Renomear','st.renameResultAsk':'Novo nome para','st.renameDup':'Esse nome já existe.','st.renameDone':'Renomeado. Finalizações atualizadas:',
     'st.momentsTitle':'Momentos de jogo','st.momentsSub':'Caracterize com seus próprios momentos de jogo.',
     'st.ph.skill':'Adicionar ação técnica…','st.ph.moment':'Adicionar momento de jogo…',
     /* --- ações ofensivas --- */
