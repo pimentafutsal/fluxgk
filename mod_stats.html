@@ -1714,18 +1714,29 @@ function buildReport(){
   el.innerHTML='';
   if(games.length===0){el.innerHTML='<div style="color:var(--mute);padding:24px;text-align:center;">'+TX("st.noGamesFilter")+'</div>';return;}
   if(reportType==='game'){
-    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null,g.shotsLink,g.offLink)));
+    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null,g.shotsLink,g.offLink,_asArr(g.offActions))));
   } else {
     const key=reportType==='competition'?'competition':reportType==='opponent'?'opponent':reportType==='season'?'season':'gk';
     const groups={};
     games.forEach(g=>{const k=g[key]||TX('st.unknown');if(!groups[k])groups[k]=[];groups[k].push(g);});
     Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,gList])=>{
-      el.appendChild(makeReportBlock(k,`${gList.length} game${gList.length!==1?'s':''} · ${gList.flatMap(g=>g.shots).length} shots`,gList.flatMap(g=>g.shots),gList));
+      el.appendChild(makeReportBlock(k,`${gList.length} game${gList.length!==1?'s':''} · ${gList.flatMap(g=>g.shots).length} shots`,gList.flatMap(g=>g.shots),gList,'','',gList.flatMap(g=>_asArr(g.offActions))));
     });
   }
 }
-function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink){
+function offReportKpis(offs){
+  const porRes=countBy(offs,'result');
+  const chaves=Object.keys(porRes).sort((x,y)=>porRes[y]-porRes[x]).slice(0,5);
+  return '<div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">'+offs.length+'</div>'
+       + '<div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
+       + chaves.map(function(k){
+           return '<div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">'+porRes[k]+'</div>'
+                + '<div class="kpi-l">'+stLbl(k)+'</div></div>';
+         }).join('');
+}
+function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
   const s=calcStats(shots);
+  offs=offs||[];
   const uid='r'+Math.random().toString(36).slice(2,8);
   const div=document.createElement('div'); div.className='card mb16';
   div.innerHTML=`
@@ -1756,6 +1767,15 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink){
       <div><div class="card-title">${TX("st.shotLocation")}</div>${goalHeatmapHtml(shots,s.total)}</div>
       <div><div class="card-title">${TX("st.vShotPos")}</div><div style="display:flex;justify-content:center;">${courtHeatmapHtml(shots,s.total)}</div></div>
     </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="card-title" style="margin-bottom:10px;">${TX("st.offSummary","Offensive actions")}</div>
+      ${offs.length? `<div class="g2" style="align-items:start;">
+          <div><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="170"></canvas></div>
+          <div><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="170"></canvas></div>
+        </div>
+        <div class="g6" style="margin-top:12px;">${offReportKpis(offs)}</div>`
+        : `<div style="color:var(--mute);font-size:12px;">${TX("st.noOff","No offensive actions recorded yet.")}</div>`}
+    </div>
     ${games?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="card-title">${TX("st.games")}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -1767,6 +1787,10 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink){
     orderedChart(uid+'m','bar',mc,MOMENT_ORDER,null,false);
     orderedChart(uid+'k','doughnut',kc,SKILL_ORDER,null,false);
     orderedChart(uid+'d','bar',dc,HDIST_ORDER,null,true);
+    if(offs.length){
+      orderedChart(uid+'ot','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
+      orderedChart(uid+'or','bar',countBy(offs,'result'),ST.offresults,null,false);
+    }
   },60);
   return div;
 }
@@ -1791,6 +1815,31 @@ function exportReport(){
       <div style="width:36px;font-size:11px;font-weight:600;color:#111;text-align:right;">${count}</div>
       <div style="width:32px;font-size:10px;color:#999;">${p}%</div>
     </div>`;
+  }
+
+  // ── acoes ofensivas ──────────────────────────────────────────────
+  const allOffs=games.flatMap(g=>_asArr(g.offActions));
+  function ordKeys(obj,order){
+    const conhecidos=(order||[]).filter(k=>obj[k]!=null);
+    const extras=Object.keys(obj).filter(k=>!(order||[]).includes(k)).sort();
+    return conhecidos.concat(extras);
+  }
+  function offBars(list,campo,order,cor){
+    const c=countBy(list,campo), ks=ordKeys(c,order);
+    if(!ks.length) return '<div style="font-size:11px;color:#aaa;">—</div>';
+    return ks.map(k=>bar(stLbl(k),c[k],list.length,cor)).join('');
+  }
+  function offSection(list,titulo){
+    if(!list.length) return '';
+    const c=countBy(list,'result'), ks=ordKeys(c,ST.offresults).slice(0,5);
+    const kpis='<div class="kpi"><div class="kpi-n k">'+list.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
+      + ks.map(k=>'<div class="kpi"><div class="kpi-n k">'+c[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>').join('');
+    return '<div class="sec"><div class="sec-title">'+titulo+'</div>'
+      + '<div class="kpi-row" style="margin-bottom:14px;">'+kpis+'</div>'
+      + '<div class="charts">'
+      + '<div class="chart-box"><div class="chart-title">'+TX('st.offByType','Offensive actions — type')+'</div>'+offBars(list,'type',ST.offtypes,a)+'</div>'
+      + '<div class="chart-box"><div class="chart-title">'+TX('st.offByResult','Offensive actions — result')+'</div>'+offBars(list,'result',ST.offresults,'#444')+'</div>'
+      + '</div></div>';
   }
 
   const RC=countBy(shots,'result'),MC=countBy(shots,'moment'),KC=countBy(shots,'skill'),DC=countBy(shots,'hDistance');
@@ -1953,6 +2002,7 @@ function exportReport(){
         <div><div style="font-size:10px;font-weight:600;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${TX("st.shotLocation")}</div>${goalHm2}</div>
         <div><div style="font-size:10px;font-weight:600;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${TX("st.vShotPos")}</div><div style="display:flex;justify-content:center;">${courtHm2}</div></div>
       </div>
+      <div style="margin-top:18px;">${offSection(_asArr(g.offActions),TX('st.offSummary','Offensive actions'))}</div>
     </div>`;
   }
   const splitSectionsHtml = splitEnabled && games.length>1
@@ -2018,6 +2068,7 @@ function exportReport(){
           <div class="cover-meta-item"><div class="cover-meta-label">${TX("st.pdf.rptType")}</div><div class="cover-meta-value">${title}</div></div>
           <div class="cover-meta-item"><div class="cover-meta-label">${TX("st.pdf.shotsAnalyzed")}</div><div class="cover-meta-value">${s.total}</div></div>
           <div class="cover-meta-item"><div class="cover-meta-label">${TX("st.pdf.saveRate")}</div><div class="cover-meta-value">${s.savePct}%</div></div>
+          ${allOffs.length?'<div class="cover-meta-item"><div class="cover-meta-label">'+TX('st.offSummary','Offensive actions')+'</div><div class="cover-meta-value">'+allOffs.length+'</div></div>':''}
           <div class="cover-meta-item"><div class="cover-meta-label">${TX("data.pdf.generated")}</div><div class="cover-meta-value">${now}</div></div>
           ${ST.coachName?'<div class="cover-meta-item"><div class="cover-meta-label">'+TX("common.coach")+'</div><div class="cover-meta-value">'+ST.coachName+'</div></div>':''}
         </div>
@@ -2057,6 +2108,8 @@ function exportReport(){
         <div class="chart-box"><div class="chart-title">${TX("st.vShotPosCorr")}</div>${courtHm}</div>
       </div>
     </div>
+
+    ${offSection(allOffs,TX('st.offSummary','Offensive actions'))}
 
     <div class="sec">
       <div class="sec-title">${TX("st.pdf.detailed")}</div>
