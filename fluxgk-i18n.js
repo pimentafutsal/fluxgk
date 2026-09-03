@@ -688,6 +688,7 @@
     /* clipe */
     'vid.replay':'↺ Replay','vid.editTime':'✎ Edit time','vid.frame':'🔍 Frame','vid.export':'⤓ Export',
     'vid.exitClip':'✕ Exit clip','vid.preDefault':'pre default','vid.postDefault':'post default',
+    'vid.outcome':'Action','vid.outcomeOk':'✓ Correct','vid.outcomeBad':'✗ Wrong','vid.outcomeNone':'— Not rated','vid.outcomeOkShort':'Correct','vid.outcomeBadShort':'Wrong','vid.outcomeNoneShort':'Not rated','vid.tt.outcomeToggle':'click to change',
     'vid.clipDetails':'Clip details','vid.name':'Name','vid.notes':'Notes','vid.discard':'Discard',
     'vid.okContinue':'OK & continue','vid.menu':'▾ Menu','vid.exporting':'Exporting…',
     /* dashboards */
@@ -1616,6 +1617,7 @@
     /* clipe */
     'vid.replay':'↺ Repetir','vid.editTime':'✎ Editar tempo','vid.frame':'🔍 Enquadrar','vid.export':'⤓ Exportar',
     'vid.exitClip':'✕ Sair do clipe','vid.preDefault':'pré padrão','vid.postDefault':'pós padrão',
+    'vid.outcome':'Ação','vid.outcomeOk':'✓ Certa','vid.outcomeBad':'✗ Errada','vid.outcomeNone':'— Sem avaliar','vid.outcomeOkShort':'Certa','vid.outcomeBadShort':'Errada','vid.outcomeNoneShort':'Sem avaliar','vid.tt.outcomeToggle':'clique para alterar',
     'vid.clipDetails':'Detalhes do clipe','vid.name':'Nome','vid.notes':'Observações','vid.discard':'Descartar',
     'vid.okContinue':'OK e continuar','vid.menu':'▾ Menu','vid.exporting':'Exportando…',
     /* dashboards */
