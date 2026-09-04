@@ -276,8 +276,18 @@ textarea.fi{resize:vertical;min-height:38px}
       <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost" id="ovSeasonBtn" data-i18n="period.seasonView">⤢ Whole season</button>
         <button class="btn ghost" id="expCalPdf" data-i18n="period.exportCal">⤓ Monthly calendar</button>
+        <button class="btn ghost" id="rngToggle" data-i18n="period.exportRange">⤓ Export period…</button>
         <button class="btn" id="expPdf" data-i18n="period.exportPdf">⤓ Export PDF</button>
       </div>
+    </div>
+    <!-- exportacao de um periodo determinado, para entregar a direcao -->
+    <div id="rngBox" style="display:none;margin-top:12px;border:1px solid var(--line,#e6e2d8);border-radius:8px;padding:12px 14px;background:#fff">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div><div class="fl" data-i18n="period.rangeFrom">From</div><input type="date" id="rngIni" style="padding:7px 9px"></div>
+        <div><div class="fl" data-i18n="period.rangeTo">To</div><input type="date" id="rngFim" style="padding:7px 9px"></div>
+        <button class="btn" id="rngGo" data-i18n="period.rangeExport" style="margin-left:auto">⤓ Export period</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" id="rngShortcuts"></div>
     </div>
     <div id="ov-nav" class="calnav" style="margin-top:10px"></div>
     <div id="ov-cal"></div>
@@ -807,7 +817,7 @@ function monthCellsFor(y,m){
   while(cells.length%7)cells.push({d:cells.length-startDow-dim+1,m:m+1});
   return cells.map(function(c){var yy=y,mm=c.m;if(mm<0){mm=11;yy--;}if(mm>11){mm=0;yy++;}return {iso:isoOf(yy,mm,c.d),d:c.d,other:(c.m!==m)};});
 }
-function monthGridHTML(y,m,print){
+function monthGridHTML(y,m,print,rng){
   var wd=[TXf('period.wd.mon','Mon'),TXf('period.wd.tue','Tue'),TXf('period.wd.wed','Wed'),TXf('period.wd.thu','Thu'),TXf('period.wd.fri','Fri'),TXf('period.wd.sat','Sat'),TXf('period.wd.sun','Sun')];
   var now=new Date(), todayIso=isoOf(now.getFullYear(),now.getMonth(),now.getDate());
   var cellH=print?'62pt':'74px', bd=print?'.5pt solid #e5e5e5':'1px solid var(--line,#e6e2d8)';
@@ -820,7 +830,10 @@ function monthGridHTML(y,m,print){
     html+='<tr>';
     for(var c=0;c<7;c++){
       var cell=cells[r*7+c];
+      /* na exportacao por periodo, os dias fora do intervalo ficam apagados */
+      var fora=cell.other || (rng && (cell.iso<rng.ini || cell.iso>rng.fim));
       var isToday=(cell.iso===todayIso);
+      cell={d:cell.d, iso:cell.iso, other:fora};
       var inner='<div style="font-size:'+fD+';font-weight:'+(isToday?'800':'600')+';color:'+(cell.other?'#c4c0b6':(isToday?(print?'#0A2A6B':'var(--accent)'):'#8a8a8a'))+'">'+cell.d+'</div>';
       inner += dayCellHTML(cell.iso, cell.other, {print:print, plain:true, firstOfMonth:(cell.d===1)});
       html+='<td style="border:'+bd+';height:'+cellH+';vertical-align:top;padding:3px;background:'+(cell.other?'#faf9f4':'#fff')+'">'+inner+'</td>';
@@ -898,6 +911,64 @@ function exportMonthlyPDF(){
   var w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
 if($('expCalPdf')) $('expCalPdf').addEventListener('click', exportMonthlyPDF);
+
+/* ═══ EXPORTAR UM PERIODO DETERMINADO ═══
+   Mesmo padrao de PDF dos outros modulos: capa A4 inteira com escudo, titulo,
+   metadados e rodape; depois as secoes de conteudo.                          */
+function _isoHoje(d){ d=d||new Date(); return isoOf(d.getFullYear(),d.getMonth(),d.getDate()); }
+function _addDias(iso,n){ var d=new Date(iso+'T12:00'); d.setDate(d.getDate()+n); return _isoHoje(d); }
+function _mesesEntre(ini,fim){
+  var y=+ini.slice(0,4), m=+ini.slice(5,7)-1, ey=+fim.slice(0,4), em=+fim.slice(5,7)-1, out=[], g=0;
+  while((y<ey||(y===ey&&m<=em))&&g++<160){ out.push([y,m]); m++; if(m>11){m=0;y++;} }
+  return out;
+}
+function rngRenderShortcuts(){
+  var box=$('rngShortcuts'); if(!box) return;
+  var hoje=new Date();
+  var atalhos=[
+    {t:TXf('period.rngThisMonth','This month'),
+     i:isoOf(hoje.getFullYear(),hoje.getMonth(),1),
+     f:isoOf(hoje.getFullYear(),hoje.getMonth(),new Date(hoje.getFullYear(),hoje.getMonth()+1,0).getDate())},
+    {t:TXf('period.rngNext30','Next 30 days'), i:_isoHoje(hoje), f:_addDias(_isoHoje(hoje),30)}
+  ];
+  var ms=spanMonths();
+  if(ms.length){
+    var pi=ms[0], pf=ms[ms.length-1];
+    atalhos.push({t:TXf('period.rngSeason','Whole season'),
+      i:isoOf(pi[0],pi[1],1), f:isoOf(pf[0],pf[1],new Date(pf[0],pf[1]+1,0).getDate())});
+  }
+  sortByStart(itemsOf('meso')).forEach(function(mz){
+    if(mz.start&&mz.end) atalhos.push({t:(mz.name||lvlName('meso')), i:mz.start, f:mz.end, cor:mz.color||lvlColor('meso')});
+  });
+  box.innerHTML='';
+  atalhos.forEach(function(a){
+    var b=document.createElement('button');
+    b.className='btn ghost sm';
+    b.textContent=a.t;
+    if(a.cor){ b.style.borderColor=a.cor; b.style.color=a.cor; }
+    b.onclick=function(){ $('rngIni').value=a.i; $('rngFim').value=a.f; };
+    box.appendChild(b);
+  });
+}
+if($('rngToggle')) $('rngToggle').addEventListener('click', function(){
+  var box=$('rngBox'); if(!box) return;
+  var abrir=box.style.display==='none';
+  box.style.display=abrir?'':'none';
+  if(abrir){
+    if(!$('rngIni').value){
+      var h=new Date();
+      $('rngIni').value=isoOf(h.getFullYear(),h.getMonth(),1);
+      $('rngFim').value=isoOf(h.getFullYear(),h.getMonth(),new Date(h.getFullYear(),h.getMonth()+1,0).getDate());
+    }
+    rngRenderShortcuts();
+  }
+});
+if($('rngGo')) $('rngGo').addEventListener('click', function(){
+  var i=$('rngIni').value, f=$('rngFim').value;
+  if(!i||!f){ try{alert(TXf('period.rngPick','Choose the start and end dates.'));}catch(e){} return; }
+  if(f<i){ var t=i; i=f; f=t; }
+  exportRangePDF(i,f);
+});
 
 function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderDayThemes(); renderOverview(); }
 if($('dt-meso')) $('dt-meso').addEventListener('change', function(){ _dtMeso=this.value; renderDayThemes(); });
@@ -986,6 +1057,132 @@ function exportPDF(){
     + (body || '<div style="color:#737373;padding:20pt;text-align:center">'+esc(TXf('period.overviewEmpty','Nothing to export yet.'))+'</div>')
     + '</body></html>';
   const w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
+function exportRangePDF(ini,fim){
+  var P=_hexOkJs(PZ.accent)?PZ.accent:'#0A2A6B';
+  var cn=PZ.clubName||'FluxGK', coa=PZ.coachName||'';
+  var hoje=new Date().toLocaleDateString(TXf('data.pdf.locale','en-GB'),{day:'2-digit',month:'short',year:'numeric'});
+  var rng={ini:ini,fim:fim};
+  var toca=function(a,b){ return !(b<ini||a>fim); };   /* intervalos que cruzam o periodo */
+
+  /* ── ciclos que tocam o periodo ── */
+  function secCiclos(lv){
+    var arr=sortByStart(itemsOf(lv)).filter(function(it){ return it.start&&it.end&&toca(it.start,it.end); });
+    if(!arr.length) return '';
+    var col=lvlColor(lv);
+    var rows=arr.map(function(it){
+      var parcial=(it.start<ini||it.end>fim);
+      return '<tr><td class="c1"><span class="dot" style="background:'+(it.color||col)+'"></span>'+esc(it.name||'—')
+        + (parcial?'<span class="parc">'+esc(TXf('period.rngPartial','partial'))+'</span>':'')+'</td>'
+        + '<td class="c2">'+fmtDate(it.start)+' → '+fmtDate(it.end)+'</td>'
+        + '<td class="c3">'+esc(it.text||'')+'</td></tr>';
+    }).join('');
+    return '<div class="sec"><div class="sec-title">'+esc(lvlName(lv))+'</div>'
+      + '<table><thead><tr><th>'+esc(TXf('period.name','Name'))+'</th><th>'+esc(TXf('period.periodCol','Period'))+'</th>'
+      + '<th>'+esc(lv==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</th></tr></thead>'
+      + '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  /* ── tematicas diarias dentro do periodo, agrupadas pelo mesociclo ── */
+  function secTematicas(){
+    var raiz=dayThemesRoot(), linhas=[];
+    sortByStart(itemsOf('meso')).forEach(function(mz){
+      var mm=raiz[mz.id]||{};
+      Object.keys(mm).forEach(function(iso){
+        if(iso>=ini&&iso<=fim&&(mm[iso]||'').trim())
+          linhas.push({iso:iso,txt:mm[iso],nome:mz.name||'—',cor:mz.color||lvlColor('meso')});
+      });
+    });
+    var gg=raiz[DT_SEM_MESO]||{};
+    Object.keys(gg).forEach(function(iso){
+      if(iso>=ini&&iso<=fim&&(gg[iso]||'').trim())
+        linhas.push({iso:iso,txt:gg[iso],nome:TXf('period.noMesoTag','no mesocycle'),cor:'#8a8a8a'});
+    });
+    if(!linhas.length) return '';
+    linhas.sort(function(a,b){ return a.iso.localeCompare(b.iso); });
+    var rows=linhas.map(function(l){
+      return '<tr><td class="c2">'+fmtDate(l.iso)+'</td>'
+        + '<td class="c1"><span class="dot" style="background:'+l.cor+'"></span>'+esc(l.nome)+'</td>'
+        + '<td class="c3">'+esc(l.txt)+'</td></tr>';
+    }).join('');
+    return '<div class="sec"><div class="sec-title">'+esc(TXf('period.dayThemes','Daily themes'))
+      + ' <span class="cnt">'+linhas.length+'</span></div>'
+      + '<table><tbody>'+rows+'</tbody></table></div>';
+  }
+
+  /* ── calendario dos meses do periodo ── */
+  var meses=_mesesEntre(ini,fim);
+  var calHtml=meses.map(function(ym){
+    var t=new Date(ym[0],ym[1],1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
+    return '<div class="mpage"><div class="mh"><span class="mh-t">'+esc(t)+'</span><span class="mh-s">FluxGK · '+esc(cn)+'</span></div>'
+      + calLegend(true) + monthGridHTML(ym[0],ym[1],true,rng) + '</div>';
+  }).join('');
+
+  var nJogos=evList().filter(function(e){ return e.date>=ini&&e.date<=fim&&e.type==='game'; }).length;
+  var nAlvos=evList().filter(function(e){ return e.date>=ini&&e.date<=fim&&e.type!=='game'; }).length;
+  var corpo=secCiclos('macro')+secCiclos('meso')+secCiclos('micro')+secTematicas();
+  var faixa=fmtDate(ini)+'  →  '+fmtDate(fim);
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.rngPdfTitle','Training period'))+' — '+esc(faixa)+'</title>'
+   +'<style>*{box-sizing:border-box;margin:0;padding:0}'
+   +'body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;background:#fafaf7;color:#0a0a0a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+   +'@page{size:A4;margin:16mm 14mm}@page:first{margin:0}'
+   +'.cover{background:'+P+';color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;page-break-after:always}'
+   +'.cover-top{flex:1}'
+   +'.cover-tag{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px}'
+   +'.cover-badge{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin-bottom:28px;overflow:hidden}'
+   +'.cover-badge img{width:56px;height:56px;object-fit:contain;border-radius:10px}'
+   +'.cover-title{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px}'
+   +'.cover-sub{font-size:16px;color:rgba(255,255,255,.60);margin-bottom:36px}'
+   +'.cover-range{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:10px 16px;font-size:15px;font-weight:600;margin-bottom:36px}'
+   +'.cover-meta{display:flex;gap:36px;flex-wrap:wrap}'
+   +'.meta-item{display:flex;flex-direction:column;gap:3px}'
+   +'.meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38)}'
+   +'.meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,.88)}'
+   +'.cover-footer{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.08em;text-transform:uppercase}'
+   +'.wrap{padding:0}'
+   +'.sec{margin-bottom:26px;page-break-inside:avoid}'
+   +'.sec-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#737373;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e5e5e5}'
+   +'.cnt{color:#aaa;font-weight:600}'
+   +'table{width:100%;border-collapse:collapse;font-size:11.5px;background:#fff}'
+   +'th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:7px 10px;border-bottom:2px solid #e5e5e5}'
+   +'td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top}'
+   +'.c1{font-weight:700;white-space:nowrap}.c2{white-space:nowrap;color:#666}.c3{color:#333}'
+   +'.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}'
+   +'.parc{font-size:8.5px;font-weight:600;color:#999;margin-left:6px;text-transform:uppercase;letter-spacing:.06em}'
+   +'.mpage{page-break-before:always}'
+   +'.mh{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid '+P+';padding-bottom:5px;margin-bottom:6px}'
+   +'.mh-t{font-size:16px;font-weight:800;text-transform:capitalize;color:'+P+'}'
+   +'.mh-s{margin-left:auto;font-size:8.5px;color:#888;letter-spacing:.05em}'
+   +'.footer{display:flex;justify-content:space-between;font-size:9px;color:#aaa;padding-top:16px;border-top:1px solid #eee;margin-top:24px}'
+   +'.no-print{text-align:center;padding:26px;display:flex;gap:12px;justify-content:center}@media print{.no-print{display:none}}'
+   +'</style></head><body>'
+   +'<div class="cover"><div class="cover-top">'
+   +  '<div class="cover-tag">FluxGK</div>'
+   +  '<div class="cover-badge">'+(PZ.clubBadge?'<img src="'+PZ.clubBadge+'">':esc((cn||'GK').slice(0,2).toUpperCase()))+'</div>'
+   +  '<div class="cover-title">'+esc(TXf('period.rngPdfTitle','Training period'))+'</div>'
+   +  '<div class="cover-sub">'+esc(cn)+'</div>'
+   +  '<div class="cover-range">'+esc(faixa)+'</div>'
+   +  '<div class="cover-meta">'
+   +    '<div class="meta-item"><div class="meta-label">'+esc(lvlName('meso'))+'</div><div class="meta-value">'+sortByStart(itemsOf('meso')).filter(function(it){return it.start&&it.end&&toca(it.start,it.end);}).length+'</div></div>'
+   +    '<div class="meta-item"><div class="meta-label">'+esc(lvlName('micro'))+'</div><div class="meta-value">'+sortByStart(itemsOf('micro')).filter(function(it){return it.start&&it.end&&toca(it.start,it.end);}).length+'</div></div>'
+   +    '<div class="meta-item"><div class="meta-label">'+esc(TXf('period.evGame','Game'))+'</div><div class="meta-value">'+nJogos+'</div></div>'
+   +    '<div class="meta-item"><div class="meta-label">'+esc(TXf('period.evTarget','Target'))+'</div><div class="meta-value">'+nAlvos+'</div></div>'
+   +    '<div class="meta-item"><div class="meta-label">'+esc(TXf('data.pdf.generated','Generated'))+'</div><div class="meta-value">'+esc(hoje)+'</div></div>'
+   +    (coa?'<div class="meta-item"><div class="meta-label">'+esc(TXf('common.coach','Coach'))+'</div><div class="meta-value">'+esc(coa)+'</div></div>':'')
+   +  '</div></div>'
+   +  '<div class="cover-footer"><span>FluxGK · '+esc(window._hubSeason||'')+'</span>'
+   +  '<span>'+esc(TXf('data.pdf.methodValue','Constraints-Based Approach · Ecological Dynamics'))+'</span></div>'
+   +'</div>'
+   +'<div class="wrap">'
+   + (corpo||'<div style="color:#737373;padding:24px;text-align:center">'+esc(TXf('period.rngEmpty','No cycles or themes in this period.'))+'</div>')
+   + calHtml
+   + '<div class="footer"><span>FluxGK · '+esc(cn)+'</span><span>'+esc(faixa)+'</span></div>'
+   +'</div>'
+   +'<div class="no-print"><button onclick="window.print()" style="padding:11px 26px;background:'+P+';color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:14px">🖨 '+esc(TXf('period.print','Print / Save as PDF'))+'</button>'
+   +'<button onclick="window.close()" style="padding:11px 22px;background:#eee;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:14px">✕ '+esc(TXf('common.close','Close'))+'</button></div>'
+   +'</body></html>';
+  var w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
 function _hexOkJs(c){ return typeof c==='string'&&/^#[0-9a-fA-F]{3,8}$/.test((c||'').trim()); }
 if($('expPdf')) $('expPdf').addEventListener('click', exportPDF);
