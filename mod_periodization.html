@@ -288,6 +288,13 @@ textarea.fi{resize:vertical;min-height:38px}
         <button class="btn" id="rngGo" data-i18n="period.rangeExport" style="margin-left:auto">⤓ Export period</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" id="rngShortcuts"></div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line,#eee)">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="rngCal" checked><span data-i18n="period.incCalendar">Calendar</span></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="rngCont" checked><span data-i18n="period.incContent">Content list</span></label>
+        <span class="hint" data-i18n="period.incHint" style="font-size:11.5px;color:var(--mute)">The calendar always comes first.</span>
+      </div>
     </div>
     <div id="ov-nav" class="calnav" style="margin-top:10px"></div>
     <div id="ov-cal"></div>
@@ -967,7 +974,10 @@ if($('rngGo')) $('rngGo').addEventListener('click', function(){
   var i=$('rngIni').value, f=$('rngFim').value;
   if(!i||!f){ try{alert(TXf('period.rngPick','Choose the start and end dates.'));}catch(e){} return; }
   if(f<i){ var t=i; i=f; f=t; }
-  exportRangePDF(i,f);
+  var cal=!$('rngCal')||$('rngCal').checked;
+  var cont=!$('rngCont')||$('rngCont').checked;
+  if(!cal&&!cont){ try{alert(TXf('period.rngPickWhat','Choose at least the calendar or the content list.'));}catch(e){} return; }
+  exportRangePDF(i,f,{cal:cal,cont:cont});
 });
 
 function renderAll(){ renderCalendar(); renderLevel('macro'); renderLevel('meso'); renderLevel('micro'); renderDayThemes(); renderOverview(); }
@@ -1058,7 +1068,8 @@ function exportPDF(){
     + '</body></html>';
   const w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
-function exportRangePDF(ini,fim){
+function exportRangePDF(ini,fim,opt){
+  opt=opt||{}; if(opt.cal===undefined)opt.cal=true; if(opt.cont===undefined)opt.cont=true;
   var P=_hexOkJs(PZ.accent)?PZ.accent:'#0A2A6B';
   var cn=PZ.clubName||'FluxGK', coa=PZ.coachName||'';
   var hoje=new Date().toLocaleDateString(TXf('data.pdf.locale','en-GB'),{day:'2-digit',month:'short',year:'numeric'});
@@ -1066,6 +1077,11 @@ function exportRangePDF(ini,fim){
   var toca=function(a,b){ return !(b<ini||a>fim); };   /* intervalos que cruzam o periodo */
 
   /* ── ciclos que tocam o periodo ── */
+  var _primeiraSec=true;
+  function classeSec(){
+    var c='sec'+((opt.cal&&_primeiraSec)?' sec-first':'');
+    _primeiraSec=false; return c;
+  }
   function secCiclos(lv){
     var arr=sortByStart(itemsOf(lv)).filter(function(it){ return it.start&&it.end&&toca(it.start,it.end); });
     if(!arr.length) return '';
@@ -1077,7 +1093,7 @@ function exportRangePDF(ini,fim){
         + '<td class="c2">'+fmtDate(it.start)+' → '+fmtDate(it.end)+'</td>'
         + '<td class="c3">'+esc(it.text||'')+'</td></tr>';
     }).join('');
-    return '<div class="sec"><div class="sec-title">'+esc(lvlName(lv))+'</div>'
+    return '<div class="'+classeSec()+'"><div class="sec-title">'+esc(lvlName(lv))+'</div>'
       + '<table><thead><tr><th>'+esc(TXf('period.name','Name'))+'</th><th>'+esc(TXf('period.periodCol','Period'))+'</th>'
       + '<th>'+esc(lv==='micro'?TXf('period.content','Content'):TXf('period.objective','Objective'))+'</th></tr></thead>'
       + '<tbody>'+rows+'</tbody></table></div>';
@@ -1105,14 +1121,14 @@ function exportRangePDF(ini,fim){
         + '<td class="c1"><span class="dot" style="background:'+l.cor+'"></span>'+esc(l.nome)+'</td>'
         + '<td class="c3">'+esc(l.txt)+'</td></tr>';
     }).join('');
-    return '<div class="sec"><div class="sec-title">'+esc(TXf('period.dayThemes','Daily themes'))
+    return '<div class="'+classeSec()+'"><div class="sec-title">'+esc(TXf('period.dayThemes','Daily themes'))
       + ' <span class="cnt">'+linhas.length+'</span></div>'
       + '<table><tbody>'+rows+'</tbody></table></div>';
   }
 
   /* ── calendario dos meses do periodo ── */
   var meses=_mesesEntre(ini,fim);
-  var calHtml=meses.map(function(ym){
+  var calHtml=!opt.cal?'':meses.map(function(ym){
     var t=new Date(ym[0],ym[1],1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
     return '<div class="mpage"><div class="mh"><span class="mh-t">'+esc(t)+'</span><span class="mh-s">FluxGK · '+esc(cn)+'</span></div>'
       + calLegend(true) + monthGridHTML(ym[0],ym[1],true,rng) + '</div>';
@@ -1120,7 +1136,7 @@ function exportRangePDF(ini,fim){
 
   var nJogos=evList().filter(function(e){ return e.date>=ini&&e.date<=fim&&e.type==='game'; }).length;
   var nAlvos=evList().filter(function(e){ return e.date>=ini&&e.date<=fim&&e.type!=='game'; }).length;
-  var corpo=secCiclos('macro')+secCiclos('meso')+secCiclos('micro')+secTematicas();
+  var corpo=!opt.cont?'':(secCiclos('macro')+secCiclos('meso')+secCiclos('micro')+secTematicas());
   var faixa=fmtDate(ini)+'  →  '+fmtDate(fim);
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.rngPdfTitle','Training period'))+' — '+esc(faixa)+'</title>'
@@ -1150,7 +1166,8 @@ function exportRangePDF(ini,fim){
    +'.c1{font-weight:700;white-space:nowrap}.c2{white-space:nowrap;color:#666}.c3{color:#333}'
    +'.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}'
    +'.parc{font-size:8.5px;font-weight:600;color:#999;margin-left:6px;text-transform:uppercase;letter-spacing:.06em}'
-   +'.mpage{page-break-before:always}'
+   +'.mpage{page-break-before:always}.mpage:first-child{page-break-before:auto}'
+   +'.sec-first{page-break-before:always}'
    +'.mh{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid '+P+';padding-bottom:5px;margin-bottom:6px}'
    +'.mh-t{font-size:16px;font-weight:800;text-transform:capitalize;color:'+P+'}'
    +'.mh-s{margin-left:auto;font-size:8.5px;color:#888;letter-spacing:.05em}'
@@ -1175,8 +1192,8 @@ function exportRangePDF(ini,fim){
    +  '<span>'+esc(TXf('data.pdf.methodValue','Constraints-Based Approach · Ecological Dynamics'))+'</span></div>'
    +'</div>'
    +'<div class="wrap">'
-   + (corpo||'<div style="color:#737373;padding:24px;text-align:center">'+esc(TXf('period.rngEmpty','No cycles or themes in this period.'))+'</div>')
-   + calHtml
+   + (opt.cal ? calHtml : '')
+   + (opt.cont ? (corpo||'<div style="color:#737373;padding:24px;text-align:center">'+esc(TXf('period.rngEmpty','No cycles or themes in this period.'))+'</div>') : '')
    + '<div class="footer"><span>FluxGK · '+esc(cn)+'</span><span>'+esc(faixa)+'</span></div>'
    +'</div>'
    +'<div class="no-print"><button onclick="window.print()" style="padding:11px 26px;background:'+P+';color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:14px">🖨 '+esc(TXf('period.print','Print / Save as PDF'))+'</button>'
