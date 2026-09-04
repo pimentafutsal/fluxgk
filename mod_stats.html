@@ -211,7 +211,33 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .badge-red{background:#fee2e2;color:var(--red);}
 .badge-mute{background:var(--surface2);color:var(--mute);}
 .badge-amber{background:#fef3c7;color:#b45309;}
-.rtype-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px;}
+/* faixa fina de numeros do dashboard */
+.dstrip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.dcell{flex:1;min-width:0;text-align:center;padding:11px 6px;border-right:1px solid var(--border);}
+.dcell:last-child{border-right:none;}
+.dnum{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.05;}
+.dlbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* sub-abas do dashboard */
+/* acordeao dos relatorios */
+.rblk{border:1px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:8px;overflow:hidden;}
+.rhead{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;user-select:none;}
+.rhead:hover{background:var(--surface2);}
+.rcaret{font-size:10px;color:var(--mute);flex:none;width:10px;transition:transform .15s;}
+.rblk.open .rcaret{transform:rotate(90deg);}
+.rtitle{font-size:14px;font-weight:700;letter-spacing:-.3px;flex:none;}
+.rsub{font-size:11px;color:var(--mute);flex:none;}
+.rline{font-size:11px;color:var(--ink);font-family:var(--mono);margin-left:auto;white-space:nowrap;}
+.rbody{display:none;border-top:1px solid var(--border);padding:14px 13px;}
+.rblk.open .rbody{display:block;}
+@media(max-width:820px){.rsub,.rline{display:none;}}
+.subtabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.subtab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;
+  font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.03em;color:var(--mute);
+  cursor:pointer;transition:all .12s;width:auto;}
+.subtab:hover{color:var(--ink);}
+.subtab.active{color:var(--ink);border-bottom-color:var(--ink);}
+.rtype-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
     .ms-wrap{position:relative;flex:1;min-width:130px;}
     .ms-trigger{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--ink);user-select:none;}
     .ms-trigger:hover{border-color:var(--accent);}
@@ -232,14 +258,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     .toggle-sw .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
     .toggle-sw input:checked+.slider{background:var(--accent);}
     .toggle-sw input:checked+.slider:before{transform:translateX(16px);}
-.rtype-btn{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:16px 12px;cursor:pointer;transition:all .15s;text-align:center;}
+.rtype-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);
+  border-radius:7px;padding:7px 12px;cursor:pointer;transition:all .15s;}
 .rtype-btn:hover{border-color:#bbb;}
 .rtype-btn.active{border-color:var(--ink);background:rgba(10,10,10,.04);}
-.rtype-icon{display:flex;align-items:center;justify-content:center;margin-bottom:9px;color:var(--mute);transition:color .15s;}
-.rtype-icon svg{width:23px;height:23px;display:block;}
+.rtype-icon{display:flex;align-items:center;justify-content:center;color:var(--mute);transition:color .15s;flex:none;}
+.rtype-icon svg{width:15px;height:15px;display:block;}
 .rtype-btn.active .rtype-icon{color:var(--accent);}
 .rtype-btn:hover .rtype-icon{color:var(--ink);}
-.rtype-name{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--mute);}
+.rtype-name{font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--mute);white-space:nowrap;}
 .rtype-btn.active .rtype-name{color:var(--ink);}
 /* Loading screen */
 #fb-loading{background:var(--carbon);}
@@ -294,30 +321,42 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <select id="dash-comp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option data-i18n="st.allComps" value="">All Competitions</option></select>
     </div>
   </div>
-  <div class="g5 mb20">
-    <div class="kpi"><div class="kpi-n" id="kpi-games">0</div><div data-i18n="st.games" class="kpi-l">Games</div></div>
-    <div class="kpi"><div class="kpi-n" id="kpi-shots">0</div><div data-i18n="st.totalShots" class="kpi-l">Total Shots</div></div>
-    <div class="kpi"><div class="kpi-n" style="color:var(--accent)" id="kpi-saves">0</div><div data-i18n="st.saves" class="kpi-l">Saves</div></div>
-    <div class="kpi"><div class="kpi-n" style="color:var(--red)" id="kpi-goals">0</div><div data-i18n="st.goalsConceded" class="kpi-l">Goals Conceded</div></div>
-    <div class="kpi"><div class="kpi-n" id="kpi-savepct">—</div><div data-i18n="st.saveRate" class="kpi-l">Save Rate</div></div>
+  <!-- faixa fina de numeros: substitui os 5 cartoes altos -->
+  <div class="dstrip mb16">
+    <div class="dcell"><div class="dnum" id="kpi-games">0</div><div data-i18n="st.games" class="dlbl">Games</div></div>
+    <div class="dcell"><div class="dnum" id="kpi-shots">0</div><div data-i18n="st.totalShots" class="dlbl">Total Shots</div></div>
+    <div class="dcell"><div class="dnum" style="color:var(--green)" id="kpi-saves">0</div><div data-i18n="st.saves" class="dlbl">Saves</div></div>
+    <div class="dcell"><div class="dnum" style="color:var(--red)" id="kpi-goals">0</div><div data-i18n="st.goalsConceded" class="dlbl">Goals Conceded</div></div>
+    <div class="dcell"><div class="dnum" id="kpi-savepct">—</div><div data-i18n="st.saveRate" class="dlbl">Save Rate</div></div>
+    <div class="dcell"><div class="dnum" id="kpi-offs">0</div><div data-i18n="st.offSummary" class="dlbl">Offensive actions</div></div>
   </div>
-  <div class="g3 mb16">
-    <div class="card"><div data-i18n="st.resultDist" class="card-title">Result Distribution</div><canvas id="ch-result" height="190"></canvas></div>
-    <div class="card"><div data-i18n="st.gameMoment" class="card-title">Game Moment</div><canvas id="ch-moment" height="190"></canvas></div>
-    <div class="card"><div data-i18n="st.skillType" class="card-title">Skill Type</div><canvas id="ch-skill" height="190"></canvas></div>
+
+  <!-- sub-abas: 3 graficos por vez em vez de 9 empilhados -->
+  <div class="subtabs" id="dash-subtabs">
+    <button class="subtab active" id="dsub-def" onclick="dashSub('def')" data-i18n="st.subDefensive">Defensive</button>
+    <button class="subtab" id="dsub-off" onclick="dashSub('off')" data-i18n="st.subOffensive">Offensive</button>
+    <button class="subtab" id="dsub-map" onclick="dashSub('map')" data-i18n="st.subMaps">Maps</button>
   </div>
-  <div class="g3">
-    <div class="card"><div data-i18n="st.hDistance" class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="190"></canvas></div>
-    <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
-    <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
+
+  <div class="g3" id="dpan-def">
+    <div class="card"><div data-i18n="st.resultDist" class="card-title">Result Distribution</div><canvas id="ch-result" height="150"></canvas></div>
+    <div class="card"><div data-i18n="st.gameMoment" class="card-title">Game Moment</div><canvas id="ch-moment" height="150"></canvas></div>
+    <div class="card"><div data-i18n="st.skillType" class="card-title">Skill Type</div><canvas id="ch-skill" height="150"></canvas></div>
   </div>
-  <div class="g3 mb16" style="margin-top:16px">
-    <div class="card"><div data-i18n="st.offByType" class="card-title">Offensive actions — type</div><canvas id="ch-offtype" height="190"></canvas></div>
-    <div class="card"><div data-i18n="st.offByResult" class="card-title">Offensive actions — result</div><canvas id="ch-offres" height="190"></canvas></div>
+
+  <div class="g3" id="dpan-off" style="display:none">
+    <div class="card"><div data-i18n="st.offByType" class="card-title">Offensive actions — type</div><canvas id="ch-offtype" height="150"></canvas></div>
+    <div class="card"><div data-i18n="st.offByResult" class="card-title">Offensive actions — result</div><canvas id="ch-offres" height="150"></canvas></div>
     <div class="card">
       <div data-i18n="st.offTotals" class="card-title">Offensive actions — totals</div>
       <div id="dash-off-kpis" class="g2" style="margin-top:10px"></div>
     </div>
+  </div>
+
+  <div class="g3" id="dpan-map" style="display:none">
+    <div class="card"><div data-i18n="st.hDistance" class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="150"></canvas></div>
+    <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
+    <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
 </div>
 
@@ -1783,24 +1822,42 @@ function renderDashboard(){
   document.getElementById('kpi-saves').textContent=s.saves;
   document.getElementById('kpi-goals').textContent=s.goals;
   document.getElementById('kpi-savepct').textContent=s.total?s.savePct+'%':'—';
-  orderedChart('ch-result','bar',countBy(shots,'result'),cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
-  orderedChart('ch-moment','bar',countBy(shots,'moment'),cfgOrder(ST.moments,MOMENT_ORDER),null,false);
-  orderedChart('ch-skill','doughnut',countBy(shots,'skill'),cfgOrder(ST.skills,SKILL_ORDER),null,false);
-  orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
   /* ── acoes ofensivas do goleiro (mesmos filtros do painel) ── */
   let offs=games.flatMap(g=>_asArr(g.offActions));
   if(f.gk) offs=offs.filter(o=>o.gk===f.gk);
-  orderedChart('ch-offtype','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
-  orderedChart('ch-offres','bar',countBy(offs,'result'),ST.offresults,null,false);
-  const okEl=document.getElementById('dash-off-kpis');
-  if(okEl){
-    const porRes=countBy(offs,'result');
-    const topo=Object.keys(porRes).sort(function(a2,b2){return porRes[b2]-porRes[a2];}).slice(0,3);
-    okEl.innerHTML='<div class="kpi"><div class="kpi-n">'+offs.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
-      + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
+  const elOffs=document.getElementById('kpi-offs'); if(elOffs) elOffs.textContent=offs.length;
+
+  /* So desenha os graficos da sub-aba visivel: um canvas escondido nasce com
+     tamanho zero no Chart.js e sairia em branco ao voltar para a aba. */
+  if(_dashSub==='def'){
+    orderedChart('ch-result','bar',countBy(shots,'result'),cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
+    orderedChart('ch-moment','bar',countBy(shots,'moment'),cfgOrder(ST.moments,MOMENT_ORDER),null,false);
+    orderedChart('ch-skill','doughnut',countBy(shots,'skill'),cfgOrder(ST.skills,SKILL_ORDER),null,false);
+  } else if(_dashSub==='off'){
+    orderedChart('ch-offtype','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
+    orderedChart('ch-offres','bar',countBy(offs,'result'),ST.offresults,null,false);
+    const okEl=document.getElementById('dash-off-kpis');
+    if(okEl){
+      const porRes=countBy(offs,'result');
+      const topo=Object.keys(porRes).sort(function(a2,b2){return porRes[b2]-porRes[a2];}).slice(0,3);
+      okEl.innerHTML='<div class="kpi"><div class="kpi-n">'+offs.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
+        + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
+    }
+  } else {
+    orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
+    document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total);
+    document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total);
   }
-  document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total);
-  document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total);
+}
+/* sub-abas do dashboard */
+let _dashSub='def';
+function dashSub(t){
+  _dashSub=t;
+  ['def','off','map'].forEach(function(n){
+    const pan=document.getElementById('dpan-'+n); if(pan) pan.style.display=(n===t)?'':'none';
+    const bt=document.getElementById('dsub-'+n); if(bt) bt.classList.toggle('active',n===t);
+  });
+  renderDashboard();
 }
 
 // ═══ REPORTS ══════════════════════════════════════════════════════
@@ -1832,8 +1889,13 @@ function buildReport(){
   const el=document.getElementById('report-content');
   el.innerHTML='';
   if(games.length===0){el.innerHTML='<div style="color:var(--mute);padding:24px;text-align:center;">'+TX("st.noGamesFilter")+'</div>';return;}
+  const barra=document.createElement('div');
+  barra.style.cssText='display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;';
+  barra.innerHTML='<button class="btn btn-ghost btn-sm" onclick="repToggleAll(true)">'+TX('st.expandAll','Expand all')+'</button>'
+                + '<button class="btn btn-ghost btn-sm" onclick="repToggleAll(false)">'+TX('st.collapseAll','Collapse all')+'</button>';
+  el.appendChild(barra);
   if(reportType==='game'){
-    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent+'&nbsp;—&nbsp;'+g.date,`${g.competition||'—'} · ${g.gk||'—'} · Season ${g.season}`,g.shots,null,g.shotsLink,g.offLink,_asArr(g.offActions))));
+    games.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(g=>el.appendChild(makeReportBlock(g.opponent,`${g.date} · ${g.competition||'—'} · ${g.gk||'—'}`,g.shots,null,g.shotsLink,g.offLink,_asArr(g.offActions))));
   } else {
     const key=reportType==='competition'?'competition':reportType==='opponent'?'opponent':reportType==='season'?'season':'gk';
     const groups={};
@@ -1842,6 +1904,9 @@ function buildReport(){
       el.appendChild(makeReportBlock(k,`${gList.length} game${gList.length!==1?'s':''} · ${gList.flatMap(g=>g.shots).length} shots`,gList.flatMap(g=>g.shots),gList,'','',gList.flatMap(g=>_asArr(g.offActions))));
     });
   }
+  /* o primeiro bloco ja abre, para nao cair numa tela de linhas fechadas */
+  const primeiro=el.querySelector('.rblk');
+  if(primeiro){ primeiro.classList.add('open'); setTimeout(function(){ if(primeiro._desenhar) primeiro._desenhar(); },40); }
 }
 function offReportKpis(offs){
   const porRes=countBy(offs,'result');
@@ -1853,21 +1918,35 @@ function offReportKpis(offs){
                 + '<div class="kpi-l">'+stLbl(k)+'</div></div>';
          }).join('');
 }
+/* abre ou fecha todos os blocos do relatorio de uma vez */
+function repToggleAll(abrir){
+  document.querySelectorAll('#report-content .rblk').forEach(function(b){
+    b.classList.toggle('open',!!abrir);
+    if(abrir && b._desenhar) b._desenhar();
+  });
+}
 function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
   const s=calcStats(shots);
   offs=offs||[];
   const uid='r'+Math.random().toString(36).slice(2,8);
-  const div=document.createElement('div'); div.className='card mb16';
+  /* bloco em acordeao: fechado mostra so a linha-resumo; os graficos so sao
+     desenhados quando o bloco abre (canvas escondido nasce com tamanho zero). */
+  const div=document.createElement('div'); div.className='rblk';
+  const resumo=[s.total+' '+TX('st.shots'), s.saves+' '+TX('st.saves'), s.goals+' '+TX('st.goals')]
+    .concat(offs.length?[offs.length+' '+TX('st.offShort','off')]:[]).join(' · ');
   div.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
-      <div>
-        <div style="font-weight:700;font-size:17px;letter-spacing:-.5px;">${title}</div>
-        <div style="font-size:11px;color:var(--mute);margin-top:3px;">${subtitle}</div>
-        ${shotsLink?`<a href="${shotsLink}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;margin-right:12px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchShots')}</a>`:''}
-        ${offLink?`<a href="${offLink}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchOff')}</a>`:''}
-      </div>
-      <span class="badge ${s.savePct>=70?'badge-green':s.savePct>=50?'badge-amber':'badge-red'}" style="font-size:11px;padding:5px 12px;">${s.savePct}% saves</span>
+    <div class="rhead">
+      <span class="rcaret">▶</span>
+      <span class="rtitle">${title}</span>
+      <span class="rsub">${subtitle}</span>
+      <span class="rline">${resumo}</span>
+      <span class="badge ${s.savePct>=70?'badge-green':s.savePct>=50?'badge-amber':'badge-red'}" style="font-size:11px;padding:4px 10px;flex:none;">${s.savePct}%</span>
     </div>
+    <div class="rbody">
+    ${(shotsLink||offLink)?`<div style="margin-bottom:14px;">
+        ${shotsLink?`<a href="${shotsLink}" target="_blank" rel="noopener" style="display:inline-block;margin-right:14px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchShots')}</a>`:''}
+        ${offLink?`<a href="${offLink}" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchOff')}</a>`:''}
+      </div>`:''}
     <div class="g6 mb20">
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.total}</div><div class="kpi-l">${TX("st.shots")}</div></div>
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--green);">${s.saves}</div><div class="kpi-l">${TX("st.saves")}</div></div>
@@ -1899,8 +1978,11 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       <div class="card-title">${TX("st.games")}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
         ${games.map(g=>`<span class="badge badge-mute">${g.date} vs ${g.opponent} (${g.shots.length})</span>`).join('')}
-      </div></div>`:''}`;
-  setTimeout(()=>{
+      </div></div>`:''}
+    </div>`;
+  let desenhado=false;
+  const desenhar=function(){
+    if(desenhado) return; desenhado=true;
     const rc=countBy(shots,'result'),mc=countBy(shots,'moment'),kc=countBy(shots,'skill'),dc=countBy(shots,'hDistance');
     orderedChart(uid+'r','bar',rc,cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
     orderedChart(uid+'m','bar',mc,cfgOrder(ST.moments,MOMENT_ORDER),null,false);
@@ -1910,7 +1992,13 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       orderedChart(uid+'ot','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
       orderedChart(uid+'or','bar',countBy(offs,'result'),ST.offresults,null,false);
     }
-  },60);
+  };
+  div._desenhar=desenhar;
+  div.querySelector('.rhead').addEventListener('click',function(){
+    const abrindo=!div.classList.contains('open');
+    div.classList.toggle('open',abrindo);
+    if(abrindo) setTimeout(desenhar,30);
+  });
   return div;
 }
 
