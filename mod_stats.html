@@ -222,6 +222,13 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .dlbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-top:3px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* sub-abas do dashboard */
+/* secoes internas do bloco de relatorio */
+.rsec{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);
+  margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.rsec:first-of-type{margin-top:4px;}
+.rgrid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+.rmaps{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start;}
+@media(max-width:900px){.rgrid4{grid-template-columns:repeat(2,minmax(0,1fr));}.rmaps{grid-template-columns:1fr;}}
 /* acordeao dos relatorios */
 .rblk{border:1px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:8px;overflow:hidden;}
 .rhead{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;user-select:none;}
@@ -1736,20 +1743,22 @@ function orderedChart(id,type,obj,order,colors,horiz){
 }
 
 // ═══ HEATMAPS ═════════════════════════════════════════════════════
-function goalHeatmapHtml(shots,total){
+function goalHeatmapHtml(shots,total,cellH){
+  cellH=cellH||72;
   const zones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const counts=zones.map(z=>shots.filter(s=>s.goalZone===z.id).length);
   const max=Math.max(1,...counts);
   return `<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;width:100%;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;width:100%;">
     ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.45;
-      return `<div class="hm-cell" style="height:72px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:5px;">
+      return `<div class="hm-cell" style="height:${cellH}px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:5px;">
         <div style="font-weight:700;font-size:14px;color:${bright?'#fafaf7':'#0a0a0a'}">${c}</div>
         <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
       </div>`;}).join('')}
     </div>`;
 }
-function courtHeatmapHtml(shots,total){
+function courtHeatmapHtml(shots,total,maxW){
+  maxW=maxW||240;
   var zIds=[124,152,125];
   var counts=zIds.map(function(z){return shots.filter(function(s){return s.courtZone===z;}).length;});
   var max=Math.max(1,counts[0],counts[1],counts[2]);
@@ -1776,7 +1785,7 @@ function courtHeatmapHtml(shots,total){
   // Columns: x=8 w=74 | x=82 w=76 | x=158 w=74, full height y=8..282
   // Labels: numbers at y=155, pct at y=172 (centre of half, above 10m mark area)
 
-  var s='<div style="width:100%;max-width:240px;margin:0 auto;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">';
+  var s='<div style="width:100%;max-width:'+maxW+'px;margin:0 auto;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">';
   s+='<svg viewBox="0 0 240 300" width="100%" xmlns="http://www.w3.org/2000/svg">';
   s+='<defs><clipPath id="court-clip"><rect x="8" y="8" width="224" height="274"/></clipPath></defs>';
   // Background
@@ -1862,8 +1871,8 @@ function renderDashboard(){
     }
   } else {
     orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
-    document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total);
-    document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total);
+    document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total,52);
+    document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total,150);
   }
 }
 /* sub-abas do dashboard */
@@ -1925,6 +1934,16 @@ function buildReport(){
   const primeiro=el.querySelector('.rblk');
   if(primeiro){ primeiro.classList.add('open'); setTimeout(function(){ if(primeiro._desenhar) primeiro._desenhar(); },40); }
 }
+/* mesma faixa fina dos KPIs, agora para as acoes ofensivas */
+function offReportStrip(offs){
+  const porRes=countBy(offs,'result');
+  const ordem=(ST.offresults||[]).filter(k=>porRes[k]!=null)
+    .concat(Object.keys(porRes).filter(k=>!(ST.offresults||[]).includes(k)).sort());
+  return '<div class="dcell"><div class="dnum">'+offs.length+'</div><div class="dlbl">'+TX('st.offActions','offensive actions')+'</div></div>'
+    + ordem.slice(0,5).map(function(k){
+        return '<div class="dcell"><div class="dnum">'+porRes[k]+'</div><div class="dlbl">'+stLbl(k)+'</div></div>';
+      }).join('');
+}
 function offReportKpis(offs){
   const porRes=countBy(offs,'result');
   const chaves=Object.keys(porRes).sort((x,y)=>porRes[y]-porRes[x]).slice(0,5);
@@ -1964,33 +1983,37 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
         ${shotsLink?`<a href="${shotsLink}" target="_blank" rel="noopener" style="display:inline-block;margin-right:14px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchShots')}</a>`:''}
         ${offLink?`<a href="${offLink}" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">▶ ${TX('st.watchOff')}</a>`:''}
       </div>`:''}
-    <div class="g6 mb20">
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.total}</div><div class="kpi-l">${TX("st.shots")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--green);">${s.saves}</div><div class="kpi-l">${TX("st.saves")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;color:var(--red);">${s.goals}</div><div class="kpi-l">${TX("st.goals")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.blocked}</div><div class="kpi-l">${stLbl("Blocked")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.out}</div><div class="kpi-l">${stLbl("Out")}</div></div>
-      <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.post}</div><div class="kpi-l">${stLbl("Post")}</div></div>
+    <div class="dstrip mb16">
+      <div class="dcell"><div class="dnum">${s.total}</div><div class="dlbl">${TX("st.shots")}</div></div>
+      <div class="dcell"><div class="dnum" style="color:var(--green)">${s.saves}</div><div class="dlbl">${TX("st.saves")}</div></div>
+      <div class="dcell"><div class="dnum" style="color:var(--red)">${s.goals}</div><div class="dlbl">${TX("st.goals")}</div></div>
+      <div class="dcell"><div class="dnum">${s.blocked}</div><div class="dlbl">${stLbl("Blocked")}</div></div>
+      <div class="dcell"><div class="dnum">${s.out}</div><div class="dlbl">${stLbl("Out")}</div></div>
+      <div class="dcell"><div class="dnum">${s.post}</div><div class="dlbl">${stLbl("Post")}</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+
+    <div class="rsec">${TX("st.pdf.shotAnalysis","Shot analysis")}</div>
+    <div class="rgrid4">
       <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="140"></canvas></div>
       <div><div class="card-title">${TX("st.gameMoment")}</div><canvas id="${uid}m" height="140"></canvas></div>
       <div><div class="card-title">${TX("st.skillType")}</div><canvas id="${uid}k" height="140"></canvas></div>
       <div><div class="card-title">${TX("st.hDistShort")}</div><canvas id="${uid}d" height="140"></canvas></div>
     </div>
-    <div class="g2">
-      <div><div class="card-title">${TX("st.shotLocation")}</div>${goalHeatmapHtml(shots,s.total)}</div>
-      <div><div class="card-title">${TX("st.vShotPos")}</div><div style="display:flex;justify-content:center;">${courtHeatmapHtml(shots,s.total)}</div></div>
+
+    <div class="rsec">${TX("st.pdf.spatial","Spatial")}</div>
+    <div class="rmaps">
+      <div><div class="card-title">${TX("st.shotLocation")}</div>
+        <div style="max-width:300px;">${goalHeatmapHtml(shots,s.total,52)}</div></div>
+      <div><div class="card-title">${TX("st.vShotPos")}</div>${courtHeatmapHtml(shots,s.total,150)}</div>
     </div>
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-      <div class="card-title" style="margin-bottom:10px;">${TX("st.offSummary","Offensive actions")}</div>
-      ${offs.length? `<div class="g2" style="align-items:start;">
-          <div><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="150"></canvas></div>
-          <div><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="150"></canvas></div>
-        </div>
-        <div class="g6" style="margin-top:12px;">${offReportKpis(offs)}</div>`
-        : `<div style="color:var(--mute);font-size:12px;">${TX("st.noOff","No offensive actions recorded yet.")}</div>`}
-    </div>
+
+    <div class="rsec">${TX("st.offSummary","Offensive actions")}</div>
+    ${offs.length? `<div class="dstrip mb16">${offReportStrip(offs)}</div>
+      <div class="rgrid4">
+        <div style="grid-column:span 2"><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="140"></canvas></div>
+        <div style="grid-column:span 2"><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="140"></canvas></div>
+      </div>`
+      : `<div style="color:var(--mute);font-size:12px;">${TX("st.noOff","No offensive actions recorded yet.")}</div>`}
     ${games?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="card-title">${TX("st.games")}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
