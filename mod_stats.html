@@ -474,6 +474,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="card mb16">
       <div data-i18n="st.gameSummary" style="font-weight:700;font-size:15px;margin-bottom:16px;">Game Summary</div>
       <div class="g5 mb20" id="review-kpis"></div>
+      <div id="review-off-line"></div>
     </div>
     <div class="card mb16">
       <div data-i18n="st.offSummary" style="font-weight:700;font-size:15px;margin-bottom:14px;">Offensive actions</div>
@@ -1291,6 +1292,25 @@ function buildReview(){
     <div class="kpi"><div class="kpi-n">${s.out}</div><div class="kpi-l">${stLbl("Out")}</div></div>`;
   /* ── acoes ofensivas tambem entram na revisao (antes ficavam de fora) ── */
   const _oa=_asArr(CUR.offActions);
+  /* segunda faixa de KPIs dentro do Game Summary: total + desfechos mais frequentes */
+  const boxLin=document.getElementById('review-off-line');
+  if(boxLin){
+    if(!_oa.length){ boxLin.innerHTML=''; }
+    else{
+      const pr={}; _oa.forEach(function(x){ if(x.result) pr[x.result]=(pr[x.result]||0)+1; });
+      const ordem=(ST.offresults||[]).filter(k=>pr[k]!=null)
+        .concat(Object.keys(pr).filter(k=>!(ST.offresults||[]).includes(k)).sort());
+      boxLin.innerHTML='<div style="border-top:1px solid var(--border);padding-top:14px;">'
+        + '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;">'
+        + TX('st.offSummary','Offensive actions')+'</div>'
+        + '<div class="g5">'
+        + '<div class="kpi"><div class="kpi-n">'+_oa.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
+        + ordem.slice(0,4).map(function(k){
+            return '<div class="kpi"><div class="kpi-n">'+pr[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';
+          }).join('')
+        + '</div></div>';
+    }
+  }
   const boxOA=document.getElementById('review-off');
   if(boxOA){
     if(!_oa.length){
