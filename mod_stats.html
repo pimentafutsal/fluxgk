@@ -211,6 +211,9 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .badge-red{background:#fee2e2;color:var(--red);}
 .badge-mute{background:var(--surface2);color:var(--mute);}
 .badge-amber{background:#fef3c7;color:#b45309;}
+/* caixa de altura fixa para os graficos */
+.chbox{position:relative;width:100%;}
+.chbox canvas{position:absolute;inset:0;width:100%!important;height:100%!important;}
 /* faixa fina de numeros do dashboard */
 .dstrip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
 .dcell{flex:1;min-width:0;text-align:center;padding:11px 6px;border-right:1px solid var(--border);}
@@ -1692,11 +1695,25 @@ const MOMENT_ORDER=['Leaving pressure','Organized attack','Transition','Ball sto
 const SKILL_ORDER=['Goal protection','1vs1','2nd post'];
 
 function baseChartOpts(){
-  return {responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a1a',titleColor:'#fafaf7',bodyColor:'#737373',borderColor:'#333',borderWidth:1}}};
+  return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a1a',titleColor:'#fafaf7',bodyColor:'#737373',borderColor:'#333',borderWidth:1}}};
+}
+/* Com maintainAspectRatio:true o grafico crescia junto com a largura da coluna:
+   num bloco de 2 colunas o canvas de 170px virava ~450px de altura. Agora a
+   altura vem de um container fixo e o atributo height do canvas manda de verdade. */
+function ensureChartBox(ctx){
+  let box=ctx.parentElement;
+  if(!box || !box.classList.contains('chbox')){
+    const pai=ctx.parentElement; if(!pai) return null;
+    box=document.createElement('div'); box.className='chbox';
+    pai.insertBefore(box,ctx); box.appendChild(ctx);
+  }
+  box.style.height=(parseInt(ctx.getAttribute('height'),10)||150)+'px';
+  return box;
 }
 function mkChart(id,type,labels,data,colors,horiz){
   const ctx=document.getElementById(id); if(!ctx) return;
   if(CHARTS[id]) CHARTS[id].destroy();
+  ensureChartBox(ctx);
   const a=acc();
   const bg=colors||labels.map((_,i)=>[a,'#d4d4d4','#a3a3a3','#737373','#e5e5e5','#525252'][i%6]);
   const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
@@ -1956,10 +1973,10 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       <div class="kpi" style="padding:12px;"><div class="kpi-n" style="font-size:22px;">${s.post}</div><div class="kpi-l">${stLbl("Post")}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
-      <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="170"></canvas></div>
-      <div><div class="card-title">${TX("st.gameMoment")}</div><canvas id="${uid}m" height="170"></canvas></div>
-      <div><div class="card-title">${TX("st.skillType")}</div><canvas id="${uid}k" height="170"></canvas></div>
-      <div><div class="card-title">${TX("st.hDistShort")}</div><canvas id="${uid}d" height="170"></canvas></div>
+      <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="140"></canvas></div>
+      <div><div class="card-title">${TX("st.gameMoment")}</div><canvas id="${uid}m" height="140"></canvas></div>
+      <div><div class="card-title">${TX("st.skillType")}</div><canvas id="${uid}k" height="140"></canvas></div>
+      <div><div class="card-title">${TX("st.hDistShort")}</div><canvas id="${uid}d" height="140"></canvas></div>
     </div>
     <div class="g2">
       <div><div class="card-title">${TX("st.shotLocation")}</div>${goalHeatmapHtml(shots,s.total)}</div>
@@ -1968,8 +1985,8 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="card-title" style="margin-bottom:10px;">${TX("st.offSummary","Offensive actions")}</div>
       ${offs.length? `<div class="g2" style="align-items:start;">
-          <div><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="170"></canvas></div>
-          <div><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="170"></canvas></div>
+          <div><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="150"></canvas></div>
+          <div><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="150"></canvas></div>
         </div>
         <div class="g6" style="margin-top:12px;">${offReportKpis(offs)}</div>`
         : `<div style="color:var(--mute);font-size:12px;">${TX("st.noOff","No offensive actions recorded yet.")}</div>`}
