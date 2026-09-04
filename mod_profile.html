@@ -410,6 +410,7 @@ table.dt tr.grp td{padding-top:14px;border-bottom:0}
 
 /* ---------- parâmetros de avaliação ---------- */
 .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bulkbox textarea{width:100%;font-family:inherit;font-size:13px;line-height:1.5;padding:9px 10px;resize:vertical}
 @media(max-width:760px){.tri{grid-template-columns:1fr}}
 .tri-f{display:flex;align-items:center;gap:7px;min-width:0}
 .tri-f span{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.04em;
@@ -953,6 +954,10 @@ const T = {
   achievements: { pt: 'Seleções e títulos', en: 'National teams & honours', ru: 'Сборные и достижения' },
   injuries: { pt: 'Histórico de lesões', en: 'Injury history', ru: 'История травм' },
   notes: { pt: 'Observações gerais', en: 'General notes', ru: 'Общие замечания' },
+  qualTitle: { pt: 'Comentário qualitativo', en: 'Qualitative comment', ru: 'Качественный комментарий' },
+  qualHint: { pt: 'O que os números não dizem: contexto, evolução percebida, atitude, o que observar no próximo ciclo. Fica guardado junto com o snapshot e sai no relatório.', en: 'What the numbers do not say: context, perceived progress, attitude, what to watch next cycle. Stored with the snapshot and shown in the report.', ru: 'То, чего не показывают цифры. Сохраняется вместе со снимком и попадает в отчёт.' },
+  qualPh: { pt: 'Escreva a leitura da avaliação…', en: 'Write your reading of this assessment…', ru: 'Опишите вашу оценку…' },
+  qualLast: { pt: 'Último comentário salvo', en: 'Last saved comment', ru: 'Последний сохранённый комментарий' },
   // Avaliação
   scaleTitle: { pt: 'Escala de referência', en: 'Reference scale', ru: 'Шкала оценки' },
   scale1: { pt: '1–3 · Abaixo do exigido para o nível', en: '1–3 · Below the level required', ru: '1–3 · Ниже требуемого уровня' },
@@ -1239,9 +1244,16 @@ Object.assign(T, {
   pmConverting: { pt: 'Convertendo as notas…', en: 'Converting scores…', ru: 'Пересчёт баллов…' },
   pmEmptyAxis: { pt: 'Este eixo ainda não tem competências.', en: 'This axis has no competencies yet.', ru: 'В этом направлении пока нет компетенций.' },
   pmCount: { pt: 'competências', en: 'competencies', ru: 'компетенций' },
-  pmNeedName: { pt: 'Todo eixo e toda competência precisam de um nome em português.', en: 'Every axis and competency needs a name in Portuguese.', ru: 'У каждого направления и компетенции должно быть название на португальском.' },
+  pmNeedName: { pt: 'Todo eixo e toda competência precisam de um nome.', en: 'Every axis and competency needs a name.', ru: 'У каждого направления и компетенции должно быть название.' },
   pmOrphans: { pt: 'Há notas registradas em competências que não existem mais no modelo. Elas ficam guardadas e voltam a aparecer se você recriar a competência com o mesmo nome.', en: 'There are scores recorded on competencies that no longer exist in the model. They stay stored and reappear if you recreate the competency.', ru: 'Есть баллы по компетенциям, которых больше нет в модели. Они сохранены.' },
-  pmLangTip: { pt: 'Preencha ao menos o português. Se deixar inglês ou russo em branco, o sistema repete o texto em português.', en: 'Fill in at least Portuguese. If you leave English or Russian blank, the system repeats the Portuguese text.', ru: 'Заполните хотя бы португальский. Пустые поля будут заменены португальским текстом.' },
+  pmSimpleOn: { pt: 'Modo simples', en: 'Simple mode', ru: 'Простой режим' },
+  pmSimpleHint: { pt: 'Escreva como quiser — o relatório sai exatamente com este texto.', en: 'Write it however you like — the report comes out with exactly this text.', ru: 'Пишите как хотите — отчёт выйдет ровно с этим текстом.' },
+  pmBulk: { pt: 'Colar várias de uma vez', en: 'Paste several at once', ru: 'Вставить несколько сразу' },
+  pmBulkPh: { pt: 'Uma competência por linha…\nJogo com os pés\nSaída em bola alta\nDefesa de 1x1', en: 'One competency per line…', ru: 'По одной компетенции в строке…' },
+  pmBulkAdd: { pt: '+ Adicionar todas', en: '+ Add all', ru: '+ Добавить все' },
+  pmBulkNone: { pt: 'Escreva pelo menos uma linha.', en: 'Write at least one line.', ru: 'Напишите хотя бы одну строку.' },
+  pmBulkDone: { pt: '{n} competências adicionadas.', en: '{n} competencies added.', ru: 'Добавлено компетенций: {n}.' },
+  pmAdvanced: { pt: 'Nome curto e abreviação (opcional)', en: 'Short name and abbreviation (optional)', ru: 'Краткое название (необязательно)' },
   pmNewAxis: { pt: 'Novo eixo', en: 'New axis', ru: 'Новое направление' },
   pmNewItem: { pt: 'Nova competência', en: 'New competency', ru: 'Новая компетенция' },
   rescaled: { pt: 'Havia notas na escala {from}. Foram convertidas para {to}.', en: 'Some scores were on the {from} scale. They were converted to {to}.', ru: 'Часть баллов была по шкале {from}. Они пересчитаны в {to}.' },
@@ -2039,8 +2051,9 @@ Object.assign(T, {
       const h = ref.on('value', s => cb(s.val() || {}));
       listeners.push(() => ref.off('value', h));
     },
-    saveAssessment(playerId, date, scores) {
-      return write(() => dataRef('assessments/' + playerId + '/' + date).set({ date, scores }));
+    saveAssessment(playerId, date, scores, note) {
+      return write(() => dataRef('assessments/' + playerId + '/' + date)
+        .set({ date, scores, note: String(note || '') }));
     },
     deleteAssessment(playerId, date) {
       return write(() => dataRef('assessments/' + playerId + '/' + date).remove());
@@ -2133,7 +2146,7 @@ Object.assign(T, {
       const byDate = cache.assessments[pid] || {};
       Object.keys(byDate).forEach(d => {
         const a = byDate[d] || {};
-        out.push({ id: assessId(pid, d), goalkeeper_id: pid, date: a.date || d, scores: a.scores || {}, note: '' });
+        out.push({ id: assessId(pid, d), goalkeeper_id: pid, date: a.date || d, scores: a.scores || {}, note: a.note || '' });
       });
     });
     return out.sort((a, b) => a.date.localeCompare(b.date));
@@ -2200,11 +2213,12 @@ Object.assign(T, {
     /* ---------- avaliações ---------- */
     async listAssessments(gkId) { return wait(flatAssessments(gkId)); },
 
-    async upsertAssessment(gkId, date, scores) {
+    async upsertAssessment(gkId, date, scores, note) {
+      const obs = String(note || '');
       cache.assessments[gkId] = cache.assessments[gkId] || {};
-      cache.assessments[gkId][date] = { date, scores };
-      await FDB.saveAssessment(gkId, date, scores);
-      return { id: assessId(gkId, date), goalkeeper_id: gkId, date, scores, note: '' };
+      cache.assessments[gkId][date] = { date, scores, note: obs };
+      await FDB.saveAssessment(gkId, date, scores, obs);
+      return { id: assessId(gkId, date), goalkeeper_id: gkId, date, scores, note: obs };
     },
 
     async deleteAssessment(id) {
@@ -3070,6 +3084,15 @@ Object.assign(T, {
         yB += 2;
       });
       d.y = Math.max(yA, yB) + 6;
+    }
+
+    // comentario qualitativo do treinador (o mais recente do periodo)
+    const comQual = snaps.filter(sn => String(sn.note || '').trim());
+    if (comQual.length) {
+      const ult = comQual[comQual.length - 1];
+      d.ensure(70);
+      d.h2(C.t('qualTitle') + '  ·  ' + C.fmtDate(ult.date));
+      d.text(ult.note, { size: 9, color: INK.secondary });
     }
 
     // plano de desenvolvimento
@@ -3960,6 +3983,15 @@ Object.assign(T, {
     </div>`;
   }
 
+  /* ultima avaliacao que tem comentario, para reaproveitar o texto na tela */
+  function ultimaAvaliacaoComNota() {
+    const arr = (App.curAssess || []).filter(a2 => String(a2.note || '').trim());
+    return arr.length ? arr[arr.length - 1] : null;
+  }
+  function ultimoComentario() {
+    const a2 = ultimaAvaliacaoComNota();
+    return a2 ? a2.note : '';
+  }
   function critRow(item, axis) {
     const v = +(App.cur.scores || {})[item.id] || 0;
     const open = !!App.openNotes[item.id];
@@ -4004,6 +4036,16 @@ Object.assign(T, {
       </div>
       <div class="hint no-print" style="margin-top:8px">${esc(t('snapshotHelp'))}
         · <button class="linkish" data-view="params">${esc(t('pmEditLink'))}</button></div>
+    </div>
+
+    <div class="card">
+      <h3>${esc(t('qualTitle'))}</h3>
+      <div class="hint" style="margin-bottom:10px">${esc(t('qualHint'))}</div>
+      <textarea class="inp" id="qualNote" rows="5" placeholder="${esc(t('qualPh'))}">${esc(App.qualNote != null ? App.qualNote : ultimoComentario())}</textarea>
+      ${(function () {
+        const a2 = ultimaAvaliacaoComNota();
+        return a2 ? `<div class="hint" style="margin-top:8px">${esc(t('qualLast'))}: <b>${esc(a2.date)}</b></div>` : '';
+      })()}
     </div>
     ${AXIDS().map(k => `<div class="card">
       <div class="axis-head">
@@ -4394,12 +4436,23 @@ Object.assign(T, {
     if (!App.modelDraft) App.modelDraft = JSON.parse(JSON.stringify(App.model));
     return App.modelDraft;
   }
-  const LANGS3 = [['pt', 'PT'], ['en', 'EN'], ['ru', 'RU']];
 
+  /* modo simples: um campo so (portugues). Ingles e russo saem do glossario. */
+  /* Um campo aberto, sem idioma. O texto vai igual para os tres slots internos,
+     entao o relatorio sai exatamente como foi escrito. */
   function triRow(obj, path, ph) {
-    return `<div class="tri">${LANGS3.map(([l, tag]) =>
-      `<label class="tri-f"><span>${tag}</span>
-        <input class="inp" data-m="${path}.${l}" value="${esc((obj && obj[l]) || '')}" placeholder="${esc(ph || '')}"></label>`).join('')}</div>`;
+    const val = (obj && (obj.pt || obj.en || obj.ru)) || '';
+    return `<input class="inp" data-mall="${path}" value="${esc(val)}" placeholder="${esc(ph || '')}">`;
+  }
+
+  /* O texto vale para os tres idiomas: o treinador escreve uma vez, no idioma
+     que escolher, e o relatorio sai exatamente assim. Quem quiser versoes
+     diferentes por idioma usa o modo "3 idiomas" e escreve a mao. */
+  function espelhar(obj, txt, src) {
+    if (!obj) return;
+    const v = String(txt || '').trim();
+    obj.pt = v; obj.en = v; obj.ru = v;
+    if (src) obj.src = src;
   }
 
   function viewParams() {
@@ -4442,7 +4495,7 @@ Object.assign(T, {
         <div class="spacer"></div>
         <button class="btn sm ghost" id="pmAddAxis"${nAxes >= ModelKit.MAXAXES ? ' disabled' : ''}>${esc(t('pmAddAxis'))}</button>
       </div>
-      <div class="hint" style="margin-bottom:4px">${esc(t('pmLangTip'))}</div>
+      <div class="hint">${esc(t('pmSimpleHint'))}</div>
     </div>
 
     ${m.axes.map((ax, ai) => `
@@ -4458,11 +4511,7 @@ Object.assign(T, {
         </div>
         <div class="field-label">${esc(t('pmAxisName'))}</div>
         ${triRow(ax.label, 'axes.' + ai + '.label', t('pmNewAxis'))}
-        <div class="grid g2" style="margin-top:10px">
-          <div><div class="field-label">${esc(t('pmShort'))}</div>${triRow(ax.short, 'axes.' + ai + '.short', '')}</div>
-          <div><div class="field-label">${esc(t('pmMicro'))}</div>${triRow(ax.micro, 'axes.' + ai + '.micro', '')}</div>
-        </div>
-        <div class="hint" style="margin:6px 0 16px">${esc(t('pmShortHint'))}</div>
+        <div style="height:12px"></div>
 
         ${ax.items.length ? ax.items.map((it, ii) => `
           <div class="item-row">
@@ -4474,7 +4523,14 @@ Object.assign(T, {
               <button class="xbtn" data-mdelitem="${ai}.${ii}" title="${esc(t('remove'))}">×</button>
             </div>
           </div>`).join('') : `<div class="empty" style="padding:18px">${esc(t('pmEmptyAxis'))}</div>`}
-        <button class="btn sm ghost" data-maddItem="${ai}" style="margin-top:10px">${esc(t('pmAddItem'))}</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn sm ghost" data-maddItem="${ai}">${esc(t('pmAddItem'))}</button>
+          <button class="btn sm ghost" data-mbulkopen="${ai}">${esc(t('pmBulk'))}</button>
+        </div>
+        <div class="bulkbox" id="pmBulk${ai}" style="display:none;margin-top:10px">
+          <textarea class="inp" id="pmBulkTxt${ai}" rows="5" placeholder="${esc(t('pmBulkPh'))}"></textarea>
+          <button class="btn sm primary" data-mbulkadd="${ai}" style="margin-top:8px">${esc(t('pmBulkAdd'))}</button>
+        </div>
       </div>`).join('')}
 
     <div class="card">
@@ -4529,6 +4585,16 @@ Object.assign(T, {
     document.querySelectorAll('[data-m]').forEach(inp => {
       inp.oninput = () => { setDeep(m, inp.dataset.m, inp.value); };
     });
+    /* campo unico: o mesmo texto vai para pt/en/ru e guarda o idioma de origem */
+    document.querySelectorAll('[data-mall]').forEach(inp => {
+      inp.oninput = () => {
+        const base = inp.dataset.mall, v = inp.value;
+        setDeep(m, base + '.pt', v);
+        setDeep(m, base + '.en', v);
+        setDeep(m, base + '.ru', v);
+        setDeep(m, base + '.src', '');
+      };
+    });
     const mn = $('#pmMin'), mx = $('#pmMax');
     const syncScale = () => {
       const a = parseInt(mn.value, 10), b = parseInt(mx.value, 10);
@@ -4553,9 +4619,24 @@ Object.assign(T, {
   async function saveModel() {
     const m = modelDraft();
     // valida: tudo precisa de um nome em português
-    const bad = m.axes.some(a => !String(a.label.pt || '').trim())
-      || m.axes.some(a => a.items.some(it => !String(it.pt || '').trim()));
+    const vazio = o => !String((o && (o.pt || o.en || o.ru)) || '').trim();
+    const bad = m.axes.some(a => vazio(a.label))
+      || m.axes.some(a => a.items.some(vazio));
     if (bad) { toast(t('pmNeedName')); return; }
+    /* nenhum campo pode ficar vazio: o que nao tiver versao propria repete o
+       texto escrito, para o relatorio nunca sair com um espaco em branco */
+    m.axes.forEach(ax => {
+      const compl = obj => {
+        if (!obj) return;
+        const base = String(obj.pt || obj.en || obj.ru || '').trim();
+        if (!base) return;
+        if (!String(obj.pt || '').trim()) obj.pt = base;
+        if (!String(obj.en || '').trim()) obj.en = base;
+        if (!String(obj.ru || '').trim()) obj.ru = base;
+      };
+      compl(ax.label); compl(ax.short); compl(ax.micro);
+      ax.items.forEach(compl);
+    });
 
     const oldScale = { min: App.model.scale.min, max: App.model.scale.max };
     const newModel = ModelKit.normalize(m);
@@ -4886,7 +4967,7 @@ Object.assign(T, {
   async function openGk(id) {
     App.busy = true;
     App.cur = App.gks.find(g => g.id === id) || null;
-    App.view = 'gk'; App.tab = 'geral'; App.openNotes = {};
+    App.view = 'gk'; App.tab = 'geral'; App.openNotes = {}; App.qualNote = null;
     render();
     try {
       const [as, lg] = await Promise.all([App.db.listAssessments(id), App.db.listLogs(id)]);
@@ -4992,6 +5073,8 @@ Object.assign(T, {
      ============================================================= */
   document.addEventListener('input', e => {
     const el = e.target;
+    /* comentario qualitativo: fica em memoria ate salvar o snapshot */
+    if (el.id === 'qualNote') { App.qualNote = el.value; return; }
     if (el.dataset && el.dataset.p) {
       setP(el.dataset.p, el.value);
       const top = el.dataset.p.split('.')[0];
@@ -5116,6 +5199,27 @@ Object.assign(T, {
       m.axes[ai].items.splice(ii, 1);
       render(); return;
     }
+    if (b.dataset.mbulkopen) {
+      const cx = document.getElementById('pmBulk' + b.dataset.mbulkopen);
+      if (cx) { cx.style.display = cx.style.display === 'none' ? '' : 'none';
+        const ta = cx.querySelector('textarea'); if (ta && cx.style.display === '') ta.focus(); }
+      return;
+    }
+    if (b.dataset.mbulkadd) {
+      const ai = +b.dataset.mbulkadd;
+      const ta = document.getElementById('pmBulkTxt' + ai);
+      const linhas = String(ta && ta.value || '').split(/\r?\n/)
+        .map(x => x.trim()).filter(Boolean);
+      if (!linhas.length) { toast(t('pmBulkNone')); return; }
+      const m = modelDraft();
+      linhas.forEach(txt => {
+        const it = { id: ModelKit.uid('it') };
+        espelhar(it, txt);
+        m.axes[ai].items.push(it);
+      });
+      toast(t('pmBulkDone').replace('{n}', linhas.length));
+      render(); return;
+    }
     if (b.dataset.madditem) {
       const m = modelDraft();
       m.axes[+b.dataset.madditem].items.push({
@@ -5206,7 +5310,10 @@ Object.assign(T, {
       }
       case 'snapBtn': {
         try {
-          const row = await App.db.upsertAssessment(App.cur.id, today(), Object.assign({}, App.cur.scores), '');
+          const cx = document.getElementById('qualNote');
+          const obs = cx ? cx.value.trim() : '';
+          const row = await App.db.upsertAssessment(App.cur.id, today(), Object.assign({}, App.cur.scores), obs);
+          App.qualNote = obs;
           App.curAssess = App.curAssess.filter(s => s.date !== row.date).concat(row)
             .sort((a, b2) => a.date.localeCompare(b2.date));
           App.allAssess = App.allAssess.filter(s => !(s.goalkeeper_id === row.goalkeeper_id && s.date === row.date)).concat(row);
