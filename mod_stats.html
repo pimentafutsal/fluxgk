@@ -226,9 +226,13 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .rsec{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);
   margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .rsec:first-of-type{margin-top:4px;}
-.rgrid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
-.rmaps{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start;}
-@media(max-width:900px){.rgrid4{grid-template-columns:repeat(2,minmax(0,1fr));}.rmaps{grid-template-columns:1fr;}}
+.rgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.rgrid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+/* espacial: gol · corredor · distancia, os tres na mesma altura */
+.rmaps{display:grid;grid-template-columns:1.25fr .75fr 1.25fr;gap:18px;align-items:start;}
+@media(max-width:960px){.rgrid3{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .rmaps{grid-template-columns:1fr 1fr;}}
+@media(max-width:640px){.rgrid3,.rgrid2,.rmaps{grid-template-columns:1fr;}}
 /* acordeao dos relatorios */
 .rblk{border:1px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:8px;overflow:hidden;}
 .rhead{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;user-select:none;}
@@ -1993,11 +1997,10 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
     </div>
 
     <div class="rsec">${TX("st.pdf.shotAnalysis","Shot analysis")}</div>
-    <div class="rgrid4">
-      <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="140"></canvas></div>
-      <div><div class="card-title">${TX("st.gameMoment")}</div><canvas id="${uid}m" height="140"></canvas></div>
-      <div><div class="card-title">${TX("st.skillType")}</div><canvas id="${uid}k" height="140"></canvas></div>
-      <div><div class="card-title">${TX("st.hDistShort")}</div><canvas id="${uid}d" height="140"></canvas></div>
+    <div class="rgrid3">
+      <div><div class="card-title">${TX("st.results")}</div><canvas id="${uid}r" height="150"></canvas></div>
+      <div><div class="card-title">${TX("st.gameMoment")}</div><canvas id="${uid}m" height="150"></canvas></div>
+      <div><div class="card-title">${TX("st.skillType")}</div><canvas id="${uid}k" height="150"></canvas></div>
     </div>
 
     <div class="rsec">${TX("st.pdf.spatial","Spatial")}</div>
@@ -2005,13 +2008,14 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       <div><div class="card-title">${TX("st.shotLocation")}</div>
         <div style="max-width:300px;">${goalHeatmapHtml(shots,s.total,52)}</div></div>
       <div><div class="card-title">${TX("st.vShotPos")}</div>${courtHeatmapHtml(shots,s.total,150)}</div>
+      <div><div class="card-title">${TX("st.hDistShort")}</div><canvas id="${uid}d" height="190"></canvas></div>
     </div>
 
     <div class="rsec">${TX("st.offSummary","Offensive actions")}</div>
     ${offs.length? `<div class="dstrip mb16">${offReportStrip(offs)}</div>
-      <div class="rgrid4">
-        <div style="grid-column:span 2"><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="140"></canvas></div>
-        <div style="grid-column:span 2"><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="140"></canvas></div>
+      <div class="rgrid2">
+        <div><div class="card-title">${TX("st.offByType","Offensive actions — type")}</div><canvas id="${uid}ot" height="150"></canvas></div>
+        <div><div class="card-title">${TX("st.offByResult","Offensive actions — result")}</div><canvas id="${uid}or" height="150"></canvas></div>
       </div>`
       : `<div style="color:var(--mute);font-size:12px;">${TX("st.noOff","No offensive actions recorded yet.")}</div>`}
     ${games?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
