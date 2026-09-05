@@ -167,9 +167,17 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.55}
   overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;
   transition:.14s border-color,.14s transform}
 .gk-card:hover{border-color:var(--border-strong);transform:translateY(-1px)}
-.gk-photo{height:168px;background:var(--surface-1);position:relative;display:grid;place-items:center;cursor:pointer}
+.gk-photo{height:186px;background:var(--surface-1);position:relative;display:grid;place-items:center;cursor:pointer}
 .gk-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .gk-photo .ph{color:var(--muted);font-size:11.5px}
+/* nome e idade dentro do card, sobre a foto */
+.gk-over{position:absolute;left:0;right:0;bottom:0;padding:22px 11px 9px;cursor:pointer;
+  background:linear-gradient(to top,rgba(8,8,8,.82) 0%,rgba(8,8,8,.55) 45%,rgba(8,8,8,0) 100%);
+  color:#fff;pointer-events:auto}
+.gk-over .n{font-size:14.5px;font-weight:680;line-height:1.2;letter-spacing:-.01em;
+  text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gk-over .m{font-size:11px;color:rgba(255,255,255,.82);margin-top:2px;
+  text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gk-num{position:absolute;top:9px;left:9px;background:rgba(11,11,11,.72);color:#fff;
   border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:660;backdrop-filter:blur(4px)}
 .gk-body{padding:12px 13px;display:flex;flex-direction:column;gap:9px;flex:1}
@@ -3883,12 +3891,14 @@ Object.assign(T, {
         <div class="gk-photo" data-open="${g.id}">
           ${g.photo ? `<img src="${g.photo}" alt="">` : `<div class="ph">${esc(t('photo'))}</div>`}
           ${g.number ? `<div class="gk-num">#${esc(g.number)}</div>` : ''}
+          <div class="gk-over" data-open="${g.id}">
+            <div class="n">${esc(gkName(g))}</div>
+            <div class="m">${[yrs != null ? yrs + ' ' + t('years') : '', g.team, g.height ? g.height + ' cm' : ''].filter(Boolean).join(' · ') || '—'}</div>
+          </div>
         </div>
         <div class="gk-body">
           <div>
-            <div class="gk-name" data-open="${g.id}">${esc(gkName(g))}</div>
-            <div class="gk-meta">${[yrs != null ? yrs + ' ' + t('years') : '', g.team, g.height ? g.height + ' cm' : ''].filter(Boolean).join(' · ') || '—'}</div>
-            <div class="gk-meta" style="margin-top:3px">${last ? t('lastAssess') + ': ' + fmtDate(last.date) + ' · ' + a.length + ' ' + t('nAssess') : t('never')}</div>
+            <div class="gk-meta">${last ? t('lastAssess') + ': ' + fmtDate(last.date) + ' · ' + a.length + ' ' + t('nAssess') : t('never')}</div>
           </div>
           <div class="gk-scores">
             ${AXIDS().map(k => `<div class="mini" title="${esc(AXLAB(k))}">
