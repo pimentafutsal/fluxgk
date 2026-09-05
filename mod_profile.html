@@ -177,12 +177,18 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.55}
 .gk-photo .ph{color:var(--muted);font-size:11.5px}
 /* nome e idade dentro do card, sobre a foto */
 .gk-over{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 11px;cursor:pointer;
+  display:flex;align-items:flex-end;gap:8px;
   background:linear-gradient(to top,rgba(8,8,8,.88) 0%,rgba(8,8,8,.62) 40%,rgba(8,8,8,0) 100%);
   color:#fff}
 .gk-over .n{font-size:14.5px;font-weight:680;line-height:1.2;letter-spacing:-.01em;
   text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gk-over .m{font-size:11px;color:rgba(255,255,255,.82);margin-top:2px;
   text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* seta que abre e recolhe o card */
+.gk-chev{flex:none;width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.28);
+  background:rgba(255,255,255,.14);color:#fff;font-size:11px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;backdrop-filter:blur(4px);transition:.12s background,.12s border-color}
+.gk-chev:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.5)}
 .gk-num{position:absolute;top:9px;left:9px;background:rgba(11,11,11,.72);color:#fff;
   border-radius:6px;padding:2px 7px;font-size:11.5px;font-weight:660;backdrop-filter:blur(4px)}
 .gk-body{padding:12px 13px;display:flex;flex-direction:column;gap:9px;flex:1}
@@ -192,6 +198,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.55}
 .gk-scores{display:flex;gap:6px;margin-top:auto}
 .mini{flex:1;min-width:0;border:1px solid var(--border);border-radius:7px;padding:5px 4px;text-align:center;background:var(--surface-1);cursor:help}
 .mini b{display:block;font-size:14px;font-variant-numeric:tabular-nums;font-weight:660}
+[hidden]{display:none!important}
 .mini span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .gk-actions{display:flex;gap:6px;padding:0 13px 12px}
@@ -1099,6 +1106,10 @@ Object.assign(T, {
   archive: { pt: 'Arquivar', en: 'Archive', ru: 'В архив' },
   unarchive: { pt: 'Reativar', en: 'Restore', ru: 'Вернуть' },
   showArchived: { pt: 'Mostrar arquivados', en: 'Show archived', ru: 'Показать архив' },
+  expandAllTip: { pt: 'Abrir todos os cards', en: 'Expand all cards', ru: 'Развернуть все карточки' },
+  collapseAllTip: { pt: 'Recolher todos os cards', en: 'Collapse all cards', ru: 'Свернуть все карточки' },
+  cardOpenTip: { pt: 'Ver detalhes', en: 'Show details', ru: 'Показать детали' },
+  cardCloseTip: { pt: 'Recolher', en: 'Collapse', ru: 'Свернуть' },
 
   // salvamento
   saving: { pt: 'Salvando…', en: 'Saving…', ru: 'Сохранение…' },
@@ -3617,7 +3628,7 @@ Object.assign(T, {
     gks: [], allAssess: [],
     cur: null, curAssess: [], curLogs: [],
     openNotes: {}, showTable: false,
-    sel: [], metric: 'global', showAvg: true, showArchived: false,
+    sel: [], metric: 'global', showAvg: true, showArchived: false, cardsOpen: true, cardOpen: {},
     saveState: 'idle', busy: false,
     model: null, modelDraft: null,
     brand: { club_name: 'Semey', crest: null, colors: [], use_in_charts: true, resp_name: '', resp_role: '' },
@@ -3690,6 +3701,7 @@ Object.assign(T, {
   function prefs(save) {
     try {
       if (save) { localStorage.setItem(PREF_KEY, JSON.stringify({ lang: App.lang, theme: App.theme })); return; }
+      try { App.cardsOpen = localStorage.getItem('fluxgk.profile.cardsOpen') !== '0'; } catch (e) {}
       const p = JSON.parse(localStorage.getItem(PREF_KEY) || 'null');
       if (p) { App.lang = p.lang || 'pt'; App.theme = p.theme || 'light'; }
     } catch (e) { }
@@ -3885,23 +3897,32 @@ Object.assign(T, {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  function salvaCards() {
+    try { localStorage.setItem('fluxgk.profile.cardsOpen', App.cardsOpen ? '1' : '0'); } catch (e) {}
+  }
   function viewSquad() {
     const list = App.gks.filter(g => App.showArchived ? true : !g.archived);
     const cards = list.map(g => {
       const a = assessOf(g.id);
       const last = a.length ? a[a.length - 1] : null;
       const yrs = age(g.birth);
+      /* recolhido = so o card com a foto, o nome e a idade */
+      const aberto = App.cardOpen[g.id] != null ? App.cardOpen[g.id] : App.cardsOpen;
       return `
       <div class="gk-card">
         <div class="gk-photo" data-open="${g.id}">
           ${g.photo ? `<img src="${g.photo}" alt="">` : `<div class="ph">${esc(t('photo'))}</div>`}
           ${g.number ? `<div class="gk-num">#${esc(g.number)}</div>` : ''}
-          <div class="gk-over" data-open="${g.id}">
-            <div class="n">${esc(gkName(g))}</div>
-            <div class="m">${[yrs != null ? yrs + ' ' + t('years') : '', g.team, g.height ? g.height + ' cm' : ''].filter(Boolean).join(' · ') || '—'}</div>
+          <div class="gk-over">
+            <div style="min-width:0;flex:1" data-open="${g.id}">
+              <div class="n">${esc(gkName(g))}</div>
+              <div class="m">${[yrs != null ? yrs + ' ' + t('years') : '', g.team, g.height ? g.height + ' cm' : ''].filter(Boolean).join(' · ') || '—'}</div>
+            </div>
+            <button class="gk-chev" data-card="${g.id}" title="${esc(t(aberto ? 'cardCloseTip' : 'cardOpenTip'))}"
+              aria-expanded="${aberto}">${aberto ? '▲' : '▼'}</button>
           </div>
         </div>
-        <div class="gk-body">
+        <div class="gk-body"${aberto ? '' : ' hidden'}>
           <div>
             <div class="gk-meta">${last ? t('lastAssess') + ': ' + fmtDate(last.date) + ' · ' + a.length + ' ' + t('nAssess') : t('never')}</div>
           </div>
@@ -3911,7 +3932,7 @@ Object.assign(T, {
               <span>${esc(AXLAB(k, 'micro'))}</span></div>`).join('')}
           </div>
         </div>
-        <div class="gk-actions no-print">
+        <div class="gk-actions no-print"${aberto ? '' : ' hidden'}>
           <button class="btn sm" data-open="${g.id}">${esc(t('openProfile'))}</button>
           <button class="btn sm ghost" data-arch="${g.id}">${esc(g.archived ? t('unarchive') : t('archive'))}</button>
         </div>
@@ -3924,6 +3945,10 @@ Object.assign(T, {
       <div class="spacer"></div>
       <label class="hint no-print" style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="archToggle"${App.showArchived ? ' checked' : ''}> ${esc(t('showArchived'))}</label>
+      <div class="no-print" style="display:flex;gap:4px">
+        <button class="btn sm ghost" id="expandAll" title="${esc(t('expandAllTip'))}" aria-label="${esc(t('expandAllTip'))}">▼</button>
+        <button class="btn sm ghost" id="collapseAll" title="${esc(t('collapseAllTip'))}" aria-label="${esc(t('collapseAllTip'))}">▲</button>
+      </div>
       <button class="btn ghost no-print" id="exportBtn">${esc(t('exportAll'))}</button>
     </div>
     <div class="hint no-print" style="margin:-8px 0 16px">${esc(t('rosterFromLoad'))}</div>
@@ -5242,6 +5267,12 @@ Object.assign(T, {
       });
       render(); return;
     }
+    if (b.dataset.card) {
+      const id = b.dataset.card;
+      const atual = App.cardOpen[id] != null ? App.cardOpen[id] : App.cardsOpen;
+      App.cardOpen[id] = !atual;
+      render(); return;
+    }
     if (b.dataset.rppreset) { App.rp.preset = b.dataset.rppreset; render(); return; }
     if (b.dataset.rplang) {
       const cur = rpLangs();
@@ -5323,6 +5354,8 @@ Object.assign(T, {
         const row = await App.db.createLog(App.cur.id, { date: today() });
         App.curLogs.unshift(row); render(); break;
       }
+      case 'expandAll': App.cardsOpen = true; App.cardOpen = {}; salvaCards(); render(); break;
+      case 'collapseAll': App.cardsOpen = false; App.cardOpen = {}; salvaCards(); render(); break;
       case 'snapBtn': {
         try {
           const cx = document.getElementById('qualNote');
