@@ -167,13 +167,18 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.55}
   overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;
   transition:.14s border-color,.14s transform}
 .gk-card:hover{border-color:var(--border-strong);transform:translateY(-1px)}
-.gk-photo{height:186px;background:var(--surface-1);position:relative;display:grid;place-items:center;cursor:pointer}
-.gk-photo img{width:100%;height:100%;object-fit:cover;display:block}
+/* A foto e uma janela de proporcao fixa: a imagem preenche e o excedente e
+   recortado. Antes a imagem vazava da caixa e a faixa do nome caia no meio
+   do rosto. */
+.gk-photo{aspect-ratio:3/4;background:var(--surface-1);position:relative;overflow:hidden;
+  display:grid;place-items:center;cursor:pointer}
+.gk-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:center 12%;display:block}
 .gk-photo .ph{color:var(--muted);font-size:11.5px}
 /* nome e idade dentro do card, sobre a foto */
-.gk-over{position:absolute;left:0;right:0;bottom:0;padding:22px 11px 9px;cursor:pointer;
-  background:linear-gradient(to top,rgba(8,8,8,.82) 0%,rgba(8,8,8,.55) 45%,rgba(8,8,8,0) 100%);
-  color:#fff;pointer-events:auto}
+.gk-over{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 11px;cursor:pointer;
+  background:linear-gradient(to top,rgba(8,8,8,.88) 0%,rgba(8,8,8,.62) 40%,rgba(8,8,8,0) 100%);
+  color:#fff}
 .gk-over .n{font-size:14.5px;font-weight:680;line-height:1.2;letter-spacing:-.01em;
   text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gk-over .m{font-size:11px;color:rgba(255,255,255,.82);margin-top:2px;
