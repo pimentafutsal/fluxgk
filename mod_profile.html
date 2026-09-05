@@ -419,6 +419,14 @@ table.dt tr.grp td{padding-top:14px;border-bottom:0}
 .rp-type:hover{border-color:var(--border-strong)}
 .rp-type.on{border-color:var(--accent);background:var(--accent-soft)}
 .rp-type input{margin-top:2px;flex:none}
+/* blocos do relatorio individual */
+.rp-secs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.rp-sec{display:flex;gap:9px;align-items:center;border:1px solid var(--border);border-radius:var(--r);
+  padding:9px 11px;background:var(--surface-1);cursor:pointer;font-size:12.5px;
+  transition:.14s border-color,.14s background}
+.rp-sec:hover{border-color:var(--border-strong)}
+.rp-sec.on{border-color:var(--accent);background:var(--accent-soft)}
+.rp-sec input{flex:none}
 .rp-type b{display:block;font-size:13.5px;font-weight:640;margin-bottom:3px}
 .rp-type span{display:block;font-size:11.5px;color:var(--muted);line-height:1.5}
 .rp-files{display:flex;flex-direction:column;gap:7px}
@@ -994,6 +1002,17 @@ const T = {
   weaknesses: { pt: 'Pontos a desenvolver', en: 'Areas to develop', ru: 'Зоны развития' },
   addItem: { pt: '+ Adicionar', en: '+ Add', ru: '+ Добавить' },
   remove: { pt: 'Remover', en: 'Remove', ru: 'Удалить' },
+  rpSections: { pt: 'O que sai no relatório individual', en: 'What goes in the individual report', ru: 'Что входит в индивидуальный отчёт' },
+  rpSectionsHint: { pt: 'Blocos vazios não são impressos, mesmo que estejam marcados.', en: 'Empty blocks are not printed, even if ticked.', ru: 'Пустые блоки не печатаются.' },
+  rpSecIdent: { pt: 'Identificação e dados', en: 'Identification and data', ru: 'Идентификация и данные' },
+  rpSecResumo: { pt: 'Médias atuais', en: 'Current averages', ru: 'Текущие средние' },
+  rpSecEvol: { pt: 'Evolução', en: 'Progress', ru: 'Динамика' },
+  rpSecComp: { pt: 'Perfil por competência', en: 'Competency profile', ru: 'Профиль по компетенциям' },
+  rpSecFw: { pt: 'Fortes e a desenvolver', en: 'Strengths and areas to develop', ru: 'Сильные стороны и зоны роста' },
+  rpSecQual: { pt: 'Comentário qualitativo', en: 'Qualitative comment', ru: 'Качественный комментарий' },
+  rpSecPlano: { pt: 'Plano de desenvolvimento', en: 'Development plan', ru: 'План развития' },
+  rpSecDiario: { pt: 'Diário', en: 'Log', ru: 'Дневник' },
+  rpSecAll: { pt: 'Marcar todos', en: 'Select all', ru: 'Выбрать всё' },
   moveUp: { pt: 'Subir', en: 'Move up', ru: 'Вверх' },
   moveDown: { pt: 'Descer', en: 'Move down', ru: 'Вниз' },
   strengthPh: { pt: 'Ex.: leitura antecipada do chute de primeira', en: 'e.g. early reading of first-time shots', ru: 'Напр.: раннее считывание удара с ходу' },
@@ -3010,6 +3029,8 @@ Object.assign(T, {
       footNote: `${C.nameOf(gk)} · ${o.clubName} · ${C.t('rpGenerated')} ${C.fmtDate(o.today)}`
     });
     if (o.crestImg) d.crestImg = o.crestImg;
+    /* blocos escolhidos na aba Relatórios; sem escolha, sai tudo */
+    const S = Object.assign({ ident: 1, resumo: 1, evol: 1, comp: 1, fw: 1, qual: 1, plano: 1, diario: 1 }, o.secs || {});
     d.addPage();
 
     // identificação
@@ -3026,25 +3047,30 @@ Object.assign(T, {
     const yrs = C.age(gk.birth);
     const savedY = d.y;
     d.y = savedY;
+    /* campo vazio nao entra no PDF: antes saia uma coluna de tracinhos */
     const kvRows = [
-      [C.t('birth'), gk.birth ? C.fmtDate(gk.birth) + (yrs != null ? `  (${yrs})` : '') : '—'],
+      [C.t('birth'), gk.birth ? C.fmtDate(gk.birth) + (yrs != null ? `  (${yrs})` : '') : ''],
       [C.t('nationality'), gk.nationality],
       [C.t('height'), gk.height ? gk.height + ' cm' : ''],
       [C.t('weight'), gk.weight ? gk.weight + ' kg' : ''],
       [C.t('wingspan'), gk.wingspan ? gk.wingspan + ' cm' : ''],
-      [C.t('hand'), gk.hand ? C.t(gk.hand === 'R' ? 'handR' : gk.hand === 'L' ? 'handL' : 'handB') : '']
-    ];
+      [C.t('foot'), gk.foot ? C.t(gk.foot === 'R' ? 'footR' : gk.foot === 'L' ? 'footL' : 'footB') : ''],
+      [C.t('hand'), gk.hand ? C.t(gk.hand === 'R' ? 'handR' : gk.hand === 'L' ? 'handL' : 'handB') : ''],
+      [C.t('team'), gk.team],
+      [C.t('contract'), gk.contract ? C.fmtDate(gk.contract) : '']
+    ].filter(r => S.ident && String(r[1] || '').trim());
     // duas colunas ao lado da foto
     const colW = (CW - pw - 16) / 2;
     kvRows.forEach((r, i) => {
       const cx = bx + (i % 2) * colW;
       const cy = d.y + Math.floor(i / 2) * 22;
       d.page.drawText(String(r[0]), { x: cx, y: A4.h - (cy + 7), size: 7, font: d.f, color: hex2rgb(INK.muted) });
-      d.page.drawText(String(r[1] || '—'), { x: cx, y: A4.h - (cy + 18), size: 9, font: d.fb, color: hex2rgb(INK.primary) });
+      d.page.drawText(String(r[1]), { x: cx, y: A4.h - (cy + 18), size: 9, font: d.fb, color: hex2rgb(INK.primary) });
     });
     d.y = Math.max(topY + ph, d.y + Math.ceil(kvRows.length / 2) * 22) + 12;
 
     // resumo de notas
+    if (S.resumo) {
     d.h2(C.t('rpCurrentProfile'));
     const boxes = C.AXES.map(k => ({
       label: C.axLabel(k, 'short'),
@@ -3058,21 +3084,23 @@ Object.assign(T, {
     });
     d.scoreBoxes(boxes);
     if (first) d.text(C.t('rpDeltaNote') + ' ' + C.fmtDate(snaps[0].date), { size: 7.6, color: INK.muted });
+    }
 
     // evolução
-    if (snaps.length >= 2) {
+    if (S.evol && snaps.length >= 2) {
       d.h2(C.t('rpProgress'));
       d.legend(C.AXES.map(k => ({ label: C.axLabel(k, 'short'), color: o.seriesColors[C.axColor(k) - 1] })));
       d.lineChart(C.AXES.map(k => ({
         label: C.axLabel(k, 'short'), color: o.seriesColors[C.axColor(k) - 1],
         points: snaps.map(s => ({ t: s.date, y: C.axisAvg(k, s.scores) }))
       })), { height: 140, formatX: C.fmtShort, yMax: C.sMax, ticks: C.ticks });
-    } else {
+    } else if (S.evol) {
       d.h2(C.t('rpProgress'));
       d.note(C.t('rpNoProgress'));
     }
 
     // perfil por competência
+    if (S.comp) {
     d.footer(d.footNote); d.addPage();
     d.h1(C.t('rpTechProfile'));
     C.AXES.forEach(k => {
@@ -3084,10 +3112,11 @@ Object.assign(T, {
         delta: first && first[i.id] && cur[i.id] ? (+cur[i.id] - +first[i.id]) : 0
       })), { labelWidth: 210, max: C.sMax });
     });
+    }
 
     // pontos fortes e a desenvolver
-    const st = (gk.strengths || []).filter(x => String(x || '').trim());
-    const wk = (gk.weaknesses || []).filter(x => String(x || '').trim());
+    const st = S.fw ? (gk.strengths || []).filter(x => String(x || '').trim()) : [];
+    const wk = S.fw ? (gk.weaknesses || []).filter(x => String(x || '').trim()) : [];
     if (st.length || wk.length) {
       d.ensure(90);
       d.h2(C.t('strengths') + '  ·  ' + C.t('weaknesses'));
@@ -3115,7 +3144,7 @@ Object.assign(T, {
     }
 
     // comentario qualitativo do treinador (o mais recente do periodo)
-    const comQual = snaps.filter(sn => String(sn.note || '').trim());
+    const comQual = S.qual ? snaps.filter(sn => String(sn.note || '').trim()) : [];
     if (comQual.length) {
       const ult = comQual[comQual.length - 1];
       d.ensure(70);
@@ -3125,7 +3154,7 @@ Object.assign(T, {
 
     // plano de desenvolvimento
     const p = gk.plan || {};
-    const hasPlan = ['macroGoal', 'targetBehaviour', 'cTask', 'cEnv', 'cInd', 'affordances', 'indicators']
+    const hasPlan = S.plano && ['macroGoal', 'targetBehaviour', 'cTask', 'cEnv', 'cInd', 'affordances', 'indicators']
       .some(k => String(p[k] || '').trim());
     if (hasPlan) {
       d.footer(d.footNote); d.addPage();
@@ -3160,7 +3189,7 @@ Object.assign(T, {
     }
 
     // diário
-    if (logs.length) {
+    if (S.diario && logs.length) {
       d.footer(d.footNote); d.addPage();
       d.h1(C.T2.tabs.diario[C.lang]);
       d.text(periodLabel(C, o.range), { size: 8.4, color: INK.muted });
@@ -3641,6 +3670,8 @@ Object.assign(T, {
       types: { individual: true, onePager: false, squad: true, period: false },
       preset: 'season', from: '', to: '',
       who: null, langs: null,
+      /* blocos do relatorio individual que o treinador quer exportar */
+      secs: { ident: true, resumo: true, evol: true, comp: true, fw: true, qual: true, plano: true, diario: true },
       individualFiles: true, consolidated: true,
       cover: true, watermark: true,
       busy: false, status: '', results: null
@@ -4784,6 +4815,11 @@ Object.assign(T, {
     return list.filter(g => App.rp.who.indexOf(g.id) >= 0);
   }
 
+  const RP_SECS = [
+    ['ident', 'rpSecIdent'], ['resumo', 'rpSecResumo'], ['evol', 'rpSecEvol'],
+    ['comp', 'rpSecComp'], ['fw', 'rpSecFw'], ['qual', 'rpSecQual'],
+    ['plano', 'rpSecPlano'], ['diario', 'rpSecDiario']
+  ];
   function viewReports() {
     const r = App.rp;
     const list = App.gks.filter(g => !g.archived);
@@ -4812,6 +4848,22 @@ Object.assign(T, {
           </label>`).join('')}
       </div>
     </div>
+
+    ${r.types.individual ? `<div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+        <h3 class="ttl" style="margin:0">${esc(t('rpSections'))}</h3>
+        <div class="spacer"></div>
+        <button class="btn sm ghost" id="rpSecAll">${esc(t('rpSecAll'))}</button>
+      </div>
+      <div class="hint" style="margin-bottom:12px">${esc(t('rpSectionsHint'))}</div>
+      <div class="rp-secs">
+        ${RP_SECS.map(([k, tk]) => `
+          <label class="rp-sec${r.secs[k] ? ' on' : ''}">
+            <input type="checkbox" data-rpsec="${k}"${r.secs[k] ? ' checked' : ''}>
+            <span>${esc(t(tk))}</span>
+          </label>`).join('')}
+      </div>
+    </div>` : ''}
 
     <div class="card">
       <h3>${esc(t('rpPeriodLabel'))}</h3>
@@ -4909,6 +4961,9 @@ Object.assign(T, {
 
   function wireReports() {
     const r = App.rp;
+    document.querySelectorAll('[data-rpsec]').forEach(c => {
+      c.onchange = () => { r.secs[c.dataset.rpsec] = c.checked; render(); };
+    });
     document.querySelectorAll('[data-rptype]').forEach(c => {
       c.onchange = () => { r.types[c.dataset.rptype] = c.checked; render(); };
     });
@@ -4966,6 +5021,7 @@ Object.assign(T, {
           logs: logsAll,
           range: rpRange(),
           types: r.types,
+          secs: r.secs,
           individualFiles: r.individualFiles,
           consolidated: r.consolidated,
           cover: r.cover, watermark: r.watermark,
@@ -5391,6 +5447,11 @@ Object.assign(T, {
       }
       case 'exportBtn': exportBackup(); break;
       case 'clearSel': App.sel = []; render(); break;
+      case 'rpSecAll': {
+        const faltando = RP_SECS.some(([k]) => !App.rp.secs[k]);
+        RP_SECS.forEach(([k]) => { App.rp.secs[k] = faltando; });
+        render(); break;
+      }
       case 'rpAll': App.rp.who = null; render(); break;
       case 'rpLangAll': App.rp.langs = ['pt', 'en', 'ru']; render(); break;
       case 'rpLangReset': App.rp.langs = null; render(); break;
