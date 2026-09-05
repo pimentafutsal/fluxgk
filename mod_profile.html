@@ -1248,6 +1248,7 @@ Object.assign(T, {
   rpUps: { pt: 'Subiram', en: 'Improved', ru: 'Рост' },
   rpDowns: { pt: 'Caíram', en: 'Dropped', ru: 'Спад' },
   rpGks: { pt: 'goleiros', en: 'goalkeepers', ru: 'вратарей' },
+  rpMethod: { pt: 'Abordagem Baseada em Restrições · Dinâmica Ecológica', en: 'Constraints-Based Approach · Ecological Dynamics', ru: 'Подход на основе ограничений · Экологическая динамика' },
   rpSquadFile: { pt: 'relatorio', en: 'report', ru: 'otchet' },
   rpLangFollow: { pt: 'Segue o idioma da plataforma', en: 'Follows the platform language', ru: 'Соответствует языку платформы' },
   rpLangAll: { pt: 'Todos os idiomas', en: 'All languages', ru: 'Все языки' },
@@ -2907,108 +2908,158 @@ Object.assign(T, {
      Faixa na cor do clube com o escudo, e a parte de baixo com o
      título do relatório, o atleta, o período e a assinatura.
      ============================================================= */
+  /* Capa institucional — mesmo desenho dos demais módulos do FluxGK
+     (Stats, Minutes, Periodization): página inteira na cor do clube,
+     etiqueta FluxGK, escudo num quadro translúcido, título grande,
+     grade de metadados e barra de rodapé. */
   async function drawCover(pdf, fonts, o, info) {
     const C = ctx(o);
     const page = pdf.addPage([A4.w, A4.h]);
     const Y = v => A4.h - v;
+    const PAD = 52;
+    const W = A4.w - PAD * 2;
 
-    const bandH = 372;
     const band = (o.clubColor && ColorKit.isHex(o.clubColor) && !ColorKit.isNeutral(o.clubColor))
       ? ColorKit.norm(o.clubColor)
       : (o.accent || '#2a78d6');
     const onBand = ColorKit.onColor(band);
+    const ink = hex2rgb(onBand);
 
-    page.drawRectangle({ x: 0, y: Y(bandH), width: A4.w, height: bandH, color: hex2rgb(band) });
+    /* fundo cheio */
+    page.drawRectangle({ x: 0, y: 0, width: A4.w, height: A4.h, color: hex2rgb(band) });
 
-    // o escudo entra sobre um disco claro: assim aparece qualquer que
-    // seja a cor dele e a cor da faixa
-    const crestImg = o.crest ? await embedImg(pdf, o.crest) : null;
-    const discR = 66, discCY = 158;
-    if (crestImg) {
-      const light = ColorKit.contrast(band, '#ffffff') >= 2.2 ? '#ffffff' : '#0f0f0f';
-      page.drawCircle({ x: A4.w / 2, y: Y(discCY), size: discR, color: hex2rgb(light) });
-      const box = discR * 1.42;
-      const sc = Math.min(box / crestImg.width, box / crestImg.height);
-      const iw = crestImg.width * sc, ih = crestImg.height * sc;
-      page.drawImage(crestImg, { x: (A4.w - iw) / 2, y: Y(discCY) - ih / 2, width: iw, height: ih });
-    }
-
-    const centerText = (txt, y, size, bold, color, tracking) => {
+    const txt = (s, x, yTop, size, bold, opacity, tracking) => {
       const f = bold ? fonts.bold : fonts.reg;
-      let t2 = String(txt || '');
+      let t2 = String(s == null ? '' : s);
       if (tracking) t2 = t2.split('').join(' ');
       let sz = size;
-      while (f.widthOfTextAtSize(t2, sz) > CW && sz > 8) sz -= 0.5;
-      const w = f.widthOfTextAtSize(t2, sz);
-      page.drawText(t2, { x: (A4.w - w) / 2, y: Y(y + sz), size: sz, font: f, color: hex2rgb(color) });
+      while (f.widthOfTextAtSize(t2, sz) > W && sz > 7) sz -= 0.5;
+      page.drawText(t2, { x: x, y: Y(yTop + sz), size: sz, font: f, color: ink, opacity: opacity == null ? 1 : opacity });
       return sz;
     };
 
-    centerText(o.clubName, crestImg ? discCY + discR + 26 : 150, 26, true, onBand);
-    const sub = `${C.t('season')} ${info.season || ''}`.trim();
-    if (info.season) centerText(sub, (crestImg ? discCY + discR + 26 : 150) + 36, 11, false, onBand, true);
+    let y = PAD;
 
-    // ---- parte inferior ----
-    let y = bandH + 96;
-    page.drawRectangle({ x: M.l, y: Y(y + 3), width: 42, height: 3, color: hex2rgb(band) });
-    y += 22;
+    /* etiqueta do sistema */
+    txt('FluxGK', PAD, y, 9, true, .45, true);
+    y += 26;
 
-    const kicker = String(info.kind || '').toUpperCase();
-    page.drawText(kicker, { x: M.l, y: Y(y + 9), size: 9.5, font: fonts.bold, color: hex2rgb(band) });
-    y += 30;
-
-    const titleLines = (() => {
-      const words = String(info.title || '').split(/\s+/);
-      const out = []; let cur = '';
-      words.forEach(w => {
-        const test = cur ? cur + ' ' + w : w;
-        if (fonts.bold.widthOfTextAtSize(test, 30) <= CW) cur = test;
-        else { if (cur) out.push(cur); cur = w; }
+    /* escudo num quadro translúcido, como nos outros módulos */
+    const crestImg = o.crest ? await embedImg(pdf, o.crest) : null;
+    const boxS = 62;
+    page.drawRectangle({
+      x: PAD, y: Y(y + boxS), width: boxS, height: boxS,
+      color: ink, opacity: .12, borderColor: ink, borderOpacity: .2, borderWidth: 1
+    });
+    if (crestImg) {
+      const inner = boxS - 12;
+      const sc = Math.min(inner / crestImg.width, inner / crestImg.height);
+      const iw = crestImg.width * sc, ih = crestImg.height * sc;
+      page.drawImage(crestImg, {
+        x: PAD + (boxS - iw) / 2, y: Y(y + boxS) + (boxS - ih) / 2, width: iw, height: ih
       });
-      if (cur) out.push(cur);
-      return out.slice(0, 3);
+    } else {
+      const ini = String(o.clubName || 'GK').slice(0, 2).toUpperCase();
+      const w = fonts.bold.widthOfTextAtSize(ini, 19);
+      page.drawText(ini, { x: PAD + (boxS - w) / 2, y: Y(y + boxS / 2 + 7), size: 19, font: fonts.bold, color: ink, opacity: .9 });
+    }
+    y += boxS + 30;
+
+    /* título grande, quebrado em até 3 linhas */
+    const titulo = String(info.title || '');
+    const linhas = (() => {
+      const words = titulo.split(/\s+/), out = [];
+      let cur = '', sz = 42;
+      while (sz > 22) {
+        out.length = 0; cur = '';
+        words.forEach(w => {
+          const test = cur ? cur + ' ' + w : w;
+          if (fonts.bold.widthOfTextAtSize(test, sz) <= W) cur = test;
+          else { if (cur) out.push(cur); cur = w; }
+        });
+        if (cur) out.push(cur);
+        if (out.length <= 3) break;
+        sz -= 3;
+      }
+      return { linhas: out.slice(0, 3), sz: sz };
     })();
-    titleLines.forEach(ln => {
-      page.drawText(ln, { x: M.l, y: Y(y + 30), size: 30, font: fonts.bold, color: hex2rgb(INK.primary) });
-      y += 37;
+    linhas.linhas.forEach(ln => {
+      page.drawText(ln, { x: PAD, y: Y(y + linhas.sz), size: linhas.sz, font: fonts.bold, color: ink });
+      y += linhas.sz * 1.08;
     });
+    y += 10;
 
-    if (info.subtitle) {
-      y += 2;
-      page.drawText(info.subtitle, { x: M.l, y: Y(y + 12), size: 12, font: fonts.reg, color: hex2rgb(INK.muted) });
-      y += 24;
+    /* nome do clube */
+    txt(o.clubName || '', PAD, y, 16, false, .6);
+    y += 28;
+
+    /* subtítulo (número, equipe, tipos de relatório) como etiquetas */
+    const tags = String(info.subtitle || '').split(/\s+·\s+/).filter(Boolean);
+    if (tags.length) {
+      y += 8;
+      txt(String(info.kind || '').toUpperCase(), PAD, y, 8.5, false, .38, true);
+      y += 16;
+      let tx = PAD;
+      tags.forEach(tg => {
+        const tw = fonts.bold.widthOfTextAtSize(tg, 10) + 20;
+        if (tx + tw > PAD + W) { tx = PAD; y += 26; }
+        page.drawRectangle({
+          x: tx, y: Y(y + 20), width: tw, height: 20,
+          color: ink, opacity: .12, borderColor: ink, borderOpacity: .2, borderWidth: 1
+        });
+        page.drawText(tg, { x: tx + 10, y: Y(y + 14), size: 10, font: fonts.bold, color: ink, opacity: .85 });
+        tx += tw + 6;
+      });
+      y += 34;
+    } else {
+      y += 12;
     }
 
-    y += 16;
-    const rows = [];
-    if (info.season) rows.push([C.t('season'), info.season]);
-    rows.push([C.t('rpPeriodLabel'), info.period]);
-    if (info.count) rows.push([C.t('rpGks'), String(info.count)]);
-    rows.forEach(r => {
-      page.drawText(String(r[0]).toUpperCase(), { x: M.l, y: Y(y + 8), size: 7.4, font: fonts.reg, color: hex2rgb(INK.muted) });
-      page.drawText(String(r[1]), { x: M.l + 96, y: Y(y + 9), size: 10, font: fonts.bold, color: hex2rgb(INK.primary) });
-      y += 19;
+    /* grade de metadados, ancorada acima do rodapé */
+    const meta = [];
+    if (info.season) meta.push([C.t('season'), info.season]);
+    meta.push([C.t('rpPeriodLabel'), info.period]);
+    if (info.count) meta.push([C.t('rpGks'), String(info.count)]);
+    meta.push([C.t('rpGenerated'), C.fmtDate(o.today)]);
+    if (o.respName) meta.push([o.respRole || C.t('respName'), o.respName]);
+
+    const footBarY = A4.h - PAD - 30;
+    /* monta as linhas primeiro: com muitos itens a grade quebrava para baixo
+       e passava por cima da barra de rodape */
+    const LINH = 40;
+    const larguras = meta.map(r => Math.max(
+      fonts.reg.widthOfTextAtSize(String(r[0]).toUpperCase(), 8),
+      fonts.bold.widthOfTextAtSize(String(r[1] || ''), 12)
+    ) + 34);
+    const linhasMeta = [];
+    let atual = [], usado = 0;
+    meta.forEach((r, i) => {
+      if (atual.length && usado + larguras[i] > W) { linhasMeta.push(atual); atual = []; usado = 0; }
+      atual.push([r, larguras[i]]); usado += larguras[i];
+    });
+    if (atual.length) linhasMeta.push(atual);
+    let my = footBarY - 22 - linhasMeta.length * LINH;
+    linhasMeta.forEach(linha => {
+      let mx = PAD;
+      linha.forEach(([r, larg]) => {
+        page.drawText(String(r[0]).toUpperCase(), { x: mx, y: Y(my + 8), size: 8, font: fonts.reg, color: ink, opacity: .38 });
+        page.drawText(String(r[1] || '—'), { x: mx, y: Y(my + 24), size: 12, font: fonts.bold, color: ink, opacity: .88 });
+        mx += larg;
+      });
+      my += LINH;
     });
 
-    // ---- assinatura e data, ancoradas ao pé da página ----
-    const footY = A4.h - 88;
+    /* barra de rodapé */
     page.drawLine({
-      start: { x: M.l, y: Y(footY) }, end: { x: M.l + 190, y: Y(footY) },
-      thickness: .8, color: hex2rgb(INK.axis)
+      start: { x: PAD, y: Y(footBarY) }, end: { x: A4.w - PAD, y: Y(footBarY) },
+      thickness: .8, color: ink, opacity: .16
     });
-    let fy = footY + 14;
-    if (o.respName) {
-      page.drawText(o.respName, { x: M.l, y: Y(fy + 10), size: 10.5, font: fonts.bold, color: hex2rgb(INK.primary) });
-      fy += 15;
-    }
-    if (o.respRole) {
-      page.drawText(o.respRole, { x: M.l, y: Y(fy + 9), size: 9, font: fonts.reg, color: hex2rgb(INK.muted) });
-    }
-    const gen = `${C.t('rpGenerated')} ${C.fmtDate(o.today)}`;
-    page.drawText(gen, {
-      x: A4.w - M.r - fonts.reg.widthOfTextAtSize(gen, 8.5),
-      y: Y(A4.h - 58), size: 8.5, font: fonts.reg, color: hex2rgb(INK.muted)
-    });
+    const esq = 'FluxGK · ' + (o.clubName || '');
+    const dir = C.t('rpMethod');
+    page.drawText(esq, { x: PAD, y: Y(footBarY + 20), size: 8, font: fonts.reg, color: ink, opacity: .34 });
+    const dw = fonts.reg.widthOfTextAtSize(dir, 8);
+    page.drawText(dir, { x: A4.w - PAD - dw, y: Y(footBarY + 20), size: 8, font: fonts.reg, color: ink, opacity: .34 });
+
     return page;
   }
 
