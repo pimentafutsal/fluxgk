@@ -1068,7 +1068,8 @@ const T = {
   save: { pt: 'Salvar ficha', en: 'Save profile', ru: 'Сохранить профиль' },
   saveHint: { pt: 'Baixa um arquivo .html com todos os dados dentro', en: 'Downloads an .html file with all data inside', ru: 'Скачивает .html файл со всеми данными' },
   load: { pt: 'Abrir ficha', en: 'Open profile', ru: 'Открыть профиль' },
-  print: { pt: 'Imprimir / PDF', en: 'Print / PDF', ru: 'Печать / PDF' },
+  print: { pt: '⤓ Relatório PDF', en: '⤓ PDF report', ru: '⤓ PDF-отчёт' },
+  printTip: { pt: 'Gera o relatório individual deste goleiro, com a mesma capa da aba Relatórios e os blocos marcados lá.', en: "Builds this goalkeeper's individual report, with the same cover as the Reports tab and the blocks ticked there.", ru: 'Формирует индивидуальный отчёт этого вратаря.' },
   newProfile: { pt: 'Nova ficha', en: 'New profile', ru: 'Новый профиль' },
   confirmNew: { pt: 'Limpar todos os dados e começar uma ficha em branco?', en: 'Clear all data and start a blank profile?', ru: 'Очистить все данные и начать новый профиль?' },
   saved: { pt: 'Ficha salva', en: 'Profile saved', ru: 'Профиль сохранён' },
@@ -4035,7 +4036,7 @@ Object.assign(T, {
       <button class="btn ghost no-print" id="backBtn">← ${esc(t('back'))}</button>
       <h2>${esc(gkName(App.cur))}</h2>
       <div class="spacer"></div>
-      <button class="btn ghost no-print" id="printBtn">${esc(t('print'))}</button>
+      <button class="btn ghost no-print" id="printBtn" title="${esc(t('printTip'))}">${esc(t('print'))}</button>
     </div>
     <div class="tabs no-print">${GK_TABS.map(id =>
       `<button data-gktab="${id}" aria-selected="${App.tab === id}">${esc(T.tabs[id][L()])}</button>`).join('')}</div>
@@ -5079,23 +5080,52 @@ Object.assign(T, {
     return `<div class="print-head" style="display:none">${crestHTML('crest')}<b>${esc(gkName(g))}</b>
       <span>${esc(sub)}</span></div>`;
   }
-  function printProfile() {
-    const keepTab = App.tab, keepTable = App.showTable;
-    App.showTable = true;
-    const views = { geral: gkGeral, aval: gkAval, plano: gkPlano, diario: gkDiario, evol: gkEvol };
-    const html = GK_TABS.map(id => {
-      App.tab = id;
-      return `<div class="panel">${printHead()}<div class="panel-title" style="display:none">${esc(T.tabs[id][L()])}</div>${views[id]()}</div>`;
-    }).join('');
-    App.tab = keepTab; App.showTable = keepTable;
-    $('#app').innerHTML = html;
-    staticize($('#app'));
-    const restore = () => { render(); window.removeEventListener('afterprint', restore); };
-    window.addEventListener('afterprint', restore);
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => { if ($('#app').querySelectorAll('.panel').length > 1) restore(); }, 900);
-    }, 80);
+  /* O botao da ficha usa o mesmo motor da aba Relatorios: antes ele imprimia a
+     tela pelo navegador e saia com outra cara. Agora gera o relatorio individual
+     deste goleiro, com a mesma capa e respeitando os blocos marcados. */
+  async function printProfile() {
+    if (!App.cur) return;
+    const r = App.rp;
+    if (r.busy) return;
+    r.busy = true;
+    toast(t('rpLoadingLibs'));
+    try {
+      const logs = await App.db.listLogs(App.cur.id);
+      App.allAssess = await App.db.listAssessments(null);
+      const seriesColors = (App.brand.use_in_charts && App.brand.colors && App.brand.colors.length)
+        ? ColorKit.buildSeries(App.brand.colors, 'light')
+        : ColorKit.DEFAULTS.light.slice();
+      const accent = seriesColors[0];
+      Reports.setMessages({ loadFail: t('rpLoadFail'), fontFail: t('rpFontFail') });
+      const files = await Reports.generate({
+        goalkeepers: [App.cur],
+        assessments: App.allAssess,
+        logs: logs,
+        range: rpRange(),
+        types: { individual: true, onePager: false, squad: false, period: false },
+        secs: r.secs,
+        individualFiles: true,
+        consolidated: false,
+        cover: r.cover, watermark: r.watermark,
+        respName: App.brand.resp_name || '', respRole: App.brand.resp_role || '',
+        clubColor: (App.brand.colors && App.brand.colors[0]) || null,
+        lang: L(), langSuffix: false,
+        T, model: App.model,
+        clubName: App.brand.club_name || 'Semey',
+        crest: App.brand.crest,
+        accent, seriesColors,
+        today: today()
+      });
+      if (files.length) {
+        downloadBlob(new Blob([files[0].bytes], { type: 'application/pdf' }), files[0].name);
+      } else {
+        toast(t('rpNothing'));
+      }
+    } catch (e) {
+      toast(e.message || String(e));
+    } finally {
+      r.busy = false;
+    }
   }
 
   /* =============================================================
@@ -5461,7 +5491,7 @@ Object.assign(T, {
         render(); break;
       }
       case 'backBtn': await flushSave(); App.brandDraft = null; App.modelDraft = null; App.view = 'squad'; App.cur = null; markSave('idle'); render(); break;
-      case 'printBtn': printProfile(); break;
+      case 'printBtn': await printProfile(); break;
       case 'tblBtn': App.showTable = !App.showTable; render(); break;
 
       case 'addEntry': {
