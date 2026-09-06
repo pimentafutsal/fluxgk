@@ -1687,11 +1687,24 @@ Object.assign(T, {
     if (out.scale.max <= out.scale.min) out.scale.max = out.scale.min + 1;
 
     const axes = Array.isArray(m.axes) ? m.axes : base.axes;
+    /* "Curto" e "Mínimo" nao sao mais campos da tela: derivam do nome do eixo.
+       Assim os modelos ja gravados param de mostrar "New axis N" nos graficos
+       e no PDF sem precisar reabrir e salvar os criterios. */
+    const abrev = txt => {
+      const s2 = String(txt || '').trim();
+      if (!s2) return '';
+      const p = s2.split(/\s+/).filter(w => w.length > 2 || /^[0-9]/.test(w));
+      if (p.length >= 2) return p.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+      return s2.slice(0, 3).toUpperCase();
+    };
     out.axes = axes.slice(0, MAXAXES).map((a, i) => ({
       id: a && a.id ? String(a.id) : uid('ax'),
       label: tri(a && a.label, 'Eixo ' + (i + 1)),
-      short: tri(a && a.short, tri(a && a.label, 'Eixo ' + (i + 1)).pt),
-      micro: tri(a && a.micro, tri(a && a.short, 'E' + (i + 1)).pt),
+      short: tri(a && a.label, 'Eixo ' + (i + 1)),
+      micro: (function () {
+        const L2 = tri(a && a.label, 'Eixo ' + (i + 1));
+        return { pt: abrev(L2.pt), en: abrev(L2.en), ru: abrev(L2.ru) };
+      })(),
       items: (Array.isArray(a && a.items) ? a.items : []).map((it, k) => ({
         id: it && it.id ? String(it.id) : uid('it'),
         pt: str(it && it.pt, 'Item ' + (k + 1)),
@@ -3144,6 +3157,44 @@ Object.assign(T, {
     });
     d.y = Math.max(topY + ph, d.y + Math.ceil(kvRows.length / 2) * 22) + 12;
 
+    // comentario qualitativo do treinador (o mais recente do periodo)
+    const comQual = S.qual ? snaps.filter(sn => String(sn.note || '').trim()) : [];
+    if (comQual.length) {
+      const ult = comQual[comQual.length - 1];
+      d.ensure(70);
+      d.h2(C.t('qualTitle') + '  ·  ' + C.fmtDate(ult.date));
+      d.text(ult.note, { size: 9, color: INK.secondary });
+    }
+
+    // pontos fortes e a desenvolver
+    const st = S.fw ? (gk.strengths || []).filter(x => String(x || '').trim()) : [];
+    const wk = S.fw ? (gk.weaknesses || []).filter(x => String(x || '').trim()) : [];
+    if (st.length || wk.length) {
+      d.ensure(90);
+      d.h2(C.t('strengths') + '  ·  ' + C.t('weaknesses'));
+      const half = CW / 2 - 10;
+      const yStart = d.y;
+      let yA = yStart;
+      st.forEach(s => {
+        const lines = d.wrap('•  ' + s, 8.6, false, half);
+        lines.forEach(ln => {
+          d.page.drawText(ln, { x: M.l, y: A4.h - (yA + 8.6), size: 8.6, font: d.f, color: hex2rgb(INK.secondary) });
+          yA += 12.4;
+        });
+        yA += 2;
+      });
+      let yB = yStart;
+      wk.forEach(s => {
+        const lines = d.wrap('•  ' + s, 8.6, false, half);
+        lines.forEach(ln => {
+          d.page.drawText(ln, { x: M.l + CW / 2 + 10, y: A4.h - (yB + 8.6), size: 8.6, font: d.f, color: hex2rgb(INK.secondary) });
+          yB += 12.4;
+        });
+        yB += 2;
+      });
+      d.y = Math.max(yA, yB) + 6;
+    }
+
     // resumo de notas
     if (S.resumo) {
     d.h2(C.t('rpCurrentProfile'));
@@ -3187,44 +3238,6 @@ Object.assign(T, {
         delta: first && first[i.id] && cur[i.id] ? (+cur[i.id] - +first[i.id]) : 0
       })), { labelWidth: 210, max: C.sMax });
     });
-    }
-
-    // pontos fortes e a desenvolver
-    const st = S.fw ? (gk.strengths || []).filter(x => String(x || '').trim()) : [];
-    const wk = S.fw ? (gk.weaknesses || []).filter(x => String(x || '').trim()) : [];
-    if (st.length || wk.length) {
-      d.ensure(90);
-      d.h2(C.t('strengths') + '  ·  ' + C.t('weaknesses'));
-      const half = CW / 2 - 10;
-      const yStart = d.y;
-      let yA = yStart;
-      st.forEach(s => {
-        const lines = d.wrap('•  ' + s, 8.6, false, half);
-        lines.forEach(ln => {
-          d.page.drawText(ln, { x: M.l, y: A4.h - (yA + 8.6), size: 8.6, font: d.f, color: hex2rgb(INK.secondary) });
-          yA += 12.4;
-        });
-        yA += 2;
-      });
-      let yB = yStart;
-      wk.forEach(s => {
-        const lines = d.wrap('•  ' + s, 8.6, false, half);
-        lines.forEach(ln => {
-          d.page.drawText(ln, { x: M.l + CW / 2 + 10, y: A4.h - (yB + 8.6), size: 8.6, font: d.f, color: hex2rgb(INK.secondary) });
-          yB += 12.4;
-        });
-        yB += 2;
-      });
-      d.y = Math.max(yA, yB) + 6;
-    }
-
-    // comentario qualitativo do treinador (o mais recente do periodo)
-    const comQual = S.qual ? snaps.filter(sn => String(sn.note || '').trim()) : [];
-    if (comQual.length) {
-      const ult = comQual[comQual.length - 1];
-      d.ensure(70);
-      d.h2(C.t('qualTitle') + '  ·  ' + C.fmtDate(ult.date));
-      d.text(ult.note, { size: 9, color: INK.secondary });
     }
 
     // plano de desenvolvimento
@@ -4775,6 +4788,15 @@ Object.assign(T, {
     </div>`;
   }
 
+  /* abreviacao curta para as caixinhas do elenco: iniciais das palavras, ou as
+     tres primeiras letras quando o nome tem uma palavra so */
+  function abreviar(txt) {
+    const s2 = String(txt || '').trim();
+    if (!s2) return '';
+    const p = s2.split(/\s+/).filter(w => w.length > 2 || /^[0-9]/.test(w));
+    if (p.length >= 2) return p.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+    return s2.slice(0, 3).toUpperCase();
+  }
   function novoEixo(m) {
     const n = m.axes.length + 1;
     const nome = t('pmNewAxis') + ' ' + n;
@@ -4860,7 +4882,14 @@ Object.assign(T, {
         if (!String(obj.en || '').trim()) obj.en = base;
         if (!String(obj.ru || '').trim()) obj.ru = base;
       };
-      compl(ax.label); compl(ax.short); compl(ax.micro);
+      compl(ax.label);
+      /* "Curto" e "Mínimo" nao sao mais editaveis na tela, entao passam a ser
+         derivados do nome do eixo. Antes ficavam congelados em "New axis N" e
+         era isso que saia nos graficos e no PDF. */
+      ax.short = { pt: ax.label.pt, en: ax.label.en, ru: ax.label.ru };
+      ax.micro = {
+        pt: abreviar(ax.label.pt), en: abreviar(ax.label.en), ru: abreviar(ax.label.ru)
+      };
       ax.items.forEach(compl);
     });
 
