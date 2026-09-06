@@ -31,6 +31,7 @@
     _SPATH.offtypes=d.dataPath+'/stats/offtypes';
     _SPATH.offresults=d.dataPath+'/stats/offresults';
     _SPATH.results=d.dataPath+'/stats/results';
+    _SPATH.hdists=d.dataPath+'/stats/hdists';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
@@ -106,6 +107,7 @@
     db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
     db.ref(_SPATH.offtypes).on('value',function(snap){var v=snap.val();if(v)ST.offtypes=_asArr(v);try{renderOffForms();renderList('offtypes');}catch(e){}});
     db.ref(_SPATH.offresults).on('value',function(snap){var v=snap.val();if(v)ST.offresults=_asArr(v);try{renderOffForms();renderList('offresults');}catch(e){}});
+    db.ref(_SPATH.hdists).on('value',function(snap){var v=snap.val();if(v)ST.hdists=_asArr(v);try{renderSkillMomentGroups();renderList('hdists');}catch(e){}});
     db.ref(_SPATH.results).on('value',function(snap){
       var v=_asArr(snap.val());
       if(!v.length) return;
@@ -661,6 +663,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div id="results-list"></div>
     </div>
     <div class="card">
+      <div data-i18n="st.hdistTitle" class="card-title">Horizontal distance</div>
+      <div data-i18n="st.hdistSub" class="page-sub" style="margin:-4px 0 10px;">Rename or create your own distance ranges.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="add-hdist-input" placeholder="Add distance…" data-i18n-placeholder="st.ph.hdist" onkeydown="if(event.key==='Enter')addItem('hdists','add-hdist-input','hdists-list')">
+        <button data-i18n="st.add" class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="addItem('hdists','add-hdist-input','hdists-list')">Add</button>
+      </div>
+      <div id="hdists-list"></div>
+    </div>
+    <div class="card">
       <div data-i18n="st.momentsTitle" class="card-title">Game moments</div>
       <div data-i18n="st.momentsSub" class="page-sub" style="margin:-4px 0 10px;">Characterize with your own game moments.</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -721,6 +732,8 @@ const ST = {
      um "tipo" (save/goal/blocked/out/post/'') que alimenta os KPIs e o % de defesas,
      para que renomear em portugues nao quebre nenhuma conta. */
   results:['Save','Blocked','Out','Goal conceded','Post'],
+  /* distancia horizontal: tambem caracterizavel pelo treinador */
+  hdists:['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'],
   resultKinds:{'Save':'save','Blocked':'blocked','Out':'out','Goal conceded':'goal','Post':'post'},
   _seeded:false,
   gks:[],
@@ -759,6 +772,7 @@ function persist(){
   /* acoes ofensivas: tipos e desfechos caracterizaveis pelo treinador */
   if(_SPATH.offtypes)   window.fbSet(_SPATH.offtypes,   ST.offtypes||[]).catch(e=>console.error('FB offtypes:',e));
   if(_SPATH.offresults) window.fbSet(_SPATH.offresults, ST.offresults||[]).catch(e=>console.error('FB offresults:',e));
+  if(_SPATH.hdists) window.fbSet(_SPATH.hdists, ST.hdists||[]).catch(e=>console.error('FB hdists:',e));
   /* resultados da finalizacao + o tipo de cada um */
   if(_SPATH.results) window.fbSet(_SPATH.results,
       (ST.results||[]).map(function(v){return {v:v,k:(ST.resultKinds&&ST.resultKinds[v])||''};})
@@ -817,10 +831,10 @@ function applyAccent(color){
 function renderSettings(){
   /* identidade (nome, cor) vem do hub — nao se edita aqui.
      esta pagina agora e so cadastro de adversarios, competicoes e goleiros. */
-  ['clubs','comps','gks','results','skills','moments','offtypes','offresults'].forEach(k=>renderList(k));
+  ['clubs','comps','gks','results','hdists','skills','moments','offtypes','offresults'].forEach(k=>renderList(k));
 }
 function renderList(key){
-  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',results:'results-list',skills:'skills-list',moments:'moments-list',offtypes:'offtypes-list',offresults:'offresults-list'}[key];
+  const listId={clubs:'clubs-list',comps:'comps-list',gks:'gks-list',results:'results-list',hdists:'hdists-list',skills:'skills-list',moments:'moments-list',offtypes:'offtypes-list',offresults:'offresults-list'}[key];
   const el=document.getElementById(listId); if(!el) return;
   if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
   el.innerHTML='';
@@ -855,6 +869,11 @@ function renderList(key){
         <button class="list-del" style="margin-right:4px;" title="${_txf('st.rename','Rename')}" onclick="renameResult(${i})">✎</button>
         <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
       d.style.display='flex'; d.style.alignItems='center';
+    } else if(key==='hdists'){
+      d.innerHTML=`<span style="font-size:13px;flex:1;">${stLbl(item)}</span>
+        <button class="list-del" style="margin-right:4px;" title="${_txf('st.rename','Rename')}" onclick="renameList('hdists',${i})">✎</button>
+        <button class="list-del" onclick="removeItem('${key}',${i})">✕</button>`;
+      d.style.display='flex'; d.style.alignItems='center';
     } else {
       /* skills/moments/offtypes/offresults mostram o rotulo traduzido dos padroes; personalizados passam direto */
       const label=(key==='skills'||key==='moments'||key==='offtypes'||key==='offresults')?stLbl(item):item;
@@ -885,6 +904,28 @@ function renameResult(i){
   _asArr(CUR&&CUR.shots).forEach(function(sh){ if(sh.result===antigo) sh.result=novo; });
   persist();
   try{ renderList('results'); renderSkillMomentGroups(); renderDashboard(); }catch(e){}
+  alert(_txf('st.renameDone','Renamed. Shots updated:')+' '+tocados);
+}
+/* Renomear um item de lista reescrevendo tambem as finalizacoes ja gravadas,
+   igual ao que ja acontece nos resultados. */
+const _CAMPO_DA_LISTA={hdists:'hDistance',moments:'moment',skills:'skill'};
+function renameList(key,i){
+  const campo=_CAMPO_DA_LISTA[key]; if(!campo) return;
+  if(!Array.isArray(ST[key])) ST[key]=_asArr(ST[key]);
+  const antigo=ST[key][i]; if(antigo==null) return;
+  const novo=(prompt(_txf('st.renameResultAsk','New name for')+' "'+stLbl(antigo)+'":', stLbl(antigo))||'').trim();
+  if(!novo||novo===antigo) return;
+  if(ST[key].includes(novo)){ alert(_txf('st.renameDup','That name already exists.')); return; }
+  ST[key][i]=novo;
+  let tocados=0;
+  (ST.games||[]).forEach(function(g){
+    let mudou=false;
+    _asArr(g.shots).forEach(function(sh){ if(sh[campo]===antigo){ sh[campo]=novo; mudou=true; tocados++; } });
+    if(mudou) persistGame(g);
+  });
+  _asArr(CUR&&CUR.shots).forEach(function(sh){ if(sh[campo]===antigo) sh[campo]=novo; });
+  persist();
+  try{ renderList(key); renderSkillMomentGroups(); renderDashboard(); }catch(e){}
   alert(_txf('st.renameDone','Renamed. Shots updated:')+' '+tocados);
 }
 function setResultKind(i,kind){
@@ -948,7 +989,7 @@ function addItem(key,inputId,listId){
   persist();
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
-  if(key==='skills'||key==='moments'||key==='results') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='skills'||key==='moments'||key==='results'||key==='hdists') try{renderSkillMomentGroups();}catch(e){}
   if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 function removeItem(key,idx){
@@ -956,7 +997,7 @@ function removeItem(key,idx){
   ST[key].splice(idx,1); persist();
   try{ renderList(key); }catch(e){ console.error('renderList '+key,e); }
   try{ populateAllSelects(); }catch(e){}
-  if(key==='skills'||key==='moments'||key==='results') try{renderSkillMomentGroups();}catch(e){}
+  if(key==='skills'||key==='moments'||key==='results'||key==='hdists') try{renderSkillMomentGroups();}catch(e){}
   if(key==='offtypes'||key==='offresults'||key==='moments') try{renderOffForms();}catch(e){}
 }
 
@@ -1084,7 +1125,7 @@ function mcSel(btn,field,val){
    data-val guarda o valor gravado (canonico); o texto e stLbl() (traduz os
    padroes, deixa passar os personalizados). Reaplica a selecao atual (SF). */
 function renderSkillMomentGroups(){
-  [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills],['result','sf-result-group',ST.results]].forEach(function(cfg){
+  [['moment','sf-moment-group',ST.moments],['skill','sf-skill-group',ST.skills],['result','sf-result-group',ST.results],['hDistance','sf-hdist-group',ST.hdists]].forEach(function(cfg){
     var field=cfg[0], el=document.getElementById(cfg[1]), list=_asArr(cfg[2]);
     if(!el) return;
     el.innerHTML='';
@@ -1555,7 +1596,7 @@ function showHistShotForm(gameId,idx){
         </div>
         <div>
           <div class="label">${TX("st.hDistance")}</div>
-          <div class="mc-group" id="hf-hdist-${gameId}">${mcBtns('hDistance',['Before the halfway line','Before 10m','After 10m','Area','10m','Penalty'],s.hDistance)}</div>
+          <div class="mc-group" id="hf-hdist-${gameId}">${mcBtns('hDistance',ST.hdists,s.hDistance)}</div>
         </div>
         <div>
           <div class="label" style="margin-bottom:8px;">${TX("st.shotLocation")}</div>
@@ -1874,7 +1915,7 @@ function renderDashboard(){
         + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
     }
   } else {
-    orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),HDIST_ORDER,null,true);
+    orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),cfgOrder(ST.hdists,HDIST_ORDER),null,true);
     document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total,52);
     document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total,150);
   }
@@ -2031,7 +2072,7 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
     orderedChart(uid+'r','bar',rc,cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
     orderedChart(uid+'m','bar',mc,cfgOrder(ST.moments,MOMENT_ORDER),null,false);
     orderedChart(uid+'k','doughnut',kc,cfgOrder(ST.skills,SKILL_ORDER),null,false);
-    orderedChart(uid+'d','bar',dc,HDIST_ORDER,null,true);
+    orderedChart(uid+'d','bar',dc,cfgOrder(ST.hdists,HDIST_ORDER),null,true);
     if(offs.length){
       orderedChart(uid+'ot','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
       orderedChart(uid+'or','bar',countBy(offs,'result'),ST.offresults,null,false);
@@ -2137,7 +2178,7 @@ function exportReport(){
       <div style="flex:1;">${legend}</div>
     </div>`;
   })();
-  const hdistHtml=ordTodos(DC,HDIST_ORDER).map(k=>bar(stLbl(k),DC[k]||0,s.total,'#444')).join('');
+  const hdistHtml=ordTodos(DC,cfgOrder(ST.hdists,HDIST_ORDER)).map(k=>bar(stLbl(k),DC[k]||0,s.total,'#444')).join('');
 
   const gzones=[{id:1,l:'51'},{id:2,l:'46'},{id:3,l:'58'},{id:4,l:'49'},{id:5,l:'96'},{id:6,l:'101'}];
   const gcounts=gzones.map(z=>shots.filter(sh=>sh.goalZone===z.id).length);
@@ -2425,7 +2466,7 @@ function bootUI(){
   renderOffForms();
   renderList('skills'); renderList('moments'); renderList('offtypes'); renderList('offresults');
   /* ao trocar de idioma, re-traduz os rotulos padrao dos botoes e das listas */
-  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderOffForms(); renderList('skills'); renderList('moments'); renderList('results'); renderList('offtypes'); renderList('offresults'); }); }catch(e){}
+  try{ FluxGKI18n.onChange(function(){ renderSkillMomentGroups(); renderOffForms(); renderList('skills'); renderList('moments'); renderList('results'); renderList('hdists'); renderList('offtypes'); renderList('offresults'); }); }catch(e){}
   renderDashboard();
   // Sync settings inputs
   const cn=document.getElementById('set-club-name'); if(cn) cn.value=ST.clubName;
