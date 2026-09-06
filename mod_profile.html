@@ -988,6 +988,13 @@ const T = {
   qualHint: { pt: 'O que os números não dizem: contexto, evolução percebida, atitude, o que observar no próximo ciclo. Fica guardado junto com o snapshot e sai no relatório.', en: 'What the numbers do not say: context, perceived progress, attitude, what to watch next cycle. Stored with the snapshot and shown in the report.', ru: 'То, чего не показывают цифры. Сохраняется вместе со снимком и попадает в отчёт.' },
   qualPh: { pt: 'Escreva a leitura da avaliação…', en: 'Write your reading of this assessment…', ru: 'Опишите вашу оценку…' },
   qualLast: { pt: 'Último comentário salvo', en: 'Last saved comment', ru: 'Последний сохранённый комментарий' },
+  editSnap: { pt: 'Editar', en: 'Edit', ru: 'Изменить' },
+  editSnapOn: { pt: 'Editando a avaliação de {d}', en: 'Editing the assessment from {d}', ru: 'Редактирование оценки от {d}' },
+  editSnapHint: { pt: 'As notas e o comentário abaixo já vieram dessa avaliação. Ao salvar, ela é sobrescrita — não cria uma nova.', en: 'The ratings and comment below came from that assessment. Saving overwrites it — it does not create a new one.', ru: 'Сохранение перезапишет эту оценку, а не создаст новую.' },
+  editSnapCancel: { pt: 'Cancelar edição', en: 'Cancel editing', ru: 'Отменить' },
+  editSnapSave: { pt: '✓ Sobrescrever avaliação', en: '✓ Overwrite assessment', ru: '✓ Перезаписать оценку' },
+  editSnapDone: { pt: 'Avaliação de {d} atualizada', en: 'Assessment from {d} updated', ru: 'Оценка от {d} обновлена' },
+  fwNote: { pt: 'Pontos fortes e áreas a desenvolver valem para o goleiro, não para uma avaliação: editar aqui já corrige todos os relatórios, inclusive os já gerados quando forem exportados de novo.', en: 'Strengths and areas to develop belong to the goalkeeper, not to a single assessment: editing here fixes every report the next time it is exported.', ru: 'Сильные стороны относятся к вратарю, а не к отдельной оценке.' },
   // Avaliação
   scaleTitle: { pt: 'Escala de referência', en: 'Reference scale', ru: 'Шкала оценки' },
   scale1: { pt: '1–3 · Abaixo do exigido para o nível', en: '1–3 · Below the level required', ru: '1–3 · Ниже требуемого уровня' },
@@ -3758,7 +3765,7 @@ Object.assign(T, {
     gks: [], allAssess: [],
     cur: null, curAssess: [], curLogs: [],
     openNotes: {}, showTable: false,
-    sel: [], metric: 'global', showAvg: true, showArchived: false, cardsOpen: true, cardOpen: {},
+    sel: [], metric: 'global', showAvg: true, showArchived: false, cardsOpen: true, cardOpen: {}, editSnap: null,
     saveState: 'idle', busy: false,
     model: null, modelDraft: null,
     brand: { club_name: 'Semey', crest: null, colors: [], use_in_charts: true, resp_name: '', resp_role: '' },
@@ -4233,7 +4240,12 @@ Object.assign(T, {
   }
 
   function gkAval() {
+    const ed = App.editSnap;
     return `
+    ${ed ? `<div class="banner no-print" style="margin-bottom:14px">
+      <span><b>${esc(t('editSnapOn').replace('{d}', fmtDate(ed.date)))}</b> — ${esc(t('editSnapHint'))}</span>
+      <button class="btn sm ghost" id="cancelSnapEdit" style="margin-left:auto">${esc(t('editSnapCancel'))}</button>
+    </div>` : ''}
     <div class="card"><h3>${esc(t('scaleTitle'))}</h3>
       <div class="scale-legend">
         ${(App.model.levels || []).map(lv => `<div><i class="dot" style="background:${levelColor(lv.v)}"></i>
@@ -4243,7 +4255,7 @@ Object.assign(T, {
         <span style="font-size:12px;color:var(--muted)">${esc(t('avgGlobal'))}</span>
         <b style="font-size:24px;font-variant-numeric:tabular-nums" data-globalavg>${n1(globalAvg(App.cur.scores))}</b>
         <span style="color:var(--muted);font-size:13px">/${SMAX()}</span>
-        <button class="btn sm primary no-print" id="snapBtn" style="margin-left:auto">${esc(t('saveSnapshot'))}</button>
+        <button class="btn sm primary no-print" id="snapBtn" style="margin-left:auto">${esc(ed ? t('editSnapSave') : t('saveSnapshot'))}</button>
       </div>
       <div class="hint no-print" style="margin-top:8px">${esc(t('snapshotHelp'))}
         · <button class="linkish" data-view="params">${esc(t('pmEditLink'))}</button></div>
@@ -4266,7 +4278,8 @@ Object.assign(T, {
       ${AX(k).items.map(i => critRow(i, k)).join('')}
     </div>`).join('')}
     ${listBlock('strengths', t('strengths'), 'var(--good)', t('strengthPh'))}
-    ${listBlock('weaknesses', t('weaknesses'), 'var(--series-2)', t('weaknessPh'))}`;
+    ${listBlock('weaknesses', t('weaknesses'), 'var(--series-2)', t('weaknessPh'))}
+    <div class="hint no-print" style="margin:-6px 2px 0">${esc(t('fwNote'))}</div>`;
   }
 
   function gkPlano() {
@@ -4353,7 +4366,9 @@ Object.assign(T, {
     const cycles = snaps.length
       ? `<table class="dt"><thead><tr><th>${esc(t('entryDate'))}</th>${AXIDS().map(k => `<th>${esc(AXLAB(k, 'short'))}</th>`).join('')}<th>${esc(t('avgGlobal'))}</th><th></th></tr></thead><tbody>
         ${snaps.map(s => `<tr><td>${esc(fmtDate(s.date))}</td>${AXIDS().map(k => `<td>${n1(axisAvg(k, s.scores))}</td>`).join('')}<td><b>${n1(globalAvg(s.scores))}</b></td>
-          <td class="no-print"><button class="btn sm ghost danger" data-rmsnap="${s.id}">${esc(t('deleteCycle'))}</button></td></tr>`).join('')}
+          <td class="no-print" style="white-space:nowrap">
+            <button class="btn sm ghost" data-editsnap="${s.id}">${esc(t('editSnap'))}</button>
+            <button class="btn sm ghost danger" data-rmsnap="${s.id}">${esc(t('deleteCycle'))}</button></td></tr>`).join('')}
       </tbody></table>`
       : `<div class="empty">${esc(t('noSnapshots'))}</div>`;
 
@@ -5292,7 +5307,7 @@ Object.assign(T, {
   async function openGk(id) {
     App.busy = true;
     App.cur = App.gks.find(g => g.id === id) || null;
-    App.view = 'gk'; App.tab = 'geral'; App.openNotes = {}; App.qualNote = null;
+    App.view = 'gk'; App.tab = 'geral'; App.openNotes = {}; App.qualNote = null; App.editSnap = null;
     render();
     try {
       const [as, lg] = await Promise.all([App.db.listAssessments(id), App.db.listLogs(id)]);
@@ -5611,6 +5626,17 @@ Object.assign(T, {
       App.curLogs = App.curLogs.filter(l => l.id !== b.dataset.rmlog);
       render(); return;
     }
+    if (b.dataset.editsnap) {
+      const snap = (App.curAssess || []).find(x => x.id === b.dataset.editsnap);
+      if (!snap) return;
+      /* traz as notas e o comentário daquela data de volta para o formulário */
+      App.cur.scores = Object.assign({}, snap.scores || {});
+      App.qualNote = snap.note || '';
+      App.editSnap = { id: snap.id, date: snap.date };
+      queueSave({ scores: App.cur.scores });
+      App.tab = 'aval';
+      render(); return;
+    }
     if (b.dataset.rmsnap) {
       if (!confirm(t('confirmDelete'))) return;
       await App.db.deleteAssessment(b.dataset.rmsnap);
@@ -5658,16 +5684,23 @@ Object.assign(T, {
       }
       case 'expandAll': App.cardsOpen = true; App.cardOpen = {}; salvaCards(); render(); break;
       case 'collapseAll': App.cardsOpen = false; App.cardOpen = {}; salvaCards(); render(); break;
+      case 'cancelSnapEdit': App.editSnap = null; render(); break;
       case 'snapBtn': {
         try {
           const cx = document.getElementById('qualNote');
           const obs = cx ? cx.value.trim() : '';
-          const row = await App.db.upsertAssessment(App.cur.id, today(), Object.assign({}, App.cur.scores), obs);
+          /* editando: grava na data original, sobrescrevendo aquela avaliação */
+          const quando = App.editSnap ? App.editSnap.date : today();
+          const row = await App.db.upsertAssessment(App.cur.id, quando, Object.assign({}, App.cur.scores), obs);
           App.qualNote = obs;
           App.curAssess = App.curAssess.filter(s => s.date !== row.date).concat(row)
             .sort((a, b2) => a.date.localeCompare(b2.date));
           App.allAssess = App.allAssess.filter(s => !(s.goalkeeper_id === row.goalkeeper_id && s.date === row.date)).concat(row);
-          toast(t('snapshotDone'));
+          toast(App.editSnap
+            ? t('editSnapDone').replace('{d}', fmtDate(App.editSnap.date))
+            : t('snapshotDone'));
+          App.editSnap = null;
+          render();
         } catch (err) { toast(err.message); }
         break;
       }
