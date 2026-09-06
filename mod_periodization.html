@@ -905,8 +905,8 @@ function exportMonthlyPDF(){
     var title=new Date(ym[0],ym[1],1).toLocaleDateString(TXf('data.pdf.locale','en-GB'),{month:'long',year:'numeric'});
     return '<div class="mpage"><div class="mh"><span class="mh-t" style="color:'+P+'">'+esc(title)+'</span><span class="mh-s">FluxGK · '+esc(cn)+'</span></div>'+calLegend(true)+monthGridHTML(ym[0],ym[1],true)+'</div>';
   }).join('');
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.calPdfTitle','Monthly calendar'))+'</title>'
-    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.calPdfTitle','Monthly calendar'))+'</title>'+'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Space Grotesk\',\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +'@media screen{body{max-width:1040px;margin:0 auto;padding:20px}.mpage{margin-bottom:26px}}'
     +'@media print{@page{margin:1cm;size:A4 landscape}.mpage{page-break-after:always}}'
     +'.mh{display:flex;align-items:baseline;gap:12pt;border-bottom:2pt solid '+P+';padding-bottom:5pt;margin-bottom:4pt}'
@@ -1052,8 +1052,8 @@ function exportPDF(){
       + '<table style="width:100%;border-collapse:collapse;font-size:10pt"><tbody>'+rows+'</tbody></table></div>';
   }
   const body = sectEvents()+sect('macro')+sect('meso')+sect('micro')+sectDayThemes();
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.pdf.title','Periodization'))+'</title>'
-    + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.pdf.title','Periodization'))+'</title>'+'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Space Grotesk\',\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     + '@media screen{body{max-width:860px;margin:0 auto;padding:24px}}@media print{@page{margin:1.4cm 1.6cm;size:A4}}'
     + '.cover{background:'+P+';color:#fff;border-radius:6pt;padding:16pt 20pt;margin-bottom:14pt;display:flex;align-items:center;gap:14pt}'
     + '.cover .h1{font-size:17pt;font-weight:700}.cover .eyebrow{font-size:8pt;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:3pt}'
@@ -1139,9 +1139,9 @@ function exportRangePDF(ini,fim,opt){
   var corpo=!opt.cont?'':(secCiclos('macro')+secCiclos('meso')+secCiclos('micro')+secTematicas());
   var faixa=fmtDate(ini)+'  →  '+fmtDate(fim);
 
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.rngPdfTitle','Training period'))+' — '+esc(faixa)+'</title>'
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(TXf('period.rngPdfTitle','Training period'))+' — '+esc(faixa)+'</title>'+'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
    +'<style>*{box-sizing:border-box;margin:0;padding:0}'
-   +'body{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;background:#fafaf7;color:#0a0a0a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+   +'body{font-family:\'Space Grotesk\',\'Helvetica Neue\',Helvetica,Arial,sans-serif;background:#fafaf7;color:#0a0a0a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
    +'@page{size:A4;margin:16mm 14mm}@page:first{margin:0}'
    +'.cover{background:'+P+';color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;page-break-after:always}'
    +'.cover-top{flex:1}'

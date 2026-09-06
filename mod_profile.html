@@ -1225,6 +1225,12 @@ Object.assign(T, {
   rpLang: { pt: 'Idioma do relatório', en: 'Report language', ru: 'Язык отчёта' },
   rpDelivery: { pt: 'Arquivos', en: 'Files', ru: 'Файлы' },
   rpIndividualFiles: { pt: 'Um arquivo por goleiro', en: 'One file per goalkeeper', ru: 'Отдельный файл на вратаря' },
+  rpAsk: { pt: 'Escolher onde salvar', en: 'Choose where to save', ru: 'Выбирать, куда сохранять' },
+  rpAskD: { pt: 'Em vez de baixar direto, abre o seletor de pasta do sistema quando você clicar em salvar. Sem suporte no Safari e no Firefox, que voltam ao download automático.', en: 'Instead of downloading straight away, opens the system folder picker when you click save. Not supported in Safari and Firefox, which fall back to the automatic download.', ru: 'Открывает системный выбор папки при сохранении.' },
+  rpSaved: { pt: 'Arquivo salvo', en: 'File saved', ru: 'Файл сохранён' },
+  rpSavedN: { pt: '{n} arquivos salvos na pasta', en: '{n} files saved to the folder', ru: 'Сохранено файлов: {n}' },
+  rpSaveAll: { pt: '⤓ Salvar todos numa pasta', en: '⤓ Save all to a folder', ru: '⤓ Сохранить всё в папку' },
+  rpPickToSave: { pt: 'Pronto. Clique em salvar para escolher a pasta.', en: 'Done. Click save to pick the folder.', ru: 'Готово. Нажмите «сохранить», чтобы выбрать папку.' },
   rpConsolidated: { pt: 'Um arquivo com tudo', en: 'One file with everything', ru: 'Один файл со всем' },
   rpGenerate: { pt: 'Gerar PDFs', en: 'Generate PDFs', ru: 'Сформировать PDF' },
   rpGenerating: { pt: 'Gerando…', en: 'Generating…', ru: 'Формирование…' },
@@ -2353,7 +2359,12 @@ Object.assign(T, {
   const CDN = {
     pdflib: 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
     fontkit: 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js',
-    jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'
+    jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+    /* mesma família da interface e dos demais relatórios do sistema */
+    grotesk: {
+      reg: 'https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.3.0/files/space-grotesk-latin-400-normal.woff',
+      bold: 'https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.3.0/files/space-grotesk-latin-700-normal.woff'
+    }
   };
   let MSG = { loadFail: 'Could not load the PDF engine.', fontFail: 'Report font failed to load.' };
   const A4 = { w: 595.28, h: 841.89 };
@@ -2387,7 +2398,23 @@ Object.assign(T, {
         return out;
       };
       if (!window.ReportFonts) throw new Error(MSG.fontFail);
-      return { reg: b64(window.ReportFonts.regular), bold: b64(window.ReportFonts.bold) };
+      const dejavu = { reg: b64(window.ReportFonts.regular), bold: b64(window.ReportFonts.bold) };
+      /* Space Grotesk é a fonte do sistema — os relatórios saíam em DejaVu Sans,
+         fora do padrão dos outros módulos. Ela não cobre cirílico, então o
+         DejaVu continua embutido e entra só nos textos que precisam dele. */
+      const baixa = async url => {
+        const r = await fetch(url, { mode: 'cors' });
+        if (!r.ok) throw new Error('font ' + r.status);
+        return new Uint8Array(await r.arrayBuffer());
+      };
+      let grotesk = null;
+      try {
+        const [gr, gb] = await Promise.all([baixa(CDN.grotesk.reg), baixa(CDN.grotesk.bold)]);
+        grotesk = { reg: gr, bold: gb };
+      } catch (e) {
+        console.warn('[perfil] Space Grotesk indisponível, usando DejaVu:', e.message);
+      }
+      return { reg: dejavu.reg, bold: dejavu.bold, grotesk: grotesk };
     })();
     return libsReady;
   }
@@ -2922,7 +2949,12 @@ Object.assign(T, {
     const band = (o.clubColor && ColorKit.isHex(o.clubColor) && !ColorKit.isNeutral(o.clubColor))
       ? ColorKit.norm(o.clubColor)
       : (o.accent || '#2a78d6');
-    const ink = hex2rgb(ColorKit.onColor(band));
+    /* Os demais modulos sempre usam texto branco sobre a cor do clube.
+       ColorKit.onColor exige contraste 3.6 e devolvia preto num azul-ciano,
+       deixando a capa fora do padrao. Aqui so cai para escuro se a cor for
+       realmente clara. */
+    const onBand = ColorKit.contrast(band, '#ffffff') >= 2.0 ? '#ffffff' : '#111111';
+    const ink = hex2rgb(onBand);
 
     page.drawRectangle({ x: 0, y: 0, width: A4.w, height: A4.h, color: hex2rgb(band) });
 
@@ -2947,7 +2979,8 @@ Object.assign(T, {
     const boxS = 42;
     page.drawRectangle({
       x: PAD, y: Y(y + boxS), width: boxS, height: boxS,
-      color: hex2rgb('#ffffff'), borderColor: ink, borderOpacity: .18, borderWidth: .8
+      color: hex2rgb(onBand === '#ffffff' ? '#ffffff' : '#0f0f0f'),
+      borderColor: ink, borderOpacity: .18, borderWidth: .8
     });
     if (crestImg) {
       const inner = boxS - 8;
@@ -3587,14 +3620,43 @@ Object.assign(T, {
       ? `_${(o.range.from || '').replace(/-/g, '')}-${(o.range.to || '').replace(/-/g, '')}`
       : `_${o.today.replace(/-/g, '')}`) + (o.langSuffix ? '_' + o.lang.toUpperCase() : '');
 
-    async function newDoc() {
+    /* Space Grotesk (a fonte do sistema) não tem cirílico: o texto sairia como
+       quadradinhos. Então cada documento escolhe um par só — Grotesk quando o
+       conteúdo é latino, DejaVu quando aparece cirílico ou o idioma é russo. */
+    const TEM_CIRILICO = /[\u0400-\u04FF]/;
+    function precisaCirilico(gk) {
+      if (o.lang === 'ru') return true;
+      const partes = [o.clubName, o.respName, o.respRole];
+      const junta = v => {
+        if (v == null) return;
+        if (typeof v === 'string') { partes.push(v); return; }
+        if (Array.isArray(v)) { v.forEach(junta); return; }
+        if (typeof v === 'object') Object.keys(v).forEach(k => junta(v[k]));
+      };
+      junta(gk);
+      junta((o.model && o.model.axes) || []);
+      junta(o.logs || []);
+      return TEM_CIRILICO.test(partes.join(' '));
+    }
+    async function newDoc(gk) {
       const pdf = await PDFLib.PDFDocument.create();
       pdf.registerFontkit(window.fontkit);
       const counter = { n: 0 };
-      const fonts = {
-        reg: await pdf.embedFont(fontBytes.reg, { subset: true }),
-        bold: await pdf.embedFont(fontBytes.bold, { subset: true })
-      };
+      const usaGrotesk = fontBytes.grotesk && !precisaCirilico(gk);
+      const par = usaGrotesk ? fontBytes.grotesk : fontBytes;
+      let fonts;
+      try {
+        fonts = {
+          reg: await pdf.embedFont(par.reg, { subset: true }),
+          bold: await pdf.embedFont(par.bold, { subset: true })
+        };
+      } catch (e) {
+        console.warn('[perfil] fonte do sistema falhou, usando DejaVu:', e.message);
+        fonts = {
+          reg: await pdf.embedFont(fontBytes.reg, { subset: true }),
+          bold: await pdf.embedFont(fontBytes.bold, { subset: true })
+        };
+      }
       pdf.setTitle(o.clubName + ' · ' + C.t('rpTitle'));
       pdf.setProducer(o.clubName);
       pdf.setCreator(o.clubName);
@@ -3609,7 +3671,7 @@ Object.assign(T, {
       for (let i = 0; i < gks.length; i++) {
         const g = gks[i];
         if (onProgress) onProgress('gk', { i: i + 1, n: gks.length, name: C.nameOf(g) });
-        const { pdf, fonts, counter } = await newDoc();
+        const { pdf, fonts, counter } = await newDoc(g);
         const oo = Object.assign({}, o, { counter });
         if (o.cover) {
           await drawCover(pdf, fonts, oo, {
@@ -3630,7 +3692,7 @@ Object.assign(T, {
     // ---- consolidado ----
     if (o.consolidated) {
       if (onProgress) onProgress('consolidated');
-      const { pdf, fonts, counter } = await newDoc();
+      const { pdf, fonts, counter } = await newDoc(gks);
       const oo = Object.assign({}, o, { counter });
       if (o.cover && gks.length) {
         const kinds = [];
@@ -3705,6 +3767,7 @@ Object.assign(T, {
       types: { individual: true, onePager: false, squad: true, period: false },
       preset: 'season', from: '', to: '',
       who: null, langs: null,
+      ask: true,
       /* blocos do relatorio individual que o treinador quer exportar */
       secs: { ident: true, resumo: true, evol: true, comp: true, fw: true, qual: true, plano: true, diario: true },
       individualFiles: true, consolidated: true,
@@ -3772,6 +3835,7 @@ Object.assign(T, {
     try {
       if (save) { localStorage.setItem(PREF_KEY, JSON.stringify({ lang: App.lang, theme: App.theme })); return; }
       try { App.cardsOpen = localStorage.getItem('fluxgk.profile.cardsOpen') !== '0'; } catch (e) {}
+      try { App.rp.ask = localStorage.getItem('fluxgk.profile.askSave') !== '0'; } catch (e) {}
       const p = JSON.parse(localStorage.getItem(PREF_KEY) || 'null');
       if (p) { App.lang = p.lang || 'pt'; App.theme = p.theme || 'light'; }
     } catch (e) { }
@@ -4949,6 +5013,10 @@ Object.assign(T, {
             <input type="checkbox" id="rpWmk"${r.watermark ? ' checked' : ''}>
             <span>${esc(t('rpWatermark'))}</span></label>
           <div class="hint" style="margin:4px 0 0 26px">${esc(t('rpWatermarkD'))}</div>
+          <label class="checkline" style="margin-top:12px">
+            <input type="checkbox" id="rpAsk"${r.ask ? ' checked' : ''}>
+            <span>${esc(t('rpAsk'))}</span></label>
+          <div class="hint" style="margin:4px 0 0 26px">${esc(t('rpAskD'))}</div>
         </div>
         <div>
           <h3 class="ttl">${esc(t('rpLang'))}</h3>
@@ -4980,10 +5048,55 @@ Object.assign(T, {
           <span class="rp-ic">PDF</span><span class="rp-nm">${esc(f.name)}</span>
           <span class="rp-sz">${(f.bytes.length / 1024).toFixed(0)} KB</span></button>`).join('')}
       </div>
-      ${r.results.length > 1 ? `<button class="btn" id="rpZip" style="margin-top:12px">${esc(t('rpDownloadZip'))}</button>` : ''}
+      ${r.results.length > 1 ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        ${(r.ask && typeof window.showDirectoryPicker === 'function')
+          ? `<button class="btn primary" id="rpSaveAll">${esc(t('rpSaveAll'))}</button>` : ''}
+        <button class="btn" id="rpZip">${esc(t('rpDownloadZip'))}</button>
+      </div>` : ''}
     </div>` : ''}`;
   }
 
+  /* Salvar escolhendo a pasta. O navegador so abre o seletor durante um clique
+     do usuario, entao os relatorios ficam listados e cada botao salva. Sem
+     suporte (Safari, Firefox) cai no download normal. */
+  const podeEscolher = () => typeof window.showSaveFilePicker === 'function';
+  const podePasta = () => typeof window.showDirectoryPicker === 'function';
+  async function saveBlob(blob, name) {
+    if (App.rp.ask && podeEscolher()) {
+      try {
+        const h = await window.showSaveFilePicker({
+          suggestedName: name,
+          types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
+        });
+        const w = await h.createWritable();
+        await w.write(blob); await w.close();
+        toast(t('rpSaved'));
+        return true;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return false;   /* cancelou: nao baixa */
+      }
+    }
+    downloadBlob(blob, name);
+    return true;
+  }
+  /* varios arquivos de uma vez, direto numa pasta */
+  async function saveAllToFolder(files) {
+    if (!(App.rp.ask && podePasta())) {
+      const pack = await Reports.zipFiles(files, 'relatorios_' + today() + '.zip');
+      return saveBlob(pack.blob, pack.name);
+    }
+    let dir;
+    try { dir = await window.showDirectoryPicker({ mode: 'readwrite' }); }
+    catch (e) { return false; }
+    for (const f of files) {
+      const h = await dir.getFileHandle(f.name, { create: true });
+      const w = await h.createWritable();
+      await w.write(new Blob([f.bytes], { type: 'application/pdf' }));
+      await w.close();
+    }
+    toast(t('rpSavedN').replace('{n}', files.length));
+    return true;
+  }
   function downloadBlob(blob, name) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -5009,16 +5122,23 @@ Object.assign(T, {
     const con = $('#rpCons'); if (con) con.onchange = () => { r.consolidated = con.checked; };
     const cov = $('#rpCover'); if (cov) cov.onchange = () => { r.cover = cov.checked; };
     const wmk = $('#rpWmk'); if (wmk) wmk.onchange = () => { r.watermark = wmk.checked; };
+    const ask = $('#rpAsk');
+    if (ask) ask.onchange = () => {
+      r.ask = ask.checked;
+      try { localStorage.setItem('fluxgk.profile.askSave', ask.checked ? '1' : '0'); } catch (e) {}
+    };
     const go = $('#rpGo'); if (go) go.onclick = runReports;
     const zip = $('#rpZip');
     if (zip) zip.onclick = async () => {
       const pack = await Reports.zipFiles(r.results, 'relatorios_' + today() + '.zip');
-      downloadBlob(pack.blob, pack.name);
+      await saveBlob(pack.blob, pack.name);
     };
+    const all = $('#rpSaveAll');
+    if (all) all.onclick = async () => { await saveAllToFolder(r.results || []); };
     document.querySelectorAll('[data-rpfile]').forEach(b => {
       b.onclick = () => {
         const file = r.results[+b.dataset.rpfile];
-        downloadBlob(new Blob([file.bytes], { type: 'application/pdf' }), file.name);
+        saveBlob(new Blob([file.bytes], { type: 'application/pdf' }), file.name);
       };
     });
   }
@@ -5078,7 +5198,11 @@ Object.assign(T, {
 
       r.results = files;
       r.status = `${t('rpDone')} · ${files.length} ${t('rpFiles')}`;
-      if (files.length === 1) {
+      /* com "escolher onde salvar" ligado nao baixa sozinho: o seletor de pasta
+         so pode abrir a partir de um clique, entao os arquivos ficam listados */
+      if (r.ask && (podeEscolher() || podePasta())) {
+        r.status += ' · ' + t('rpPickToSave');
+      } else if (files.length === 1) {
         downloadBlob(new Blob([files[0].bytes], { type: 'application/pdf' }), files[0].name);
       } else if (files.length > 1) {
         const pack = await Reports.zipFiles(files, 'relatorios_' + today() + '.zip');
@@ -5151,7 +5275,7 @@ Object.assign(T, {
         today: today()
       });
       if (files.length) {
-        downloadBlob(new Blob([files[0].bytes], { type: 'application/pdf' }), files[0].name);
+        await saveBlob(new Blob([files[0].bytes], { type: 'application/pdf' }), files[0].name);
       } else {
         toast(t('rpNothing'));
       }
