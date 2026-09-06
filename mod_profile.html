@@ -2633,7 +2633,7 @@ Object.assign(T, {
     d.scoreBoxes = function (items) {
       const gap = 8;
       const bw = (CW - gap * (items.length - 1)) / items.length;
-      const bh = 46;
+      const bh = 54;
       d.ensure(bh + 6);
       items.forEach((it, i) => {
         const x = M.l + i * (bw + gap);
@@ -2650,8 +2650,18 @@ Object.assign(T, {
           const dt = (it.delta > 0 ? '▲ +' : '▼ ') + Math.abs(it.delta).toFixed(1);
           d.page.drawText(dt, { x: x + 10 + d.w(String(it.value), 19, true) + 6, y: Y(d.y + 24), size: 8, font: d.fb, color: hex2rgb(dc) });
         }
-        const lab = d.wrap(it.label, 7.2, false, bw - 14);
-        d.page.drawText(lab[0], { x: x + 10, y: Y(d.y + 39), size: 7.2, font: d.f, color: hex2rgb(INK.muted) });
+        /* o rotulo cabia so na primeira linha e "Componentes Taticos" virava
+           "Componentes". Agora encolhe a fonte para tentar caber inteiro e,
+           se ainda nao couber, usa duas linhas. */
+        let ls = 7.2, lab = d.wrap(it.label, ls, false, bw - 14);
+        while (lab.length > 1 && ls > 5.6) { ls -= 0.4; lab = d.wrap(it.label, ls, false, bw - 14); }
+        lab = lab.slice(0, 2);
+        if (lab.length === 1) {
+          d.page.drawText(lab[0], { x: x + 10, y: Y(d.y + 43), size: ls, font: d.f, color: hex2rgb(INK.muted) });
+        } else {
+          d.page.drawText(lab[0], { x: x + 10, y: Y(d.y + 38), size: ls, font: d.f, color: hex2rgb(INK.muted) });
+          d.page.drawText(lab[1], { x: x + 10, y: Y(d.y + 47), size: ls, font: d.f, color: hex2rgb(INK.muted) });
+        }
       });
       d.y += bh + 6;
     };
