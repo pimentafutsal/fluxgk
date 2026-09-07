@@ -621,7 +621,7 @@
       <div data-i18n="vid.loadVideo" class="big">Load match video</div>
       <div class="small"><span data-i18n="vid.dropHint">Click here or drag the file · formats:</span> <code data-i18n="vid.formats">.mp4 / .m4v / .mov</code> <span data-i18n="vid.codecs">(H.264 or HEVC)</span></div>
       <div data-i18n="vid.privacy" class="small" style="margin-top:6px">The video stays on your computer — nothing is uploaded to the internet.</div>
-      <input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mp4,.m4v,.mov" style="display:none">
+      <input type="file" id="fileInput" accept="video/*,.mp4,.m4v,.mov,.mkv,.webm,.avi,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.3gp,.ts" style="display:none">
     </div>
 
     <div id="videoWrap">
@@ -1346,16 +1346,29 @@ async function projResolveFile(p, srcName){
     return await fh.getFile();
   }catch(e){ return null; }
 }
+/* Extensoes aceitas. Antes so mp4/m4v/mov: um arquivo .mkv ou .mts da camera
+   era ignorado em silencio e a tela dizia que estava tudo adicionado. */
+const VIDEO_EXT = /\.(mp4|m4v|mov|mkv|webm|avi|mts|m2ts|mpg|mpeg|wmv|flv|3gp|ts)$/i;
+/* Devolve um diagnostico em vez de uma lista vazia para tudo:
+   {estado:'semPasta'|'semPermissao'|'erro'|'ok', videos:[], outros:[], erro:''} */
 async function projListFolderVideos(p){
+  let dir = null;
+  try{ dir = await projGetFolder(p); }
+  catch(e){ return { estado:'erro', videos:[], outros:[], erro:String(e && e.message || e) }; }
+  if (!dir) return { estado:'semPasta', videos:[], outros:[] };
+  if (!(await ensurePerm(dir))) return { estado:'semPermissao', videos:[], outros:[] };
+  const out = [], outros = [];
   try{
-    const dir = await projGetFolder(p); if (!dir) return null;   /* null = sem pasta */
-    if (!(await ensurePerm(dir))) return null;
-    const out = [];
     for await (const entry of dir.values()){
-      if (entry.kind === 'file' && /\.(mp4|m4v|mov)$/i.test(entry.name)) out.push(entry.name);
+      if (entry.kind !== 'file') continue;
+      if (VIDEO_EXT.test(entry.name)) out.push(entry.name);
+      else if (!/^\./.test(entry.name)) outros.push(entry.name);
     }
-    return out.sort((a, b) => a.localeCompare(b));
-  }catch(e){ return []; }
+  }catch(e){
+    console.warn('[FluxGK] leitura da pasta falhou:', e);
+    return { estado:'erro', videos:out, outros:outros, erro:String(e && e.message || e) };
+  }
+  return { estado:'ok', videos: out.sort((a,b)=>a.localeCompare(b)), outros: outros };
 }
 /* carrega um vídeo (por nome) da pasta vinculada direto na bancada, sem reapontar */
 async function projOpenVideo(srcName){
@@ -1650,22 +1663,46 @@ async function populateProjectVideos(p, container){
 async function toggleAddFromFolder(p, wrap){
   if (wrap._open){ wrap._open = false; wrap.innerHTML = ''; return; }
   wrap._open = true; wrap.innerHTML = '';
-  let folderVids = null;
-  try{ folderVids = await projListFolderVideos(p); }catch(e){ folderVids = null; }
-  if (folderVids === null){
+  let r;
+  try{ r = await projListFolderVideos(p); }
+  catch(e){ r = { estado:'erro', videos:[], outros:[], erro:String(e && e.message || e) }; }
+  if (r.estado === 'semPasta'){
     /* sem pasta vinculada → abre o seletor de arquivo (modo manual) */
     wrap._open = false;
     openFilePicker();
     return;
   }
   const registered = (p.videos || []).map(v => v.srcName);
-  const avail = folderVids.filter(n => !registered.includes(n));
+  const avail = r.videos.filter(n => !registered.includes(n));
   const boxp = document.createElement('div'); boxp.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:8px;margin:4px 0 8px';
   const t = document.createElement('div'); t.className = 'fpsection'; t.style.marginBottom = '6px'; t.textContent = TX('vid.proj.addFromFolder');
   boxp.appendChild(t);
   if (!avail.length){
-    const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left'; em.textContent = TX('vid.proj.allAdded');
+    /* mensagem honesta para cada caso, em vez de "tudo ja adicionado" sempre */
+    const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left';
+    if (r.estado === 'semPermissao'){
+      em.textContent = TX('vid.proj.needPerm', 'A pasta perdeu a autorização do navegador. Clique em "Trocar pasta" e selecione-a de novo.');
+    } else if (r.estado === 'erro'){
+      em.textContent = TX('vid.proj.readErr', 'Não consegui ler a pasta') + ': ' + (r.erro || '');
+    } else if (!r.videos.length){
+      em.textContent = TX('vid.proj.noneInFolder', 'Nenhum arquivo de vídeo nesta pasta.');
+      if (r.outros.length){
+        const d2 = document.createElement('div');
+        d2.style.cssText = 'font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5';
+        d2.textContent = TX('vid.proj.foundInstead', 'Encontrei: ') + r.outros.slice(0, 8).join(', ')
+          + (r.outros.length > 8 ? ' …' : '');
+        em.appendChild(d2);
+      }
+    } else {
+      em.textContent = TX('vid.proj.allAdded');
+    }
     boxp.appendChild(em);
+    if (r.estado === 'semPermissao' || r.estado === 'erro'){
+      const b2 = document.createElement('button'); b2.className = 'mini primary'; b2.style.marginTop = '8px';
+      b2.textContent = TX('vid.proj.relink', 'Reautorizar pasta');
+      b2.addEventListener('click', async () => { await projLinkFolder(); wrap._open = false; wrap.innerHTML = ''; });
+      boxp.appendChild(b2);
+    }
   } else {
     avail.forEach(name => {
       const row = document.createElement('div'); row.className = 'librow';
