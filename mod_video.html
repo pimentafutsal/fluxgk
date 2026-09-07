@@ -5858,6 +5858,11 @@ async function readSlice(file, start, end){
   return ab;
 }
 
+/* le a caixa "Incluir áudio" da aba Export; sem a caixa na tela, mantem o audio */
+function _expComAudio(){
+  const el = $('expAudio');
+  return el ? !!el.checked : true;
+}
 async function exportEvents(events, outName, label){
   if (!state.file){ log(TX('vid.msg.loadBeforeExport'), 'err'); return; }
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
@@ -5982,7 +5987,9 @@ function buildClips(file, ranges, progress){
 
       const vInfo = info.videoTracks && info.videoTracks[0];
       if (!vInfo) throw new Error(TX('vid.msg.noTrack'));
-      const aInfo = (info.audioTracks && info.audioTracks[0]) || null;
+      /* "Incluir áudio" só era respeitado no caminho recodificado. Na cópia
+         rápida (sem mudar o formato) a trilha de áudio era copiada sempre. */
+      const aInfo = _expComAudio() ? ((info.audioTracks && info.audioTracks[0]) || null) : null;
       const vts = vInfo.timescale;
       const ats = aInfo ? aInfo.timescale : 0;
 
