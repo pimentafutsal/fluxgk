@@ -1227,6 +1227,10 @@ function projSnapshot(ev){
     tagId: ev.tagId, tagName: tag ? tag.name : '', color: tag ? tag.color : '#888',
     name: ev.name || '', note: ev.note || '',
     t: ev.t, start: ev.start, end: ev.end,
+    /* o enquadramento salvo no lance tem de viajar junto: sem isso a playlist
+       do projeto exportava sempre o quadro inteiro */
+    exportZoom: ev.exportZoom ? Object.assign({}, ev.exportZoom) : null,
+    gk: ev.gk || '', outcome: ev.outcome || ''
   };
 }
 function projPlaylistCreate(name, evs){
@@ -1263,7 +1267,9 @@ function projAddClipToPlaylist(toId, clip){
   const to = projFindPlaylist(toId); if (!to) return;
   if (!Array.isArray(to.items)) to.items = [];
   const tg = findTag(clip.tagId);
-  to.items.push({ id: 'i' + Math.random().toString(36).slice(2, 9), srcKey: clip.srcKey, srcName: clip.srcName, tagId: clip.tagId, tagName: tg ? tg.name : '', color: tg ? tg.color : '#888', name: clip.name || '', note: clip.note || '', t: clip.t, start: clip.start, end: clip.end });
+  to.items.push({ id: 'i' + Math.random().toString(36).slice(2, 9), srcKey: clip.srcKey, srcName: clip.srcName, tagId: clip.tagId, tagName: tg ? tg.name : '', color: tg ? tg.color : '#888', name: clip.name || '', note: clip.note || '', t: clip.t, start: clip.start, end: clip.end,
+    exportZoom: clip.exportZoom ? Object.assign({}, clip.exportZoom) : null,
+    gk: clip.gk || '', outcome: clip.outcome || '' });
   projPersist(); renderProjectTab();
 }
 /* painelzinho inline de ações (mover/copiar para outras playlists / nova) */
@@ -5379,6 +5385,20 @@ async function exportCombined(items, baseName){
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   const order = (items || []).filter(it => it && it.srcKey);
   if (!order.length){ log(TX('vid.proj.expEmpty'), 'err'); return; }
+  /* playlists montadas antes desta correcao nao guardaram o enquadramento:
+     busca no lance original, pela fonte e pelo tempo, antes de exportar */
+  try{
+    const lib = libAll();
+    order.forEach(it => {
+      if (it.exportZoom) return;
+      const ses = lib[it.srcKey];
+      if (!ses || !Array.isArray(ses.events)) return;
+      const orig = ses.events.find(e =>
+        Math.abs((e.t != null ? e.t : e.start) - (it.t != null ? it.t : it.start)) < 0.25 &&
+        Math.abs(e.start - it.start) < 0.5);
+      if (orig && orig.exportZoom) it.exportZoom = orig.exportZoom;
+    });
+  }catch(e){}
   const p = currentProject();
 
   // 1) resolver TODAS as fontes pela pasta vinculada (senão aborta pedindo para vincular)
@@ -5448,8 +5468,25 @@ async function exportCombined(items, baseName){
       const dw = tv.videoWidth * sc, dh = tv.videoHeight * sc;
       const ox = (outW - dw) / 2, oy = (outH - dh) / 2;
       cx.fillStyle = '#000'; cx.fillRect(0, 0, outW, outH);
+      /* mesmo enquadramento do caminho de um vídeo só: o zoom salvo no lance
+         valia só na exportação individual e era ignorado aqui */
+      const ez = ev && ev.exportZoom;
+      const zoomed = ez && ez.zoom > 1.001;
+      const applyFraming = () => {
+        if (!zoomed) return;
+        const refW = ez.stageW || outW, refH = ez.stageH || outH;
+        cx.translate(outW / 2 + ez.panX * (outW / refW), outH / 2 + ez.panY * (outH / refH));
+        cx.scale(ez.zoom, ez.zoom);
+        cx.translate(-outW / 2, -outH / 2);
+      };
+      cx.save(); applyFraming();
       try { cx.drawImage(tv, ox, oy, dw, dh); } catch (e) {}
-      if (withDraw && shapes){ cx.save(); cx.translate(ox, oy); shapes.forEach(s => drawShape(cx, s, dw, dh)); cx.restore(); }
+      cx.restore();
+      if (withDraw && shapes){
+        cx.save(); applyFraming(); cx.translate(ox, oy);
+        shapes.forEach(s => drawShape(cx, s, dw, dh));
+        cx.restore();
+      }
       if (withTitle && ev && ev.name){
         cx.font = '600 ' + Math.round(outH * 0.04) + 'px "Space Grotesk", sans-serif';
         const pad = outH * 0.02; const tw = cx.measureText(ev.name).width;
