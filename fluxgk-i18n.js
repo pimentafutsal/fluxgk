@@ -926,6 +926,7 @@
     /* paleta */
     'tat.players':'Players','tat.gk':'Goalkeeper','tat.player':'Player','tat.opponent':'Opponent',
     'tat.ball':'Ball','tat.equipment':'Equipment','tat.cone':'Cone','tat.discCone':'Disc cone',
+    'tat.discConeColor':'Disc cone colour',
     'tat.auxGoal':'Aux. goal','tat.mannequin':'Mannequin','tat.hurdle':'Hurdle','tat.ladder':'Ladder',
     'tat.hoop':'Hoop','tat.pole':'Pole','tat.plate':'Weight plate',
     /* desenho */
@@ -1858,6 +1859,7 @@
     /* paleta */
     'tat.players':'Jogadores','tat.gk':'Goleiro','tat.player':'Jogador','tat.opponent':'Adversário',
     'tat.ball':'Bola','tat.equipment':'Materiais','tat.cone':'Cone','tat.discCone':'Chapéu chinês',
+    'tat.discConeColor':'Cor do chapéu',
     'tat.auxGoal':'Baliza aux.','tat.mannequin':'Boneco','tat.hurdle':'Barreira','tat.ladder':'Escada',
     'tat.hoop':'Arco','tat.pole':'Estaca','tat.plate':'Anilha',
     /* desenho */

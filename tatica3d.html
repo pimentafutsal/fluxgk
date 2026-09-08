@@ -138,7 +138,8 @@
     <button class="pitem" data-kind="bola"><span class="dot" style="background:#fff"></span><span data-i18n="tat.ball">Ball</span></button>
     <h4 data-i18n="tat.equipment">Equipment</h4>
     <button class="pitem" data-kind="cone"><span class="dot" style="background:#ff7a1a"></span><span data-i18n="tat.cone">Cone</span></button>
-    <button class="pitem" data-kind="chapeu"><span class="dot" style="background:#1E4FFF"></span><span data-i18n="tat.discCone">Disc cone</span></button>
+    <button class="pitem" data-kind="chapeu"><span class="dot" id="chapeuDot" style="background:#1E4FFF"></span><span data-i18n="tat.discCone">Disc cone</span></button>
+    <div id="chapeuCores" title="" style="display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 6px 6px"></div>
     <button class="pitem" data-kind="minitrave"><span class="dot" style="background:#eee"></span><span data-i18n="tat.auxGoal">Aux. goal</span></button>
     <button class="pitem" data-kind="boneco"><span class="dot" style="background:#11224f"></span><span data-i18n="tat.mannequin">Mannequin</span></button>
     <button class="pitem" data-kind="barreira"><span class="dot" style="background:#E03131"></span><span data-i18n="tat.hurdle">Hurdle</span></button>
@@ -175,6 +176,7 @@
     <button data-i18n="tat.rotR" class="tbtn" id="s-rotr">ROTATE ⟳</button>
     <button data-i18n="tat.duplicate" class="tbtn" id="s-dup">DUPLICATE</button>
     <button data-i18n="tat.delete" class="tbtn danger" id="s-del">DELETE</button>
+    <div id="selCores" style="display:none;gap:5px;align-items:center;padding-left:6px;border-left:1px solid var(--line,#e6e2d8);margin-left:2px"></div>
   </div>
 
   <div id="hint">
@@ -642,10 +644,14 @@ function buildCone(){
   base.position.y = 0.0125; g.add(base);
   return shadowAll(g);
 }
-function buildChapeu(){
+/* cores disponiveis para o chapeu (disc cone) */
+const CHAPEU_CORES = [0x1E4FFF, 0xE03131, 0xf5c518, 0x16a34a, 0xff7a1a, 0xffffff, 0x2b2b2b, 0x9b30d9];
+let chapeuCor = CHAPEU_CORES[0];
+function buildChapeu(cor){
   const g = new THREE.Group();
-  const c = new THREE.Mesh(new THREE.ConeGeometry(0.15,0.085,18,1,true), std(0x1E4FFF,0.55));
+  const c = new THREE.Mesh(new THREE.ConeGeometry(0.15,0.085,18,1,true), std(cor==null?chapeuCor:cor, 0.55));
   c.position.y = 0.043; c.material.side = THREE.DoubleSide; g.add(c);
+  g.userData.cor = (cor==null?chapeuCor:cor);
   return shadowAll(g);
 }
 function buildMiniTrave(){
@@ -960,10 +966,11 @@ function pickDrawing(e){
 /* ============================================================
    OBJETOS — adicionar / selecionar / mover
    ============================================================ */
-function addObject(kind, x, z, ry){
-  const obj = BUILDERS[kind]();
+function addObject(kind, x, z, ry, cor){
+  const obj = (kind === 'chapeu') ? buildChapeu(cor) : BUILDERS[kind]();
   obj.userData.isPlaceable = true;
   obj.userData.kind = kind;
+  if(kind === 'chapeu' && obj.userData.cor == null) obj.userData.cor = (cor==null?chapeuCor:cor);
   attachProxy2D(obj, kind);
   obj.position.set(x, 0, z);
   obj.rotation.y = ry || 0;
@@ -1276,6 +1283,7 @@ function selectObj(obj){
     selRing.position.x = obj.position.x;
     selRing.position.z = obj.position.z;
   }
+  try{ montaCoresChapeu(); }catch(e){}
 }
 function clampCourt(p){
   p.x = Math.max(-HALF_L-4, Math.min(HALF_L+4, p.x));
@@ -1744,6 +1752,53 @@ modeBtns.draw.onclick   = ()=>setMode('draw');
 modeBtns.erase.onclick  = ()=>setMode('erase');
 modeBtns.camera.onclick = ()=>setMode('camera');
 
+/* ---------- cores do chapeu (disc cone) ---------- */
+function hexCss(n){ return '#' + n.toString(16).padStart(6,'0'); }
+function montaCoresChapeu(){
+  const box = document.getElementById('chapeuCores');
+  if(box){
+    box.innerHTML = '';
+    CHAPEU_CORES.forEach(cor=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.title = TX('tat.discConeColor','Cor do chapéu');
+      b.style.cssText = 'width:16px;height:16px;border-radius:50%;cursor:pointer;padding:0;'
+        + 'background:' + hexCss(cor) + ';border:2px solid ' + (cor===chapeuCor ? 'var(--ink,#0a0a0a)' : 'rgba(0,0,0,.18)');
+      b.onclick = ()=>{
+        chapeuCor = cor;
+        const dot = document.getElementById('chapeuDot');
+        if(dot) dot.style.background = hexCss(cor);
+        montaCoresChapeu();
+        /* escolher a cor ja arma o modo de colocar o chapeu */
+        placeKind = 'chapeu'; mode = 'place'; setModeUI();
+      };
+      box.appendChild(b);
+    });
+  }
+  const sel = document.getElementById('selCores');
+  if(sel){
+    const ehChapeu = selected && selected.userData && selected.userData.kind === 'chapeu';
+    sel.style.display = ehChapeu ? 'flex' : 'none';
+    sel.innerHTML = '';
+    if(ehChapeu){
+      CHAPEU_CORES.forEach(cor=>{
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.title = TX('tat.discConeColor','Cor do chapéu');
+        b.style.cssText = 'width:15px;height:15px;border-radius:50%;cursor:pointer;padding:0;'
+          + 'background:' + hexCss(cor) + ';border:2px solid '
+          + (cor===selected.userData.cor ? 'var(--ink,#0a0a0a)' : 'rgba(0,0,0,.18)');
+        b.onclick = ()=>{
+          selected.userData.cor = cor;
+          selected.traverse(o=>{ if(o.isMesh && o.material && o.material.color) o.material.color.setHex(cor); });
+          montaCoresChapeu();
+        };
+        sel.appendChild(b);
+      });
+    }
+  }
+}
+
 /* paleta */
 document.querySelectorAll('.pitem').forEach(b=>{
   b.onclick = ()=>{
@@ -1965,7 +2020,7 @@ $('b-photo').onclick = ()=>{
 $('b-save').onclick = ()=>{
   const data = {
     app:'FluxGK Tatica 3D', v:1,
-    objetos: placeables.map(o=>({k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3), r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3)})),
+    objetos: placeables.map(o=>({k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3), r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3), c:(o.userData.cor!=null?o.userData.cor:undefined)})),
     desenhos: drawings.map(d=>({s:d.userData.style, c:d.userData.color, p:d.userData.pts, b:!!d.userData.canBend, k:d.userData.ctrl||null}))
   };
   const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
@@ -1989,7 +2044,7 @@ $('fileinput').addEventListener('change', e=>{
       teamCount.jogador = 1; teamCount.adversario = 1;
       (data.objetos||[]).forEach(o=>{
         if(!BUILDERS[o.k]) return;
-        const ob = addObject(o.k, o.x, o.z, o.r);
+        const ob = addObject(o.k, o.x, o.z, o.r, (o.c!=null?o.c:undefined));
         if(o.s) ob.scale.setScalar(o.s);
       });
       (data.desenhos||[]).forEach(d=>{
@@ -2039,6 +2094,7 @@ function syncProxies(){
     }
   }
 }
+try{ montaCoresChapeu(); }catch(e){ console.warn('cores do chapeu:', e); }
 (function animate(){
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
