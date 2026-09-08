@@ -416,6 +416,10 @@ textarea{width:100%;resize:vertical;min-height:110px}
           <input type="radio" name="attendanceStatus" id="attendancePresent" value="present" checked style="accent-color:var(--sig-ok)" onchange="_onAttendanceChange()">
           <span data-i18n="data.present">Present</span>
         </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--rm);border:1.5px solid var(--sig-cau);background:var(--sig-cau-l);color:var(--sig-cau)">
+          <input type="radio" name="attendanceStatus" id="attendanceRest" value="rest" style="accent-color:var(--sig-cau)" onchange="_onAttendanceChange()">
+          <span data-i18n="data.rest">Rest</span>
+        </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:var(--rm);border:1.5px solid var(--sig-risk);background:var(--sig-risk-l);color:var(--sig-risk)">
           <input type="radio" name="attendanceStatus" id="attendanceAbsent" value="absent" style="accent-color:var(--sig-risk)" onchange="_onAttendanceChange()">
           <span data-i18n="data.absent">Absent</span>
@@ -1039,7 +1043,7 @@ function rtListen(){
         });
       });
     }
-    if(changed){ migrateWellbeingScale(); save(); renderAll(); }
+    if(changed){ migrateWellbeingScale(); repairPrePostLinks(); save(); renderAll(); }
   },err=>console.warn("listener:",err));
 }
 
@@ -1282,13 +1286,17 @@ window.updateRange=function(id,b){document.getElementById(b).textContent=documen
 
 // ── ATTENDANCE TOGGLE ──
 window._onAttendanceChange=function(){
-  const absent=document.getElementById("attendanceAbsent").checked;
+  const el=document.querySelector('input[name="attendanceStatus"]:checked');
+  const v=el?el.value:"present";
+  /* descanso e falta nao coletam bem-estar: nao houve treino */
+  const semTreino=(v==="absent"||v==="rest");
   const wb=document.getElementById("preWellBeingCard");
-  if(wb)wb.style.display=absent?"none":"block";
+  if(wb)wb.style.display=semTreino?"none":"block";
   const btn=document.querySelector("#sec-pre .btn-primary");
-  if(btn)btn.innerHTML=absent
-    ?'<i class="ti ti-device-floppy"></i> '+TX("data.msg.saveAbsence")
-    :'<i class="ti ti-device-floppy"></i> '+TX("data.pre.save");
+  const rot=v==="absent"?TX("data.msg.saveAbsence")
+          :v==="rest"?TX("data.msg.saveRest","Salvar descanso")
+          :TX("data.pre.save");
+  if(btn)btn.innerHTML='<i class="ti ti-device-floppy"></i> '+rot;
 };
 
 // ── SUBMIT ──
@@ -1298,17 +1306,23 @@ window.submitPre=async function(){
   const time=getAmPmTime("pre");
   const trainingType=document.getElementById("preType").value||ST.trainingTypes[0]||"";
   const _attEl=document.querySelector('input[name="attendanceStatus"]:checked');
-  const present=_attEl?_attEl.value==="present":true;
+  const _att=_attEl?_attEl.value:"present";
+  const present=_att==="present";
   if(!present){
-    // Absence: save as a closed session (no post needed)
-    const e={id:editId||"abs_"+Date.now(),date,type:"absence",
+    /* falta ou descanso: sessao ja fechada, nao pede pos-treino.
+       o descanso e planejado, entao fica marcado a parte da falta */
+    const ehDescanso=_att==="rest";
+    const e={id:editId||(ehDescanso?"rest_":"abs_")+Date.now(),
+      date,type:ehDescanso?"rest":"absence",
       present:false,trainingType,time,ts:Date.now(),_pk:ST.currentPlayer};
     saveSession(e);const was=!!editId;editId=null;
     document.getElementById("preFormTitle").textContent=TX("data.pre.title");
     document.getElementById("cancelEditPre").style.display="none";
     document.getElementById("attendancePresent").checked=true;
     _onAttendanceChange();
-    showToast(was?TX("data.msg.absenceUpdated"):TX("data.msg.absenceSaved"));
+    showToast(was
+      ?(ehDescanso?TX("data.msg.restUpdated","Descanso atualizado"):TX("data.msg.absenceUpdated"))
+      :(ehDescanso?TX("data.msg.restSaved","Descanso registrado"):TX("data.msg.absenceSaved")));
     return;
   }
   /* ao EDITAR, preserva o vinculo com o pos-treino (antes virava null e o
@@ -1362,7 +1376,14 @@ window.submitPost=async function(){
     {time,trainingType,preId,ts:Date.now(),_pk:ST.currentPlayer});
   saveSession(e);
   const preIdx=ST.sessions.findIndex(function(s){return s.id===preId;});
-  if(preIdx>=0){ST.sessions[preIdx].postId=postId;save();}
+  if(preIdx>=0){
+    ST.sessions[preIdx].postId=postId;
+    save();
+    /* o vinculo tambem precisa subir: gravando so no navegador, o Firebase
+       devolvia o pre ainda sem postId e ele reaparecia como "aberto",
+       parecendo um pre duplicado do mesmo treino */
+    rtSaveSession(ST.sessions[preIdx]);
+  }
   const was=!!editId;editId=null;
   document.getElementById("postFormTitle").textContent=TX("data.post.title");
   document.getElementById("cancelEditPost").style.display="none";
@@ -1384,6 +1405,32 @@ function _wb10to5(v){
   if(v==null||isNaN(v))return v;
   var n=Math.round(Number(v)/2);
   if(n<1)n=1; if(n>5)n=5;
+  return n;
+}
+/* Reparo do vinculo pre/pos.
+   O postId era gravado so no navegador e nunca subia para o Firebase, entao
+   pares antigos ficaram com o pos apontando para o pre, mas o pre sem o
+   postId de volta — e o pre reaparecia como PENDING ao lado da sessao ja
+   fechada. Aqui refazemos o elo pelo preId do pos-treino. */
+function repairPrePostLinks(){
+  var n=0;
+  var porId={};
+  ST.sessions.forEach(function(s){ if(s&&s.id) porId[s.id]=s; });
+  ST.sessions.forEach(function(s){
+    if(!s||s.type!=="post"||!s.preId)return;
+    var pre=porId[s.preId];
+    if(pre&&pre.type==="pre"&&!pre.postId){
+      pre.postId=s.id; n++;
+      try{ rtSaveSession(pre); }catch(e){}
+    }
+  });
+  /* pos-treino cujo pre nao existe mais: solta o vinculo para nao apagar
+     nada por engano quando o par for editado */
+  ST.sessions.forEach(function(s){
+    if(!s||s.type!=="pre"||!s.postId)return;
+    if(!porId[s.postId]){ s.postId=null; n++; try{ rtSaveSession(s); }catch(e){} }
+  });
+  if(n){ save(); console.log('[FluxGK] vinculos pre/pos reparados:', n); }
   return n;
 }
 function migrateWellbeingScale(){
@@ -1411,9 +1458,12 @@ function migrateWellbeingScale(){
 }
 window.editSession=function(id){
   const s=ST.sessions.find(x=>x.id===id);if(!s)return;editId=id;
-  if(s.type==="pre"||s.type==="absence"){
+  if(s.type==="pre"||s.type==="absence"||s.type==="rest"){
     showSection("pre");
-    document.getElementById("preFormTitle").textContent=s.type==="absence"?TX("data.msg.editAbsence"):TX("data.msg.editPre");
+    document.getElementById("preFormTitle").textContent=
+      s.type==="absence"?TX("data.msg.editAbsence")
+      :s.type==="rest"?TX("data.msg.editRest","Editar descanso")
+      :TX("data.msg.editPre");
     document.getElementById("preDate").value=s.date;
     if(s.time)setAmPmTime("pre",s.time);
     if(s.trainingType)document.getElementById("preType").value=s.trainingType;
@@ -1422,7 +1472,10 @@ window.editSession=function(id){
     // Restore attendance
     const _pEl=document.getElementById("attendancePresent");
     const _aEl=document.getElementById("attendanceAbsent");
-    if(s.present===false||s.type==="absence"){if(_aEl)_aEl.checked=true;}else{if(_pEl)_pEl.checked=true;}
+    const _rEl=document.getElementById("attendanceRest");
+    if(s.type==="rest"){if(_rEl)_rEl.checked=true;}
+    else if(s.present===false||s.type==="absence"){if(_aEl)_aEl.checked=true;}
+    else{if(_pEl)_pEl.checked=true;}
     _onAttendanceChange();
   } else {
     showSection("post");
@@ -1445,14 +1498,19 @@ window.deleteSession=function(id){
   const s=ST.sessions.find(x=>x.id===id);if(!s)return;
   if(!confirm(TX("data.msg.deleteConfirm")))return;
   ST.sessions=ST.sessions.filter(x=>x.id!==id);
+  /* Toda mudanca no par pre/pos tambem precisa subir. Antes so a sessao
+     apagada ia para o Firebase e a outra metade voltava no proximo sync:
+     o pre reabria sozinho ou sobrava um pos orfao. */
   // If deleting a post, reopen the linked pre session
   if(s.type==="post"&&s.preId){
     const preIdx=ST.sessions.findIndex(x=>x.id===s.preId);
-    if(preIdx>=0)ST.sessions[preIdx].postId=null;
+    if(preIdx>=0){ ST.sessions[preIdx].postId=null; rtSaveSession(ST.sessions[preIdx]); }
   }
   // If deleting a pre that was closed, also delete the linked post
   if(s.type==="pre"&&s.postId){
+    const post=ST.sessions.find(x=>x.id===s.postId);
     ST.sessions=ST.sessions.filter(x=>x.id!==s.postId);
+    if(post) rtDeleteSession(post);
   }
   save();renderAll();showToast(TX("data.msg.deleted"));
   rtDeleteSession(s);
@@ -1466,24 +1524,28 @@ function getFS(){const all=getPS();if(!ST.filterWeeks)return all;const cut=new D
 function renderDashboard(){
   const ss=getFS(),post=ss.filter(s=>s.type==="post"),pre=ss.filter(s=>s.type==="pre");
   const absences=ss.filter(s=>s.type==="absence");
-  const totalSessions=post.length+absences.length;
+  const rests=ss.filter(s=>s.type==="rest");
+  const totalSessions=post.length+absences.length+rests.length;
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
   const _wbCards=activeWb().map(f=>`<div class="metric-card"><div class="mc-label">${_esc(f.label)}</div><div class="mc-val">${fieldAvg(pre,f)}</div><div class="mc-sub">${dirSub(f)}</div></div>`).join("");
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   // Attendance strip: all session days sorted
-  const attDays=[...post.map(s=>({d:s.date,present:true})),...absences.map(s=>({d:s.date,present:false}))].sort((a,b)=>a.d.localeCompare(b.d));
+  const attDays=[...post.map(s=>({d:s.date,st:"present"})),
+                 ...rests.map(s=>({d:s.date,st:"rest"})),
+                 ...absences.map(s=>({d:s.date,st:"absent"}))].sort((a,b)=>a.d.localeCompare(b.d));
   const attHtml=attDays.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">'+attDays.map(function(x,i){
-    const col=x.present?"#15803D":"#B91C1C";
-    const bg=x.present?"#DCFCE7":"#FEE2E2";
-    const lbl=x.present?"P":"A";
-    return'<div title="'+(x.present?TX("data.present"):TX("data.absent"))+' · '+fd(x.d)+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px">'+
+    const col=x.st==="present"?"#15803D":x.st==="rest"?"#92400E":"#B91C1C";
+    const bg=x.st==="present"?"#DCFCE7":x.st==="rest"?"#FEF3C7":"#FEE2E2";
+    const lbl=x.st==="present"?"P":x.st==="rest"?"D":"A";
+    const tit=x.st==="present"?TX("data.present"):x.st==="rest"?TX("data.rest","Descanso"):TX("data.absent");
+    return'<div title="'+tit+' · '+fd(x.d)+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px">'+
       '<span style="font-size:9px;color:#888">'+fd(x.d)+'</span>'+
       '<span style="width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+col+';font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">'+lbl+'</span>'+
       '</div>';
   }).join("")+'</div>':"";
   document.getElementById("metricsRow").innerHTML=`
-    <div class="metric-card"><div class="mc-label">${TX("data.m.sessions")}</div><div class="mc-val">${totalSessions}</div><div class="mc-sub">${post.length} ${TX("data.m.present")} · ${absences.length} ${TX("data.m.absent")}</div></div>
+    <div class="metric-card"><div class="mc-label">${TX("data.m.sessions")}</div><div class="mc-val">${totalSessions}</div><div class="mc-sub">${post.length} ${TX("data.m.present")} · ${rests.length} ${TX("data.m.rest","desc.")} · ${absences.length} ${TX("data.m.absent")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.totalAU")}</div><div class="mc-val">${tUA.toLocaleString()}</div><div class="mc-sub">${TX("data.m.au")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgAU")}</div><div class="mc-val">${aUA||"—"}</div><div class="mc-sub">${TX("data.m.perSession")}</div></div>
     <div class="metric-card"><div class="mc-label">${TX("data.m.avgRPE")}</div><div class="mc-val">${aPSE}</div><div class="mc-sub">${TX("data.m.cr10")}</div></div>
@@ -1580,6 +1642,7 @@ function renderHistory(){
   const posts=allS.filter(function(s){return s.type==="post";}).slice().reverse();
   const pres=allS.filter(function(s){return s.type==="pre";});
   const absences=allS.filter(function(s){return s.type==="absence";}).slice().reverse();
+  const rests=allS.filter(function(s){return s.type==="rest";}).slice().reverse();
   const openPres=pres.filter(function(s){return !s.postId;}).slice().reverse();
   function actionBtns(id){
     return'<span class="sr-actions">'
@@ -1613,6 +1676,15 @@ function renderHistory(){
       +'<span class="sr-detail">'+(type||"—")+'</span>'
       +actionBtns(s.id)+'</div>';
   });
+  const restRows=rests.map(function(s){
+    const dt=fd(s.date)+(s.time?" · "+s.time:"");
+    const type=s.trainingType||"";
+    return'<div class="session-row" style="opacity:.85;border-left:3px solid var(--sig-cau)">'
+      +'<span class="sr-date">'+dt+'</span>'
+      +'<span class="sr-type pre" style="background:var(--sig-cau-l);color:var(--sig-cau)">'+TX("data.rest","DESCANSO").toUpperCase()+'</span>'
+      +'<span class="sr-detail">'+(type||"—")+'</span>'
+      +actionBtns(s.id)+'</div>';
+  });
   const openPreRows=openPres.map(function(s){
     const dt=fd(s.date)+(s.time?" · "+s.time:"");
     const type=s.trainingType||"";
@@ -1625,6 +1697,7 @@ function renderHistory(){
   // Merge all rows sorted by date desc
   const allRows=[...posts.map((s,i)=>({d:s.date,ts:s.ts,html:postRows[i]})),
                  ...absences.map((s,i)=>({d:s.date,ts:s.ts,html:absenceRows[i]})),
+                 ...rests.map((s,i)=>({d:s.date,ts:s.ts,html:restRows[i]})),
                  ...openPres.map((s,i)=>({d:s.date,ts:s.ts,html:openPreRows[i]}))];
   allRows.sort(function(a,b){return b.d.localeCompare(a.d)||b.ts-a.ts;});
   el.innerHTML=allRows.map(r=>r.html).join("")||'<div class="empty-state"><i class="ti ti-database-off"></i><p data-i18n="data.hist.empty">No sessions yet.</p></div>';
@@ -1895,14 +1968,14 @@ function filterSMulti(pks,period){
   return ss.sort((a,b)=>a.date.localeCompare(b.date));
 }
 function calcM(ss){
-  const post=ss.filter(s=>s.type==="post"),pre=ss.filter(s=>s.type==="pre"),absences=ss.filter(s=>s.type==="absence");
+  const post=ss.filter(s=>s.type==="post"),pre=ss.filter(s=>s.type==="pre"),absences=ss.filter(s=>s.type==="absence"),rests=ss.filter(s=>s.type==="rest");
   const tUA=post.reduce((a,s)=>a+s.ua,0),aUA=post.length?Math.round(tUA/post.length):0;
   const aPSE=post.length?(post.reduce((a,s)=>a+s.pse,0)/post.length).toFixed(1):"—";
   const wb={}; activeWb().forEach(function(f){ wb[f.key]=fieldAvg(pre,f); });
   const aDur=post.length?Math.round(post.reduce((a,s)=>a+s.duration,0)/post.length):"—";
   let acwr="—";
   if(post.length>=4){const ubd={};post.forEach(s=>{ubd[s.date]=(ubd[s.date]||0)+s.ua;});const dates=Object.keys(ubd).sort(),vals=dates.map(d=>ubd[d]),i=vals.length-1;const ac=vals.slice(Math.max(0,i-6),i+1).reduce((a,v)=>a+v,0)/Math.min(7,i+1),ch=vals.slice(Math.max(0,i-27),i+1).reduce((a,v)=>a+v,0)/Math.min(28,i+1);if(ch>0)acwr=(ac/ch).toFixed(2);}
-  return{post,pre,absences,tUA,aUA,aPSE,wb,aDur,acwr};
+  return{post,pre,absences,rests,tUA,aUA,aPSE,wb,aDur,acwr};
 }
 function zpill(ua){if(!ua||ua==="—")return"—";if(ua<300)return`<span class="zpill zl">${TX("data.pdf.zoneLow")}</span>`;if(ua<600)return`<span class="zpill zm">${TX("data.pdf.zoneMod")}</span>`;return`<span class="zpill zh">${TX("data.pdf.zoneHigh")}</span>`;}
 function acls(v){if(v==="—")return"";const n=parseFloat(v);if(n>=.8&&n<=1.3)return"aok";if(n<.8)return"awk";return"abad";}
@@ -2117,7 +2190,7 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
   let html=`<div class="rpt-period-block">
     <div class="period-hdr"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>
     <div class="rpt-metrics">
-      <div class="rpt-m"><div class="ml">${TX("data.pdf.thSessions")}</div><div class="mv">${m.post.length+m.absences.length}</div><div class="ms">${m.post.length} ${TX("data.m.present")} · ${m.absences.length} ${TX("data.m.absent")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.pdf.thSessions")}</div><div class="mv">${m.post.length+m.absences.length+(m.rests||[]).length}</div><div class="ms">${m.post.length} ${TX("data.m.present")} · ${(m.rests||[]).length} ${TX("data.m.rest","desc.")} · ${m.absences.length} ${TX("data.m.absent")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thTotalAU")}</div><div class="mv">${m.tUA||"—"}</div><div class="ms">${TX("data.pdf.accumulated")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.avgAUsession")}</div><div class="mv">${m.aUA||"—"}</div><div class="ms">${TX("data.m.au")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thAvgRPE")}</div><div class="mv">${m.aPSE}</div><div class="ms">${TX("data.pdf.cr10borg")}</div></div>
@@ -2132,21 +2205,22 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
     if(ha){const cid=uid+"_acwr";html+=`<div class="chart-box ${hw?"":"full"}"><h4>${TX("data.acwr")} · ${period.label}</h4><canvas id="${cid}" width="${hw?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkACWRChart(cid,m.post);});}
     html+=`</div>`;}
   // ── Attendance section ──
-  if(m.pre.length||m.absences.length){
-    const allDates=[...new Set([...m.pre.map(s=>s.date),...m.post.map(s=>s.date),...m.absences.map(s=>s.date)])].sort();
+  if(m.pre.length||m.absences.length||(m.rests||[]).length){
+    const allDates=[...new Set([...m.pre.map(s=>s.date),...m.post.map(s=>s.date),...m.absences.map(s=>s.date),...(m.rests||[]).map(s=>s.date)])].sort();
     const presMap={};
     m.pre.forEach(function(s){presMap[s.date]=s.present!==false?"present":"absent";});
     m.absences.forEach(function(s){presMap[s.date]="absent";});
+    (m.rests||[]).forEach(function(s){presMap[s.date]="rest";});
     html+='<div class="chart-box" style="margin-bottom:12pt">';
     html+='<h4 style="font-size:8pt;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8pt">'+TX("data.pre.attendance")+'</h4>';
     html+='<div style="display:flex;flex-wrap:wrap;gap:6pt">';
     allDates.forEach(function(d){
       const status=presMap[d]||"present";
-      const col=status==="present"?"#15803D":"#B91C1C";
-      const bg=status==="present"?"#DCFCE7":"#FEE2E2";
+      const col=status==="present"?"#15803D":status==="rest"?"#92400E":"#B91C1C";
+      const bg=status==="present"?"#DCFCE7":status==="rest"?"#FEF3C7":"#FEE2E2";
       html+='<div style="display:flex;flex-direction:column;align-items:center;gap:3pt;padding:5pt 8pt;background:'+bg+';border-radius:4pt;min-width:55pt">'
         +'<span style="font-size:7pt;color:#666;font-family:sans-serif">'+fd(d)+'</span>'
-        +'<span style="font-size:8pt;font-weight:600;color:'+col+';font-family:sans-serif">'+(status==="present"?TX("data.present"):TX("data.absent"))+'</span>'
+        +'<span style="font-size:8pt;font-weight:600;color:'+col+';font-family:sans-serif">'+(status==="present"?TX("data.present"):status==="rest"?TX("data.rest","Descanso"):TX("data.absent"))+'</span>'
         +'</div>';
     });
     html+='</div></div>';
@@ -2294,7 +2368,7 @@ function today2(){return new Date().toISOString().split("T")[0];}
   // Hide context bar until a goalkeeper is selected
   const _cb=document.getElementById("ctxBar");if(_cb)_cb.style.display="none";
   // Init Firebase — auth state listener handles everything after
-  try{ migrateWellbeingScale(); }catch(e){ console.warn("wb migrate:",e); }
+  try{ migrateWellbeingScale(); repairPrePostLinks(); }catch(e){ console.warn("wb migrate:",e); }
   try{ buildPreFields(); buildPostFields(); renderFieldEditor(); }catch(e){ console.warn("fields:",e); }
   applyTheme();renderAll();
   /* ao trocar de idioma, re-renderiza o que e gerado por JS
