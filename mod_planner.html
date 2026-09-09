@@ -1271,18 +1271,22 @@ async function buscarOutrasTemporadas(){
     const snap = await fbDatabase.ref('users/' + _HUB.uid + '/data').get();
     const raiz = snap.val() || {};
     const achados = [];
-    Object.keys(raiz).forEach(function(clube){
-      const temporadas = raiz[clube] || {};
-      Object.keys(temporadas).forEach(function(temp){
-        const ss = temporadas[temp] && temporadas[temp].planner && temporadas[temp].planner.sessions;
-        if(!ss) return;
-        const lista = Object.values(ss);
-        if(!lista.length) return;
-        const caminho = 'users/' + _HUB.uid + '/data/' + clube + '/' + temp + '/planner/sessions';
-        if(caminho === atual) return;
-        achados.push({ clube: clube, temporada: temp, n: lista.length, caminho: caminho, lista: lista });
+    /* varredura em profundidade: uma temporada como "26/27" vira dois niveis
+       no caminho do Firebase, entao nao da para assumir clube/temporada */
+    (function varrer(no, trilha){
+      if(!no || typeof no !== 'object') return;
+      if(no.planner && no.planner.sessions){
+        const lista = Object.values(no.planner.sessions).filter(function(x){ return x && x.id; });
+        const caminho = 'users/' + _HUB.uid + '/data/' + trilha.join('/') + '/planner/sessions';
+        if(lista.length && caminho !== atual){
+          achados.push({ ramo: trilha.join(' · '), n: lista.length, caminho: caminho, lista: lista });
+        }
+      }
+      Object.keys(no).forEach(function(k){
+        if(k === 'planner') return;
+        if(trilha.length < 4) varrer(no[k], trilha.concat(k));
       });
-    });
+    })(raiz, []);
     if(!achados.length){
       out.textContent = TX('plan.libScanNone','Nenhuma sessão encontrada em outras temporadas desta conta.');
       return;
@@ -1292,7 +1296,7 @@ async function buscarOutrasTemporadas(){
       + achados.map(function(a,i){
           return '<div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:6px">'
             + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'
-            + a.clube + ' · ' + a.temporada + ' — <b>' + a.n + '</b></span>'
+            + a.ramo + ' — <b>' + a.n + '</b></span>'
             + '<button class="btn btn-o btn-sm" onclick="importarDeOutraTemporada(' + i + ')">'
             + TX('plan.libScanImport','Trazer para cá') + '</button></div>';
         }).join('');
@@ -1321,12 +1325,14 @@ function renderLibrary(){
     /* Vazio pode ser tres coisas bem diferentes: ainda carregando, sem conexao,
        ou sessoes gravadas em outra temporada/clube. Mostrar qual e o caminho
        lido evita o "sumiu tudo" sem pista nenhuma. */
-    const carregando = !_cloudReady();
+    const carregando = !_cloudReady() && !_libErro;
     grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
       <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
       <div style="font-weight:600;margin-bottom:5px">${carregando?TX('plan.libLoading','Carregando…'):TX("plan.noSessions")}</div>
       <div style="font-size:13px;color:var(--mute)">${carregando?TX('plan.libLoadingHint','Aguardando a conexão com o banco de dados.'):TX("plan.noSessionsHint")}</div>
       ${carregando?'':`
+        ${_libErro?`<div style="margin-top:12px;color:var(--risk);font-size:13px">
+          ${TX('plan.libScanErr','Não consegui ler o banco')}: ${_libErro}</div>`:''}
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-top:14px;word-break:break-all">
           ${TX('plan.libPath','Lendo de')}: ${_PATH.sessions||'—'}
         </div>
@@ -1628,50 +1634,54 @@ function _initFirebase(cfg){
       if(!u){ console.error('[FluxGK] planner: sem sessao. Faca login pelo hub.'); return; }
       if(!_fbReady){ _fbReady=true; console.log('[FluxGK] planner: autenticado como', u.uid); }
       setTimeout(flushPending,300);      /* sobe o que ficou na fila */
+      /* Os listeners so podem subir DEPOIS do login. Ligados antes, as regras
+         do banco negavam a leitura, o Firebase cancelava a inscricao em
+         silencio e ela nunca voltava — a biblioteca ficava vazia para sempre. */
+      _ligarListeners();
     });
     if(status){ status.textContent='☁️ '+TX('plan.connected'); status.style.color='var(--ok)'; }
     _updateFirebaseBanner(true);
 
     /* listener de 'settings' REMOVIDO — identidade vem do hub */
 
-    // ── SESSIONS listener — real-time sync ───────────────────────
-    fbDatabase.ref(_PATH.sessions).on('value', snap=>{
-      const data = snap.val();
-      // Full replace from Firebase (Firebase is source of truth)
-      if(data){
-        savedSessions = Object.values(data).sort((a,b)=>b.id-a.id);
-      } else {
-        /* Firebase vazio = esta conta nao tem sessoes. Fica vazio.
-           NAO sobe localStorage: seria dado de outra conta vazando. */
-        savedSessions = [];
-      }
-      if(_currentPage==='library') renderLibrary();
-    });
-
-    // ── EXERCISES listener — real-time sync (same pattern) ──────
-    fbDatabase.ref(_PATH.exercises).on('value', snap=>{
-      const data = snap.val();
-      if(data){
-        savedExercises = Object.values(data).sort((a,b)=>b.id-a.id);
-      } else {
-        savedExercises = [];
-        if(false){
-          const local=[];
-          local.forEach(ex=>fbDatabase.ref(_PATH.exercises+'/'+ex.id).set(ex));
-          savedExercises = local;
-        } else {
-          savedExercises = [];
-        }
-      }
-      _libLocalSave();
-      recompressLibrary();
-      if(_currentPage==='exlib') renderExLib();
-    });
 
   } catch(e){
     if(status){ status.textContent='Error: '+e.message; status.style.color='var(--risk)'; }
     console.error('Firebase init error:',e);
   }
+}
+
+/* Liga as escutas do banco. So roda depois da autenticacao e guarda o erro
+   para a tela mostrar, em vez de falhar calado. */
+let _listenersOn = false;
+let _libErro = '';
+function _ligarListeners(){
+  if(_listenersOn || !fbDatabase || !_PATH.sessions) return;
+  _listenersOn = true;
+  _libErro = '';
+
+  fbDatabase.ref(_PATH.sessions).on('value', function(snap){
+    const data = snap.val();
+    savedSessions = data ? Object.values(data).sort((a,b)=>b.id-a.id) : [];
+    _libErro = '';
+    console.log('[FluxGK] planner: sessoes carregadas:', savedSessions.length, 'de', _PATH.sessions);
+    if(_currentPage==='library') renderLibrary();
+  }, function(err){
+    _listenersOn = false;
+    _libErro = (err && err.message) || String(err);
+    console.error('[FluxGK] planner: leitura das sessoes negada:', err);
+    if(_currentPage==='library') renderLibrary();
+  });
+
+  fbDatabase.ref(_PATH.exercises).on('value', function(snap){
+    const data = snap.val();
+    savedExercises = data ? Object.values(data).sort((a,b)=>b.id-a.id) : [];
+    _libLocalSave();
+    recompressLibrary();
+    if(_currentPage==='exlib') renderExLib();
+  }, function(err){
+    console.error('[FluxGK] planner: leitura dos exercicios negada:', err);
+  });
 }
 
 function _updateFirebaseBanner(connected){
