@@ -1256,14 +1256,84 @@ function toggleLibOrder(){
   renderLibrary();
 }
 
+/* Procura sessoes em outros clubes/temporadas da mesma conta e permite trazer
+   para a temporada aberta. Resolve o caso mais comum: o treinador trocou de
+   temporada no hub e as sessoes ficaram no ramo anterior. */
+async function buscarOutrasTemporadas(){
+  const out = document.getElementById('libScanOut');
+  const atual = _PATH.sessions || '';
+  if(!_cloudReady() || !_HUB || !_HUB.uid){
+    if(out) out.textContent = TX('plan.libScanOffline','Sem conexão com o banco agora.');
+    return;
+  }
+  if(out) out.textContent = TX('plan.libScanning','Procurando…');
+  try{
+    const snap = await fbDatabase.ref('users/' + _HUB.uid + '/data').get();
+    const raiz = snap.val() || {};
+    const achados = [];
+    Object.keys(raiz).forEach(function(clube){
+      const temporadas = raiz[clube] || {};
+      Object.keys(temporadas).forEach(function(temp){
+        const ss = temporadas[temp] && temporadas[temp].planner && temporadas[temp].planner.sessions;
+        if(!ss) return;
+        const lista = Object.values(ss);
+        if(!lista.length) return;
+        const caminho = 'users/' + _HUB.uid + '/data/' + clube + '/' + temp + '/planner/sessions';
+        if(caminho === atual) return;
+        achados.push({ clube: clube, temporada: temp, n: lista.length, caminho: caminho, lista: lista });
+      });
+    });
+    if(!achados.length){
+      out.textContent = TX('plan.libScanNone','Nenhuma sessão encontrada em outras temporadas desta conta.');
+      return;
+    }
+    out.innerHTML = '<div style="font-weight:600;margin-bottom:8px">'
+      + TX('plan.libScanFound','Encontrei sessões em outros ramos:') + '</div>'
+      + achados.map(function(a,i){
+          return '<div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:6px">'
+            + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'
+            + a.clube + ' · ' + a.temporada + ' — <b>' + a.n + '</b></span>'
+            + '<button class="btn btn-o btn-sm" onclick="importarDeOutraTemporada(' + i + ')">'
+            + TX('plan.libScanImport','Trazer para cá') + '</button></div>';
+        }).join('');
+    window._libScanAchados = achados;
+  }catch(e){
+    out.textContent = TX('plan.libScanErr','Não consegui ler o banco') + ': ' + (e && e.message || e);
+  }
+}
+async function importarDeOutraTemporada(i){
+  const a = (window._libScanAchados||[])[i]; if(!a) return;
+  if(!confirm(TX('plan.libScanConfirm','Copiar {n} sessões para a temporada aberta?').replace('{n}', a.n))) return;
+  const out = document.getElementById('libScanOut');
+  try{
+    for(const s of a.lista){
+      await fbDatabase.ref(_PATH.sessions + '/' + s.id).set(s);
+    }
+    if(out) out.textContent = TX('plan.libScanDone','Pronto. As sessões já aparecem aqui.');
+  }catch(e){
+    if(out) out.textContent = TX('plan.libScanErr','Não consegui ler o banco') + ': ' + (e && e.message || e);
+  }
+}
 function renderLibrary(){
   const grid=document.getElementById('libraryGrid');
   if(!grid) return; // page not injected yet
   if(!savedSessions.length){
+    /* Vazio pode ser tres coisas bem diferentes: ainda carregando, sem conexao,
+       ou sessoes gravadas em outra temporada/clube. Mostrar qual e o caminho
+       lido evita o "sumiu tudo" sem pista nenhuma. */
+    const carregando = !_cloudReady();
     grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
       <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
-      <div style="font-weight:600;margin-bottom:5px">${TX("plan.noSessions")}</div>
-      <div style="font-size:13px;color:var(--mute)">${TX("plan.noSessionsHint")}</div>
+      <div style="font-weight:600;margin-bottom:5px">${carregando?TX('plan.libLoading','Carregando…'):TX("plan.noSessions")}</div>
+      <div style="font-size:13px;color:var(--mute)">${carregando?TX('plan.libLoadingHint','Aguardando a conexão com o banco de dados.'):TX("plan.noSessionsHint")}</div>
+      ${carregando?'':`
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-top:14px;word-break:break-all">
+          ${TX('plan.libPath','Lendo de')}: ${_PATH.sessions||'—'}
+        </div>
+        <button class="btn btn-o btn-sm" style="margin-top:12px" onclick="buscarOutrasTemporadas()">
+          ${TX('plan.libScan','Procurar em outras temporadas')}
+        </button>
+        <div id="libScanOut" style="margin-top:12px;font-size:13px"></div>`}
     </div>`;
     document.getElementById('exportSelBtn').style.display='none';
     return;
