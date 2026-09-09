@@ -1256,6 +1256,40 @@ function toggleLibOrder(){
   renderLibrary();
 }
 
+/* Le a copia que o proprio Planner sempre gravou no navegador. Em algum
+   momento o modulo deixou de CARREGAR essa copia (para nao misturar contas no
+   mesmo computador), mas continuou GRAVANDO nela — entao as sessoes de quem
+   usou o sistema antes disso ficaram guardadas aqui, invisiveis. */
+function _sessoesNoNavegador(){
+  try{
+    const cru = localStorage.getItem('fluxgk_sessions');
+    if(!cru) return [];
+    const arr = JSON.parse(cru);
+    return Array.isArray(arr) ? arr.filter(function(x){ return x && x.id; }) : [];
+  }catch(e){ return []; }
+}
+function baixarCopiaLocal(){
+  const arr = _sessoesNoNavegador();
+  const blob = new Blob([JSON.stringify(arr, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.download = 'fluxgk-sessoes-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+}
+async function restaurarDoNavegador(){
+  const arr = _sessoesNoNavegador();
+  if(!arr.length) return;
+  if(!_cloudReady()){ toast(TX('plan.libScanOffline','Sem conexão com o banco agora.')); return; }
+  if(!confirm(TX('plan.libLocalConfirm','Restaurar {n} sessões deste navegador para a temporada aberta?').replace('{n}', arr.length))) return;
+  const out = document.getElementById('libScanOut');
+  try{
+    for(const sx of arr){ await fbDatabase.ref(_PATH.sessions + '/' + sx.id).set(sx); }
+    if(out) out.textContent = TX('plan.libScanDone','Pronto. As sessões já aparecem aqui.');
+  }catch(e){
+    if(out) out.textContent = TX('plan.libScanErr','Não consegui ler o banco') + ': ' + (e && e.message || e);
+  }
+}
+
 /* Procura sessoes em outros clubes/temporadas da mesma conta e permite trazer
    para a temporada aberta. Resolve o caso mais comum: o treinador trocou de
    temporada no hub e as sessoes ficaram no ramo anterior. */
@@ -1336,6 +1370,16 @@ function renderLibrary(){
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-top:14px;word-break:break-all">
           ${TX('plan.libPath','Lendo de')}: ${_PATH.sessions||'—'}
         </div>
+        ${(function(){
+          const loc = _sessoesNoNavegador();
+          if(!loc.length) return '';
+          return `<div style="margin-top:16px;padding:14px;border:1px solid var(--ok);border-radius:10px;background:rgba(22,163,74,.06)">
+            <div style="font-weight:600;margin-bottom:4px">${TX('plan.libLocalFound','Encontrei {n} sessões salvas neste navegador').replace('{n}', loc.length)}</div>
+            <div style="font-size:12.5px;color:var(--mute);margin-bottom:10px">${TX('plan.libLocalHint','Elas foram gravadas antes de o Planner passar a usar só a nuvem. Nada foi perdido.')}</div>
+            <button class="btn btn-p btn-sm" onclick="restaurarDoNavegador()">${TX('plan.libLocalRestore','Restaurar para esta temporada')}</button>
+            <button class="btn btn-o btn-sm" onclick="baixarCopiaLocal()">${TX('plan.libLocalDownload','Baixar cópia (.json)')}</button>
+          </div>`;
+        })()}
         <button class="btn btn-o btn-sm" style="margin-top:12px" onclick="buscarOutrasTemporadas()">
           ${TX('plan.libScan','Procurar em outras temporadas')}
         </button>
@@ -1347,8 +1391,15 @@ function renderLibrary(){
   const _bo = document.getElementById('libOrderBtn');
   if(_bo) _bo.textContent = _libAsc ? TX('plan.orderOldest') : TX('plan.orderNewest');
   const _ordenadas = sessionsByDate(savedSessions, _libAsc);
+  /* Uma sessao sem a lista de exercicios derrubava o map inteiro com
+     "Cannot read properties of undefined (reading 'length')". Como o erro
+     acontecia ANTES de escrever no grid, a tela ficava com o texto de "nenhuma
+     sessao" e parecia que os dados tinham sumido — havia 20 carregadas. */
   grid.innerHTML=_ordenadas.map((s,i)=>{
-    const d=new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    try{
+    const _ex = Array.isArray(s.exercises) ? s.exercises : (s.exercises ? Object.values(s.exercises) : []);
+    const _dt = s.date ? new Date(s.date) : null;
+    const d = (_dt && !isNaN(_dt)) ? _dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : (s.date||'—');
     const stars='★'.repeat(s.rating||0)+'☆'.repeat(5-(s.rating||0));
     const objColor=s.objMet==='full'?'var(--ok)':s.objMet==='partial'?'var(--cau)':'var(--risk)';
     const objLabel=s.objMet==='full'?TX('plan.met.full'):s.objMet==='partial'?TX('plan.met.partial'):TX('plan.met.no');
@@ -1365,7 +1416,7 @@ function renderLibrary(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
         <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink)">${stars}</span>
         ${s.objMet?`<span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:${objColor}">${objLabel}</span>`:''}
-        <span class="bdg b-n">${s.exercises.length} exercises</span>
+        <span class="bdg b-n">${_ex.length} exercises</span>
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
         <button class="btn btn-o btn-sm" onclick="editSessionFromLibrary(${s.id})">${TX("common.edit")}</button>
@@ -1373,6 +1424,16 @@ function renderLibrary(){
         <button class="btn-danger" onclick="deleteSession(${s.id})" style="margin-left:auto">${TX("common.delete")}</button>
       </div>
     </div>`;
+    }catch(err){
+      /* um registro corrompido nao pode derrubar a biblioteca inteira:
+         mostra o cartao com o erro e segue desenhando os outros */
+      console.error('[FluxGK] planner: sessao com problema', s && s.id, err);
+      return `<div class="card" style="cursor:default;border-color:var(--risk)">
+        <div style="font-weight:600;margin-bottom:6px">${(s&&(s.objective||s.date))||'—'}</div>
+        <div style="font-size:12px;color:var(--risk)">${TX('plan.libRowErr','Não consegui montar este cartão')}: ${(err&&err.message)||err}</div>
+        <div style="margin-top:10px"><button class="btn-danger btn-sm" onclick="deleteSession(${(s&&s.id)||0})">${TX("common.delete")}</button></div>
+      </div>`;
+    }
   }).join('');
   document.getElementById('exportSelBtn').style.display=selectedSessions.size>0?'inline-flex':'none';
 }
