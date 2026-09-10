@@ -224,7 +224,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
     <div class="hstats">
       <div class="hst" role="button" tabindex="0" onclick="openStatList('sess')" onkeydown="kbAct(event,function(){openStatList('sess')})"><div class="hsv" id="st-sess">-</div><div class="hsl" data-i18n="hub.statSessions">Sessions</div></div>
       <div class="hst" role="button" tabindex="0" onclick="openStatList('match')" onkeydown="kbAct(event,function(){openStatList('match')})"><div class="hsv" id="st-match">-</div><div class="hsl" data-i18n="hub.statMatches">Matches</div></div>
-      <div class="hst" role="button" tabindex="0" onclick="openStatList('gk')" onkeydown="kbAct(event,function(){openStatList('gk')})"><div class="hsv" id="st-gk">-</div><div class="hsl" data-i18n="hub.statKeepers">Keepers</div></div>
+      <div class="hst" role="button" tabindex="0" onclick="openStatList('gk')" onkeydown="kbAct(event,function(){openStatList('gk')})"><div class="hsv" id="st-gk">-</div><div class="hsl" data-i18n="hub.statKeepers">Keepers</div><div id="st-gk-out" style="display:none;font-size:10px;font-weight:600;letter-spacing:.04em;color:#B45309;margin-top:2px"></div></div>
     </div>
     <div class="mgrid" id="mgrid"></div>
     <div class="langrow">
@@ -518,7 +518,15 @@ function loadStats(){
   _rtdb.ref(p+'/minutes/games').get().then(function(s){document.getElementById('st-match').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
   /* goleiros = elenco do Load Control (users/{uid}/data/{clube}/{temporada}/load/players).
      Antes lia '/roster', caminho que nenhum modulo grava — por isso ficava sempre em zero. */
-  _rtdb.ref(p+'/load/players').get().then(function(s){document.getElementById('st-gk').textContent=s.exists()?Object.keys(s.val()).length:0;}).catch(function(e){console.error(e);});
+  _rtdb.ref(p+'/load/players').get().then(function(s){
+    var pl=s.val()||{};
+    var ativos=Object.keys(pl).filter(function(k){return _gkAtivo(pl[k]);}).length;
+    var fora=Object.keys(pl).length-ativos;
+    document.getElementById('st-gk').textContent=ativos;
+    /* o afastado nao some do painel sem aviso: fica um rodape discreto */
+    var nota=document.getElementById('st-gk-out');
+    if(nota){ nota.textContent=fora?'+'+fora+' '+TX('hub.st.outShort','out'):''; nota.style.display=fora?'block':'none'; }
+  }).catch(function(e){console.error(e);});
 }
 function refresh(){applyIdentity();loadStats();}
 
@@ -530,6 +538,18 @@ function closeStatList(){document.getElementById('sh-list').classList.remove('op
 function _fdBR(iso){
   if(!iso||iso.length<10)return iso||'—';
   return iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4);
+}
+/* situacao do goleiro no Load Control: sem status ou 'ativo' = no elenco.
+   Emprestado, lesionado, convocado ou fora do clube nao contam no painel. */
+var HUB_ST={emprestado:{c:'#B45309',t:'hub.st.loan',d:'On loan'},
+            lesao:{c:'#B91C1C',t:'hub.st.injury',d:'Injured'},
+            convocado:{c:'#1D4ED8',t:'hub.st.callup',d:'National team'},
+            saida:{c:'#57534E',t:'hub.st.left',d:'Left the club'}};
+function _gkAtivo(g){ return !g || !g.status || g.status==='ativo'; }
+function _gkTag(g){
+  var d=HUB_ST[g&&g.status]; if(!d) return '';
+  return '<span style="font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;'
+    + 'background:'+d.c+';color:#fff;white-space:nowrap">'+TX(d.t,d.d).toUpperCase()+'</span>';
 }
 function _listRow(cor, sigla, titulo, sub, tag){
   return '<div class="lrow" style="cursor:default">'
@@ -591,6 +611,11 @@ async function openStatList(kind){
       var sess=snap4.val()||{};
       var ids=Object.keys(pl);
       if(!ids.length){bd.innerHTML='<div class="empty">'+TX('hub.list.noKeepers','No goalkeepers registered yet.')+'</div>';return;}
+      ids.sort(function(a,b){
+        var da=_gkAtivo(pl[a])?0:1, db=_gkAtivo(pl[b])?0:1;
+        if(da!==db) return da-db;
+        return (pl[a].name||'').localeCompare(pl[b].name||'');
+      });
       bd.innerHTML=ids.map(function(id){
         var g2=pl[id]||{}, nome=g2.name||id;
         var regs=sess[id]||{}, treinos=0, faltas=0;
@@ -601,7 +626,9 @@ async function openStatList(kind){
         });
         var ini=(nome||'GK').slice(0,2).toUpperCase();
         var sub=treinos+' '+TX('hub.list.sessionsDone','sessions')+(faltas?' · '+faltas+' '+TX('hub.list.absent','absent'):'');
-        return _listRow('#1e3a5f',ini,nome,sub,'');
+        var ativo=_gkAtivo(g2);
+        if(!ativo&&g2.statusDesde) sub+=' · '+TX('hub.st.since','since')+' '+_fdBR(g2.statusDesde);
+        return _listRow(ativo?'#1e3a5f':'#78716c',ini,nome,sub,_gkTag(g2));
       }).join('');
     }
   }catch(err){
