@@ -775,9 +775,21 @@ function _queueSess(s){
   _pendingSess=_pendingSess.filter(function(x){return x.id!==s.id;});
   _pendingSess.push(s); dotR();
 }
+/* Ids apagados nesta sessao de uso. Sem isto, um item que ainda estava na fila
+   de reenvio era recriado pelo flushPending 15s depois — o treino "voltava"
+   sozinho depois de apagado. Tambem serve para o listener nao reinserir um
+   registro que a nuvem ainda nao terminou de remover. */
+var _apagados = Object.create(null);
+function _marcarApagado(id){
+  _apagados[String(id)] = Date.now();
+  _pendingEx   = _pendingEx.filter(function(x){ return String(x.id) !== String(id); });
+  _pendingSess = _pendingSess.filter(function(x){ return String(x.id) !== String(id); });
+}
+function _foiApagado(id){ return !!_apagados[String(id)]; }
 function flushPending(){
   if(!_cloudReady()||!_pendingCount()) return;
-  var exs=_pendingEx.slice(), sss=_pendingSess.slice();
+  var exs=_pendingEx.filter(function(x){ return !_foiApagado(x.id); });
+  var sss=_pendingSess.filter(function(x){ return !_foiApagado(x.id); });
   _pendingEx=[]; _pendingSess=[];
   dotY();
   var jobs=[];
@@ -895,6 +907,7 @@ function addLibToSession(i){
 function rmLibEx(i){
   const ex=savedExercises[i]; if(!ex) return;
   if(!confirm(TX('common.delete')+' "'+ex.name+'"?')) return;
+  _marcarApagado(ex.id);
   savedExercises.splice(i,1);
   _libLocalSave();
   if(_cloudReady()){dotY();fbDatabase.ref(_PATH.exercises+'/'+ex.id).remove().then(dotG)
@@ -1446,6 +1459,7 @@ function toggleSelect(id,checked){
 
 function deleteSession(id){
   if(!confirm(TX('plan.msg.deleteSession'))) return;
+  _marcarApagado(id);
   savedSessions=savedSessions.filter(s=>s.id!=id);
   localStorage.setItem('fluxgk_sessions',JSON.stringify(savedSessions));
   if(_cloudReady()){dotY();fbDatabase.ref(_PATH.sessions+'/'+id).remove().then(dotG)
@@ -1723,7 +1737,15 @@ function _ligarListeners(){
 
   fbDatabase.ref(_PATH.sessions).on('value', function(snap){
     const data = snap.val();
-    savedSessions = data ? Object.values(data).sort((a,b)=>b.id-a.id) : [];
+    let lista = data ? Object.values(data) : [];
+    /* se algo apagado reaparecer, manda remover de novo e nao mostra na tela */
+    const teimosos = lista.filter(function(x){ return x && _foiApagado(x.id); });
+    teimosos.forEach(function(x){
+      console.warn('[FluxGK] planner: sessao apagada voltou, removendo de novo:', x.id);
+      try{ fbDatabase.ref(_PATH.sessions+'/'+x.id).remove(); }catch(e){}
+    });
+    lista = lista.filter(function(x){ return x && !_foiApagado(x.id); });
+    savedSessions = lista.sort((a,b)=>b.id-a.id);
     _libErro = '';
     console.log('[FluxGK] planner: sessoes carregadas:', savedSessions.length, 'de', _PATH.sessions);
     if(_currentPage==='library') renderLibrary();
@@ -1736,7 +1758,11 @@ function _ligarListeners(){
 
   fbDatabase.ref(_PATH.exercises).on('value', function(snap){
     const data = snap.val();
-    savedExercises = data ? Object.values(data).sort((a,b)=>b.id-a.id) : [];
+    let lista = data ? Object.values(data) : [];
+    lista.filter(function(x){ return x && _foiApagado(x.id); }).forEach(function(x){
+      try{ fbDatabase.ref(_PATH.exercises+'/'+x.id).remove(); }catch(e){}
+    });
+    savedExercises = lista.filter(function(x){ return x && !_foiApagado(x.id); }).sort((a,b)=>b.id-a.id);
     _libLocalSave();
     recompressLibrary();
     if(_currentPage==='exlib') renderExLib();
