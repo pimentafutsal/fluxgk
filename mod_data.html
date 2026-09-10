@@ -308,6 +308,36 @@ textarea{width:100%;resize:vertical;min-height:110px}
 .sq-add{background:var(--bg);border:1.5px dashed var(--bd2);border-radius:var(--rl);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;min-height:200px;color:var(--mt);transition:all .15s}
 .sq-add:hover{border-color:var(--p);color:var(--p);background:var(--pl)}
 .sq-add i{font-size:26px}.sq-add span{font-size:13px;font-weight:500}
+/* goleiro afastado: o card continua ali, mas visivelmente fora da coleta */
+.sq-group{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:6px 0 0}
+.sq-group:first-child{margin-top:0}
+.sq-group-t{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt)}
+.sq-group-l{flex:1;height:0.5px;background:var(--bd)}
+.sq-group-n{font-size:11px;color:var(--mt)}
+.sq-card.out{opacity:.82}
+.sq-card.out .sq-photo img,.sq-card.out .sq-avatar{filter:grayscale(1)}
+.sq-band{display:flex;align-items:center;gap:5px;padding:5px 10px;font-size:10.5px;font-weight:600;
+  letter-spacing:.03em;color:#fff}
+.sq-band i{font-size:12px}
+.sq-band-d{font-weight:400;opacity:.85}
+.sq-note{padding:0 10px 4px;font-size:11px;color:var(--mt);line-height:1.35}
+.sq-btn.sq-back:hover{background:var(--pl);color:var(--pd);border-color:var(--p)}
+/* modal de situacao */
+.st-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:360;display:none;align-items:flex-end;justify-content:center}
+.st-ov.open{display:flex}
+.st-sh{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:700px;padding:16px;max-height:92vh;overflow-y:auto}
+.st-opts{display:grid;gap:6px;margin-bottom:12px}
+.st-opt{display:flex;align-items:center;gap:9px;padding:10px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);
+  background:var(--bg2);cursor:pointer;font-size:13.5px;color:var(--tx);text-align:left;font-family:inherit;transition:all .12s}
+.st-opt i{font-size:16px}
+.st-opt.on{border-color:var(--p);background:var(--pl);color:var(--pd);font-weight:600}
+.st-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.st-fld{margin-bottom:11px}
+.st-fld label{font-size:12px;color:var(--mt);display:block;margin-bottom:4px}
+.st-fld input,.st-fld textarea{width:100%;padding:9px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);
+  background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit}
+.st-fld textarea{min-height:64px;resize:vertical;font-size:13px}
+.st-keep{font-size:11.5px;color:var(--mt);display:flex;align-items:center;gap:5px;margin-bottom:12px}
 /* player profile modal */
 .pm-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:350;display:none;align-items:flex-end;justify-content:center}
 .pm-ov.open{display:flex}
@@ -683,6 +713,29 @@ textarea{width:100%;resize:vertical;min-height:110px}
     <button class="btn-primary" onclick="apOK()"><i class="ti ti-check"></i> <span data-i18n="data.squad.addBtn">Add to squad</span></button>
   </div>
 </div>
+<!-- GOALKEEPER STATUS MODAL -->
+<div class="st-ov" id="stOv">
+  <div class="st-sh">
+    <div class="modal-hdr" style="margin-bottom:4px">
+      <h2 style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-user-exclamation"></i> <span data-i18n="data.st.title">Goalkeeper status</span></h2>
+      <button class="modal-close" onclick="closeST()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="stWho" style="font-size:13px;color:var(--mt);margin-bottom:13px"></div>
+    <div class="st-opts" id="stOpts"></div>
+    <div id="stExtra" style="display:none">
+      <div class="st-fld">
+        <label data-i18n="data.st.since">Since</label>
+        <input type="date" id="stDate">
+      </div>
+      <div class="st-fld">
+        <label data-i18n="data.st.note">Note</label>
+        <textarea id="stNote" data-i18n-placeholder="data.st.notePh" placeholder="Destination club, expected return, details…"></textarea>
+      </div>
+    </div>
+    <div class="st-keep"><i class="ti ti-database" style="font-size:13px"></i> <span data-i18n="data.st.histKept">History kept — nothing was deleted.</span></div>
+    <button class="btn-primary" onclick="stOK()"><i class="ti ti-check"></i> <span data-i18n="common.save">Save</span></button>
+  </div>
+</div>
 <!-- PDF DOCUMENT (rendered here, only visible on print) -->
 <div id="rptDoc"></div>
 <div class="toast" id="toast"></div>
@@ -984,6 +1037,9 @@ function _del(path){if(!_db||!_rf||!_uid)return;_rf.remove(_rf.ref(_db,path)).ca
 function rtSaveSession(s){const d={...s};delete d._pk;_set(uPath("sessions/"+s._pk+"/"+s.id),d);}
 function rtDeleteSession(s){_del(uPath("sessions/"+s._pk+"/"+s.id));}
 function rtSavePlayer(p){_upd(uPath("players/"+p.id),{name:p.name,id:p.id});}
+/* status vazio vira null para o Firebase APAGAR o campo na reativacao */
+function rtSaveStatus(p){_upd(uPath("players/"+p.id),{
+  status:p.status||null, statusDesde:p.statusDesde||null, statusNota:p.statusNota||null});}
 function rtSavePhoto(id,ph){setTimeout(()=>_upd(uPath("players/"+id),{photo:ph}),1000);}
 function rtDeletePlayer(id){_del(uPath("players/"+id));_del(uPath("sessions/"+id));}
 function rtSaveBrand(b){_set(uPath("config/branding"),b);}
@@ -995,6 +1051,11 @@ async function rtPushAll(){
   Object.values(ST.players).forEach(p=>{
     upd[uPath("players/"+p.id)]={name:p.name,id:p.id};
     if(p.photo)upd[uPath("players/"+p.id+"/photo")]=p.photo;
+    if(p.status){
+      upd[uPath("players/"+p.id+"/status")]=p.status;
+      upd[uPath("players/"+p.id+"/statusDesde")]=p.statusDesde||"";
+      upd[uPath("players/"+p.id+"/statusNota")]=p.statusNota||"";
+    }
   });
   ST.sessions.forEach(s=>{
     const d={...s};delete d._pk;
@@ -1030,8 +1091,20 @@ function rtListen(){
     if(rem.players){
       Object.entries(rem.players).forEach(([id,p])=>{
         if(!p||!p.id)return;
-        if(!ST.players[id]){ST.players[id]={name:p.name,id:p.id,photo:p.photo||null};changed=true;}
-        else if(p.photo&&!ST.players[id].photo){ST.players[id].photo=p.photo;changed=true;}
+        if(!ST.players[id]){
+          ST.players[id]={name:p.name,id:p.id,photo:p.photo||null};
+          if(p.status){ST.players[id].status=p.status;ST.players[id].statusDesde=p.statusDesde||"";ST.players[id].statusNota=p.statusNota||"";}
+          changed=true;
+        } else {
+          const lc=ST.players[id];
+          if(p.photo&&!lc.photo){lc.photo=p.photo;changed=true;}
+          /* a situacao vem do servidor: quem afastou num aparelho afasta em todos */
+          if((p.status||"ativo")!==plSt(lc)){
+            if(p.status){lc.status=p.status;lc.statusDesde=p.statusDesde||"";lc.statusNota=p.statusNota||"";}
+            else {delete lc.status;delete lc.statusDesde;delete lc.statusNota;}
+            changed=true;
+          }
+        }
       });
     }
     if(rem.sessions){
@@ -1078,32 +1151,74 @@ const AVC=["#1D9E75","#185FA5","#BA7517","#534AB7","#D85A30","#0F6E56"];
 function avc(n){let h=0;for(const ch of n)h=(h*31+ch.charCodeAt(0))%AVC.length;return AVC[h];}
 function avi(n){return(n||"").split(" ").map(w=>w[0]||"").join("").toUpperCase().slice(0,2)||"?";}
 
+/* ══ SITUACAO DO GOLEIRO ══════════════════════════════════
+   Emprestimo, lesao longa, convocacao ou saida param a coleta
+   sem apagar nada: o goleiro sai do seletor de pre/pos e vai
+   para "Fora do elenco", com a data em que a coleta parou. */
+const STATUS=[
+  {k:"ativo",     i:"ti-check",            c:"#15803D", t:"data.st.active"},
+  {k:"emprestado",i:"ti-arrow-right-bar",  c:"#B45309", t:"data.st.loan"},
+  {k:"lesao",     i:"ti-first-aid-kit",    c:"#B91C1C", t:"data.st.injury"},
+  {k:"convocado", i:"ti-flag",             c:"#1D4ED8", t:"data.st.callup"},
+  {k:"saida",     i:"ti-logout",           c:"#57534E", t:"data.st.left"}
+];
+function stDef(k){ return STATUS.find(x=>x.k===k)||STATUS[0]; }
+function plSt(p){ return (p&&p.status)||"ativo"; }
+function plAtivo(p){ return plSt(p)==="ativo"; }
+function plsAtivos(){ return Object.values(ST.players).filter(plAtivo); }
+function stLabel(p){ return TX(stDef(plSt(p)).t); }
+
+function squadCard(p){
+  const ss=ST.sessions.filter(s=>s._pk===p.id);
+  const post=ss.filter(s=>s.type==="post");
+  const tAU=post.reduce((a,s)=>a+s.ua,0);
+  const bg=avc(p.name);
+  const ph=p.photo
+    ?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`
+    :`<div class="sq-avatar" style="background:${bg}">${avi(p.name)}</div>`;
+  const ativo=plAtivo(p), d=stDef(plSt(p));
+  /* a faixa diz o motivo e desde quando — a leitura tem de ser imediata */
+  const banda=ativo?"":`<div class="sq-band" style="background:${d.c}">
+      <i class="ti ${d.i}"></i><span>${stLabel(p)}</span>
+      ${p.statusDesde?`<span class="sq-band-d">· ${fd(p.statusDesde)}</span>`:""}
+    </div>`;
+  const nota=(!ativo&&p.statusNota)?`<div class="sq-note">${_esc(p.statusNota)}</div>`:"";
+  const botoes=ativo
+    ?`<button class="sq-btn" onclick="selGo('${p.id}','pre')"><i class="ti ti-sun" style="font-size:12px"></i> <span data-i18n="data.nav.pre">Pre</span></button>
+      <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> <span data-i18n="data.nav.post">Post</span></button>
+      <button class="sq-btn" onclick="openST('${p.id}')" title="${_esc(TX("data.st.setStatus"))}"><i class="ti ti-user-exclamation" style="font-size:12px"></i></button>
+      <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>`
+    :`<button class="sq-btn sq-back" onclick="reativar('${p.id}')"><i class="ti ti-rotate" style="font-size:12px"></i> <span data-i18n="data.st.reactivate">Reactivate</span></button>
+      <button class="sq-btn" onclick="openST('${p.id}')"><i class="ti ti-user-exclamation" style="font-size:12px"></i></button>
+      <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>`;
+  return `<div class="sq-card${ativo?"":" out"}">
+    ${banda}
+    <div class="sq-photo" onclick="openPM('${p.id}')">${ph}</div>
+    <div class="sq-info" onclick="openPM('${p.id}')">
+      <div class="sq-name">${p.name}</div>
+      <div class="sq-meta">${post.length} ${TX("data.pdf.thSessions").toLowerCase()} · ${tAU} AU${ativo?"":" · "+TX("data.st.collectionStopped")}</div>
+    </div>
+    ${nota}
+    <div class="sq-btns">${botoes}</div>
+  </div>`;
+}
 function renderSquad(){
   const g=document.getElementById("squadGrid");if(!g)return;
+  const todos=Object.values(ST.players);
+  const ativos=todos.filter(plAtivo), fora=todos.filter(p=>!plAtivo(p));
   let html="";
-  Object.values(ST.players).forEach(p=>{
-    const ss=ST.sessions.filter(s=>s._pk===p.id);
-    const post=ss.filter(s=>s.type==="post");
-    const tAU=post.reduce((a,s)=>a+s.ua,0);
-    const bg=avc(p.name);
-    const ph=p.photo
-      ?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`
-      :`<div class="sq-avatar" style="background:${bg}">${avi(p.name)}</div>`;
-    html+=`<div class="sq-card">
-      <div class="sq-photo" onclick="openPM('${p.id}')">${ph}</div>
-      <div class="sq-info" onclick="openPM('${p.id}')">
-        <div class="sq-name">${p.name}</div>
-        <div class="sq-meta">${post.length} sessions · ${tAU} AU</div>
-      </div>
-      <div class="sq-btns">
-        <button class="sq-btn" onclick="selGo('${p.id}','pre')"><i class="ti ti-sun" style="font-size:12px"></i> <span data-i18n="data.nav.pre">Pre</span></button>
-        <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> <span data-i18n="data.nav.post">Post</span></button>
-        <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
-      </div>
-    </div>`;
-  });
+  /* só divide em dois blocos quando ha alguem afastado */
+  if(fora.length) html+=grupoHdr(TX("data.st.squadActive"),ativos.length);
+  ativos.forEach(p=>{html+=squadCard(p);});
   html+=`<div class="sq-add" onclick="openAP()"><i class="ti ti-user-plus"></i><span data-i18n="data.squad.add">Add goalkeeper</span></div>`;
+  if(fora.length){
+    html+=grupoHdr(TX("data.st.squadOut"),fora.length);
+    fora.forEach(p=>{html+=squadCard(p);});
+  }
   g.innerHTML=html;
+}
+function grupoHdr(t,n){
+  return `<div class="sq-group"><span class="sq-group-t">${t}</span><span class="sq-group-l"></span><span class="sq-group-n">${n}</span></div>`;
 }
 
 window.selGo=function(id,tab){
@@ -1150,6 +1265,52 @@ window.apOK=function(){
   showToast('"'+name+'" added!');
   rtSavePlayer({name,id:key});
   if(_apPh)rtSavePhoto(key,_apPh);
+};
+
+// ── STATUS MODAL ──────────────────────────────────────────
+let _stId=null,_stSel="ativo";
+window.openST=function(id){
+  const p=ST.players[id];if(!p)return;
+  _stId=id;_stSel=plSt(p);
+  document.getElementById("stWho").textContent=p.name;
+  document.getElementById("stDate").value=p.statusDesde||new Date().toISOString().slice(0,10);
+  document.getElementById("stNote").value=p.statusNota||"";
+  stPaint();
+  document.getElementById("stOv").classList.add("open");
+};
+window.closeST=function(){document.getElementById("stOv").classList.remove("open");};
+function stPaint(){
+  document.getElementById("stOpts").innerHTML=STATUS.map(d=>
+    `<button class="st-opt${d.k===_stSel?" on":""}" onclick="stPick('${d.k}')">
+       <span class="st-dot" style="background:${d.c}"></span><i class="ti ${d.i}"></i>${TX(d.t)}
+     </button>`).join("");
+  /* data e observacao só fazem sentido quando ha afastamento */
+  document.getElementById("stExtra").style.display=_stSel==="ativo"?"none":"block";
+}
+window.stPick=function(k){_stSel=k;stPaint();};
+window.stOK=function(){
+  const p=ST.players[_stId];if(!p)return;
+  if(_stSel==="ativo"){ delete p.status;delete p.statusDesde;delete p.statusNota; }
+  else{
+    p.status=_stSel;
+    p.statusDesde=document.getElementById("stDate").value||new Date().toISOString().slice(0,10);
+    p.statusNota=document.getElementById("stNote").value.trim();
+    /* quem esta fora nao pode seguir selecionado para coleta */
+    if(ST.currentPlayer===_stId)ST.currentPlayer="";
+  }
+  save();closeST();renderSquad();renderPSelect();
+  if(typeof renderReportBuilder==="function")renderReportBuilder();
+  renderAll();
+  rtSaveStatus(p);
+  showToast(_stSel==="ativo"?p.name+" "+TX("data.st.backActive"):TX("data.st.saved"));
+};
+window.reativar=function(id){
+  const p=ST.players[id];if(!p)return;
+  delete p.status;delete p.statusDesde;delete p.statusNota;
+  save();renderSquad();renderPSelect();
+  if(typeof renderReportBuilder==="function")renderReportBuilder();
+  rtSaveStatus(p);
+  showToast(p.name+" "+TX("data.st.backActive"));
 };
 
 // Player profile modal
@@ -1272,10 +1433,12 @@ window.switchPlayer=function(){ST.currentPlayer=document.getElementById("playerS
 function renderPSelect(){
   const sel=document.getElementById("playerSelect"),cur=ST.currentPlayer||sel.value;
   sel.innerHTML='<option data-i18n="data.selectDots" value="">Select…</option>';
-  Object.values(ST.players).forEach(p=>{
+  /* afastado nao aparece aqui: e assim que a coleta para de verdade */
+  plsAtivos().forEach(p=>{
     const o=document.createElement("option");o.value=p.id;o.textContent=p.name;sel.appendChild(o);
   });
-  if(cur)sel.value=cur;
+  if(cur&&ST.players[cur]&&plAtivo(ST.players[cur]))sel.value=cur;
+  else if(cur){ST.currentPlayer="";sel.value="";}
 }
 
 // ── PSE ──
@@ -1714,7 +1877,7 @@ window.showSection=function(id){
     cb.style.display=(id==="squad")?"none":"flex";
     // Auto-select first player if none selected
     if(!ST.currentPlayer){
-      const players=Object.values(ST.players);
+      const players=plsAtivos();
       if(players.length>0){
         ST.currentPlayer=players[0].id;
         const sel=document.getElementById("playerSelect");
@@ -1870,7 +2033,7 @@ function renderAll(){
   renderPSelect();
   // Auto-select first player if none selected and players exist
   if(!ST.currentPlayer){
-    const players=Object.values(ST.players);
+    const players=plsAtivos();
     if(players.length>0){ST.currentPlayer=players[0].id;}
   }
   if(ST.currentPlayer){
@@ -1910,15 +2073,19 @@ function renderReportBuilder(){
   const grid=document.getElementById("rptPlayerGrid");
   const players=Object.values(ST.players);
   if(!players.length){grid.innerHTML='<p style="font-size:13px;color:var(--mt)">'+TX("data.rpt.noGkYet")+'</p>';return;}
+  /* afastados continuam listados — o historico deles e relatavel —,
+     mas vem desmarcados e com o motivo a vista */
   grid.innerHTML=players.map(p=>{
     const ini=p.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
-    return`<label class="check-item"><input type="checkbox" value="${p.id}" checked><div class="chk-avatar">${ini}</div>${p.name}</label>`;
+    const ativo=plAtivo(p), d=stDef(plSt(p));
+    const tag=ativo?"":`<span style="margin-left:5px;font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;background:${d.c};color:#fff">${stLabel(p)}</span>`;
+    return`<label class="check-item"${ativo?"":' style="opacity:.75"'}><input type="checkbox" value="${p.id}"${ativo?" checked":""}><div class="chk-avatar">${ini}</div>${p.name}${tag}</label>`;
   }).join("");
   // Solo select
   const ss=document.getElementById("soloPlayerSelect");
   const curSolo=ss.value;
   ss.innerHTML='<option data-i18n="data.rpt.chooseGk" value="">Choose a goalkeeper…</option>';
-  players.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name;ss.appendChild(o);});
+  players.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name+(plAtivo(p)?"":" · "+stLabel(p));ss.appendChild(o);});
   if(curSolo)ss.value=curSolo;
 }
 
@@ -2248,7 +2415,7 @@ window.generateReport=async function(){
     players=[p];
   } else {
     const checked=[];document.querySelectorAll("#rptPlayerGrid input:checked").forEach(cb=>{const p=ST.players[cb.value];if(p)checked.push(p);});
-    players=checked.length?checked:Object.values(ST.players);
+    players=checked.length?checked:plsAtivos();
     if(!players.length){showToast(TX("data.rpt.noGk"),"err");return;}
   }
 
@@ -2289,7 +2456,7 @@ window.generateReport=async function(){
       html+=`<div class="rpt-period-block"><div class="period-hdr" style="border-color:${P}"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>`;
       // Comparison table
       html+=`<table class="rpt-table"><thead><tr><th>${TX("data.goalkeeper")}</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.pdf.thAvgAU")}</th><th>${TX("data.pdf.thAvgRPE")}</th><th>${TX("data.pdf.thAvgDur")}</th>${activeWb().map(f=>`<th>${_esc(f.label)}</th>`).join("")}<th>${TX("data.acwr")}</th><th>${TX("data.pdf.thZone")}</th></tr></thead><tbody>`;
-      players.forEach(p=>{const m=calcM(filterS(p.id,period));html+=`<tr><td>${p.name}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td>${activeWb().map(f=>`<td>${m.wb[f.key]||"—"}</td>`).join("")}<td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
+      players.forEach(p=>{const m=calcM(filterS(p.id,period));const _d=stDef(plSt(p));html+=`<tr><td>${p.name}${plAtivo(p)?"":`<span style="margin-left:4pt;font-size:6.5pt;font-weight:700;padding:1pt 3pt;border-radius:2pt;background:${_d.c};color:#fff">${stLabel(p).toUpperCase()}</span>`}</td><td>${m.post.length}</td><td>${m.tUA||"—"}</td><td>${m.aUA||"—"}</td><td>${m.aPSE}</td><td>${m.aDur||"—"}</td>${activeWb().map(f=>`<td>${m.wb[f.key]||"—"}</td>`).join("")}<td class="${acls(m.acwr)}">${m.acwr}</td><td>${zpill(m.aUA)}</td></tr>`;});
       html+=`</tbody></table>`;
       // Group time series
       if(cfg.ua){
@@ -2314,6 +2481,13 @@ window.generateReport=async function(){
         <div class="title">${player.name}</div>
         <div class="sub">${TX("data.pdf.indivSub")} — ${periods.length} ${periods.length>1?TX("data.pdf.periods"):TX("data.pdf.period")}</div>
       </div>`;
+    /* o leitor precisa saber, ao bater o olho, que a serie tem um fim */
+    if(!plAtivo(player)){
+      const d=stDef(plSt(player));
+      html+=`<div style="margin:0 0 10pt;padding:8pt 11pt;border-left:3pt solid ${d.c};background:#f8f8f6;font-size:9pt;color:#333">
+        <strong style="color:${d.c}">${stLabel(player)}</strong>${player.statusDesde?` — ${TX("data.st.rptBadge")} ${fdfull(player.statusDesde)}`:""}${player.statusNota?`<div style="margin-top:3pt;color:#666;font-size:8.5pt">${_esc(player.statusNota)}</div>`:""}
+      </div>`;
+    }
     periods.forEach((period,pidx)=>{
       html+=buildPeriodBlock(player,period,pidx,cfg,`pl${pi}`,P);
       if(pidx<periods.length-1)html+=`<hr class="rpt-divider">`;

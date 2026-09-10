@@ -250,6 +250,18 @@
     'data.set.backup':'Data backup','data.set.export':'Export JSON','data.set.import':'Import JSON',
     'data.set.phClub':'e.g. Al Ain FC','data.set.phSub':'e.g. Goalkeeper Coach · Futsal',
     /* squad */
+    /* --- situacao do goleiro (afastamento) --- */
+    'data.st.title':'Goalkeeper status','data.st.current':'Current status',
+    'data.st.active':'Active','data.st.loan':'On loan','data.st.injury':'Long-term injury',
+    'data.st.callup':'National team','data.st.left':'Left the club',
+    'data.st.since':'Since','data.st.note':'Note','data.st.notePh':'Destination club, expected return, details…',
+    'data.st.squadActive':'Squad','data.st.squadOut':'Out of the squad',
+    'data.st.collectionStopped':'collection stopped',
+    'data.st.reactivate':'Reactivate','data.st.setStatus':'Status',
+    'data.st.saved':'Status updated.','data.st.backActive':'is back in the squad.',
+    'data.st.blocked':'Collection is stopped for this goalkeeper.',
+    'data.st.histKept':'History kept — nothing was deleted.',
+    'data.st.rptBadge':'Collection stopped on',
     'data.squad.add':'Add goalkeeper','data.squad.photo':'Tap to add photo (optional)',
     'data.squad.name':'Full name','data.squad.addBtn':'Add to squad','data.squad.phName':'e.g. Ahmed Al Mansouri',
     /* tipos de treino */
@@ -1188,6 +1200,18 @@
     'data.set.backup':'Backup dos dados','data.set.export':'Exportar JSON','data.set.import':'Importar JSON',
     'data.set.phClub':'ex.: Al Ain FC','data.set.phSub':'ex.: Treinador de Goleiros · Futsal',
     /* squad */
+    /* --- situacao do goleiro (afastamento) --- */
+    'data.st.title':'Situação do goleiro','data.st.current':'Situação atual',
+    'data.st.active':'Ativo','data.st.loan':'Emprestado','data.st.injury':'Lesão de longa duração',
+    'data.st.callup':'Convocado','data.st.left':'Saída do clube',
+    'data.st.since':'Desde','data.st.note':'Observação','data.st.notePh':'Clube de destino, previsão de retorno, detalhes…',
+    'data.st.squadActive':'Elenco','data.st.squadOut':'Fora do elenco',
+    'data.st.collectionStopped':'coleta encerrada',
+    'data.st.reactivate':'Reativar','data.st.setStatus':'Situação',
+    'data.st.saved':'Situação atualizada.','data.st.backActive':'voltou ao elenco.',
+    'data.st.blocked':'A coleta deste goleiro está encerrada.',
+    'data.st.histKept':'Histórico mantido — nada foi apagado.',
+    'data.st.rptBadge':'Coleta encerrada em',
     'data.squad.add':'Adicionar goleiro','data.squad.photo':'Toque para adicionar foto (opcional)',
     'data.squad.name':'Nome completo','data.squad.addBtn':'Adicionar ao elenco','data.squad.phName':'ex.: Ahmed Al Mansouri',
     /* tipos de treino */
