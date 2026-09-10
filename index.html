@@ -521,11 +521,11 @@ function loadStats(){
   _rtdb.ref(p+'/load/players').get().then(function(s){
     var pl=s.val()||{};
     var ativos=Object.keys(pl).filter(function(k){return _gkAtivo(pl[k]);}).length;
-    var fora=Object.keys(pl).length-ativos;
     document.getElementById('st-gk').textContent=ativos;
     /* o afastado nao some do painel sem aviso: fica um rodape discreto */
+    var resumo=_gkResumoFora(pl);
     var nota=document.getElementById('st-gk-out');
-    if(nota){ nota.textContent=fora?'+'+fora+' '+TX('hub.st.outShort','out'):''; nota.style.display=fora?'block':'none'; }
+    if(nota){ nota.textContent=resumo; nota.style.display=resumo?'block':'none'; }
   }).catch(function(e){console.error(e);});
 }
 function refresh(){applyIdentity();loadStats();}
@@ -541,10 +541,23 @@ function _fdBR(iso){
 }
 /* situacao do goleiro no Load Control: sem status ou 'ativo' = no elenco.
    Emprestado, lesionado, convocado ou fora do clube nao contam no painel. */
-var HUB_ST={emprestado:{c:'#B45309',t:'hub.st.loan',d:'On loan'},
-            lesao:{c:'#B91C1C',t:'hub.st.injury',d:'Injured'},
-            convocado:{c:'#1D4ED8',t:'hub.st.callup',d:'National team'},
-            saida:{c:'#57534E',t:'hub.st.left',d:'Left the club'}};
+var HUB_ST={emprestado:{c:'#B45309',t:'hub.st.loan',d:'On loan',p:'hub.st.loanP',dp:'on loan',p2:'hub.st.loanP2',dp2:'on loan'},
+            lesao:{c:'#B91C1C',t:'hub.st.injury',d:'Injured',p:'hub.st.injuryP',dp:'injured',p2:'hub.st.injuryP2',dp2:'injured'},
+            convocado:{c:'#1D4ED8',t:'hub.st.callup',d:'National team',p:'hub.st.callupP',dp:'on national team',p2:'hub.st.callupP2',dp2:'on national team'},
+            saida:{c:'#57534E',t:'hub.st.left',d:'Left the club',p:'hub.st.leftP',dp:'left the club',p2:'hub.st.leftP2',dp2:'left the club'}};
+var HUB_ST_ORD=['emprestado','lesao','convocado','saida'];
+/* o rodape do card diz o motivo, nao um generico: "1 emprestado · 1 lesionado" */
+function _gkResumoFora(pl){
+  var cont={};
+  Object.keys(pl).forEach(function(k){
+    var st=pl[k]&&pl[k].status;
+    if(st&&st!=='ativo'&&HUB_ST[st]) cont[st]=(cont[st]||0)+1;
+  });
+  return HUB_ST_ORD.filter(function(k){return cont[k];})
+    .map(function(k){ var d=HUB_ST[k];
+      return cont[k]+' '+(cont[k]>1?TX(d.p2,d.dp2):TX(d.p,d.dp)); })
+    .join(' · ');
+}
 function _gkAtivo(g){ return !g || !g.status || g.status==='ativo'; }
 function _gkTag(g){
   var d=HUB_ST[g&&g.status]; if(!d) return '';
