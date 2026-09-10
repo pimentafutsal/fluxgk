@@ -117,6 +117,10 @@
     'hub.mod.profile':'GK Profile',
     'hub.mod.profile.d':'Assessment, development and reports',
     'hub.mod.profile.t':'GK PROFILE',
+    'hub.mod.scouting':'Scouting',
+    'hub.mod.scouting.d':'Goalkeepers across leagues and countries',
+    'hub.mod.scouting.t':'SCOUTING',
+    'scout.personal':'personal archive, across clubs and seasons',
 
     /* --- hub: avisos --- */
     'hub.msg.saved':'Saved',
@@ -1051,6 +1055,10 @@
     'hub.mod.profile':'Perfil do Goleiro',
     'hub.mod.profile.d':'Avaliação, evolução e relatórios',
     'hub.mod.profile.t':'PERFIL GK',
+    'hub.mod.scouting':'Scouting',
+    'hub.mod.scouting.d':'Goleiros por liga, país e nacionalidade',
+    'hub.mod.scouting.t':'SCOUTING',
+    'scout.personal':'acervo pessoal, atravessa clubes e temporadas',
 
     /* --- hub: avisos --- */
     'hub.msg.saved':'Salvo',

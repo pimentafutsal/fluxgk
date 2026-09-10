@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FluxGK · Scouting</title>
+<script src="fluxgk-i18n.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0a0a; --paper:#fafaf7; --surface:#fff; --surface2:#f4f4f1;
+  --border:#e5e5e5; --border2:#d4d4d4; --mute:#737373;
+  --accent:#00a8e8; --green:#16a34a; --red:#dc2626; --amber:#d97706;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
+.nav{background:var(--ink);color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;gap:26px;position:sticky;top:0;z-index:50}
+.nav .wm{font-weight:700;font-size:18px;letter-spacing:-.04em}
+.nav .wm span{color:var(--accent)}
+.nav .sub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase}
+.ntab{background:none;border:0;color:rgba(255,255,255,.55);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;padding:6px 10px;border-radius:6px;cursor:pointer}
+.ntab:hover{color:#fff}
+.ntab.on{background:rgba(255,255,255,.14);color:#fff}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px}
+h1{font-size:22px;letter-spacing:-.03em}
+h2{font-size:15px;letter-spacing:-.02em;margin-bottom:12px}
+.sub{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.mb14{margin-bottom:14px}.mb20{margin-bottom:20px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+label.f{display:block}
+label.f>span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+input,select,textarea{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--border);
+  border-radius:7px;background:var(--surface);color:var(--ink);width:100%}
+textarea{resize:vertical;min-height:70px;line-height:1.55}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent)}
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:7px;border:1px solid var(--border2);
+  background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.p{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.dg{color:var(--red);border-color:#f3c4c4}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.gk{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 15px;cursor:pointer;transition:.12s}
+.gk:hover{border-color:var(--ink);transform:translateY(-1px)}
+.gkfoto{width:46px;height:46px;border-radius:9px;flex:none;object-fit:cover;background:var(--surface2);
+  border:1px solid var(--border);display:block}
+.gkini{width:46px;height:46px;border-radius:9px;flex:none;background:var(--surface2);border:1px solid var(--border);
+  display:grid;place-items:center;font-weight:700;font-size:15px;color:var(--mute)}
+.fotobox{width:104px;height:104px;border-radius:12px;border:1px dashed var(--border2);background:var(--surface2);
+  display:grid;place-items:center;cursor:pointer;overflow:hidden;flex:none;text-align:center}
+.fotobox:hover{border-color:var(--ink)}
+.fotobox img{width:100%;height:100%;object-fit:cover}
+.fotobox .ph{font-size:11px;color:var(--mute);padding:8px;line-height:1.4}
+.gk .nm{font-weight:700;font-size:15px;letter-spacing:-.02em}
+.gk .cl{font-size:12px;color:var(--mute);margin-top:2px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.tag{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;
+  border-radius:5px;background:var(--surface2);color:var(--mute);border:1px solid var(--border)}
+.tag.a{background:#fff4e5;color:var(--amber);border-color:#f5dcb8}
+.tag.hi{background:#fee;color:var(--red);border-color:#f3c4c4}
+.tag.pend{background:#eef6ff;color:#185fa5;border-color:#c3ddf7}
+.tag.sel{background:#e9f7ee;color:var(--green);border-color:#bfe4cd}
+.empty{text-align:center;padding:52px 20px;color:var(--mute)}
+.fbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}
+.areahead{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+.areahead b{font-size:14px}
+.nota{font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:5px;background:var(--surface2);border:1px solid var(--border)}
+.n1,.n2{background:#fee;color:var(--red);border-color:#f3c4c4}
+.n3{background:#fff4e5;color:var(--amber);border-color:#f5dcb8}
+.n4,.n5{background:#e9f7ee;color:var(--green);border-color:#bfe4cd}
+.quando{font-family:var(--mono);font-size:9.5px;color:var(--mute);letter-spacing:.04em}
+.hist{border-left:2px solid var(--border);padding-left:12px;margin-top:8px}
+.hist div{font-size:12.5px;color:var(--mute);margin-bottom:5px;line-height:1.5}
+.stars{letter-spacing:2px;cursor:pointer;user-select:none;font-size:17px;color:var(--border2)}
+.stars b{color:var(--amber);font-weight:400}
+.back{background:none;border:0;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--mute);cursor:pointer;padding:0;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+.chip{font-size:12px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surface);cursor:pointer}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:10px 18px;border-radius:22px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:99}
+.toast.on{opacity:1}
+.aviso{background:#fff9e6;border:1px solid #f0dfae;border-radius:9px;padding:11px 14px;font-size:12.5px;color:#7a5b12;line-height:1.55}
+</style>
+</head>
+<body>
+
+<div class="nav" id="nav">
+  <div>
+    <div class="wm">Flux<span>GK</span></div>
+    <div class="sub">Scouting</div>
+  </div>
+  <button class="ntab on" data-p="lista">Goleiros</button>
+  <button class="ntab" data-p="mapa">Mapa</button>
+  <button class="ntab" data-p="ajustes">Ajustes</button>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:14px">
+    <span id="sync" title="" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)"></span>
+    <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4)" id="contador"></span>
+  </div>
+</div>
+<div id="ctxStrip" style="background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 24px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--mute)">
+  <span id="ctx-coach">—</span> · <span data-i18n="scout.personal">acervo pessoal, atravessa clubes e temporadas</span>
+</div>
+
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   FluxGK · Scouting — protótipo isolado
+   Ainda NÃO faz parte do sistema: não fala com o hub nem com o
+   Firebase. Guarda tudo no navegador e exporta em JSON, para que a
+   integração futura seja só uma importação.
+   ══════════════════════════════════════════════════════════════════ */
+
+const AREAS = [
+  { k:'defensivas',     nome:'Ações defensivas' },
+  { k:'ofensivas',      nome:'Ações ofensivas' },
+  { k:'comportamental', nome:'Aspectos comportamentais' },
+  { k:'tatica',         nome:'Tática' },
+  { k:'adaptabilidade', nome:'Adaptabilidade' }
+];
+const CHAVE = 'fluxgk_scouting_v1';
+let DB = { gks:[], config:{ ligas:[], etiquetas:[], paises:[] } };
+let pagina = 'lista', abertoId = null;
+let filtros = { q:'', idade:'', pais:'', liga:'', pe:'', altura:'', selecao:'', etiqueta:'', visto:'', prio:'' };
+
+/* ══════════════════════════════════════════════════════════════════
+   PERSISTÊNCIA
+   Nuvem em users/{uid}/scouting — pessoal, atravessa clubes e
+   temporadas, como a biblioteca de exercícios do Planner.
+   O navegador guarda uma cópia só para a tela abrir instantânea;
+   a fonte de verdade é o Firebase.
+   ══════════════════════════════════════════════════════════════════ */
+let _db = null, _uid = null, _pronto = false, _ouvindo = false, _erroNuvem = '';
+let _sincTimer = null;
+
+function _dot(cor, titulo){
+  const el = document.getElementById('sync');
+  if(el){ el.style.background = cor; el.title = titulo || ''; }
+}
+function _base(){ return 'users/' + _uid + '/scouting'; }
+
+function carregar(){
+  try{
+    const cru = localStorage.getItem(CHAVE);
+    if(cru){ const d = JSON.parse(cru); DB = Object.assign(DB, d); }
+  }catch(e){ console.warn('[scouting] cache local ilegível:', e); }
+  DB.gks = DB.gks || [];
+  DB.config = Object.assign({ ligas:[], etiquetas:[], paises:[] }, DB.config||{});
+}
+
+/* grava já no navegador e agenda a subida para a nuvem */
+function salvar(){
+  try{ localStorage.setItem(CHAVE, JSON.stringify(DB)); }
+  catch(e){ console.warn('[scouting] cache local cheio:', e); }
+  agendarSubida();
+}
+function agendarSubida(){
+  if(!_pronto) { _dot('#d97706', 'aguardando conexão'); return; }
+  clearTimeout(_sincTimer);
+  _sincTimer = setTimeout(subirTudo, 600);
+}
+let _enviado = Object.create(null);   /* id -> JSON já gravado */
+function subirTudo(){
+  if(!_pronto) return;
+  const upd = {};
+  let n = 0;
+  DB.gks.forEach(g => {
+    const j = JSON.stringify(g);
+    if(_enviado[g.id] === j) return;      /* nada mudou nesse goleiro */
+    upd['goalkeepers/' + g.id] = g; _enviado[g.id] = j; n++;
+  });
+  const jc = JSON.stringify(DB.config);
+  if(_enviado.__config !== jc){ upd['config'] = DB.config; _enviado.__config = jc; n++; }
+  if(!n){ _dot('#16a34a', 'salvo na nuvem'); return; }
+  _dot('#d97706', 'gravando…');
+  _db.ref(_base()).update(upd)
+    .then(()=> _dot('#16a34a', 'salvo na nuvem'))
+    .catch(e=>{
+      _enviado = Object.create(null);      /* falhou: reenvia tudo na próxima */
+      _dot('#dc2626', 'falhou: ' + e.message); console.error('[scouting] gravação:', e);
+    });
+}
+function apagarNaNuvem(id){
+  if(!_pronto) return;
+  _db.ref(_base() + '/goalkeepers/' + id).remove()
+    .catch(e=>{ _dot('#dc2626', 'falhou'); console.error('[scouting] remoção:', e); });
+}
+
+/* ---------- handshake com o hub ---------- */
+const SDK = [
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js'
+];
+function carregaSDK(src){
+  return new Promise((ok, err)=>{
+    if(document.querySelector('script[src="'+src+'"]')) return ok();
+    const s = document.createElement('script');
+    s.src = src; s.onload = ()=>ok(); s.onerror = ()=>err(new Error('SDK: '+src));
+    document.head.appendChild(s);
+  });
+}
+window.addEventListener('message', async e=>{
+  const d = e.data;
+  if(!d || d.type !== 'FLUXGK_CONTEXT') return;
+  if(window.parent !== window && e.source !== window.parent) return;
+  if(!d.uid || !d.firebaseConfig){ console.error('[scouting] contexto incompleto', d); return; }
+  if(d.lang) try{ FluxGKI18n.setLang(d.lang, false); }catch(err){}
+  _uid = d.uid;
+  const co = d.coach || {}, c = d.club || {};
+  const el = document.getElementById('ctx-coach');
+  if(el) el.textContent = co.name || '—';
+  /* a cor do clube dá identidade sem tornar o acervo dependente dele */
+  if(c.color && /^#[0-9a-f]{3,8}$/i.test(String(c.color).trim())){
+    document.documentElement.style.setProperty('--accent', c.color.trim());
+  }
+  if(_pronto) return;
+  try{
+    if(!window.firebase){ for(const s of SDK) await carregaSDK(s); }
+    if(!firebase.apps.length) firebase.initializeApp(d.firebaseConfig);
+    _db = firebase.database();
+    firebase.auth().onAuthStateChanged(u=>{
+      if(!u){ console.error('[scouting] sem sessão — entre pelo hub.'); _dot('#dc2626','sem sessão'); return; }
+      _pronto = true;
+      console.log('[scouting] autenticado como', u.uid);
+      ligarListener();
+      agendarSubida();
+    });
+  }catch(err){
+    console.error('[scouting] Firebase:', err);
+    _dot('#dc2626', err.message);
+  }
+});
+try{ if(window.parent && window.parent !== window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'scouting'},'*'); }catch(e){}
+
+/* O listener só sobe DEPOIS do login: ligado antes, as regras negam a
+   leitura, o Firebase cancela a inscrição em silêncio e ela nunca volta. */
+function ligarListener(){
+  if(_ouvindo || !_db || !_uid) return;
+  _ouvindo = true;
+  _db.ref(_base()).on('value', snap=>{
+    const d = snap.val();
+    _erroNuvem = '';
+    if(d){
+      DB.gks = d.goalkeepers ? Object.values(d.goalkeepers).filter(x=>x && x.id) : [];
+      DB.config = Object.assign({ ligas:[], etiquetas:[], paises:[] }, d.config||{});
+      try{ localStorage.setItem(CHAVE, JSON.stringify(DB)); }catch(e){}
+      _dot('#16a34a', 'sincronizado');
+      console.log('[scouting] goleiros carregados:', DB.gks.length);
+    } else {
+      /* nuvem vazia: se houver algo digitado no protótipo, oferece subir */
+      console.log('[scouting] nuvem vazia');
+      _dot('#16a34a', 'sincronizado');
+      if(DB.gks.length) subirTudo();
+    }
+    render();
+  }, err=>{
+    _ouvindo = false;
+    _erroNuvem = (err && err.message) || String(err);
+    console.error('[scouting] leitura negada:', err);
+    _dot('#dc2626', _erroNuvem);
+    render();
+  });
+}
+
+/* ---------- utilidades ---------- */
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hoje = () => new Date().toISOString().slice(0,10);
+const uid  = () => 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function fd(iso){
+  if(!iso) return '—';
+  const d = new Date(iso + 'T12:00');
+  return isNaN(d) ? iso : d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+}
+function toast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('on');
+  clearTimeout(t._x); t._x = setTimeout(()=>t.classList.remove('on'), 2600);
+}
+/* busca sem acento e sem diferença de maiúsculas */
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+
+/* iniciais para quando não há foto — duas letras, como no escudo do hub */
+function iniciais(nome){
+  const p = String(nome||'').trim().split(/\s+/).filter(Boolean);
+  if(!p.length) return 'GK';
+  if(p.length === 1) return p[0].slice(0,2).toUpperCase();
+  return (p[0][0] + p[p.length-1][0]).toUpperCase();
+}
+/* A foto é só para reconhecer o rosto num cartão de 46px, então é reduzida
+   com força antes de guardar: uma foto de celular tem vários MB e o banco
+   inteiro do sistema hoje usa ~21 MB. Aqui cada uma fica em poucos KB. */
+function encolherFoto(dataUrl, lado, q){
+  return new Promise(ok=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const L = lado || 240;
+      const e = Math.min(L / img.width, L / img.height, 1);
+      const w = Math.max(1, Math.round(img.width * e)), h = Math.max(1, Math.round(img.height * e));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      try{ ok(c.toDataURL('image/jpeg', q || 0.72)); }catch(e2){ ok(dataUrl); }
+    };
+    img.onerror = ()=> ok(dataUrl);
+    img.src = dataUrl;
+  });
+}
+function idade(g){
+  if(!g.anoNasc) return null;
+  return new Date().getFullYear() - Number(g.anoNasc);
+}
+function faixaIdade(g){
+  const i = idade(g);
+  if(i == null) return '';
+  return i <= 25 ? 'ate25' : i <= 30 ? 'ate30' : 'mais30';
+}
+const ROTULO_FAIXA = { ate25:'até 25', ate30:'até 30', mais30:'+30' };
+
+/* valor atual de uma área: a atualização mais recente que a tocou,
+   ou a leitura inicial se nenhuma tocou */
+function areaAtual(g, k){
+  let melhor = null;
+  const li = g.leitura && g.leitura[k];
+  if(li && (String(li.texto||'').trim() || li.nota)) melhor = { nota:li.nota, texto:li.texto, data:g.leitura.data, origem:'inicial' };
+  (g.atualizacoes||[]).forEach(u=>{
+    const a = u.areas && u.areas[k];
+    if(!a || (!String(a.texto||'').trim() && !a.nota)) return;
+    if(!melhor || String(u.data||'') >= String(melhor.data||'')) melhor = { nota:a.nota, texto:a.texto, data:u.data, origem:'atualizacao', adversario:u.adversario };
+  });
+  return melhor;
+}
+function historicoArea(g, k){
+  const out = [];
+  const li = g.leitura && g.leitura[k];
+  if(li && (String(li.texto||'').trim() || li.nota)) out.push({ nota:li.nota, texto:li.texto, data:g.leitura.data, adversario:g.leitura.adversario });
+  (g.atualizacoes||[]).forEach(u=>{
+    const a = u.areas && u.areas[k];
+    if(a && (String(a.texto||'').trim() || a.nota)) out.push({ nota:a.nota, texto:a.texto, data:u.data, adversario:u.adversario });
+  });
+  return out.sort((x,y)=> String(y.data||'').localeCompare(String(x.data||'')));
+}
+function vistoEm(g){
+  let d = (g.leitura && g.leitura.data) || '';
+  (g.atualizacoes||[]).forEach(u=>{ if(String(u.data||'') > d) d = u.data; });
+  return d || '';
+}
+function mesesDesde(iso){
+  if(!iso) return 9999;
+  const d = new Date(iso + 'T12:00');
+  if(isNaN(d)) return 9999;
+  return (Date.now() - d.getTime()) / (1000*60*60*24*30.4);
+}
+/* um goleiro está "pendente" enquanto a leitura inicial não foi feita */
+function pendente(g){
+  if(!g.leitura) return true;
+  return !AREAS.some(a => { const x = g.leitura[a.k]; return x && (String(x.texto||'').trim() || x.nota); });
+}
+
+/* listas que alimentam os filtros: o que o treinador digitou + o que já existe nas fichas */
+function opcoes(campo){
+  const set = new Set((DB.config[campo === 'liga' ? 'ligas' : campo === 'pais' ? 'paises' : 'etiquetas'] || []).filter(Boolean));
+  DB.gks.forEach(g=>{
+    if(campo === 'liga' && g.liga) set.add(g.liga);
+    if(campo === 'pais') (g.nacionalidade||[]).forEach(p=>p&&set.add(p));
+    if(campo === 'etiqueta') (g.etiquetas||[]).forEach(t=>t&&set.add(t));
+  });
+  return [...set].sort((a,b)=>a.localeCompare(b));
+}
+
+/* ---------- filtro ---------- */
+function filtrados(){
+  const q = norm(filtros.q);
+  return DB.gks.filter(g=>{
+    if(q){
+      const alvo = norm([g.nome, g.nomeAlt, g.clube, g.liga, (g.nacionalidade||[]).join(' ')].join(' '));
+      if(alvo.indexOf(q) < 0) return false;
+    }
+    if(filtros.idade   && faixaIdade(g) !== filtros.idade) return false;
+    if(filtros.pais    && !(g.nacionalidade||[]).includes(filtros.pais)) return false;
+    if(filtros.liga    && g.liga !== filtros.liga) return false;
+    if(filtros.pe      && g.pe !== filtros.pe) return false;
+    if(filtros.altura  && g.altura !== filtros.altura) return false;
+    if(filtros.selecao && String(!!g.selecao) !== filtros.selecao) return false;
+    if(filtros.etiqueta&& !(g.etiquetas||[]).includes(filtros.etiqueta)) return false;
+    if(filtros.prio    && (g.prioridade||'') !== filtros.prio) return false;
+    if(filtros.visto){
+      const m = mesesDesde(vistoEm(g));
+      if(m > Number(filtros.visto)) return false;
+    }
+    return true;
+  }).sort((a,b)=> String(vistoEm(b)).localeCompare(String(vistoEm(a))));
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TELAS
+   ══════════════════════════════════════════════════════════════════ */
+function render(){
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('on', b.dataset.p === pagina && !abertoId));
+  document.getElementById('contador').textContent = DB.gks.length + ' goleiros';
+  const app = document.getElementById('app');
+  if(abertoId) app.innerHTML = telaFicha();
+  else if(pagina === 'mapa') app.innerHTML = telaMapa();
+  else if(pagina === 'ajustes') app.innerHTML = telaAjustes();
+  else app.innerHTML = telaLista();
+  ligarEventos();
+}
+
+/* ---------- lista ---------- */
+function selOpts(lista, atual, vazio){
+  return '<option value="">' + esc(vazio) + '</option>' +
+    lista.map(v=>`<option value="${esc(v)}"${v===atual?' selected':''}>${esc(v)}</option>`).join('');
+}
+function telaLista(){
+  const lista = filtrados();
+  const pend = DB.gks.filter(pendente).length;
+  return `
+  <div class="row" style="justify-content:space-between;align-items:flex-end" class="mb20">
+    <div><h1>Goleiros observados</h1>
+      <div class="sub" style="margin-top:4px">${DB.gks.length} no banco${pend?' · '+pend+' aguardando leitura':''}</div></div>
+  </div>
+
+  <div class="card mb14" style="margin-top:16px">
+    <h2>Anotar agora</h2>
+    <div class="row">
+      <label class="f" style="flex:2;min-width:180px"><span>Nome</span><input id="qNome" placeholder="Como você identifica"></label>
+      <label class="f" style="flex:2;min-width:160px"><span>Clube</span><input id="qClube" placeholder="Onde joga"></label>
+      <label class="f" style="flex:1.5;min-width:140px"><span>Liga</span><input id="qLiga" list="dlLigas" placeholder="Competição"></label>
+      <button class="btn p" id="qAdd">+ Adicionar</button>
+    </div>
+    <div class="sub" style="margin-top:9px">Três campos e pronto — a leitura completa você faz depois, revendo o jogo.</div>
+  </div>
+
+  <datalist id="dlLigas">${opcoes('liga').map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+
+  <div class="card mb14">
+    <div class="row" style="margin-bottom:11px">
+      <label class="f" style="flex:1;min-width:220px"><span>Buscar</span>
+        <input id="fq" value="${esc(filtros.q)}" placeholder="Nome, clube, liga, país…"></label>
+    </div>
+    <div class="fbar">
+      <label class="f"><span>Idade</span><select id="fIdade">
+        <option value="">Todas</option>
+        <option value="ate25"${filtros.idade==='ate25'?' selected':''}>até 25 anos</option>
+        <option value="ate30"${filtros.idade==='ate30'?' selected':''}>até 30 anos</option>
+        <option value="mais30"${filtros.idade==='mais30'?' selected':''}>mais de 30</option>
+      </select></label>
+      <label class="f"><span>Nacionalidade</span><select id="fPais">${selOpts(opcoes('pais'), filtros.pais, 'Todas')}</select></label>
+      <label class="f"><span>Liga</span><select id="fLiga">${selOpts(opcoes('liga'), filtros.liga, 'Todas')}</select></label>
+      <label class="f"><span>Pé</span><select id="fPe">
+        <option value="">Ambos</option>
+        <option value="D"${filtros.pe==='D'?' selected':''}>Direito</option>
+        <option value="E"${filtros.pe==='E'?' selected':''}>Esquerdo</option>
+      </select></label>
+      <label class="f"><span>Altura</span><select id="fAltura">
+        <option value="">Todas</option>
+        <option value="ate185"${filtros.altura==='ate185'?' selected':''}>até 1,85</option>
+        <option value="185a190"${filtros.altura==='185a190'?' selected':''}>1,85 – 1,90</option>
+        <option value="mais190"${filtros.altura==='mais190'?' selected':''}>acima de 1,90</option>
+      </select></label>
+      <label class="f"><span>Seleção</span><select id="fSelecao">
+        <option value="">Todos</option>
+        <option value="true"${filtros.selecao==='true'?' selected':''}>Convocado</option>
+        <option value="false"${filtros.selecao==='false'?' selected':''}>Não convocado</option>
+      </select></label>
+      <label class="f"><span>Etiqueta</span><select id="fEtiqueta">${selOpts(opcoes('etiqueta'), filtros.etiqueta, 'Todas')}</select></label>
+      <label class="f"><span>Visto há</span><select id="fVisto">
+        <option value="">Qualquer época</option>
+        <option value="3"${filtros.visto==='3'?' selected':''}>até 3 meses</option>
+        <option value="6"${filtros.visto==='6'?' selected':''}>até 6 meses</option>
+        <option value="12"${filtros.visto==='12'?' selected':''}>até 12 meses</option>
+      </select></label>
+      <label class="f"><span>Prioridade</span><select id="fPrio">
+        <option value="">Todas</option>
+        <option value="alta"${filtros.prio==='alta'?' selected':''}>Alta</option>
+        <option value="media"${filtros.prio==='media'?' selected':''}>Média</option>
+        <option value="baixa"${filtros.prio==='baixa'?' selected':''}>Baixa</option>
+      </select></label>
+    </div>
+    <div class="row" style="margin-top:11px">
+      <button class="btn sm" id="fLimpar">Limpar filtros</button>
+      <div class="sub" style="margin-left:auto">${lista.length} de ${DB.gks.length}</div>
+    </div>
+  </div>
+
+  ${_erroNuvem ? `<div class="aviso mb14">Não consegui ler a nuvem: ${esc(_erroNuvem)}. Os dados abaixo vêm da cópia deste navegador.</div>` : ''}
+  ${lista.length ? `<div class="grid">${lista.map(cartao).join('')}</div>`
+    : `<div class="card"><div class="empty">${DB.gks.length ? 'Nenhum goleiro com esses filtros.' : 'Ainda não há goleiros. Anote o primeiro acima, enquanto assiste ao jogo.'}</div></div>`}`;
+}
+
+function cartao(g){
+  const i = idade(g), v = vistoEm(g);
+  const media = (()=>{
+    const ns = AREAS.map(a=>areaAtual(g,a.k)).filter(x=>x&&x.nota).map(x=>Number(x.nota));
+    return ns.length ? (ns.reduce((a,b)=>a+b,0)/ns.length).toFixed(1) : null;
+  })();
+  return `<div class="gk" data-abrir="${g.id}">
+    <div style="display:flex;gap:11px;align-items:flex-start">
+      ${g.foto ? `<img class="gkfoto" src="${esc(g.foto)}" alt="">`
+               : `<div class="gkini">${esc(iniciais(g.nome))}</div>`}
+      <div style="min-width:0;flex:1">
+        <div class="nm">${esc(g.nome||'—')}</div>
+        <div class="cl">${esc(g.clube||'—')}${g.liga?' · '+esc(g.liga):''}</div>
+      </div>
+      ${media?`<span class="nota n${Math.round(media)}">${media}</span>`:''}
+    </div>
+    <div class="tags">
+      ${pendente(g)?'<span class="tag pend">leitura pendente</span>':''}
+      ${g.prioridade==='alta'?'<span class="tag hi">prioridade alta</span>':g.prioridade==='media'?'<span class="tag a">média</span>':''}
+      ${i!=null?`<span class="tag">${i} anos</span>`:''}
+      ${(g.nacionalidade||[]).slice(0,2).map(p=>`<span class="tag">${esc(p)}</span>`).join('')}
+      ${g.selecao?'<span class="tag sel">seleção</span>':''}
+      ${g.pe?`<span class="tag">pé ${g.pe==='D'?'dir':'esq'}</span>`:''}
+      ${(g.etiquetas||[]).slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}
+    </div>
+    <div class="quando" style="margin-top:9px">${v?'visto em '+fd(v):'sem observação'}</div>
+  </div>`;
+}
+
+/* ---------- ficha ---------- */
+function telaFicha(){
+  const g = DB.gks.find(x=>x.id===abertoId);
+  if(!g){ abertoId = null; return telaLista(); }
+  const i = idade(g);
+  return `
+  <button class="back" id="voltar">← Voltar para a lista</button>
+  <div class="card mb14">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div><h1>${esc(g.nome||'—')}</h1>
+        <div class="sub" style="margin-top:5px">${esc(g.clube||'—')}${g.liga?' · '+esc(g.liga):''}${i!=null?' · '+i+' anos':''}</div></div>
+      <button class="btn dg sm" id="apagar">Apagar</button>
+    </div>
+  </div>
+
+  <div class="card mb14">
+    <h2>Identificação</h2>
+    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div class="fotobox" id="fotoBox" title="Clique ou arraste uma imagem">
+          ${g.foto ? `<img src="${esc(g.foto)}" alt="">` : '<div class="ph">Clique ou arraste<br>uma foto</div>'}
+        </div>
+        <input type="file" id="fotoFile" accept="image/*" style="display:none">
+        ${g.foto ? '<button class="btn sm dg" id="fotoRm" style="margin-top:8px;width:104px">Remover</button>' : ''}
+      </div>
+      <div class="sub" style="flex:1;line-height:1.6;padding-top:4px">
+        A foto serve para reconhecer o rosto na lista.<br>
+        É reduzida para poucos KB antes de ser guardada — pode arrastar direto
+        um print do jogo ou uma imagem do site do clube.
+      </div>
+    </div>
+    <div class="fbar">
+      <label class="f"><span>Nome</span><input data-c="nome" value="${esc(g.nome||'')}"></label>
+      <label class="f"><span>Outra grafia</span><input data-c="nomeAlt" value="${esc(g.nomeAlt||'')}" placeholder="cirílico, cazaque…"></label>
+      <label class="f"><span>Clube</span><input data-c="clube" value="${esc(g.clube||'')}"></label>
+      <label class="f"><span>Liga</span><input data-c="liga" list="dlLigas2" value="${esc(g.liga||'')}"></label>
+      <label class="f"><span>Ano de nascimento</span><input data-c="anoNasc" type="number" min="1970" max="2015" value="${esc(g.anoNasc||'')}" placeholder="ex. 2001"></label>
+      <label class="f"><span>Nacionalidade</span><input data-c="nacionalidade" value="${esc((g.nacionalidade||[]).join(', '))}" placeholder="separe por vírgula"></label>
+      <label class="f"><span>Pé dominante</span><select data-c="pe">
+        <option value="">—</option>
+        <option value="D"${g.pe==='D'?' selected':''}>Direito</option>
+        <option value="E"${g.pe==='E'?' selected':''}>Esquerdo</option></select></label>
+      <label class="f"><span>Altura</span><select data-c="altura">
+        <option value="">—</option>
+        <option value="ate185"${g.altura==='ate185'?' selected':''}>até 1,85</option>
+        <option value="185a190"${g.altura==='185a190'?' selected':''}>1,85 – 1,90</option>
+        <option value="mais190"${g.altura==='mais190'?' selected':''}>acima de 1,90</option></select></label>
+      <label class="f"><span>Seleção nacional</span><select data-c="selecao">
+        <option value="">—</option>
+        <option value="1"${g.selecao?' selected':''}>Convocado</option>
+        <option value="0"${g.selecao===false?' selected':''}>Não convocado</option></select></label>
+      <label class="f"><span>Prioridade</span><select data-c="prioridade">
+        <option value="">—</option>
+        <option value="alta"${g.prioridade==='alta'?' selected':''}>Alta</option>
+        <option value="media"${g.prioridade==='media'?' selected':''}>Média</option>
+        <option value="baixa"${g.prioridade==='baixa'?' selected':''}>Baixa</option></select></label>
+      <label class="f"><span>Etiquetas</span><input data-c="etiquetas" list="dlTags" value="${esc((g.etiquetas||[]).join(', '))}" placeholder="joga com os pés, reativo…"></label>
+    </div>
+    <datalist id="dlLigas2">${opcoes('liga').map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+    <datalist id="dlTags">${opcoes('etiqueta').map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+    <label class="f" style="margin-top:12px"><span>Links de vídeo (um por linha, título | url)</span>
+      <textarea data-c="links" placeholder="Compacto 2026 | https://...">${esc((g.links||[]).map(l=>l.titulo+' | '+l.url).join('\n'))}</textarea></label>
+    ${(g.links||[]).length?`<div class="tags" style="margin-top:8px">${(g.links||[]).map(l=>`<a class="tag" href="${esc(l.url)}" target="_blank" rel="noopener">▶ ${esc(l.titulo||'vídeo')}</a>`).join('')}</div>`:''}
+  </div>
+
+  <div class="card mb14">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">Leitura</h2>
+      <button class="btn p sm" id="novaObs">+ Nova observação</button>
+    </div>
+    ${pendente(g) ? `<div class="aviso mb14">Leitura inicial ainda não feita. Preencha as cinco áreas quando rever o jogo — depois disso, cada nova observação pode tocar só o que chamou atenção.</div>` : ''}
+    <div id="obsForm"></div>
+    ${AREAS.map(a=>blocoArea(g,a)).join('')}
+  </div>
+
+  <div class="card">
+    <h2>Notas gerais</h2>
+    <textarea data-c="notasGerais" placeholder="Contexto, contato, o que investigar…">${esc(g.notasGerais||'')}</textarea>
+  </div>`;
+}
+
+function blocoArea(g, a){
+  const at = areaAtual(g, a.k);
+  const h  = historicoArea(g, a.k);
+  return `<div style="padding:13px 0;border-top:1px solid var(--border)">
+    <div class="areahead">
+      <b>${esc(a.nome)}</b>
+      ${at&&at.nota?`<span class="nota n${at.nota}">${at.nota}/5</span>`:'<span class="quando">sem leitura</span>'}
+      ${at&&at.data?`<span class="quando" style="margin-left:auto">${fd(at.data)}${at.adversario?' · vs '+esc(at.adversario):''}</span>`:''}
+    </div>
+    ${at&&at.texto?`<div style="font-size:13.5px;line-height:1.6">${esc(at.texto)}</div>`:''}
+    ${h.length>1?`<details class="hist"><summary class="quando" style="cursor:pointer">${h.length} leituras nesta área</summary>
+      ${h.slice(1).map(x=>`<div><b>${fd(x.data)}</b>${x.nota?' · '+x.nota+'/5':''} — ${esc(x.texto||'')}</div>`).join('')}</details>`:''}
+  </div>`;
+}
+
+function formObs(g){
+  const primeira = pendente(g);
+  return `<div class="card" style="background:var(--surface2);margin-bottom:14px">
+    <h2>${primeira ? 'Leitura inicial' : 'Nova observação'}</h2>
+    <div class="row mb14">
+      <label class="f" style="max-width:170px"><span>Data</span><input type="date" id="obsData" value="${hoje()}"></label>
+      <label class="f" style="flex:1;min-width:170px"><span>Adversário (opcional)</span><input id="obsAdv" placeholder="Contra quem jogou"></label>
+    </div>
+    ${primeira?'':'<div class="sub" style="margin-bottom:10px">Preencha só as áreas que chamaram atenção neste jogo.</div>'}
+    ${AREAS.map(a=>`<div style="margin-bottom:13px">
+      <div class="areahead"><b style="font-size:13px">${esc(a.nome)}</b>
+        <span class="stars" data-estrela="${a.k}">${[1,2,3,4,5].map(n=>`<span data-n="${n}">☆</span>`).join('')}</span>
+        <input type="hidden" id="nota_${a.k}" value="">
+      </div>
+      <textarea id="txt_${a.k}" placeholder="O que você viu"></textarea>
+    </div>`).join('')}
+    <div class="row">
+      <button class="btn p" id="obsSalvar">Salvar ${primeira?'leitura':'observação'}</button>
+      <button class="btn" id="obsCancelar">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- mapa ---------- */
+function telaMapa(){
+  const porPais = {}, porLiga = {};
+  DB.gks.forEach(g=>{
+    (g.nacionalidade||['—']).forEach(p=>{ porPais[p||'—'] = (porPais[p||'—']||0)+1; });
+    const l = g.liga || '—'; porLiga[l] = (porLiga[l]||0)+1;
+  });
+  const bloco = (titulo, obj) => {
+    const ks = Object.keys(obj).sort((a,b)=>obj[b]-obj[a]);
+    const max = Math.max(1, ...ks.map(k=>obj[k]));
+    return `<div class="card mb14"><h2>${titulo}</h2>
+      ${ks.length ? ks.map(k=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <div style="width:150px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</div>
+        <div style="flex:1;height:16px;background:var(--surface2);border-radius:4px;overflow:hidden">
+          <div style="width:${(obj[k]/max*100).toFixed(1)}%;height:100%;background:var(--accent);border-radius:4px"></div></div>
+        <div style="width:30px;text-align:right;font-family:var(--mono);font-size:12px">${obj[k]}</div>
+      </div>`).join('') : '<div class="empty">Sem dados ainda.</div>'}</div>`;
+  };
+  return `<h1 class="mb20">Mapa</h1>
+    ${bloco('Por nacionalidade', porPais)}
+    ${bloco('Por liga', porLiga)}`;
+}
+
+/* ---------- ajustes ---------- */
+function telaAjustes(){
+  return `<h1 class="mb20">Ajustes</h1>
+  <div class="card mb14">
+    <h2>Cópia de segurança</h2>
+    <div class="sub" style="margin-bottom:12px">Os dados ficam na sua conta, no mesmo banco do resto do sistema, e acompanham você entre clubes e temporadas. A exportação serve para levar o acervo para fora ou guardar uma cópia própria.</div>
+    <div class="row">
+      <button class="btn p" id="expJson">⤓ Exportar tudo (.json)</button>
+      <button class="btn" id="impBtn">⤒ Importar</button>
+      <input type="file" id="impFile" accept="application/json,.json" style="display:none">
+    </div>
+  </div>
+  <div class="card mb14">
+    <h2>Listas</h2>
+    <label class="f mb14"><span>Ligas (uma por linha)</span>
+      <textarea id="cfgLigas">${esc((DB.config.ligas||[]).join('\n'))}</textarea></label>
+    <label class="f mb14"><span>Etiquetas de perfil (uma por linha)</span>
+      <textarea id="cfgTags">${esc((DB.config.etiquetas||[]).join('\n'))}</textarea></label>
+    <label class="f mb14"><span>Países (uma por linha)</span>
+      <textarea id="cfgPaises">${esc((DB.config.paises||[]).join('\n'))}</textarea></label>
+    <button class="btn p" id="cfgSalvar">Salvar listas</button>
+  </div>
+  <div class="card">
+    <h2>Situação</h2>
+    <div class="sub">${DB.gks.length} goleiros · ${DB.gks.filter(pendente).length} com leitura pendente ·
+      ${DB.gks.reduce((a,g)=>a+((g.atualizacoes||[]).length),0)} observações registradas</div>
+    <div class="sub" style="margin-top:8px;word-break:break-all">
+      ${_pronto ? 'Lendo de: users/'+esc(_uid||'')+'/scouting' : 'Aguardando a conexão com o banco.'}
+      ${_erroNuvem ? '<br><span style="color:var(--red)">'+esc(_erroNuvem)+'</span>' : ''}
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   EVENTOS
+   ══════════════════════════════════════════════════════════════════ */
+function ligarEventos(){
+  const $ = id => document.getElementById(id);
+
+  document.querySelectorAll('.ntab').forEach(b=>{
+    b.onclick = ()=>{ pagina = b.dataset.p; abertoId = null; render(); };
+  });
+
+  /* --- cadastro relâmpago --- */
+  if($('qAdd')){
+    const add = ()=>{
+      const nome = $('qNome').value.trim();
+      if(!nome){ $('qNome').focus(); return; }
+      const g = { id:uid(), nome, clube:$('qClube').value.trim(), liga:$('qLiga').value.trim(),
+        nacionalidade:[], etiquetas:[], links:[], atualizacoes:[], criadoEm:hoje() };
+      DB.gks.unshift(g); salvar(); toast('Anotado. Complete a leitura quando puder.');
+      render();
+    };
+    $('qAdd').onclick = add;
+    ['qNome','qClube','qLiga'].forEach(id=>{
+      $(id).onkeydown = e => { if(e.key === 'Enter') add(); };
+    });
+  }
+
+  /* --- filtros --- */
+  const liga = (id, campo) => { const el = $(id); if(el) el.onchange = ()=>{ filtros[campo] = el.value; render(); }; };
+  if($('fq')) $('fq').oninput = ()=>{ filtros.q = $('fq').value; const p = $('fq').selectionStart; render();
+    const n = $('fq'); if(n){ n.focus(); try{ n.setSelectionRange(p,p); }catch(e){} } };
+  liga('fIdade','idade'); liga('fPais','pais'); liga('fLiga','liga'); liga('fPe','pe');
+  liga('fAltura','altura'); liga('fSelecao','selecao'); liga('fEtiqueta','etiqueta');
+  liga('fVisto','visto'); liga('fPrio','prio');
+  if($('fLimpar')) $('fLimpar').onclick = ()=>{ filtros = { q:'', idade:'', pais:'', liga:'', pe:'', altura:'', selecao:'', etiqueta:'', visto:'', prio:'' }; render(); };
+
+  document.querySelectorAll('[data-abrir]').forEach(el=>{
+    el.onclick = ()=>{ abertoId = el.dataset.abrir; render(); window.scrollTo({top:0}); };
+  });
+
+  /* --- ficha: campos --- */
+  if($('voltar')) $('voltar').onclick = ()=>{ abertoId = null; render(); };
+  document.querySelectorAll('[data-c]').forEach(el=>{
+    el.onchange = ()=>{
+      const g = DB.gks.find(x=>x.id===abertoId); if(!g) return;
+      const c = el.dataset.c, v = el.value;
+      if(c === 'nacionalidade' || c === 'etiquetas') g[c] = v.split(',').map(s=>s.trim()).filter(Boolean);
+      else if(c === 'selecao') g.selecao = v === '' ? undefined : v === '1';
+      else if(c === 'anoNasc') g.anoNasc = v ? Number(v) : null;
+      else if(c === 'links'){
+        g.links = v.split('\n').map(l=>{
+          const p = l.split('|'); const url = (p[1]||p[0]||'').trim();
+          if(!url) return null;
+          return { titulo:(p[1] ? p[0] : 'vídeo').trim(), url };
+        }).filter(Boolean);
+      }
+      else g[c] = v;
+      salvar();
+      if(c === 'links' || c === 'anoNasc') render();
+    };
+  });
+  /* --- foto --- */
+  if($('fotoBox')){
+    const box = $('fotoBox');
+    const usar = arquivo => {
+      if(!arquivo || !/^image\//.test(arquivo.type)) return;
+      const r = new FileReader();
+      r.onload = async ev => {
+        const g = DB.gks.find(x=>x.id===abertoId); if(!g) return;
+        g.foto = await encolherFoto(ev.target.result, 240, 0.72);
+        salvar(); toast('Foto salva.'); render();
+      };
+      r.readAsDataURL(arquivo);
+    };
+    box.onclick = ()=> $('fotoFile').click();
+    $('fotoFile').onchange = e => usar(e.target.files[0]);
+    box.ondragover = e => { e.preventDefault(); box.style.borderColor = 'var(--ink)'; };
+    box.ondragleave = ()=> { box.style.borderColor = ''; };
+    box.ondrop = e => { e.preventDefault(); box.style.borderColor = ''; usar(e.dataTransfer.files[0]); };
+    if($('fotoRm')) $('fotoRm').onclick = e => {
+      e.stopPropagation();
+      const g = DB.gks.find(x=>x.id===abertoId); if(!g) return;
+      delete g.foto; salvar(); render();
+    };
+  }
+
+  if($('apagar')) $('apagar').onclick = ()=>{
+    const g = DB.gks.find(x=>x.id===abertoId);
+    if(!g || !confirm('Apagar "' + (g.nome||'') + '" e todas as observações?')) return;
+    const morto = abertoId;
+    DB.gks = DB.gks.filter(x=>x.id!==morto); salvar(); apagarNaNuvem(morto);
+    abertoId = null; toast('Apagado.'); render();
+  };
+
+  /* --- observação --- */
+  if($('novaObs')) $('novaObs').onclick = ()=>{
+    const g = DB.gks.find(x=>x.id===abertoId); if(!g) return;
+    $('obsForm').innerHTML = formObs(g);
+    ligarEstrelas();
+    $('obsCancelar').onclick = ()=>{ $('obsForm').innerHTML = ''; };
+    $('obsSalvar').onclick = ()=>{
+      const areas = {};
+      AREAS.forEach(a=>{
+        const t = $('txt_'+a.k).value.trim(), n = $('nota_'+a.k).value;
+        if(t || n) areas[a.k] = { texto:t, nota: n ? Number(n) : null };
+      });
+      if(!Object.keys(areas).length){ toast('Preencha ao menos uma área.'); return; }
+      const reg = { data:$('obsData').value || hoje(), adversario:$('obsAdv').value.trim(), areas };
+      if(pendente(g)){
+        g.leitura = Object.assign({ data:reg.data, adversario:reg.adversario }, areas);
+      } else {
+        g.atualizacoes = g.atualizacoes || [];
+        g.atualizacoes.push(reg);
+      }
+      salvar(); toast('Leitura registrada.'); render();
+    };
+  };
+
+  /* --- ajustes --- */
+  if($('expJson')) $('expJson').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(DB, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fluxgk-scouting-' + hoje() + '.json';
+    a.click();
+  };
+  if($('impBtn')) $('impBtn').onclick = ()=> $('impFile').click();
+  if($('impFile')) $('impFile').onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try{
+        const d = JSON.parse(ev.target.result);
+        if(!d || !Array.isArray(d.gks)) throw new Error('arquivo não parece do Scouting');
+        if(!confirm('Substituir os ' + DB.gks.length + ' goleiros atuais pelos ' + d.gks.length + ' do arquivo?')) return;
+        DB = Object.assign({ gks:[], config:{ ligas:[], etiquetas:[], paises:[] } }, d);
+        salvar(); subirTudo(); toast('Importado.'); render();
+      }catch(err){ toast('Não consegui importar: ' + err.message); }
+    };
+    r.readAsText(f);
+  };
+  if($('cfgSalvar')) $('cfgSalvar').onclick = ()=>{
+    const linhas = id => ($(id).value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    DB.config.ligas = linhas('cfgLigas');
+    DB.config.etiquetas = linhas('cfgTags');
+    DB.config.paises = linhas('cfgPaises');
+    salvar(); toast('Listas salvas.'); render();
+  };
+}
+
+/* estrelas de 1 a 5, clicáveis; clicar de novo na mesma limpa */
+function ligarEstrelas(){
+  document.querySelectorAll('[data-estrela]').forEach(el=>{
+    const k = el.dataset.estrela;
+    el.querySelectorAll('[data-n]').forEach(s=>{
+      s.onclick = ()=>{
+        const alvo = document.getElementById('nota_'+k);
+        const n = Number(s.dataset.n);
+        alvo.value = (Number(alvo.value) === n) ? '' : String(n);
+        const v = Number(alvo.value)||0;
+        el.querySelectorAll('[data-n]').forEach(x=>{
+          const on = Number(x.dataset.n) <= v;
+          x.textContent = on ? '★' : '☆';
+          x.style.color = on ? 'var(--amber)' : '';
+        });
+      };
+    });
+  });
+}
+
+carregar();
+render();
+</script>
+</body>
+</html>
