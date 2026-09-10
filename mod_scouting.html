@@ -17,14 +17,16 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Space Grotesk',sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
-.nav{background:var(--ink);color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;gap:26px;position:sticky;top:0;z-index:50}
+.nav{--nav-bg:var(--ink);--nav-fg:255,255,255;
+  background:var(--nav-bg);color:rgb(var(--nav-fg));padding:0 24px;height:54px;display:flex;align-items:center;gap:26px;position:sticky;top:0;z-index:50}
 .nav .wm{font-weight:700;font-size:18px;letter-spacing:-.04em}
-.nav .wm span{color:var(--accent)}
-.nav .sub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase}
-.ntab{background:none;border:0;color:rgba(255,255,255,.55);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+.nav .wm span{color:rgba(var(--nav-fg),.62)}
+.nav .sub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:rgba(var(--nav-fg),.45);text-transform:uppercase}
+.ntab{background:none;border:0;color:rgba(var(--nav-fg),.55);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
   text-transform:uppercase;padding:6px 10px;border-radius:6px;cursor:pointer}
-.ntab:hover{color:#fff}
-.ntab.on{background:rgba(255,255,255,.14);color:#fff}
+.ntab:hover{color:rgb(var(--nav-fg))}
+.ntab.on{background:rgba(var(--nav-fg),.14);color:rgb(var(--nav-fg))}
+#navBadge{background:rgba(var(--nav-fg),.14);border-color:rgba(var(--nav-fg),.22)}
 .wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px}
 h1{font-size:22px;letter-spacing:-.03em}
 h2{font-size:15px;letter-spacing:-.02em;margin-bottom:12px}
@@ -91,6 +93,11 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent)}
 <body>
 
 <div class="nav" id="nav">
+  <div id="navBadge" style="width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.2);display:none;place-items:center;overflow:hidden;flex:none">
+    <img id="navBadgeImg" alt="" style="width:100%;height:100%;object-fit:contain;display:none">
+    <span id="navBadgeIni" style="font-size:11px;font-weight:700"></span>
+  </div>
   <div>
     <div class="wm">Flux<span>GK</span></div>
     <div class="sub">Scouting</div>
@@ -103,9 +110,11 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent)}
     <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4)" id="contador"></span>
   </div>
 </div>
-<div id="ctxStrip" style="background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 24px;
+<div id="ctxStrip" style="border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:9px;
   font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--mute)">
-  <span id="ctx-coach">—</span> · <span data-i18n="scout.personal">acervo pessoal, atravessa clubes e temporadas</span>
+  <img id="ctxBadge" alt="" style="width:17px;height:17px;object-fit:contain;border-radius:3px;display:none">
+  <span><span id="ctx-club">—</span> · <span id="ctx-season">—</span> · <span id="ctx-coach">—</span></span>
+  <span style="margin-left:auto;opacity:.8" data-i18n="scout.personal">acervo pessoal, atravessa clubes e temporadas</span>
 </div>
 
 <div class="wrap" id="app"></div>
@@ -215,13 +224,7 @@ window.addEventListener('message', async e=>{
   if(!d.uid || !d.firebaseConfig){ console.error('[scouting] contexto incompleto', d); return; }
   if(d.lang) try{ FluxGKI18n.setLang(d.lang, false); }catch(err){}
   _uid = d.uid;
-  const co = d.coach || {}, c = d.club || {};
-  const el = document.getElementById('ctx-coach');
-  if(el) el.textContent = co.name || '—';
-  /* a cor do clube dá identidade sem tornar o acervo dependente dele */
-  if(c.color && /^#[0-9a-f]{3,8}$/i.test(String(c.color).trim())){
-    document.documentElement.style.setProperty('--accent', c.color.trim());
-  }
+  aplicarIdentidade(d);
   if(_pronto) return;
   try{
     if(!window.firebase){ for(const s of SDK) await carregaSDK(s); }
@@ -240,6 +243,58 @@ window.addEventListener('message', async e=>{
   }
 });
 try{ if(window.parent && window.parent !== window) window.parent.postMessage({type:'FLUXGK_MODULE_READY',module:'scouting'},'*'); }catch(e){}
+
+/* ---------- identidade visual vinda do hub ----------
+   O acervo é pessoal e atravessa clubes, mas enquanto você trabalha o módulo
+   veste o clube ativo: cor na barra, escudo e a faixa de contexto. */
+function _hexOk(c){ return typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c.trim()); }
+function _lum(h){
+  h = h.replace('#',''); if(h.length === 3) h = h.split('').map(x=>x+x).join('');
+  const f = i => { const c = parseInt(h.substr(i,2),16)/255; return c <= .03928 ? c/12.92 : Math.pow((c+.055)/1.055, 2.4); };
+  return .2126*f(0) + .7152*f(2) + .0722*f(4);
+}
+/* contraste com o branco: abaixo de 2 a barra é clara demais e o texto some */
+function _claroDemais(cor){
+  const L = _lum(cor);
+  return (1.05) / (L + .05) < 2.0;
+}
+function aplicarIdentidade(d){
+  const c = d.club || {}, se = d.season || {}, co = d.coach || {};
+  const cor = _hexOk(c.color) ? c.color.trim() : null;
+
+  if(cor){
+    document.documentElement.style.setProperty('--accent', cor);
+    const nav = document.getElementById('nav');
+    if(nav){
+      nav.style.setProperty('--nav-bg', cor);
+      /* clube de cor clara: inverte a tinta para o texto não sumir na barra */
+      nav.style.setProperty('--nav-fg', _claroDemais(cor) ? '10,10,10' : '255,255,255');
+    }
+    const strip = document.getElementById('ctxStrip');
+    if(strip) strip.style.background = cor + '14';   /* 8% da cor do clube */
+  }
+
+  /* escudo: na barra e na faixa */
+  const cx = document.getElementById('navBadge');
+  const img = document.getElementById('navBadgeImg');
+  const ini = document.getElementById('navBadgeIni');
+  const sigla = ((c.abbr || c.name || 'GK') + '').slice(0,2).toUpperCase();
+  if(cx){
+    cx.style.display = 'grid';
+    if(c.badge){ img.src = c.badge; img.style.display = 'block'; ini.style.display = 'none'; }
+    else { img.style.display = 'none'; ini.style.display = 'block'; ini.textContent = sigla; }
+  }
+  const cb = document.getElementById('ctxBadge');
+  if(cb){
+    if(c.badge){ cb.src = c.badge; cb.style.display = 'block'; }
+    else cb.style.display = 'none';
+  }
+
+  const set = (id,v)=>{ const el = document.getElementById(id); if(el) el.textContent = v || '—'; };
+  set('ctx-club', c.name);
+  set('ctx-season', se.label);
+  set('ctx-coach', co.name);
+}
 
 /* O listener só sobe DEPOIS do login: ligado antes, as regras negam a
    leitura, o Firebase cancela a inscrição em silêncio e ela nunca volta. */
