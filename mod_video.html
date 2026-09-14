@@ -393,6 +393,12 @@
   .pfold .pfnm:hover{text-decoration:underline}
   .pfold.solta .pfnm:hover{text-decoration:none}
   .pfold .pfct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
+  .pfold[draggable=true]{cursor:grab}
+  .pfold[draggable=true]:active{cursor:grabbing}
+  .pfold.pdragging{opacity:.42}
+  .pfold.pdropb{box-shadow:inset 0 3px 0 var(--blue)}
+  .pfold.pdropa{box-shadow:inset 0 -3px 0 var(--blue)}
+  .pfold.pdropin{background:#e7edff;box-shadow:inset 0 0 0 2px var(--blue)}
   .pfold button{padding:1px 6px;font-size:10px}
   .pitem .pfsel{max-width:110px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
     border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
@@ -425,6 +431,14 @@
     border-bottom:1px solid var(--line);border-left:3px solid var(--ink);font-size:11.5px;font-weight:600}
   #cineSide .cfold.solta{border-left-color:var(--line);color:var(--muted);font-weight:400;font-style:italic}
   #cineSide .cfold .cfct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);font-weight:400;font-style:normal}
+  #cineSide .cfold .cfb{display:flex;gap:1px;flex:none;opacity:0}
+  #cineSide .cfold:hover .cfb{opacity:1}
+  #cineSide .cfold .cfb button{padding:0 5px;font-size:10px;line-height:1.6;border-radius:4px}
+  #cineSide .cfold[draggable=true]{cursor:grab}
+  #cineSide .cfold.cdragging{opacity:.42}
+  #cineSide .cfold.cdropb{box-shadow:inset 0 3px 0 var(--blue)}
+  #cineSide .cfold.cdropa{box-shadow:inset 0 -3px 0 var(--blue)}
+  #cineSide .cfold.cdropin{background:#e7edff;box-shadow:inset 0 0 0 2px var(--blue)}
   #cineSide .cirow .cib button{padding:0 5px;font-size:10px;line-height:1.6;border-radius:4px}
   #cineOv label{font-size:12px;display:inline-flex;align-items:center;gap:5px;opacity:.9}
   #cineTrim{flex:none;display:flex;align-items:center;gap:6px;margin-top:8px;color:#fff;flex-wrap:wrap;
@@ -1671,6 +1685,42 @@ function renderProjectTab(){
           /* cabecalho da pasta: renomear, reordenar e excluir */
           if (grupo.folder || grupos.length > 1){
             const fh = document.createElement('div'); fh.className = 'pfold' + (grupo.folder ? '' : ' solta');
+            const _fid = grupo.folder ? grupo.folder.id : '';
+            /* arrastar a pasta (leva os lances junto) e receber lances soltos aqui */
+            if (grupo.folder){
+              fh.draggable = true;
+              fh.addEventListener('dragstart', (e) => {
+                _pfDrag = { plId: pl.id, fId: _fid }; _piDrag = null; fh.classList.add('pdragging');
+                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', _fid); } catch (err) {}
+              });
+              fh.addEventListener('dragend', () => {
+                _pfDrag = null;
+                lista.querySelectorAll('.pfold').forEach(x => x.classList.remove('pdragging', 'pdropb', 'pdropa', 'pdropin'));
+              });
+            }
+            fh.addEventListener('dragover', (e) => {
+              if (_pfDrag && _pfDrag.plId === pl.id && grupo.folder && _pfDrag.fId !== _fid){
+                e.preventDefault();
+                const r = fh.getBoundingClientRect();
+                const depois = (e.clientY - r.top) > r.height / 2;
+                fh.classList.toggle('pdropa', depois); fh.classList.toggle('pdropb', !depois);
+              } else if (_piDrag && _piDrag.plId === pl.id){
+                e.preventDefault(); fh.classList.add('pdropin');
+              }
+            });
+            fh.addEventListener('dragleave', () => fh.classList.remove('pdropb', 'pdropa', 'pdropin'));
+            fh.addEventListener('drop', (e) => {
+              if (_pfDrag && _pfDrag.plId === pl.id && grupo.folder){
+                e.preventDefault();
+                const r = fh.getBoundingClientRect();
+                plFolderReorder(pl, _pfDrag.fId, _fid, (e.clientY - r.top) > r.height / 2);
+                renderProjectTab();
+              } else if (_piDrag && _piDrag.plId === pl.id){
+                e.preventDefault();
+                plItemToFolder(pl, _piDrag.itId, _fid);
+                renderProjectTab();
+              }
+            });
             const ic = document.createElement('span'); ic.className = 'pfic'; ic.textContent = grupo.folder ? '📁' : '·';
             const fn = document.createElement('span'); fn.className = 'pfnm';
             fn.textContent = grupo.folder ? grupo.folder.name : TX('vid.fold.none');
@@ -1759,7 +1809,7 @@ function renderProjectTab(){
             /* ── arraste, igual ao da aba Analise ── */
             row.draggable = true;
             row.addEventListener('dragstart', (e) => {
-              _piDrag = { plId: pl.id, itId: it.id };
+              _piDrag = { plId: pl.id, itId: it.id }; _pfDrag = null;
               row.classList.add('pdragging');
               try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(it.id)); } catch (err) {}
             });
@@ -3468,7 +3518,7 @@ function plReorder(pl, arrastadoId, alvoId, depois){
    A ordem vive em pl.items; arrastar ou as setas apenas
    reposicionam o item, sem tocar no lance original.
    ══════════════════════════════════════════════════════════════ */
-let _piDrag = null;
+let _piDrag = null, _pfDrag = null;
 
 /* ══ PASTAS DENTRO DA PLAYLIST ════════════════════════════════
    A ordem de apresentacao e a ordem achatada: pasta por pasta, na
@@ -3499,6 +3549,24 @@ function plFolderDelete(pl, fid){
   if (!pl) return;
   (pl.items || []).forEach(it => { if (it.folderId === fid) delete it.folderId; });
   pl.folders = plFolders(pl).filter(f => f.id !== fid);
+  plNormaliza(pl); projPersist();
+}
+function plFolderReorder(pl, arrastadaId, alvoId, depois){
+  if (!pl || arrastadaId === alvoId) return;
+  const fs = plFolders(pl);
+  const de = fs.findIndex(f => f.id === arrastadaId); if (de < 0) return;
+  const mov = fs.splice(de, 1)[0];
+  let para = fs.findIndex(f => f.id === alvoId);
+  if (para < 0) para = fs.length - 1;
+  fs.splice(para + (depois ? 1 : 0), 0, mov);
+  plNormaliza(pl); projPersist();
+}
+/* soltar o lance em cima do cabecalho manda ele para o fim daquela pasta */
+function plItemToFolder(pl, itId, fid){
+  const it = (pl.items || []).find(x => x.id === itId); if (!it) return;
+  if (fid) it.folderId = fid; else delete it.folderId;
+  const resto = (pl.items || []).filter(x => x.id !== itId);
+  pl.items = resto.concat([it]);
   plNormaliza(pl); projPersist();
 }
 function plSetFolder(pl, itId, fid){
@@ -3607,6 +3675,40 @@ function cineRenderList(){
   grupos.forEach(grupo => {
   if (grupo.folder || grupos.length > 1){
     const fh = document.createElement('div'); fh.className = 'cfold' + (grupo.folder ? '' : ' solta');
+    const _cfid = grupo.folder ? grupo.folder.id : '';
+    if (grupo.folder){
+      fh.draggable = true;
+      fh.addEventListener('dragstart', (e) => {
+        _cfDrag = _cfid; _ciDrag = null; fh.classList.add('cdragging');
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', _cfid); } catch (err) {}
+      });
+      fh.addEventListener('dragend', () => {
+        _cfDrag = null;
+        box.querySelectorAll('.cfold').forEach(x => x.classList.remove('cdragging', 'cdropb', 'cdropa', 'cdropin'));
+      });
+    }
+    fh.addEventListener('dragover', (e) => {
+      if (_cfDrag && grupo.folder && _cfDrag !== _cfid){
+        e.preventDefault();
+        const r = fh.getBoundingClientRect();
+        const depois = (e.clientY - r.top) > r.height / 2;
+        fh.classList.toggle('cdropa', depois); fh.classList.toggle('cdropb', !depois);
+      } else if (_ciDrag){ e.preventDefault(); fh.classList.add('cdropin'); }
+    });
+    fh.addEventListener('dragleave', () => fh.classList.remove('cdropb', 'cdropa', 'cdropin'));
+    fh.addEventListener('drop', (e) => {
+      const atual = (_cine.items[_cine.i] || {}).id;
+      if (_cfDrag && grupo.folder){
+        e.preventDefault();
+        const r = fh.getBoundingClientRect();
+        plFolderReorder(_cine.pl, _cfDrag, _cfid, (e.clientY - r.top) > r.height / 2);
+        cineResync(atual);
+      } else if (_ciDrag){
+        e.preventDefault();
+        plItemToFolder(_cine.pl, _ciDrag, _cfid);
+        cineResync(atual);
+      }
+    });
     const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
     const ct = document.createElement('span'); ct.className = 'cfct'; ct.textContent = grupo.items.length;
     fh.appendChild(nm); fh.appendChild(ct);
@@ -3617,6 +3719,17 @@ function cineRenderList(){
         if (nv === null || !nv.trim()) return;
         grupo.folder.name = nv.trim().slice(0, 40); projPersist(); cineRenderList();
       });
+      /* a pasta inteira sobe ou desce: muda a ordem da apresentacao em bloco */
+      const sp = document.createElement('span'); sp.style.flex = '1'; fh.appendChild(sp);
+      const fb = document.createElement('span'); fb.className = 'cfb';
+      const fi = plFolders(_cine.pl).indexOf(grupo.folder);
+      const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.textContent = '▲';
+      fu.title = TX('vid.proj.itemUp'); fu.disabled = fi === 0;
+      fu.addEventListener('click', (e) => { e.stopPropagation(); cineFolderMove(grupo.folder, -1); });
+      const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.textContent = '▼';
+      fd.title = TX('vid.proj.itemDown'); fd.disabled = fi === plFolders(_cine.pl).length - 1;
+      fd.addEventListener('click', (e) => { e.stopPropagation(); cineFolderMove(grupo.folder, 1); });
+      fb.appendChild(fu); fb.appendChild(fd); fh.appendChild(fb);
     }
     box.appendChild(fh);
   }
@@ -3660,7 +3773,7 @@ function cineRenderList(){
 
     row.draggable = true;
     row.addEventListener('dragstart', (e) => {
-      _ciDrag = it.id; row.classList.add('cdragging');
+      _ciDrag = it.id; _cfDrag = null; row.classList.add('cdragging');
       try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(it.id)); } catch (err) {}
     });
     row.addEventListener('dragend', () => {
@@ -3695,13 +3808,23 @@ function cineRenderList(){
 /* ── ordem a partir do player ─────────────────────────────────
    A ordem verdadeira vive em pl.items; aqui só refazemos a visão
    e seguimos o lance que estava tocando, pelo id.               */
-let _ciDrag = null;
+let _ciDrag = null, _cfDrag = null;
 function cineResync(idAtual){
   if (!_cine) return;
   _cine.items = plFlat(_cine.pl).filter(it => it && it.srcKey);
   const i = _cine.items.findIndex(x => x.id === idAtual);
   if (i >= 0) _cine.i = i;
   cineRenderList(); cineCount();
+}
+/* move a pasta inteira sem perder de vista o lance que esta tocando */
+function cineFolderMove(folder, delta){
+  if (!_cine || !folder) return;
+  const fs = plFolders(_cine.pl);
+  const de = fs.indexOf(folder), para = de + delta;
+  if (de < 0 || para < 0 || para >= fs.length) return;
+  fs.splice(de, 1); fs.splice(para, 0, folder);
+  plNormaliza(_cine.pl); projPersist();
+  cineResync((_cine.items[_cine.i] || {}).id);
 }
 function cineMove(itId, delta){
   if (!_cine) return;
