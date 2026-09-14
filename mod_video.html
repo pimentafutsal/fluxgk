@@ -2467,7 +2467,9 @@ stage.addEventListener('pointerup', (e) => {
 /* ---------------- player: teclado ---------------- */
 document.addEventListener('keydown', (e) => {
   const t = e.target;
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  /* player em sequencia ou dialogo aberto: a bancada fica quieta atras */
+  if (document.querySelector('#cineOv.on, #askModal.on, #nameModal.on')) return;
   if (!state.file) return;
   /* Alt + setas = reposicionar a imagem ampliada (nao mexe no tempo) */
   if (e.altKey && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(e.key) > -1){
@@ -4065,6 +4067,11 @@ function cineWire(){
      nao podem roubar a seta nem o espaco */
   document.addEventListener('keydown', (e) => {
     if (!_cine || !$('cineOv').classList.contains('on')) return;
+    /* digitando num campo (nome da pasta, do lance) a tecla e do campo */
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    /* com um dialogo aberto por cima, quem manda e o dialogo */
+    if (document.querySelector('#askModal.on, #nameModal.on')) return;
     if (e.key === 'Escape'){ e.stopPropagation(); cineClose(); }
     else if (e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i + 1); }
     else if (e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i - 1); }
