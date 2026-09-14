@@ -3830,7 +3830,8 @@ function cineRenderList(){
     });
 
     row.appendChild(n); row.appendChild(d); row.appendChild(t); row.appendChild(b);
-    row.addEventListener('click', () => cineGo(_cine.items.indexOf(it)));
+    row.addEventListener('click', () => cineGo(_cine.items.indexOf(it), 'pause'));
+    row.addEventListener('dblclick', () => cineGo(_cine.items.indexOf(it), 'play'));
     row.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); cineItemMenu(e.clientX, e.clientY, it); });
     box.appendChild(row);
   });
@@ -3875,7 +3876,7 @@ function cineItemMenu(x, y, it){
   const head = document.createElement('div'); head.className = 'ctxhead';
   head.textContent = TX('vid.cine.menuClip') + ' · ' + (it.name || it.tagName || '');
   menu.appendChild(head);
-  menu.appendChild(ctxItem(TX('vid.cine.play'), () => cineGo(_cine.items.indexOf(it))));
+  menu.appendChild(ctxItem(TX('vid.cine.play'), () => cineGo(_cine.items.indexOf(it), 'play')));
   menu.appendChild(ctxItem(TX('vid.cine.rename'), () => cineRename(it)));
 
   /* submenu de pastas */
@@ -4004,8 +4005,12 @@ async function cineFile(it){
   return f;
 }
 
-async function cineGo(i){
+async function cineGo(i, modo){
   if (!_cine) return;
+  /* 'pause' = so abre no visualizador · 'play' = abre e toca ·
+     sem modo = segue o que o player ja estava fazendo (⏭, emendar) */
+  if (modo === 'play') _cine.tocando = true;
+  else if (modo === 'pause') _cine.tocando = false;
   if (i < 0 || i >= _cine.items.length){
     $('cineMsg').textContent = TX('vid.cine.done');
     try { $('cineVid').pause(); } catch (e) {}
@@ -4045,6 +4050,7 @@ async function cineGo(i){
   cineFraming(it);
   cineTrimPaint();
   if (_cine.tocando){ try { await v.play(); } catch (e) {} }
+  else { try { v.pause(); } catch (e) {} }
   cineSyncBtn();
 }
 
