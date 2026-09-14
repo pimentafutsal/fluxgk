@@ -409,6 +409,33 @@
   .pitem .pfsel{max-width:110px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
     border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
 
+  /* ---------- aba Projetos: analises e secoes recolhiveis ---------- */
+  .ancard{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+  .anhead{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--paper);
+    border-bottom:1px solid var(--line);cursor:pointer}
+  .ancard:not(.open) .anhead{border-bottom:none}
+  .anhead .ancar{flex:none;width:16px;font-size:10px;color:var(--muted);transition:transform .15s}
+  .ancard.open .anhead .ancar{transform:rotate(90deg)}
+  .anhead .annm{font-weight:700;font-size:13.5px}
+  .anhead .annm.solta{font-weight:400;font-style:italic;color:var(--muted)}
+  .anhead .anct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .anhead button{padding:1px 7px;font-size:11px}
+  .anbody{padding:4px 10px 10px}
+  .ancard:not(.open) .anbody{display:none}
+  .ansub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);margin:10px 0 5px}
+  .librow .pfsel{max-width:130px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
+    border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
+  .psec{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden}
+  .psec-h{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--paper);cursor:pointer}
+  .psec-h:hover{background:var(--card)}
+  .psec-car{flex:none;width:16px;font-size:10px;color:var(--muted);transition:transform .15s}
+  .psec.open .psec-car{transform:rotate(90deg)}
+  .psec-t{font-weight:600;font-size:12.5px}
+  .psec-x{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
+  .psec-b{padding:6px 10px 10px;border-top:1px solid var(--line)}
+  .psec:not(.open) .psec-b{display:none}
+
   /* ---------- player em sequencia (cinema) ---------- */
   #cineOv{position:fixed;inset:0;background:rgba(10,10,10,.92);z-index:160;display:none;
     flex-direction:column;padding:14px}
@@ -1585,78 +1612,105 @@ function updateProjBar(){
   if (state.projectMode && p){ bar.style.display = 'flex'; const nm = $('projBarName'); if (nm) nm.textContent = p.name; }
   else bar.style.display = 'none';
 }
-function renderProjectTab(){
-  const box = $('projView'); if (!box) return;
-  const newWrap = $('projNewWrap');
-  const p = currentProject();
-  box.innerHTML = '';
-  if (p){
-    /* ---- projeto aberto: cabeçalho + agregado por etiqueta (tema) ---- */
-    /* o campo de criar projeto CONTINUA visivel: da para abrir outro sem
-       precisar fechar este (nada se perde ao alternar).                  */
-    if (newWrap) newWrap.style.display = '';
-    const bar = document.createElement('div'); bar.className = 'ghead'; bar.style.gap = '8px';
-    const nmInp = document.createElement('input'); nmInp.value = p.name; nmInp.maxLength = 60;
-    nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
-    nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ p.name = v.slice(0, 60); projPersist(); } });
-    const bWork = document.createElement('button'); bWork.className = 'mini primary'; bWork.textContent = TX('vid.proj.goBench');
-    bWork.addEventListener('click', () => { state.projectMode = true; updateProjBar(); switchTab('analise'); log(TX('vid.proj.benchHint')); });
-    const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close'); bClose.title = TX('vid.proj.closeTip','Closes the view only — the project stays saved.');
-    bClose.addEventListener('click', () => { projClose(); renderProjectTab(); });
-    const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
-    bDel.addEventListener('click', async () => {
-      if (!(await askConfirm(TX('vid.proj.delProj'), TX('vid.proj.delProjQ') + p.name + '"?', TX('vid.delete')))) return;
-      state.projects = projList().filter(x => x.id !== p.id); state.currentProjectId = null; state.projectMode = false;
-      projPersist(); updateProjBar(); renderProjectTab();
-    });
-    bar.appendChild(nmInp); bar.appendChild(bWork); bar.appendChild(bClose); bar.appendChild(bDel);
-    box.appendChild(bar);
+/* ══ ANALISES — pastas de jogos dentro do projeto ══════════════
+   Um projeto guarda a Liga inteira; cada analise guarda os jogos
+   daquela rodada e as playlists feitas a partir deles. A playlist
+   segue sozinha o jogo que ela usa, e voce pode sobrescrever.   */
+function projAnalises(p){ if (!p) return []; if (!Array.isArray(p.analises)) p.analises = []; return p.analises; }
+function analisePorId(p, id){ return projAnalises(p).find(a => a.id === id) || null; }
+function analiseCreate(p, nome){
+  const n = String(nome || '').trim().slice(0, 50); if (!p || !n) return null;
+  const a = { id: 'an' + Math.random().toString(36).slice(2, 9), name: n };
+  projAnalises(p).push(a); projPersist();
+  return a;
+}
+function analiseDelete(p, id){
+  (p.videos || []).forEach(v => { if (v.analiseId === id) delete v.analiseId; });
+  projPlaylistsOf(p).forEach(pl => { if (pl.analiseId === id) delete pl.analiseId; });
+  p.analises = projAnalises(p).filter(a => a.id !== id);
+  projPersist();
+}
+function analiseAberta(a){ return !a || !a.fechada; }
+function analiseToggle(p, a){ if (!a) return; if (a.fechada) delete a.fechada; else a.fechada = true; projPersist(); }
 
-    /* ---- alternar entre projetos sem fechar o atual ---- */
-    const outros = projList().filter(x => x.id !== p.id);
-    if (outros.length){
-      const sw = document.createElement('div');
-      sw.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:8px';
-      const lb = document.createElement('span');
-      lb.style.cssText = 'font-size:12px;color:var(--muted)';
-      lb.textContent = TX('vid.proj.switchTo', 'Switch to') + ':';
-      sw.appendChild(lb);
-      outros.forEach(o => {
-        const b2 = document.createElement('button');
-        b2.className = 'mini ghost';
-        const nc = projAllClips(o).length;
-        b2.textContent = (o.name || 'Projeto') + ' (' + nc + ')';
-        b2.title = TX('vid.proj.switchHint', 'Open this project — the current one stays saved.');
-        b2.addEventListener('click', () => { projOpen(o.id); updateProjBar(); renderProjectTab(); });
-        sw.appendChild(b2);
-      });
-      box.appendChild(sw);
-    }
+/* analise do jogo; se apontar para uma que ja nao existe, conta como solto */
+function videoAnaliseId(p, v){
+  const id = v && v.analiseId;
+  return (id && analisePorId(p, id)) ? id : '';
+}
+/* a analise da playlist: a que voce escolheu ou, se nao escolheu,
+   a dos jogos que ela usa (a que aparece em mais lances) */
+function playlistAnalise(p, pl){
+  if (!pl) return '';
+  if (pl.analiseId){ return analisePorId(p, pl.analiseId) ? pl.analiseId : ''; }
+  const conta = {};
+  (pl.items || []).forEach(it => {
+    const v = (p.videos || []).find(x => x.srcName === it.srcName || x.srcKey === it.srcKey);
+    const id = videoAnaliseId(p, v);
+    if (id) conta[id] = (conta[id] || 0) + 1;
+  });
+  let melhor = '', n = 0;
+  Object.keys(conta).forEach(k => { if (conta[k] > n){ n = conta[k]; melhor = k; } });
+  return melhor;
+}
 
-    /* pasta vinculada + lista de vídeos para abrir direto na bancada */
-    const fRow = document.createElement('div');
-    fRow.className = 'exprow'; fRow.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
-    const fLbl = document.createElement('span'); fLbl.style.cssText = 'font-size:12px;color:var(--muted);flex:1';
-    fLbl.textContent = '🔗 ' + TX('vid.proj.folder') + ': ' + (p.folderName ? p.folderName : TX('vid.proj.folderNone'));
-    const fBtn = document.createElement('button'); fBtn.className = 'mini';
-    fBtn.textContent = p.folderName ? TX('vid.proj.folderChange') : TX('vid.proj.folderLink');
-    fBtn.addEventListener('click', projLinkFolder);
-    if (!fsSupported()){ fBtn.disabled = true; fBtn.title = TX('vid.proj.fsUnsupported'); }
-    fRow.appendChild(fLbl); fRow.appendChild(fBtn);
-    box.appendChild(fRow);
-    const vidsBox = document.createElement('div'); box.appendChild(vidsBox);
-    populateProjectVideos(p, vidsBox);
+/* ---- linha de um jogo (video do projeto) ---- */
+function videoRow(p, v){
+  const row = document.createElement('div'); row.className = 'librow';
+  const info = document.createElement('div'); info.style.flex = '1';
+  info.innerHTML = '<div class="lname">🎬 ' + escapeHtml(v.srcName || '—') + '</div>';
+  const nClips = projAllClips(p).filter(c => c.srcName === v.srcName).length;
+  const sub = document.createElement('div'); sub.className = 'lsub';
+  sub.style.cssText = 'font-size:11px;color:var(--muted)';
+  sub.textContent = nClips + ' ' + TX('vid.f.clips');
+  info.appendChild(sub);
+  row.appendChild(info);
+  /* em qual analise este jogo entra */
+  const sel = document.createElement('select'); sel.className = 'pfsel'; sel.title = TX('vid.an.pick');
+  const o0 = document.createElement('option'); o0.value = ''; o0.textContent = TX('vid.an.none'); sel.appendChild(o0);
+  projAnalises(p).forEach(a => {
+    const o = document.createElement('option'); o.value = a.id; o.textContent = a.name;
+    if (videoAnaliseId(p, v) === a.id) o.selected = true; sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    if (sel.value) v.analiseId = sel.value; else delete v.analiseId;
+    projPersist(); renderProjectTab();
+  });
+  if (projAnalises(p).length) row.appendChild(sel);
+  const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
+  bOpen.addEventListener('click', () => projOpenVideo(v.srcName));
+  const bRm = document.createElement('button'); bRm.className = 'mini ghost danger'; bRm.textContent = '✕'; bRm.title = TX('vid.proj.removeVideo');
+  bRm.addEventListener('click', () => projRemoveVideo(v.srcKey));
+  row.appendChild(bOpen); row.appendChild(bRm);
+  return row;
+}
 
-    /* ---- playlists livres (observação) ---- */
-    const plHdr = document.createElement('div'); plHdr.className = 'fpsection'; plHdr.style.cssText = 'margin:16px 0 6px;font-size:12px';
-    plHdr.textContent = TX('vid.proj.freeLists');
-    box.appendChild(plHdr);
-    const pls = projPlaylistsOf(p);
-    if (!pls.length){
-      const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left'; em.textContent = TX('vid.proj.freeListsHint');
-      box.appendChild(em);
-    } else {
-      pls.forEach(pl => {
+/* ---- seção que recolhe, com o estado guardado no projeto ---- */
+function secaoRecolhivel(p, chave, titulo, extra, montarCorpo, abertaPorPadrao){
+  if (!p.ui) p.ui = {};
+  const aberta = (p.ui[chave] === undefined) ? !!abertaPorPadrao : !!p.ui[chave];
+  const wrap = document.createElement('div'); wrap.className = 'psec' + (aberta ? ' open' : '');
+  const head = document.createElement('div'); head.className = 'psec-h';
+  const car = document.createElement('span'); car.className = 'psec-car'; car.textContent = '▸';
+  const nm = document.createElement('span'); nm.className = 'psec-t'; nm.textContent = titulo;
+  head.appendChild(car); head.appendChild(nm);
+  if (extra){ const ex = document.createElement('span'); ex.className = 'psec-x'; ex.textContent = extra; head.appendChild(ex); }
+  const sp = document.createElement('span'); sp.style.flex = '1'; head.appendChild(sp);
+  head.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    p.ui[chave] = !aberta; projPersist(); renderProjectTab();
+  });
+  wrap.appendChild(head);
+  const corpo = document.createElement('div'); corpo.className = 'psec-b';
+  wrap.appendChild(corpo);
+  if (aberta) montarCorpo(corpo, head);
+  else if (typeof montarCorpo.cabecalho === 'function') montarCorpo.cabecalho(head);
+  return { wrap: wrap, head: head, corpo: corpo, aberta: aberta };
+}
+
+/* cartao de uma playlist do projeto — extraido daqui para poder ser
+   desenhado dentro da pasta de analise a que a playlist pertence */
+function playlistCard(p, pl){
         const card = document.createElement('div'); card.className = 'expgrp';
         const head = document.createElement('div'); head.className = 'ghead'; head.style.gap = '8px';
         const nmInp = document.createElement('input'); nmInp.value = pl.name; nmInp.maxLength = 60; nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
@@ -1890,14 +1944,207 @@ function renderProjectTab(){
           });
           card.appendChild(lista);
         }
-        box.appendChild(card);
+  return card;
+}
+
+function renderProjectTab(){
+  const box = $('projView'); if (!box) return;
+  const newWrap = $('projNewWrap');
+  const p = currentProject();
+  box.innerHTML = '';
+  if (p){
+    /* ---- projeto aberto: cabeçalho + agregado por etiqueta (tema) ---- */
+    /* o campo de criar projeto CONTINUA visivel: da para abrir outro sem
+       precisar fechar este (nada se perde ao alternar).                  */
+    if (newWrap) newWrap.style.display = '';
+    const bar = document.createElement('div'); bar.className = 'ghead'; bar.style.gap = '8px';
+    const nmInp = document.createElement('input'); nmInp.value = p.name; nmInp.maxLength = 60;
+    nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
+    nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ p.name = v.slice(0, 60); projPersist(); } });
+    const bWork = document.createElement('button'); bWork.className = 'mini primary'; bWork.textContent = TX('vid.proj.goBench');
+    bWork.addEventListener('click', () => { state.projectMode = true; updateProjBar(); switchTab('analise'); log(TX('vid.proj.benchHint')); });
+    const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close'); bClose.title = TX('vid.proj.closeTip','Closes the view only — the project stays saved.');
+    bClose.addEventListener('click', () => { projClose(); renderProjectTab(); });
+    const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
+    bDel.addEventListener('click', async () => {
+      if (!(await askConfirm(TX('vid.proj.delProj'), TX('vid.proj.delProjQ') + p.name + '"?', TX('vid.delete')))) return;
+      state.projects = projList().filter(x => x.id !== p.id); state.currentProjectId = null; state.projectMode = false;
+      projPersist(); updateProjBar(); renderProjectTab();
+    });
+    bar.appendChild(nmInp); bar.appendChild(bWork); bar.appendChild(bClose); bar.appendChild(bDel);
+    box.appendChild(bar);
+
+    /* ---- alternar entre projetos sem fechar o atual ---- */
+    const outros = projList().filter(x => x.id !== p.id);
+    if (outros.length){
+      const sw = document.createElement('div');
+      sw.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:8px';
+      const lb = document.createElement('span');
+      lb.style.cssText = 'font-size:12px;color:var(--muted)';
+      lb.textContent = TX('vid.proj.switchTo', 'Switch to') + ':';
+      sw.appendChild(lb);
+      outros.forEach(o => {
+        const b2 = document.createElement('button');
+        b2.className = 'mini ghost';
+        const nc = projAllClips(o).length;
+        b2.textContent = (o.name || 'Projeto') + ' (' + nc + ')';
+        b2.title = TX('vid.proj.switchHint', 'Open this project — the current one stays saved.');
+        b2.addEventListener('click', () => { projOpen(o.id); updateProjBar(); renderProjectTab(); });
+        sw.appendChild(b2);
       });
+      box.appendChild(sw);
     }
 
+    /* pasta vinculada + lista de vídeos para abrir direto na bancada */
+    const fRow = document.createElement('div');
+    fRow.className = 'exprow'; fRow.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
+    const fLbl = document.createElement('span'); fLbl.style.cssText = 'font-size:12px;color:var(--muted);flex:1';
+    fLbl.textContent = '🔗 ' + TX('vid.proj.folder') + ': ' + (p.folderName ? p.folderName : TX('vid.proj.folderNone'));
+    const fBtn = document.createElement('button'); fBtn.className = 'mini';
+    fBtn.textContent = p.folderName ? TX('vid.proj.folderChange') : TX('vid.proj.folderLink');
+    fBtn.addEventListener('click', projLinkFolder);
+    if (!fsSupported()){ fBtn.disabled = true; fBtn.title = TX('vid.proj.fsUnsupported'); }
+    fRow.appendChild(fLbl); fRow.appendChild(fBtn);
+    box.appendChild(fRow);
+    /* botao de adicionar jogo continua no topo, ligado a pasta */
+    const addWrap = document.createElement('div'); box.appendChild(addWrap);
+    montaAddVideo(p, addWrap);
+
+    /* ══ ANALISES — o coracao da aba: jogos em cima, playlists embaixo ══ */
+    const anHdr = document.createElement('div');
+    anHdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin:16px 0 6px';
+    const anT = document.createElement('span'); anT.className = 'fpsection'; anT.style.cssText = 'flex:1;font-size:12px';
+    anT.textContent = TX('vid.an.section');
+    const anNew = document.createElement('button'); anNew.className = 'mini primary'; anNew.textContent = TX('vid.an.new');
+    anNew.title = TX('vid.an.newT');
+    anNew.addEventListener('click', async () => {
+      const nome = await askText(TX('vid.an.prompt'));
+      if (!nome || !nome.trim()) return;
+      const a = analiseCreate(p, nome);
+      if (a){ log(TX('vid.an.created') + a.name); renderProjectTab(); }
+    });
+    anHdr.appendChild(anT); anHdr.appendChild(anNew);
+    box.appendChild(anHdr);
+
+    const vids = (p.videos || []).slice().sort((a, b) => (a.srcName || '').localeCompare(b.srcName || ''));
+    const listas = projPlaylistsOf(p);
+
+    /* monta um bloco: uma analise, ou o bloco dos que ficaram de fora */
+    const blocoAnalise = (a) => {
+      const jogos = vids.filter(v => videoAnaliseId(p, v) === (a ? a.id : ''));
+      const pls = listas.filter(pl => playlistAnalise(p, pl) === (a ? a.id : ''));
+      if (!a && !jogos.length && !pls.length) return null;
+
+      const aberta = a ? analiseAberta(a) : true;
+      const card = document.createElement('div'); card.className = 'ancard' + (aberta ? ' open' : '');
+      const head = document.createElement('div'); head.className = 'anhead';
+      if (a){
+        const car = document.createElement('span'); car.className = 'ancar'; car.textContent = '▸';
+        head.appendChild(car);
+      }
+      const nm = document.createElement('span'); nm.className = 'annm';
+      nm.textContent = a ? ('🗂 ' + a.name) : TX('vid.an.loose');
+      if (!a) nm.classList.add('solta');
+      const ct = document.createElement('span'); ct.className = 'anct';
+      ct.textContent = jogos.length + ' 🎬 · ' + pls.length + ' ▶';
+      head.appendChild(nm); head.appendChild(ct);
+      const sp = document.createElement('span'); sp.style.flex = '1'; head.appendChild(sp);
+      if (a){
+        const bRen = document.createElement('button'); bRen.className = 'mini ghost'; bRen.textContent = '✎';
+        bRen.title = TX('vid.an.rename');
+        bRen.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const nv = await askText(TX('vid.an.rename'), a.name);
+          if (nv === null || !nv.trim()) return;
+          a.name = nv.trim().slice(0, 50); projPersist(); renderProjectTab();
+        });
+        const fi = projAnalises(p).indexOf(a);
+        const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.textContent = '▲'; bUp.disabled = fi === 0;
+        bUp.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const as = projAnalises(p); as.splice(fi, 1); as.splice(fi - 1, 0, a); projPersist(); renderProjectTab();
+        });
+        const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.textContent = '▼';
+        bDn.disabled = fi === projAnalises(p).length - 1;
+        bDn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const as = projAnalises(p); as.splice(fi, 1); as.splice(fi + 1, 0, a); projPersist(); renderProjectTab();
+        });
+        const bX = document.createElement('button'); bX.className = 'mini ghost danger'; bX.textContent = '✕'; bX.title = TX('vid.an.del');
+        bX.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!(await askConfirm(TX('vid.an.del'), TX('vid.an.delQ') + a.name + TX('vid.an.delQ2'), TX('vid.delete')))) return;
+          analiseDelete(p, a.id); renderProjectTab();
+        });
+        head.appendChild(bRen); head.appendChild(bUp); head.appendChild(bDn); head.appendChild(bX);
+        head.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          analiseToggle(p, a); renderProjectTab();
+        });
+      }
+      card.appendChild(head);
+
+      const corpo = document.createElement('div'); corpo.className = 'anbody';
+      card.appendChild(corpo);
+      if (!aberta) return card;
+
+      /* prioridade 1: os jogos */
+      const h1 = document.createElement('div'); h1.className = 'ansub'; h1.textContent = TX('vid.an.matches');
+      corpo.appendChild(h1);
+      if (!jogos.length){
+        const em = document.createElement('div'); em.className = 'empty'; em.style.cssText = 'text-align:left;padding:8px 10px;font-size:12px';
+        em.textContent = TX('vid.an.noMatch'); corpo.appendChild(em);
+      } else jogos.forEach(v => corpo.appendChild(videoRow(p, v)));
+
+      /* prioridade 2: as playlists daqueles jogos */
+      const h2 = document.createElement('div'); h2.className = 'ansub'; h2.textContent = TX('vid.an.lists');
+      corpo.appendChild(h2);
+      if (!pls.length){
+        const em = document.createElement('div'); em.className = 'empty'; em.style.cssText = 'text-align:left;padding:8px 10px;font-size:12px';
+        em.textContent = TX('vid.an.noList'); corpo.appendChild(em);
+      } else pls.forEach(pl => {
+        const c = playlistCard(p, pl);
+        /* seletor para tirar a playlist da analise que ela herdou do jogo */
+        if (projAnalises(p).length){
+          const sel = document.createElement('select'); sel.className = 'pfsel'; sel.title = TX('vid.an.pick');
+          const o0 = document.createElement('option'); o0.value = '';
+          o0.textContent = pl.analiseId ? TX('vid.an.none') : TX('vid.an.auto');
+          sel.appendChild(o0);
+          projAnalises(p).forEach(x => {
+            const o = document.createElement('option'); o.value = x.id; o.textContent = x.name;
+            if (pl.analiseId === x.id) o.selected = true; sel.appendChild(o);
+          });
+          sel.addEventListener('change', () => {
+            if (sel.value) pl.analiseId = sel.value; else delete pl.analiseId;
+            projPersist(); renderProjectTab();
+          });
+          const h = c.querySelector('.ghead');
+          if (h) h.appendChild(sel);
+        }
+        corpo.appendChild(c);
+      });
+      return card;
+    };
+
+    projAnalises(p).forEach(a => { const c = blocoAnalise(a); if (c) box.appendChild(c); });
+    const soltos = blocoAnalise(null);
+    if (soltos) box.appendChild(soltos);
+    if (!projAnalises(p).length && !soltos){
+      const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left';
+      em.textContent = TX('vid.an.empty'); box.appendChild(em);
+    }
+
+    /* ══ o resto fica recolhido: elenco, por goleiro e por etiqueta ══
+       Sao leituras de conferência; o dia a dia e jogos e playlists.   */
+    const _clipsProj = projAllClips(p);
+    const _nGk = (function(){ const o = {}; _clipsProj.forEach(c => { o[(c.gk || '').trim() || '—'] = 1; }); return Object.keys(o).length; })();
+    const _nTag = (function(){ const o = {}; _clipsProj.forEach(c => { o[c.tagId || '—'] = 1; }); return Object.keys(o).length; })();
+
+    box.appendChild(secaoRecolhivel(p, 'secElenco', TX('vid.gkRoster'), gkList().length + '', function(alvo){
     /* ---- elenco de goleiros (gerenciar) ---- */
     const gkHdr = document.createElement('div'); gkHdr.className = 'fpsection'; gkHdr.style.cssText = 'margin:16px 0 6px;font-size:12px';
     gkHdr.textContent = TX('vid.gkRoster');
-    box.appendChild(gkHdr);
+    alvo.appendChild(gkHdr);
     const gkBar = document.createElement('div'); gkBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px';
     gkList().forEach(g => {
       const chip = document.createElement('span'); chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:20px;font-size:12px';
@@ -1909,8 +2156,12 @@ function renderProjectTab(){
     const addG = document.createElement('button'); addG.className = 'mini primary'; addG.textContent = TX('vid.gkAddBtnLbl');
     addG.addEventListener('click', async () => { const nm = await askText(TX('vid.gkNewPrompt')); if (nm && nm.trim()){ gkAdd(nm.trim()); renderProjectTab(); } });
     gkBar.appendChild(addG);
-    box.appendChild(gkBar);
+    alvo.appendChild(gkBar);
 
+
+    }, false).wrap);
+
+    box.appendChild(secaoRecolhivel(p, 'secPorGk', TX('vid.gkByGk'), _nGk + ' · ' + _clipsProj.length + ' ' + TX('vid.f.clips'), function(alvo){
     /* ---- visão POR GOLEIRO (pasta de cada goleiro + export individual) ---- */
     const gkClips = projAllClips(p);
     const byGk = {}; gkClips.forEach(c => { const k = (c.gk && c.gk.trim()) ? c.gk : '—'; (byGk[k] = byGk[k] || []).push(c); });
@@ -1918,7 +2169,7 @@ function renderProjectTab(){
     if (gkKeys.length){
       const gh = document.createElement('div'); gh.className = 'fpsection'; gh.style.cssText = 'margin:14px 0 6px;font-size:12px';
       gh.textContent = TX('vid.gkByGk');
-      box.appendChild(gh);
+      alvo.appendChild(gh);
       gkKeys.sort((a, b) => a === '—' ? 1 : b === '—' ? -1 : a.localeCompare(b));
       gkKeys.forEach(gk => {
         const arr = byGk[gk];
@@ -1944,20 +2195,24 @@ function renderProjectTab(){
             row.appendChild(nm2); card.appendChild(row);
           });
         });
-        box.appendChild(card);
+        alvo.appendChild(card);
       });
     }
 
+
+    }, false).wrap);
+
+    box.appendChild(secaoRecolhivel(p, 'secPorTag', TX('vid.proj.byTag'), _nTag + ' · ' + _clipsProj.length + ' ' + TX('vid.f.clips'), function(alvo){
     /* ---- visão por etiqueta (automática) ---- */
     const tagHdr = document.createElement('div'); tagHdr.className = 'fpsection'; tagHdr.style.cssText = 'margin:16px 0 6px;font-size:12px';
     tagHdr.textContent = TX('vid.proj.byTag');
-    box.appendChild(tagHdr);
+    alvo.appendChild(tagHdr);
 
     const clips = projAllClips(p);
     const meta = document.createElement('div'); meta.className = 'empty'; meta.style.cssText = 'text-align:left;margin:6px 0 10px';
     meta.textContent = ((p.videos && p.videos.length) || 0) + ' ' + TX('vid.proj.videos') + ' · ' + clips.length + ' ' + TX('vid.f.clips');
-    box.appendChild(meta);
-    if (!clips.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.benchEmpty'); box.appendChild(em); return; }
+    alvo.appendChild(meta);
+    if (!clips.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.benchEmpty'); alvo.appendChild(em); return; }
 
     const byTag = {}; clips.forEach(c => { const k = c.tagId || '—'; (byTag[k] = byTag[k] || []).push(c); });
     Object.keys(byTag).forEach(tagId => {
@@ -1993,8 +2248,10 @@ function renderProjectTab(){
           row.appendChild(nm2); row.appendChild(bAdd); card.appendChild(row); card.appendChild(actWrap);
         });
       });
-      box.appendChild(card);
+      alvo.appendChild(card);
     });
+
+    }, false).wrap);
   } else {
     /* ---- nenhum projeto aberto: lista de projetos para escolher/criar ---- */
     if (newWrap) newWrap.style.display = '';
@@ -2023,36 +2280,25 @@ function projRemoveVideo(srcKey){
   p.videos = (p.videos || []).filter(v => v.srcKey !== srcKey);
   projPersist(); renderProjectTab();
 }
-async function populateProjectVideos(p, container){
+/* o botao de trazer jogo da pasta — a lista de jogos agora vive dentro
+   de cada analise, entao aqui fica so a entrada */
+function montaAddVideo(p, container){
   container.innerHTML = '';
-  /* cabeçalho + botão adicionar */
-  const hdr = document.createElement('div'); hdr.className = 'exprow'; hdr.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
-  const ht = document.createElement('span'); ht.className = 'fpsection'; ht.style.flex = '1'; ht.textContent = TX('vid.proj.myVideos');
+  const hdr = document.createElement('div'); hdr.className = 'exprow';
+  hdr.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
+  const ht = document.createElement('span'); ht.className = 'fpsection'; ht.style.flex = '1';
+  ht.textContent = TX('vid.proj.myVideos');
   const bAdd = document.createElement('button'); bAdd.className = 'mini primary'; bAdd.textContent = TX('vid.proj.addVideo');
-  const pickWrap = document.createElement('div');   /* onde a lista da pasta aparece ao clicar em adicionar */
+  const pickWrap = document.createElement('div');
   bAdd.addEventListener('click', () => toggleAddFromFolder(p, pickWrap));
   hdr.appendChild(ht); hdr.appendChild(bAdd);
   container.appendChild(hdr);
   container.appendChild(pickWrap);
-
-  /* lista SÓ dos vídeos já trazidos para o projeto */
-  const registered = (p.videos || []);
-  if (!registered.length){
+  if (!(p.videos || []).length){
     const em = document.createElement('div'); em.className = 'empty'; em.style.textAlign = 'left';
     em.textContent = TX('vid.proj.noVideosYet');
-    container.appendChild(em); return;
+    container.appendChild(em);
   }
-  registered.slice().sort((a, b) => (a.srcName || '').localeCompare(b.srcName || '')).forEach(v => {
-    const row = document.createElement('div'); row.className = 'librow';
-    const info = document.createElement('div'); info.style.flex = '1';
-    info.innerHTML = '<div class="lname">' + (v.srcName || '—') + '</div>';
-    const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
-    bOpen.addEventListener('click', () => projOpenVideo(v.srcName));
-    const bRm = document.createElement('button'); bRm.className = 'mini ghost danger'; bRm.textContent = '✕'; bRm.title = TX('vid.proj.removeVideo');
-    bRm.addEventListener('click', () => projRemoveVideo(v.srcKey));
-    row.appendChild(info); row.appendChild(bOpen); row.appendChild(bRm);
-    container.appendChild(row);
-  });
 }
 /* mostra/oculta a lista de vídeos da pasta que ainda NÃO estão no projeto */
 async function toggleAddFromFolder(p, wrap){
@@ -3995,11 +4241,45 @@ function cineDrop(dragId, alvoId, depois){
 
 /* o enquadramento do lance vira transform de CSS: mesma conta do
    canvas da exportacao (escala no centro, depois deslocamento) */
+/* O enquadramento so pode ser definido na analise, entao o lance original
+   e quem manda. A copia guardada no item serve de reserva (e para quando
+   o video ja nao esta na biblioteca). Reescreve no item para a exportacao
+   sair igual ao que voce viu no player. */
+function zoomDoLance(it){
+  if (!it) return null;
+  try{
+    const ses = libAll()[it.srcKey];
+    if (ses && Array.isArray(ses.events)){
+      const alvo = (it.t != null ? it.t : it.start);
+      let orig = ses.events.find(e => Math.abs((e.t != null ? e.t : e.start) - alvo) < 0.35);
+      /* lance sem 't' (formato antigo): tenta pelo inicio */
+      if (!orig) orig = ses.events.find(e => Math.abs(e.start - it.start) < 0.6);
+      if (orig){
+        const ez = orig.exportZoom || null;
+        const antes = JSON.stringify(it.exportZoom || null);
+        const agora = JSON.stringify(ez);
+        if (antes !== agora){
+          it.exportZoom = ez ? Object.assign({}, ez) : null;
+          try { projPersist(); } catch (e) {}
+        }
+        return ez;
+      }
+    }
+  }catch(e){}
+  return it.exportZoom || null;
+}
 function cineFraming(it){
   const v = $('cineVid');
-  const ez = it && it.exportZoom;
+  const ez = zoomDoLance(it);
   if (!ez || !(ez.zoom > 1.001)){ v.style.transform = 'none'; return; }
-  const w = v.clientWidth || 1, h = v.clientHeight || 1;
+  const w = v.clientWidth, h = v.clientHeight;
+  /* sem medida ainda (o layout do video acabou de mudar): tenta no quadro
+     seguinte, senao o deslocamento sairia calculado contra largura zero */
+  if (!w || !h){
+    if (_cine) _cine._refaz = it;
+    requestAnimationFrame(() => { if (_cine && _cine._refaz === it){ _cine._refaz = null; cineFraming(it); } });
+    return;
+  }
   const tx = (ez.panX || 0) * (w / (ez.stageW || w));
   const ty = (ez.panY || 0) * (h / (ez.stageH || h));
   v.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + ez.zoom + ')';
@@ -4159,7 +4439,11 @@ function cineWire(){
     if ($('cineAuto') && $('cineAuto').checked) cineGo(_cine.i + 1);
     else { _cine.tocando = false; _cine.fim = true; cineSyncBtn(); }
   });
-  v.addEventListener('resize', () => { if (_cine) cineFraming(_cine.items[_cine.i]); });
+  /* o tamanho na tela so existe depois do layout; sem isso o primeiro
+     lance de um video recem-carregado abria sem o enquadramento */
+  ['resize', 'loadedmetadata', 'loadeddata', 'playing'].forEach(ev2 => {
+    v.addEventListener(ev2, () => { if (_cine) cineFraming(_cine.items[_cine.i]); });
+  });
   window.addEventListener('resize', () => { if (_cine) cineFraming(_cine.items[_cine.i]); });
 
   $('cineClose').addEventListener('click', cineClose);
@@ -6601,18 +6885,9 @@ async function exportCombined(items, baseName){
   if (!order.length){ log(TX('vid.proj.expEmpty'), 'err'); return; }
   /* playlists montadas antes desta correcao nao guardaram o enquadramento:
      busca no lance original, pela fonte e pelo tempo, antes de exportar */
-  try{
-    const lib = libAll();
-    order.forEach(it => {
-      if (it.exportZoom) return;
-      const ses = lib[it.srcKey];
-      if (!ses || !Array.isArray(ses.events)) return;
-      const orig = ses.events.find(e =>
-        Math.abs((e.t != null ? e.t : e.start) - (it.t != null ? it.t : it.start)) < 0.25 &&
-        Math.abs(e.start - it.start) < 0.5);
-      if (orig && orig.exportZoom) it.exportZoom = orig.exportZoom;
-    });
-  }catch(e){}
+  /* mesma regra do player: o lance original manda, o item e reserva.
+     Assim o MP4 sai com o enquadramento que voce viu na tela. */
+  try{ order.forEach(it => { if (typeof zoomDoLance === 'function') zoomDoLance(it); }); }catch(e){}
   const p = currentProject();
 
   // 1) resolver TODAS as fontes pela pasta vinculada (senão aborta pedindo para vincular)
