@@ -3853,6 +3853,17 @@ function cineResync(idAtual){
 }
 /* ══ MENUS DE BOTAO DIREITO NO PLAYER ══════════════════════════
    Tocar no nome so toca o lance; o que altera as coisas mora aqui. */
+/* campo onde se digita de verdade — checkbox e radio ficam de fora,
+   senao clicar em Repetir deixava o foco la e as setas paravam */
+function cineDigitando(t){
+  if (!t) return false;
+  if (t.isContentEditable) return true;
+  const tag = t.tagName;
+  if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (tag !== 'INPUT') return false;
+  const tipo = (t.type || 'text').toLowerCase();
+  return ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file', 'color'].indexOf(tipo) < 0;
+}
 function cinePos(menu, x, y){
   menu.classList.add('on');
   menu.style.left = '0px'; menu.style.top = '0px';
@@ -4170,8 +4181,12 @@ function cineWire(){
     cineSyncBtn();
   });
   /* repetir e emendar sozinho sao excludentes */
-  $('cineAuto').addEventListener('change', () => { if ($('cineAuto').checked) $('cineLoop').checked = false; });
+  $('cineAuto').addEventListener('change', () => {
+    if ($('cineAuto').checked) $('cineLoop').checked = false;
+    try { $('cineAuto').blur(); } catch (e) {}
+  });
   $('cineLoop').addEventListener('change', () => {
+    try { $('cineLoop').blur(); } catch (e) {}
     if (!$('cineLoop').checked) return;
     $('cineAuto').checked = false;
     if (_cine && _cine.fim){ $('cinePlay').click(); }   /* ja parado no fim: volta a rodar */
@@ -4195,9 +4210,8 @@ function cineWire(){
      nao podem roubar a seta nem o espaco */
   document.addEventListener('keydown', (e) => {
     if (!_cine || !$('cineOv').classList.contains('on')) return;
-    /* digitando num campo (nome da pasta, do lance) a tecla e do campo */
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    /* so campo de ESCRITA engole a tecla; caixa de marcar nao */
+    if (cineDigitando(e.target)) return;
     /* com um dialogo aberto por cima, quem manda e o dialogo */
     if (document.querySelector('#askModal.on, #nameModal.on')) return;
     /* com o menu aberto, Esc fecha so o menu */
