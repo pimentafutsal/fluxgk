@@ -420,10 +420,27 @@
   .anhead .annm.solta{font-weight:400;font-style:italic;color:var(--muted)}
   .anhead .anct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
   .anhead button{padding:1px 7px;font-size:11px}
-  .anbody{padding:4px 10px 10px}
+  /* cada nivel entra um pouco e ganha um fio a esquerda: da para ver
+     de relance o que esta dentro do que, como um paragrafo indentado */
+  .anbody{padding:4px 10px 12px 16px;margin-left:18px;border-left:2px solid var(--line)}
   .ancard:not(.open) .anbody{display:none}
   .ansub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--muted);margin:10px 0 5px}
+    color:var(--muted);margin:12px 0 5px;padding-left:2px}
+  .anbody > .librow{margin-left:10px}
+  /* a playlist e um nivel abaixo dos jogos */
+  .anbody > .plcard{margin-left:10px;border-left:3px solid var(--line)}
+  .plcard{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;background:var(--card)}
+  .plcard > .ghead{background:var(--paper)}
+  .plcar{flex:none;width:18px;height:18px;border:none;background:transparent;cursor:pointer;
+    font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;padding:0}
+  .plcar:hover{color:var(--ink)}
+  .plcard.open .plcar{transform:rotate(90deg)}
+  .plcard:not(.open) .plbody{display:none}
+  .plbody{padding-left:14px;margin-left:12px;border-left:2px solid var(--line)}
+  /* e o lance dentro de uma pasta entra mais um degrau */
+  .pitem.emfolder{padding-left:24px}
+  #cineSide .cirow.emfolder{padding-left:20px}
   .librow .pfsel{max-width:130px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
     border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
   .psec{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden}
@@ -1711,8 +1728,16 @@ function secaoRecolhivel(p, chave, titulo, extra, montarCorpo, abertaPorPadrao){
 /* cartao de uma playlist do projeto — extraido daqui para poder ser
    desenhado dentro da pasta de analise a que a playlist pertence */
 function playlistCard(p, pl){
-        const card = document.createElement('div'); card.className = 'expgrp';
+        const _plAberta = !pl.fechada;
+        const card = document.createElement('div'); card.className = 'expgrp plcard' + (_plAberta ? ' open' : '');
         const head = document.createElement('div'); head.className = 'ghead'; head.style.gap = '8px';
+        const car = document.createElement('button'); car.className = 'plcar'; car.textContent = '▸';
+        car.title = TX(_plAberta ? 'vid.fold.collapse' : 'vid.fold.expand');
+        car.addEventListener('click', () => {
+          if (pl.fechada) delete pl.fechada; else pl.fechada = true;
+          projPersist(); renderProjectTab();
+        });
+        head.appendChild(car);
         const nmInp = document.createElement('input'); nmInp.value = pl.name; nmInp.maxLength = 60; nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
         nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ pl.name = v.slice(0, 60); projPersist(); } });
         const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = (pl.items ? pl.items.length : 0) + ' ' + TX('vid.f.clips');
@@ -1736,13 +1761,16 @@ function playlistCard(p, pl){
         });
         head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
         card.appendChild(head);
+        /* o corpo inteiro some quando a playlist esta recolhida */
+        const corpoPl = document.createElement('div'); corpoPl.className = 'plbody';
+        card.appendChild(corpoPl);
         const items = pl.items || [];
-        if (!items.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.emptyList'); card.appendChild(em); }
+        if (!items.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.emptyList'); corpoPl.appendChild(em); }
         else {
           const hint = document.createElement('div');
           hint.style.cssText = 'padding:5px 9px;font-size:11px;color:var(--muted)';
           hint.textContent = TX('vid.proj.reorderHint');
-          card.appendChild(hint);
+          corpoPl.appendChild(hint);
           const lista = document.createElement('div');
           const grupos = plGrupos(pl);
           let _ord = -1;
@@ -1840,7 +1868,8 @@ function playlistCard(p, pl){
           grupo.items.forEach((it) => {
             const ord = ++_ord;
             if (fechada) return;   /* a numeracao segue a ordem real, mesmo escondida */
-            const row = document.createElement('div'); row.className = 'pitem';
+            const _dentroDePasta = !!grupo.folder;
+            const row = document.createElement('div'); row.className = 'pitem' + (_dentroDePasta ? ' emfolder' : '');
             row.dataset.itid = it.id;
 
             /* numero da ordem, que tambem e a alca de arraste */
@@ -1942,7 +1971,7 @@ function playlistCard(p, pl){
             const ult = items[items.length - 1];
             if (ult && ult.id !== _piDrag.itId) projItemReorder(pl, _piDrag.itId, ult.id, true);
           });
-          card.appendChild(lista);
+          corpoPl.appendChild(lista);
         }
   return card;
 }
@@ -4028,7 +4057,7 @@ function cineRenderList(){
     const i = ++_i;
     if (fechada) return;
     const row = document.createElement('div');
-    row.className = 'cirow' + (i === _cine.i ? ' on' : '');
+    row.className = 'cirow' + (i === _cine.i ? ' on' : '') + (grupo.folder ? ' emfolder' : '');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
     n.title = TX('vid.proj.itemDrag');
     const d = document.createElement('span');
