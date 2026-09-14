@@ -384,6 +384,18 @@
   .pitem .pbtns{display:flex;gap:2px;flex:none}
   .pitem .pbtns button{padding:2px 6px;font-size:11px;line-height:1.4}
   .pitem.pcur{background:#f2f5ff}
+  .pfold{display:flex;align-items:center;gap:6px;padding:6px 9px;background:var(--paper);
+    border-bottom:1px solid var(--line);border-left:3px solid var(--ink);font-size:12px}
+  .pfold.solta{border-left-color:var(--line);color:var(--muted)}
+  .pfold .pfic{flex:none}
+  .pfold .pfnm{font-weight:600;cursor:pointer}
+  .pfold.solta .pfnm{font-weight:400;font-style:italic;cursor:default}
+  .pfold .pfnm:hover{text-decoration:underline}
+  .pfold.solta .pfnm:hover{text-decoration:none}
+  .pfold .pfct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
+  .pfold button{padding:1px 6px;font-size:10px}
+  .pitem .pfsel{max-width:110px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
+    border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
 
   /* ---------- player em sequencia (cinema) ---------- */
   #cineOv{position:fixed;inset:0;background:rgba(10,10,10,.92);z-index:160;display:none;
@@ -408,6 +420,12 @@
   #cineProg{flex:1;min-width:120px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
   #cineProgIn{height:100%;width:0;background:var(--blue)}
   #cineCount{font-family:'JetBrains Mono',monospace;font-size:11.5px;opacity:.85;white-space:nowrap}
+  #cineKeys{font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.5;white-space:nowrap}
+  #cineSide .cfold{display:flex;align-items:center;gap:6px;padding:6px 9px;background:var(--paper);
+    border-bottom:1px solid var(--line);border-left:3px solid var(--ink);font-size:11.5px;font-weight:600}
+  #cineSide .cfold.solta{border-left-color:var(--line);color:var(--muted);font-weight:400;font-style:italic}
+  #cineSide .cfold .cfct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);font-weight:400;font-style:normal}
+  #cineSide .cirow .cib button{padding:0 5px;font-size:10px;line-height:1.6;border-radius:4px}
   #cineOv label{font-size:12px;display:inline-flex;align-items:center;gap:5px;opacity:.9}
   #cineTrim{flex:none;display:flex;align-items:center;gap:6px;margin-top:8px;color:#fff;flex-wrap:wrap;
     background:rgba(255,255,255,.07);border-radius:7px;padding:7px 10px}
@@ -1020,6 +1038,7 @@
 <div id="cineOv">
   <div id="cineTop">
     <div id="cineTitle">—</div>
+    <button class="mini ghost" id="cineFold" data-i18n-title="vid.fold.newT" title="New folder">📁 <span data-i18n="vid.fold.new">+ Folder</span></button>
     <button class="mini ghost" id="cineClose" data-i18n-title="vid.cine.close" title="Close">✕</button>
   </div>
   <div id="cineBody">
@@ -1032,10 +1051,12 @@
   <div id="cineBar">
     <button class="mini" id="cinePrev" data-i18n-title="vid.cine.prev" title="Previous">⏮</button>
     <button class="mini primary" id="cinePlay">⏸</button>
-    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next">⏭</button>
+    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next (→)">⏭</button>
     <span id="cineCount">—</span>
     <div id="cineProg"><div id="cineProgIn"></div></div>
     <label><input type="checkbox" id="cineAuto" checked> <span data-i18n="vid.cine.autoplay">Auto-advance</span></label>
+    <label><input type="checkbox" id="cineLoop"> <span data-i18n="vid.cine.loop">Repeat</span></label>
+    <span id="cineKeys" data-i18n="vid.cine.keys">→ next · ← previous · space play</span>
   </div>
   <!-- corte do lance sem sair do player: os tempos valem para esta playlist -->
   <div id="cineTrim">
@@ -1616,17 +1637,25 @@ function renderProjectTab(){
         const nmInp = document.createElement('input'); nmInp.value = pl.name; nmInp.maxLength = 60; nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
         nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ pl.name = v.slice(0, 60); projPersist(); } });
         const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = (pl.items ? pl.items.length : 0) + ' ' + TX('vid.f.clips');
+        const bFold = document.createElement('button'); bFold.className = 'mini ghost'; bFold.textContent = TX('vid.fold.new');
+        bFold.title = TX('vid.fold.newT');
+        bFold.addEventListener('click', async () => {
+          const nome = await askText(TX('vid.fold.prompt'));
+          if (!nome || !nome.trim()) return;
+          const f = plFolderCreate(pl, nome);
+          if (f){ log(TX('vid.fold.created') + f.name); renderProjectTab(); }
+        });
         const bPlay = document.createElement('button'); bPlay.className = 'mini'; bPlay.textContent = '▶ ' + TX('vid.proj.play');
         bPlay.title = TX('vid.proj.playHint');
         bPlay.addEventListener('click', () => cineOpen(pl));
         const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
-        bExp.addEventListener('click', () => exportCombined(pl.items, p.name + ' - ' + pl.name));
+        bExp.addEventListener('click', () => { plNormaliza(pl); exportCombined(plFlat(pl), p.name + ' - ' + pl.name); });
         const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
         bDel.addEventListener('click', async () => {
           if (!(await askConfirm(TX('vid.proj.delList'), TX('vid.proj.delListQ') + pl.name + '"?', TX('vid.delete')))) return;
           p.playlists = projPlaylistsOf(p).filter(x => x.id !== pl.id); projPersist(); renderProjectTab();
         });
-        head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
+        head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
         card.appendChild(head);
         const items = pl.items || [];
         if (!items.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.emptyList'); card.appendChild(em); }
@@ -1636,7 +1665,50 @@ function renderProjectTab(){
           hint.textContent = TX('vid.proj.reorderHint');
           card.appendChild(hint);
           const lista = document.createElement('div');
-          items.forEach((it, ord) => {
+          const grupos = plGrupos(pl);
+          let _ord = -1;
+          grupos.forEach(grupo => {
+          /* cabecalho da pasta: renomear, reordenar e excluir */
+          if (grupo.folder || grupos.length > 1){
+            const fh = document.createElement('div'); fh.className = 'pfold' + (grupo.folder ? '' : ' solta');
+            const ic = document.createElement('span'); ic.className = 'pfic'; ic.textContent = grupo.folder ? '📁' : '·';
+            const fn = document.createElement('span'); fn.className = 'pfnm';
+            fn.textContent = grupo.folder ? grupo.folder.name : TX('vid.fold.none');
+            const fc = document.createElement('span'); fc.className = 'pfct'; fc.textContent = grupo.items.length;
+            fh.appendChild(ic); fh.appendChild(fn); fh.appendChild(fc);
+            if (grupo.folder){
+              fn.title = TX('vid.fold.rename');
+              fn.addEventListener('click', async () => {
+                const nv = await askText(TX('vid.fold.rename'), grupo.folder.name);
+                if (nv === null || !nv.trim()) return;
+                grupo.folder.name = nv.trim().slice(0, 40); projPersist(); renderProjectTab();
+              });
+              const fi = plFolders(pl).indexOf(grupo.folder);
+              const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.textContent = '▲';
+              fu.disabled = fi === 0;
+              fu.addEventListener('click', () => {
+                const fs = plFolders(pl); fs.splice(fi, 1); fs.splice(fi - 1, 0, grupo.folder);
+                plNormaliza(pl); projPersist(); renderProjectTab();
+              });
+              const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.textContent = '▼';
+              fd.disabled = fi === plFolders(pl).length - 1;
+              fd.addEventListener('click', () => {
+                const fs = plFolders(pl); fs.splice(fi, 1); fs.splice(fi + 1, 0, grupo.folder);
+                plNormaliza(pl); projPersist(); renderProjectTab();
+              });
+              const fx = document.createElement('button'); fx.className = 'mini ghost danger'; fx.textContent = '✕';
+              fx.title = TX('vid.fold.del');
+              fx.addEventListener('click', async () => {
+                if (!(await askConfirm(TX('vid.fold.del'), TX('vid.fold.delQ') + grupo.folder.name + TX('vid.fold.delQ2'), TX('vid.delete')))) return;
+                plFolderDelete(pl, grupo.folder.id); renderProjectTab();
+              });
+              const sp2 = document.createElement('span'); sp2.style.flex = '1'; fh.appendChild(sp2);
+              fh.appendChild(fu); fh.appendChild(fd); fh.appendChild(fx);
+            }
+            lista.appendChild(fh);
+          }
+          grupo.items.forEach((it) => {
+            const ord = ++_ord;
             const row = document.createElement('div'); row.className = 'pitem';
             row.dataset.itid = it.id;
 
@@ -1665,9 +1737,10 @@ function renderProjectTab(){
             const btns = document.createElement('div'); btns.className = 'pbtns';
             const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.textContent = '▲';
             bUp.title = TX('vid.proj.itemUp'); bUp.disabled = ord === 0;
+            /* com pastas, a fronteira e util: descer para dentro da pasta seguinte */
             bUp.addEventListener('click', () => projItemNudge(pl, it.id, -1));
             const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.textContent = '▼';
-            bDn.title = TX('vid.proj.itemDown'); bDn.disabled = ord === items.length - 1;
+            bDn.title = TX('vid.proj.itemDown'); bDn.disabled = ord === items.length - 1 && !plFolders(pl).length;
             bDn.addEventListener('click', () => projItemNudge(pl, it.id, 1));
             const bMove = document.createElement('button'); bMove.className = 'mini ghost'; bMove.textContent = '⋯'; bMove.title = TX('vid.proj.moveCopy');
             bMove.addEventListener('click', () => {
@@ -1712,7 +1785,22 @@ function renderProjectTab(){
             });
 
             row.appendChild(ordEl); row.appendChild(dot); row.appendChild(tx); row.appendChild(btns);
+            /* escolher a pasta sem depender de arrastar */
+            if (plFolders(pl).length){
+              const fsel = document.createElement('select'); fsel.className = 'pfsel';
+              fsel.title = TX('vid.fold.pick');
+              const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '—';
+              fsel.appendChild(o0);
+              plFolders(pl).forEach(f => {
+                const o = document.createElement('option'); o.value = f.id; o.textContent = f.name;
+                if (it.folderId === f.id) o.selected = true; fsel.appendChild(o);
+              });
+              fsel.addEventListener('change', () => { plSetFolder(pl, it.id, fsel.value); renderProjectTab(); });
+              btns.insertBefore(fsel, btns.firstChild);
+            }
+
             lista.appendChild(row); lista.appendChild(actWrap);
+          });
           });
           /* soltar no vazio abaixo manda para o fim */
           lista.addEventListener('dragover', (e) => { if (_piDrag && _piDrag.plId === pl.id) e.preventDefault(); });
@@ -3382,29 +3470,100 @@ function plReorder(pl, arrastadoId, alvoId, depois){
    ══════════════════════════════════════════════════════════════ */
 let _piDrag = null;
 
+/* ══ PASTAS DENTRO DA PLAYLIST ════════════════════════════════
+   A ordem de apresentacao e a ordem achatada: pasta por pasta, na
+   ordem de pl.folders, e no fim os lances que ficaram fora.
+   pl.items e sempre reescrito nessa mesma ordem, entao a lista da
+   aba do projeto e a do player nunca discordam.                  */
+function plFolders(pl){ if (!pl) return []; if (!Array.isArray(pl.folders)) pl.folders = []; return pl.folders; }
+function plFolder(pl, fid){ return plFolders(pl).find(f => f.id === fid) || null; }
+/* [{folder|null, items:[]}] — grupos vazios entram para poder receber lances */
+function plGrupos(pl){
+  const itens = (pl && Array.isArray(pl.items)) ? pl.items : [];
+  const out = plFolders(pl).map(f => ({ folder: f, items: itens.filter(it => it.folderId === f.id) }));
+  const soltos = itens.filter(it => !it.folderId || !plFolder(pl, it.folderId));
+  if (soltos.length || !out.length) out.push({ folder: null, items: soltos });
+  return out;
+}
+/* sequencia de apresentacao */
+function plFlat(pl){ const o = []; plGrupos(pl).forEach(g => g.items.forEach(it => o.push(it))); return o; }
+function plNormaliza(pl){ if (pl) pl.items = plFlat(pl); }
+
+function plFolderCreate(pl, nome){
+  const n = String(nome || '').trim().slice(0, 40); if (!pl || !n) return null;
+  const f = { id: 'f' + Math.random().toString(36).slice(2, 9), name: n };
+  plFolders(pl).push(f); plNormaliza(pl); projPersist();
+  return f;
+}
+function plFolderDelete(pl, fid){
+  if (!pl) return;
+  (pl.items || []).forEach(it => { if (it.folderId === fid) delete it.folderId; });
+  pl.folders = plFolders(pl).filter(f => f.id !== fid);
+  plNormaliza(pl); projPersist();
+}
+function plSetFolder(pl, itId, fid){
+  const it = (pl.items || []).find(x => x.id === itId); if (!it) return;
+  if (fid) it.folderId = fid; else delete it.folderId;
+  plNormaliza(pl); projPersist();
+}
+
+/* reordena na SEQUENCIA achatada; cruzar a fronteira muda de pasta */
 function projItemReorder(pl, arrastadoId, alvoId, depois){
   if (!pl || !Array.isArray(pl.items)) return;
   if (arrastadoId === alvoId) return;
-  const lista = pl.items.slice();
-  const de = lista.findIndex(x => x.id === arrastadoId);
+  const flat = plFlat(pl);
+  const de = flat.findIndex(x => x.id === arrastadoId);
   if (de < 0) return;
-  const mov = lista.splice(de, 1)[0];
-  let para = lista.findIndex(x => x.id === alvoId);
-  if (para < 0) para = lista.length - 1;
-  lista.splice(para + (depois ? 1 : 0), 0, mov);
-  pl.items = lista;
+  const mov = flat.splice(de, 1)[0];
+  let para = flat.findIndex(x => x.id === alvoId);
+  if (para < 0) para = flat.length - 1;
+  const alvo = flat[para];
+  flat.splice(para + (depois ? 1 : 0), 0, mov);
+  /* o lance adota a pasta de quem ele encostou */
+  if (alvo){ if (alvo.folderId) mov.folderId = alvo.folderId; else delete mov.folderId; }
+  pl.items = flat; plNormaliza(pl);
   projPersist(); renderProjectTab();
 }
 /* sobe ou desce uma posicao — e o caminho que funciona no toque */
 function projItemNudge(pl, itId, delta){
   if (!pl || !Array.isArray(pl.items)) return;
-  const lista = pl.items.slice();
-  const de = lista.findIndex(x => x.id === itId);
+  const flat = plFlat(pl);
+  const de = flat.findIndex(x => x.id === itId);
   const para = de + delta;
-  if (de < 0 || para < 0 || para >= lista.length) return;
-  const t = lista[de]; lista[de] = lista[para]; lista[para] = t;
-  pl.items = lista;
+  if (de < 0 || para < 0 || para >= flat.length) return;
+  const vizinho = flat[para];
+  const mov = flat[de];
+  const mesmaPasta = (vizinho.folderId || '') === (mov.folderId || '');
+  if (!mesmaPasta){
+    /* primeiro passo na fronteira so troca de pasta, sem pular o vizinho:
+       assim da para entrar numa pasta sem atropelar a ordem */
+    if (vizinho.folderId) mov.folderId = vizinho.folderId; else delete mov.folderId;
+  } else {
+    flat[de] = vizinho; flat[para] = mov;
+  }
+  pl.items = flat; plNormaliza(pl);
   projPersist(); renderProjectTab();
+}
+
+/* renomear o lance: aqui e no jogo original (biblioteca) */
+function libRenameEvent(it, nome){
+  try{
+    const all = libAll();
+    const ses = all[it.srcKey];
+    if (!ses || !Array.isArray(ses.events)) return false;
+    const alvo = (it.t != null ? it.t : it.start);
+    const orig = ses.events.find(e =>
+      Math.abs((e.t != null ? e.t : e.start) - alvo) < 0.35);
+    if (!orig) return false;
+    orig.name = nome;
+    if (state.file && sessionKey() === it.srcKey){
+      const cur = state.events.find(e => e.id === orig.id);
+      if (cur) cur.name = nome;
+    }
+    libWrite(all);
+    try { renderPlaylists(); } catch (e) {}
+    return true;
+  }catch(e){ return false; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3417,7 +3576,8 @@ let _cine = null;
 
 async function cineOpen(pl){
   const p = currentProject(); if (!p) return;
-  const items = (pl.items || []).filter(it => it && it.srcKey);
+  plNormaliza(pl);                        /* pastas mandam na ordem de apresentacao */
+  const items = plFlat(pl).filter(it => it && it.srcKey);
   if (!items.length){ log(TX('vid.proj.expEmpty'), 'err'); return; }
   _cine = { proj: p, pl: pl, items: items, i: -1, files: {}, url: null, tocando: true };
   const ov = $('cineOv');
@@ -3442,7 +3602,26 @@ function cineClose(){
 function cineRenderList(){
   const box = $('cineSide'); if (!box || !_cine) return;
   box.innerHTML = '';
-  _cine.items.forEach((it, i) => {
+  const grupos = plGrupos(_cine.pl);
+  let _i = -1;
+  grupos.forEach(grupo => {
+  if (grupo.folder || grupos.length > 1){
+    const fh = document.createElement('div'); fh.className = 'cfold' + (grupo.folder ? '' : ' solta');
+    const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
+    const ct = document.createElement('span'); ct.className = 'cfct'; ct.textContent = grupo.items.length;
+    fh.appendChild(nm); fh.appendChild(ct);
+    if (grupo.folder){
+      nm.style.cursor = 'pointer'; nm.title = TX('vid.fold.rename');
+      nm.addEventListener('click', async () => {
+        const nv = await askText(TX('vid.fold.rename'), grupo.folder.name);
+        if (nv === null || !nv.trim()) return;
+        grupo.folder.name = nv.trim().slice(0, 40); projPersist(); cineRenderList();
+      });
+    }
+    box.appendChild(fh);
+  }
+  grupo.items.forEach((it) => {
+    const i = ++_i;
     const row = document.createElement('div');
     row.className = 'cirow' + (i === _cine.i ? ' on' : '');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
@@ -3451,6 +3630,17 @@ function cineRenderList(){
     d.style.cssText = 'width:8px;height:8px;border-radius:2px;flex:none;background:' + (it.color || '#888');
     const t = document.createElement('span'); t.className = 't';
     t.textContent = it.name || it.tagName || TX('vid.f.clip', 'clip');
+    t.style.cursor = 'text';
+    t.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const nv = await askText(TX('vid.cine.renameT'), it.name || it.tagName || '');
+      if (nv === null) return;
+      const nome = nv.trim().slice(0, 80);
+      it.name = nome; projPersist();
+      /* o nome vale para os dois lados: aqui e no corte original do jogo */
+      if (libRenameEvent(it, nome)) log(TX('vid.cine.renamedAll'));
+      cineRenderList();
+    });
     /* o corte fica visivel ao passar o mouse, sem espremer a linha */
     row.title = (it.name || it.tagName || '') + (it.spec ? '\n' + it.spec : '') + '\n' + (it.srcName || '')
       + '\n' + fmt(it.start, true) + ' → ' + fmt(it.end, true)
@@ -3497,6 +3687,7 @@ function cineRenderList(){
     row.addEventListener('click', () => cineGo(_cine.items.indexOf(it)));
     box.appendChild(row);
   });
+  });
   const cur = box.querySelector('.cirow.on');
   if (cur && cur.scrollIntoView) try { cur.scrollIntoView({ block: 'nearest' }); } catch (e) {}
 }
@@ -3507,7 +3698,7 @@ function cineRenderList(){
 let _ciDrag = null;
 function cineResync(idAtual){
   if (!_cine) return;
-  _cine.items = (_cine.pl.items || []).filter(it => it && it.srcKey);
+  _cine.items = plFlat(_cine.pl).filter(it => it && it.srcKey);
   const i = _cine.items.findIndex(x => x.id === idAtual);
   if (i >= 0) _cine.i = i;
   cineRenderList(); cineCount();
@@ -3528,7 +3719,7 @@ function cineRemove(itId){
   _cine.pl.items = (_cine.pl.items || []).filter(x => x.id !== itId);
   projPersist();
   if (_cine.orig) delete _cine.orig[itId];
-  _cine.items = (_cine.pl.items || []).filter(x => x && x.srcKey);
+  _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey);
   log(TX('vid.cine.removed') + (alvo && (alvo.name || alvo.tagName) || ''));
   if (!_cine.items.length){ log(TX('vid.cine.emptyNow')); cineClose(); return; }
   if (tocandoEsse){
@@ -3602,6 +3793,7 @@ async function cineGo(i){
     if (!_cine || _cine.i !== i) return;
   }
   $('cineMsg').textContent = '';
+  _cine.fim = false;
   try { v.currentTime = Math.max(0, it.start || 0); } catch (e) {}
   cineFraming(it);
   cineTrimPaint();
@@ -3665,7 +3857,8 @@ function cineCount(){
 }
 function cineSyncBtn(){
   const b = $('cinePlay'); if (!b || !_cine) return;
-  b.textContent = _cine.tocando ? '⏸' : '▶';
+  b.textContent = _cine.tocando ? '⏸' : (_cine.fim ? '↺' : '▶');
+  b.title = _cine.tocando ? '' : (_cine.fim ? TX('vid.cine.replay') : '');
 }
 
 function cineWire(){
@@ -3679,13 +3872,28 @@ function cineWire(){
     const p = Math.min(1, Math.max(0, (v.currentTime - (it.start || 0)) / dur));
     const bar = $('cineProgIn'); if (bar) bar.style.width = (p * 100).toFixed(1) + '%';
     if (v.currentTime >= fim - 0.03){
+      /* repetir tem prioridade: o lance roda em loop enquanto voce fala */
+      if ($('cineLoop') && $('cineLoop').checked){
+        try { v.currentTime = it.start || 0; if (_cine.tocando) v.play(); } catch (e) {}
+        return;
+      }
       if ($('cineAuto') && $('cineAuto').checked) cineGo(_cine.i + 1);
-      else { try { v.pause(); } catch (e) {} _cine.tocando = false; cineSyncBtn(); }
+      else {
+        try { v.pause(); } catch (e) {}
+        _cine.tocando = false; _cine.fim = true;   /* o proximo play recomeca */
+        cineSyncBtn();
+      }
     }
   });
   v.addEventListener('ended', () => {
     if (!_cine) return;
+    if ($('cineLoop') && $('cineLoop').checked){
+      const it = _cine.items[_cine.i];
+      try { v.currentTime = (it && it.start) || 0; v.play(); } catch (e) {}
+      return;
+    }
     if ($('cineAuto') && $('cineAuto').checked) cineGo(_cine.i + 1);
+    else { _cine.tocando = false; _cine.fim = true; cineSyncBtn(); }
   });
   v.addEventListener('resize', () => { if (_cine) cineFraming(_cine.items[_cine.i]); });
   window.addEventListener('resize', () => { if (_cine) cineFraming(_cine.items[_cine.i]); });
@@ -3696,8 +3904,31 @@ function cineWire(){
   $('cinePlay').addEventListener('click', () => {
     if (!_cine) return;
     if (_cine.tocando){ try { v.pause(); } catch (e) {} _cine.tocando = false; }
-    else { _cine.tocando = true; try { v.play(); } catch (e) {} }
+    else {
+      const it = _cine.items[_cine.i];
+      const fim = it ? (it.end != null ? it.end : (it.start || 0) + 8) : 0;
+      /* lance no fim: play mostra de novo, sem precisar voltar na mao */
+      if (it && (_cine.fim || v.currentTime >= fim - 0.05 || v.ended)){
+        try { v.currentTime = it.start || 0; } catch (e) {}
+      }
+      _cine.fim = false;
+      _cine.tocando = true; try { v.play(); } catch (e) {}
+    }
     cineSyncBtn();
+  });
+  /* repetir e emendar sozinho sao excludentes */
+  $('cineAuto').addEventListener('change', () => { if ($('cineAuto').checked) $('cineLoop').checked = false; });
+  $('cineLoop').addEventListener('change', () => {
+    if (!$('cineLoop').checked) return;
+    $('cineAuto').checked = false;
+    if (_cine && _cine.fim){ $('cinePlay').click(); }   /* ja parado no fim: volta a rodar */
+  });
+  $('cineFold').addEventListener('click', async () => {
+    if (!_cine) return;
+    const nome = await askText(TX('vid.fold.prompt'));
+    if (!nome || !nome.trim()) return;
+    const f = plFolderCreate(_cine.pl, nome);
+    if (f){ log(TX('vid.fold.created') + f.name); cineResync((_cine.items[_cine.i] || {}).id); }
   });
   $('cineStage').addEventListener('click', () => $('cinePlay').click());
   $('cineInM').addEventListener('click', () => { const it = cineItem(); if (it) cineSetIn((it.start || 0) - CINE_PASSO); });
