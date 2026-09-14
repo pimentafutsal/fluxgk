@@ -388,6 +388,12 @@
     border-bottom:1px solid var(--line);border-left:3px solid var(--ink);font-size:12px}
   .pfold.solta{border-left-color:var(--line);color:var(--muted)}
   .pfold .pfic{flex:none}
+  .pfold{cursor:default}
+  .pfold .pfcar{flex:none;width:18px;height:18px;border:none;background:transparent;cursor:pointer;
+    font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;padding:0}
+  .pfold .pfcar:hover{color:var(--ink)}
+  .pfold .pfcar.open{transform:rotate(90deg)}
   .pfold .pfnm{font-weight:600;cursor:pointer}
   .pfold.solta .pfnm{font-weight:400;font-style:italic;cursor:default}
   .pfold .pfnm:hover{text-decoration:underline}
@@ -434,6 +440,11 @@
   #cineSide .cfold .cfb{display:flex;gap:1px;flex:none;opacity:0}
   #cineSide .cfold:hover .cfb{opacity:1}
   #cineSide .cfold .cfb button{padding:0 5px;font-size:10px;line-height:1.6;border-radius:4px}
+  #cineSide .cfold .cfcar{flex:none;width:18px;height:18px;border:none;background:transparent;cursor:pointer;
+    font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;padding:0}
+  #cineSide .cfold .cfcar:hover{color:var(--ink)}
+  #cineSide .cfold .cfcar.open{transform:rotate(90deg)}
   #cineSide .cfold[draggable=true]{cursor:grab}
   #cineSide .cfold.cdragging{opacity:.42}
   #cineSide .cfold.cdropb{box-shadow:inset 0 3px 0 var(--blue)}
@@ -1721,7 +1732,16 @@ function renderProjectTab(){
                 renderProjectTab();
               }
             });
-            const ic = document.createElement('span'); ic.className = 'pfic'; ic.textContent = grupo.folder ? '📁' : '·';
+            let ic;
+            if (grupo.folder){
+              ic = document.createElement('button'); ic.className = 'pfcar';
+              ic.textContent = '▸';
+              ic.title = TX(plFoldAberta(grupo.folder) ? 'vid.fold.collapse' : 'vid.fold.expand');
+              if (plFoldAberta(grupo.folder)) ic.classList.add('open');
+              ic.addEventListener('click', (e) => { e.stopPropagation(); plFoldToggle(pl, grupo.folder); renderProjectTab(); });
+            } else {
+              ic = document.createElement('span'); ic.className = 'pfic'; ic.textContent = '·';
+            }
             const fn = document.createElement('span'); fn.className = 'pfnm';
             fn.textContent = grupo.folder ? grupo.folder.name : TX('vid.fold.none');
             const fc = document.createElement('span'); fc.className = 'pfct'; fc.textContent = grupo.items.length;
@@ -1755,10 +1775,17 @@ function renderProjectTab(){
               const sp2 = document.createElement('span'); sp2.style.flex = '1'; fh.appendChild(sp2);
               fh.appendChild(fu); fh.appendChild(fd); fh.appendChild(fx);
             }
+            /* clicar no corpo do cabecalho tambem recolhe, como no Photoshop */
+            if (grupo.folder) fh.addEventListener('click', (e) => {
+              if (e.target.closest('button') || e.target.classList.contains('pfnm')) return;
+              plFoldToggle(pl, grupo.folder); renderProjectTab();
+            });
             lista.appendChild(fh);
           }
+          const fechada = grupo.folder && !plFoldAberta(grupo.folder);
           grupo.items.forEach((it) => {
             const ord = ++_ord;
+            if (fechada) return;   /* a numeracao segue a ordem real, mesmo escondida */
             const row = document.createElement('div'); row.className = 'pitem';
             row.dataset.itid = it.id;
 
@@ -3553,6 +3580,14 @@ function plFolderDelete(pl, fid){
   pl.folders = plFolders(pl).filter(f => f.id !== fid);
   plNormaliza(pl); projPersist();
 }
+/* recolher/abrir fica gravado na pasta: reabrir o projeto mantem o arranjo */
+function plFoldToggle(pl, folder){
+  if (!folder) return;
+  if (folder.fechada) delete folder.fechada; else folder.fechada = true;
+  projPersist();
+}
+function plFoldAberta(folder){ return !folder || !folder.fechada; }
+
 function plFolderReorder(pl, arrastadaId, alvoId, depois){
   if (!pl || arrastadaId === alvoId) return;
   const fs = plFolders(pl);
@@ -3711,16 +3746,19 @@ function cineRenderList(){
         cineResync(atual);
       }
     });
+    if (grupo.folder){
+      const car = document.createElement('button'); car.className = 'cfcar';
+      car.textContent = '▸';
+      car.title = TX(plFoldAberta(grupo.folder) ? 'vid.fold.collapse' : 'vid.fold.expand');
+      if (plFoldAberta(grupo.folder)) car.classList.add('open');
+      car.addEventListener('click', (e) => { e.stopPropagation(); plFoldToggle(_cine.pl, grupo.folder); cineRenderList(); });
+      fh.appendChild(car);
+    }
     const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
     const ct = document.createElement('span'); ct.className = 'cfct'; ct.textContent = grupo.items.length;
     fh.appendChild(nm); fh.appendChild(ct);
     if (grupo.folder){
-      nm.style.cursor = 'pointer'; nm.title = TX('vid.fold.rename');
-      nm.addEventListener('click', async () => {
-        const nv = await askText(TX('vid.fold.rename'), grupo.folder.name);
-        if (nv === null || !nv.trim()) return;
-        grupo.folder.name = nv.trim().slice(0, 40); projPersist(); cineRenderList();
-      });
+      fh.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); cineFolderMenu(e.clientX, e.clientY, grupo.folder); });
       /* a pasta inteira sobe ou desce: muda a ordem da apresentacao em bloco */
       const sp = document.createElement('span'); sp.style.flex = '1'; fh.appendChild(sp);
       const fb = document.createElement('span'); fb.className = 'cfb';
@@ -3733,10 +3771,16 @@ function cineRenderList(){
       fd.addEventListener('click', (e) => { e.stopPropagation(); cineFolderMove(grupo.folder, 1); });
       fb.appendChild(fu); fb.appendChild(fd); fh.appendChild(fb);
     }
+    if (grupo.folder) fh.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      plFoldToggle(_cine.pl, grupo.folder); cineRenderList();
+    });
     box.appendChild(fh);
   }
+  const fechada = grupo.folder && !plFoldAberta(grupo.folder);
   grupo.items.forEach((it) => {
     const i = ++_i;
+    if (fechada) return;
     const row = document.createElement('div');
     row.className = 'cirow' + (i === _cine.i ? ' on' : '');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
@@ -3745,17 +3789,7 @@ function cineRenderList(){
     d.style.cssText = 'width:8px;height:8px;border-radius:2px;flex:none;background:' + (it.color || '#888');
     const t = document.createElement('span'); t.className = 't';
     t.textContent = it.name || it.tagName || TX('vid.f.clip', 'clip');
-    t.style.cursor = 'text';
-    t.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const nv = await askText(TX('vid.cine.renameT'), it.name || it.tagName || '');
-      if (nv === null) return;
-      const nome = nv.trim().slice(0, 80);
-      it.name = nome; projPersist();
-      /* o nome vale para os dois lados: aqui e no corte original do jogo */
-      if (libRenameEvent(it, nome)) log(TX('vid.cine.renamedAll'));
-      cineRenderList();
-    });
+    /* clicar no nome so toca o lance — renomear fica no botao direito */
     /* o corte fica visivel ao passar o mouse, sem espremer a linha */
     row.title = (it.name || it.tagName || '') + (it.spec ? '\n' + it.spec : '') + '\n' + (it.srcName || '')
       + '\n' + fmt(it.start, true) + ' → ' + fmt(it.end, true)
@@ -3768,10 +3802,7 @@ function cineRenderList(){
     const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.textContent = '▼';
     dn.title = TX('vid.proj.itemDown'); dn.disabled = i === _cine.items.length - 1;
     dn.addEventListener('click', (e) => { e.stopPropagation(); cineMove(it.id, 1); });
-    const rm = document.createElement('button'); rm.className = 'mini ghost danger'; rm.textContent = '✕';
-    rm.title = TX('vid.cine.remove');
-    rm.addEventListener('click', (e) => { e.stopPropagation(); cineRemove(it.id); });
-    b.appendChild(up); b.appendChild(dn); b.appendChild(rm);
+    b.appendChild(up); b.appendChild(dn);
 
     row.draggable = true;
     row.addEventListener('dragstart', (e) => {
@@ -3800,6 +3831,7 @@ function cineRenderList(){
 
     row.appendChild(n); row.appendChild(d); row.appendChild(t); row.appendChild(b);
     row.addEventListener('click', () => cineGo(_cine.items.indexOf(it)));
+    row.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); cineItemMenu(e.clientX, e.clientY, it); });
     box.appendChild(row);
   });
   });
@@ -3818,6 +3850,91 @@ function cineResync(idAtual){
   if (i >= 0) _cine.i = i;
   cineRenderList(); cineCount();
 }
+/* ══ MENUS DE BOTAO DIREITO NO PLAYER ══════════════════════════
+   Tocar no nome so toca o lance; o que altera as coisas mora aqui. */
+function cinePos(menu, x, y){
+  menu.classList.add('on');
+  menu.style.left = '0px'; menu.style.top = '0px';
+  const r = menu.getBoundingClientRect();
+  menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+}
+async function cineRename(it){
+  const nv = await askText(TX('vid.cine.renameT'), it.name || it.tagName || '');
+  if (nv === null) return;
+  const nome = nv.trim().slice(0, 80);
+  it.name = nome; projPersist();
+  /* o nome vale para os dois lados: aqui e no corte original do jogo */
+  if (libRenameEvent(it, nome)) log(TX('vid.cine.renamedAll'));
+  cineRenderList();
+}
+function cineItemMenu(x, y, it){
+  if (!_cine) return;
+  const menu = $('ctxMenu');
+  menu.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'ctxhead';
+  head.textContent = TX('vid.cine.menuClip') + ' · ' + (it.name || it.tagName || '');
+  menu.appendChild(head);
+  menu.appendChild(ctxItem(TX('vid.cine.play'), () => cineGo(_cine.items.indexOf(it))));
+  menu.appendChild(ctxItem(TX('vid.cine.rename'), () => cineRename(it)));
+
+  /* submenu de pastas */
+  const subs = [];
+  plFolders(_cine.pl).forEach(f => {
+    if (f.id === it.folderId) return;
+    subs.push(ctxItem('📁 ' + f.name, () => {
+      const atual = (_cine.items[_cine.i] || {}).id;
+      plItemToFolder(_cine.pl, it.id, f.id); cineResync(atual);
+    }));
+  });
+  if (it.folderId) subs.push(ctxItem(TX('vid.fold.none'), () => {
+    const atual = (_cine.items[_cine.i] || {}).id;
+    plItemToFolder(_cine.pl, it.id, ''); cineResync(atual);
+  }));
+  subs.push(ctxItem(TX('vid.cine.newFolder'), async () => {
+    const nome = await askText(TX('vid.fold.prompt'));
+    if (!nome || !nome.trim()) return;
+    const f = plFolderCreate(_cine.pl, nome);
+    if (!f) return;
+    const atual = (_cine.items[_cine.i] || {}).id;
+    plItemToFolder(_cine.pl, it.id, f.id); cineResync(atual);
+  }));
+  menu.appendChild(ctxItem(TX('vid.cine.moveTo'), null, { sub: subs }));
+
+  const i = _cine.items.indexOf(it);
+  if (i > 0) menu.appendChild(ctxItem('▲ ' + TX('vid.proj.itemUp'), () => cineMove(it.id, -1)));
+  if (i < _cine.items.length - 1) menu.appendChild(ctxItem('▼ ' + TX('vid.proj.itemDown'), () => cineMove(it.id, 1)));
+  const sep = document.createElement('div'); sep.className = 'ctxsep'; menu.appendChild(sep);
+  menu.appendChild(ctxItem(TX('vid.cine.remove'), () => cineRemove(it.id), { danger: true }));
+  cinePos(menu, x, y);
+}
+function cineFolderMenu(x, y, folder){
+  if (!_cine) return;
+  const menu = $('ctxMenu');
+  menu.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'ctxhead';
+  head.textContent = TX('vid.cine.menuFolder') + ' · ' + folder.name;
+  menu.appendChild(head);
+  menu.appendChild(ctxItem(TX(plFoldAberta(folder) ? 'vid.fold.collapse' : 'vid.fold.expand'), () => {
+    plFoldToggle(_cine.pl, folder); cineRenderList();
+  }));
+  menu.appendChild(ctxItem(TX('vid.fold.rename'), async () => {
+    const nv = await askText(TX('vid.fold.rename'), folder.name);
+    if (nv === null || !nv.trim()) return;
+    folder.name = nv.trim().slice(0, 40); projPersist(); cineRenderList();
+  }));
+  const fs = plFolders(_cine.pl), fi = fs.indexOf(folder);
+  if (fi > 0) menu.appendChild(ctxItem('▲ ' + TX('vid.proj.itemUp'), () => cineFolderMove(folder, -1)));
+  if (fi < fs.length - 1) menu.appendChild(ctxItem('▼ ' + TX('vid.proj.itemDown'), () => cineFolderMove(folder, 1)));
+  const sep = document.createElement('div'); sep.className = 'ctxsep'; menu.appendChild(sep);
+  menu.appendChild(ctxItem(TX('vid.fold.del'), async () => {
+    if (!(await askConfirm(TX('vid.fold.del'), TX('vid.fold.delQ') + folder.name + TX('vid.fold.delQ2'), TX('vid.delete')))) return;
+    const atual = (_cine.items[_cine.i] || {}).id;
+    plFolderDelete(_cine.pl, folder.id); cineResync(atual);
+  }, { danger: true }));
+  cinePos(menu, x, y);
+}
+
 /* move a pasta inteira sem perder de vista o lance que esta tocando */
 function cineFolderMove(folder, delta){
   if (!_cine || !folder) return;
@@ -3898,6 +4015,11 @@ async function cineGo(i){
   const it = _cine.items[i];
   const v = $('cineVid');
   _cine.i = i;
+  /* o lance da vez nunca fica escondido: a pasta dele abre sozinha */
+  if (it && it.folderId){
+    const f = plFolder(_cine.pl, it.folderId);
+    if (f && f.fechada){ delete f.fechada; projPersist(); }
+  }
   cineRenderList(); cineCount();
   const f = await cineFile(it);
   if (!_cine || _cine.i !== i) return;           /* o usuario pulou enquanto carregava */
@@ -4072,6 +4194,8 @@ function cineWire(){
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     /* com um dialogo aberto por cima, quem manda e o dialogo */
     if (document.querySelector('#askModal.on, #nameModal.on')) return;
+    /* com o menu aberto, Esc fecha so o menu */
+    if (e.key === 'Escape' && $('ctxMenu').classList.contains('on')){ e.stopPropagation(); closeCtxMenu(); return; }
     if (e.key === 'Escape'){ e.stopPropagation(); cineClose(); }
     else if (e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i + 1); }
     else if (e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i - 1); }
