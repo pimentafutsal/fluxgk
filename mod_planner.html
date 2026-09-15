@@ -74,6 +74,9 @@ select.fi option{background:var(--paper)}
 .exc-desc{font-size:12px;color:var(--mute);line-height:1.6;margin-bottom:10px}
 .exc-goal{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);border-top:1px solid var(--faint);padding-top:9px;letter-spacing:.03em}
 .empty{text-align:center;padding:52px 24px;border:1px dashed var(--faint);border-radius:6px;grid-column:1/-1}
+.libspin{width:22px;height:22px;margin:16px auto 0;border:2px solid var(--faint);
+  border-top-color:var(--ink);border-radius:50%;animation:libspin .8s linear infinite}
+@keyframes libspin{to{transform:rotate(360deg)}}
 /* OVERLAY / WIZARD */
 .overlay{position:fixed;inset:0;background:rgba(10,10,10,.78);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
 .overlay.open{display:flex}
@@ -501,6 +504,9 @@ window.addEventListener('message', function(e){
   _HUB=d;
   /* idioma definido no hub (persist=false: a escolha e do hub) */
   if(d.lang) FluxGKI18n.setLang(d.lang,false);
+  if(_PATH.sessions && _PATH.sessions !== d.dataPath + '/planner/sessions'){
+    _sessLidas = false; savedSessions = [];   /* outro clube/temporada: espera a resposta nova */
+  }
   _PATH.sessions  = d.dataPath + '/planner/sessions';
   _PATH.exercises = 'users/' + d.uid + '/library/exercises';
   console.log('[FluxGK] planner: sessoes em', _PATH.sessions);
@@ -779,6 +785,10 @@ function _queueSess(s){
    de reenvio era recriado pelo flushPending 15s depois — o treino "voltava"
    sozinho depois de apagado. Tambem serve para o listener nao reinserir um
    registro que a nuvem ainda nao terminou de remover. */
+/* O caminho estar pronto NAO significa que o banco ja respondeu. Entre uma
+   coisa e outra a Biblioteca mostrava "nenhuma sessao" com a caixa de resgate
+   — parecia que tudo tinha sumido, quando era so a resposta a caminho.      */
+var _sessLidas = false;
 var _apagados = Object.create(null);
 function _marcarApagado(id){
   _apagados[String(id)] = Date.now();
@@ -1235,7 +1245,7 @@ function saveEditedSession(id){
   s.postEmergent   = document.getElementById('es_eme').value;
   s.postNext       = document.getElementById('es_nxt').value;
   savedSessions[idx] = s;
-  localStorage.setItem('fluxgk_sessions', JSON.stringify(savedSessions));
+  _espelhoSalvar(s);
   if(_cloudReady()){
     dotY(); fbDatabase.ref(_PATH.sessions+'/'+id).set(s)
       .then(()=>{dotG();toast(TX('plan.msg.syncedCloud'));})
@@ -1273,13 +1283,59 @@ function toggleLibOrder(){
    momento o modulo deixou de CARREGAR essa copia (para nao misturar contas no
    mesmo computador), mas continuou GRAVANDO nela — entao as sessoes de quem
    usou o sistema antes disso ficaram guardadas aqui, invisiveis. */
-function _sessoesNoNavegador(){
+/* ══════════════════════════════════════════════════════════════
+   ESPELHO LOCAL DAS SESSOES
+   A nuvem e a fonte da verdade, mas ela pode falhar calada: caminho
+   trocado, regra negada, rede caida na hora exata do "salvar". Ate
+   hoje, uma sessao criada e salva so existia no Firebase — se a
+   gravacao nao chegasse, nao sobrava copia nenhuma.
+   Agora toda sessao salva deixa uma copia no navegador, marcada com
+   a conta e o caminho, para poder ser devolvida com um clique.
+   A copia NUNCA entra sozinha na lista: ela so aparece como resgate.
+   ══════════════════════════════════════════════════════════════ */
+function _espelhoKey(){
+  return 'fluxgk_sess_mirror::' + ((_HUB && _HUB.uid) || 'sem-uid') + '::' + (_PATH.sessions || 'sem-caminho');
+}
+function _espelhoLer(){
   try{
-    const cru = localStorage.getItem('fluxgk_sessions');
-    if(!cru) return [];
-    const arr = JSON.parse(cru);
+    const cru = localStorage.getItem(_espelhoKey());
+    const arr = cru ? JSON.parse(cru) : [];
     return Array.isArray(arr) ? arr.filter(function(x){ return x && x.id; }) : [];
   }catch(e){ return []; }
+}
+function _espelhoGravar(arr){
+  try{ localStorage.setItem(_espelhoKey(), JSON.stringify(arr.slice(0, 300))); }
+  catch(e){ console.warn('[FluxGK] planner: espelho local cheio', e); }
+}
+function _espelhoSalvar(s){
+  if(!s || !s.id) return;
+  const arr = _espelhoLer().filter(function(x){ return String(x.id) !== String(s.id); });
+  arr.unshift(s);
+  _espelhoGravar(arr);
+}
+function _espelhoRemover(id){
+  _espelhoGravar(_espelhoLer().filter(function(x){ return String(x.id) !== String(id); }));
+}
+/* o que existe no navegador e NAO esta na lista vinda da nuvem */
+function _sessoesNoNavegador(){
+  const vistos = Object.create(null);
+  (savedSessions || []).forEach(function(x){ if(x && x.id) vistos[String(x.id)] = 1; });
+  const out = [];
+  const juntar = function(arr){
+    (arr || []).forEach(function(x){
+      if(!x || !x.id) return;
+      const k = String(x.id);
+      if(vistos[k] || _foiApagado(x.id)) return;
+      vistos[k] = 1; out.push(x);
+    });
+  };
+  juntar(_espelhoLer());
+  /* formato antigo, de antes do espelho por conta */
+  try{
+    const cru = localStorage.getItem('fluxgk_sessions');
+    if(cru) juntar(JSON.parse(cru));
+  }catch(e){}
+  return out;
 }
 function baixarCopiaLocal(){
   const arr = _sessoesNoNavegador();
@@ -1297,6 +1353,7 @@ async function restaurarDoNavegador(){
   const out = document.getElementById('libScanOut');
   try{
     for(const sx of arr){ await fbDatabase.ref(_PATH.sessions + '/' + sx.id).set(sx); }
+    _espelhoGravar(arr.concat(savedSessions || []));
     if(out) out.textContent = TX('plan.libScanDone','Pronto. As sessões já aparecem aqui.');
   }catch(e){
     if(out) out.textContent = TX('plan.libScanErr','Não consegui ler o banco') + ': ' + (e && e.message || e);
@@ -1372,11 +1429,12 @@ function renderLibrary(){
     /* Vazio pode ser tres coisas bem diferentes: ainda carregando, sem conexao,
        ou sessoes gravadas em outra temporada/clube. Mostrar qual e o caminho
        lido evita o "sumiu tudo" sem pista nenhuma. */
-    const carregando = !_cloudReady() && !_libErro;
+    const carregando = !_libErro && (!_cloudReady() || !_sessLidas);
     grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
       <div style="font-size:36px;opacity:.22;margin-bottom:12px">📋</div>
       <div style="font-weight:600;margin-bottom:5px">${carregando?TX('plan.libLoading','Carregando…'):TX("plan.noSessions")}</div>
-      <div style="font-size:13px;color:var(--mute)">${carregando?TX('plan.libLoadingHint','Aguardando a conexão com o banco de dados.'):TX("plan.noSessionsHint")}</div>
+      <div style="font-size:13px;color:var(--mute)">${carregando?TX(_cloudReady()?'plan.libReading':'plan.libLoadingHint','Aguardando a conexão com o banco de dados.'):TX("plan.noSessionsHint")}</div>
+      ${carregando?'<div class="libspin" aria-hidden="true"></div>':''}
       ${carregando?'':`
         ${_libErro?`<div style="margin-top:12px;color:var(--risk);font-size:13px">
           ${TX('plan.libScanErr','Não consegui ler o banco')}: ${_libErro}</div>`:''}
@@ -1388,7 +1446,7 @@ function renderLibrary(){
           if(!loc.length) return '';
           return `<div style="margin-top:16px;padding:14px;border:1px solid var(--ok);border-radius:10px;background:rgba(22,163,74,.06)">
             <div style="font-weight:600;margin-bottom:4px">${TX('plan.libLocalFound','Encontrei {n} sessões salvas neste navegador').replace('{n}', loc.length)}</div>
-            <div style="font-size:12.5px;color:var(--mute);margin-bottom:10px">${TX('plan.libLocalHint','Elas foram gravadas antes de o Planner passar a usar só a nuvem. Nada foi perdido.')}</div>
+            <div style="font-size:12.5px;color:var(--mute);margin-bottom:10px">${TX('plan.libLocalHint','Cópia de segurança feita neste navegador quando você salvou. Nada foi perdido.')}</div>
             <button class="btn btn-p btn-sm" onclick="restaurarDoNavegador()">${TX('plan.libLocalRestore','Restaurar para esta temporada')}</button>
             <button class="btn btn-o btn-sm" onclick="baixarCopiaLocal()">${TX('plan.libLocalDownload','Baixar cópia (.json)')}</button>
           </div>`;
@@ -1461,7 +1519,7 @@ function deleteSession(id){
   if(!confirm(TX('plan.msg.deleteSession'))) return;
   _marcarApagado(id);
   savedSessions=savedSessions.filter(s=>s.id!=id);
-  localStorage.setItem('fluxgk_sessions',JSON.stringify(savedSessions));
+  _espelhoRemover(id);
   if(_cloudReady()){dotY();fbDatabase.ref(_PATH.sessions+'/'+id).remove().then(dotG)
     .catch(function(e){dotR();console.error(e);toast(TX('plan.msg.delFail'),6000);});}
   else { toast(TX('plan.msg.delWait'),6000); }
@@ -1746,11 +1804,15 @@ function _ligarListeners(){
     });
     lista = lista.filter(function(x){ return x && !_foiApagado(x.id); });
     savedSessions = lista.sort((a,b)=>b.id-a.id);
+    _sessLidas = true;
     _libErro = '';
+    /* o que ja esta na nuvem nao precisa de resgate */
+    if(savedSessions.length) _espelhoGravar(savedSessions);
     console.log('[FluxGK] planner: sessoes carregadas:', savedSessions.length, 'de', _PATH.sessions);
     if(_currentPage==='library') renderLibrary();
   }, function(err){
     _listenersOn = false;
+    _sessLidas = true;              /* respondeu — com erro, mas respondeu */
     _libErro = (err && err.message) || String(err);
     console.error('[FluxGK] planner: leitura das sessoes negada:', err);
     if(_currentPage==='library') renderLibrary();
@@ -1989,6 +2051,7 @@ function _persistSessionToLibrary(){
   };
   const idx = savedSessions.findIndex(x=>x.id===session.id);
   if(idx>=0) savedSessions[idx]=session; else savedSessions.unshift(session);
+  _espelhoSalvar(session);          /* copia de seguranca no navegador */
   _editingSessionId = session.id;   /* a partir daqui, Post-Training atualiza ESTA */
   if(_cloudReady()){
     dotY(); fbDatabase.ref(_PATH.sessions+'/'+session.id).set(session)
