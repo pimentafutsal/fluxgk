@@ -475,9 +475,7 @@
   #cineBar{flex:none;display:flex;align-items:center;gap:9px;margin-top:10px;color:#fff;flex-wrap:wrap}
   #cineProg{flex:1;min-width:140px;height:16px;position:relative;cursor:pointer;display:flex;align-items:center}
   #cineProg::before{content:'';position:absolute;left:0;right:0;height:5px;background:rgba(255,255,255,.18);border-radius:3px}
-  #cineRange{position:absolute;height:9px;min-width:4px;background:var(--blue);opacity:.55;border-radius:3px;
-    box-shadow:0 0 0 1px rgba(255,255,255,.5)}
-  #cineProgIn{position:absolute;height:5px;background:rgba(255,255,255,.75);border-radius:3px}
+  #cineProgIn{position:absolute;left:0;height:5px;background:var(--blue);border-radius:3px}
   #cineHead{position:absolute;width:3px;height:14px;background:#fff;border-radius:2px;margin-left:-1.5px;
     box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none}
   #cineProg.scrub #cineHead{width:5px;margin-left:-2.5px}
@@ -1133,11 +1131,10 @@
     <span id="cineCount">—</span>
     <button class="mini ghost" id="cineFrB" data-i18n-title="vid.cine.frameBack" title="One frame back">,</button>
     <div id="cineProg" data-i18n-title="vid.cine.scrub" title="Drag to move through the clip">
-      <div id="cineRange"></div><div id="cineProgIn"></div><div id="cineHead"></div>
+      <div id="cineProgIn"></div><div id="cineHead"></div>
     </div>
     <button class="mini ghost" id="cineFrF" data-i18n-title="vid.cine.frameFwd" title="One frame forward">.</button>
-    <span id="cineNow">00:00.0</span>
-    <button class="mini ghost" id="cineRange2" data-i18n-title="vid.cine.rangeT" title="Whole match / clip">⟷</button>
+    <span id="cineNow">0.0s / 0.0s</span>
     <label><input type="checkbox" id="cineAuto" checked> <span data-i18n="vid.cine.autoplay">Auto-advance</span></label>
     <label><input type="checkbox" id="cineLoop"> <span data-i18n="vid.cine.loop">Repeat</span></label>
     <span id="cineKeys" data-i18n="vid.cine.keys">→ next · ← previous · space play</span>
@@ -4459,22 +4456,13 @@ function cineSyncBtn(){
 /* ══ TRILHA NAVEGAVEL DO PLAYER ═══════════════════════════════
    A janela mostrada vai um pouco alem do corte, para voce poder
    parar num quadro de fora e puxar o INICIO ou o FIM ate la.   */
-const CINE_MARGEM = 10;
-/* A barra mostra o JOGO INTEIRO: e assim que da para procurar um lance
-   a frente ou atras sem pensar no corte. O botao ao lado aproxima para
-   o lance (+-10s) quando voce precisa de precisao no INICIO/FIM.      */
+/* A barra e o lance que esta passando, do INICIO ao FIM. Arrastar anda
+   dentro desse trecho — nem o jogo inteiro, nem nada alem do corte. */
 function cineJanela(){
   const it = cineItem(); if (!it) return { a: 0, b: 1 };
-  const v = $('cineVid');
-  const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : null;
-  if (!_cine || !_cine.soLance){
-    return { a: 0, b: dur || Math.max(1, (it.end || 0) + CINE_MARGEM) };
-  }
-  const ini = it.start || 0, fim = (it.end != null ? it.end : ini + 8);
-  let a = Math.max(0, ini - CINE_MARGEM);
-  let b = fim + CINE_MARGEM;
-  if (dur) b = Math.min(dur, b);
-  if (b - a < 0.5) b = a + 0.5;
+  const a = it.start || 0;
+  let b = (it.end != null ? it.end : a + 8);
+  if (b - a < 0.2) b = a + 0.2;
   return { a: a, b: b };
 }
 function cinePinta(){
@@ -4483,30 +4471,17 @@ function cinePinta(){
   const j = cineJanela(), larg = Math.max(0.001, j.b - j.a);
   const ini = it.start || 0, fim = (it.end != null ? it.end : ini + 8);
   const pc = x => (Math.min(1, Math.max(0, (x - j.a) / larg)) * 100).toFixed(2) + '%';
-  const faixa = $('cineRange'), cheio = $('cineProgIn'), cab = $('cineHead'), agora = $('cineNow');
-  if (faixa){
-    const L = Math.min(1, Math.max(0, (ini - j.a) / larg)) * 100;
-    /* num jogo inteiro o lance vira um risco de nada: garante 4px de largura */
-    const W = Math.max(0.6, Math.min(1, Math.max(0, (fim - ini) / larg)) * 100);
-    faixa.style.left = L.toFixed(2) + '%';
-    faixa.style.width = W.toFixed(2) + '%';
-  }
+  const cheio = $('cineProgIn'), cab = $('cineHead'), agora = $('cineNow');
   const t = v.currentTime || 0;
-  if (cheio){
-    /* a parte azul vai do inicio do corte ate onde voce esta */
-    const de = Math.min(Math.max(t, ini), fim);
-    cheio.style.left = pc(ini);
-    cheio.style.width = (Math.min(1, Math.max(0, (de - ini) / larg)) * 100).toFixed(2) + '%';
-  }
+  if (cheio){ cheio.style.left = '0%'; cheio.style.width = pc(t); }
   if (cab) cab.style.left = pc(t);
-  if (agora) agora.textContent = fmt(t, true);
+  /* relogio do lance: quanto ja correu do corte e quanto ele dura */
+  if (agora) agora.textContent = Math.max(0, t - ini).toFixed(1) + 's / ' + (fim - ini).toFixed(1) + 's';
 }
 function cineSeek(t){
   const v = $('cineVid');
-  const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : null;
-  /* limite e o video, nao o corte */
-  const lim = dur ? Math.min(dur, Math.max(0, t)) : Math.max(0, t);
-  try { v.currentTime = lim; } catch (e) {}
+  const j = cineJanela();
+  try { v.currentTime = Math.max(j.a, Math.min(j.b, t)); } catch (e) {}
   if (_cine) _cine.fim = false;
   cinePinta(); cineSyncBtn();
 }
@@ -4665,9 +4640,6 @@ function cineWire(){
     /* arrastando a trilha ou parado: nunca emenda sozinho */
     if (_cine.arrastando || !_cine.tocando) return;
     const fim = (it.end != null ? it.end : (it.start || 0) + 8);
-    /* longe do corte voce esta navegando o jogo: nao e "fim do lance",
-       entao nada de emendar nem repetir por conta propria */
-    if (v.currentTime < (it.start || 0) - 0.5 || v.currentTime > fim + 2) return;
     if (v.currentTime >= fim - 0.03){
       /* repetir tem prioridade: o lance roda em loop enquanto voce fala */
       if ($('cineLoop') && $('cineLoop').checked){
@@ -4746,13 +4718,6 @@ function cineWire(){
   $('cineOutP').addEventListener('click', () => { const it = cineItem(); if (it) cineSetOut((it.end || 0) + CINE_PASSO); });
   $('cineOutHere').addEventListener('click', () => cineSetOut(v.currentTime));
   $('cineRevert').addEventListener('click', cineRevert);
-  $('cineRange2').addEventListener('click', () => {
-    if (!_cine) return;
-    _cine.soLance = !_cine.soLance;
-    $('cineRange2').textContent = _cine.soLance ? '⤢' : '⟷';
-    $('cineRange2').title = TX(_cine.soLance ? 'vid.cine.wholeGame' : 'vid.cine.clipOnly');
-    cinePinta();
-  });
   $('cineFrB').addEventListener('click', () => cineSeek(v.currentTime - 1 / 30));
   $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + 1 / 30));
   $('cineZmM').addEventListener('click', () => cineZoomPasso(-CINE_ZPASSO));
