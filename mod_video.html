@@ -473,8 +473,17 @@
   #cineSide .cirow .n{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);min-width:20px;text-align:right}
   #cineSide .cirow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #cineBar{flex:none;display:flex;align-items:center;gap:9px;margin-top:10px;color:#fff;flex-wrap:wrap}
-  #cineProg{flex:1;min-width:120px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
-  #cineProgIn{height:100%;width:0;background:var(--blue)}
+  #cineProg{flex:1;min-width:140px;height:16px;position:relative;cursor:pointer;display:flex;align-items:center}
+  #cineProg::before{content:'';position:absolute;left:0;right:0;height:5px;background:rgba(255,255,255,.18);border-radius:3px}
+  #cineRange{position:absolute;height:9px;min-width:4px;background:var(--blue);opacity:.55;border-radius:3px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+  #cineProgIn{position:absolute;height:5px;background:rgba(255,255,255,.75);border-radius:3px}
+  #cineHead{position:absolute;width:3px;height:14px;background:#fff;border-radius:2px;margin-left:-1.5px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none}
+  #cineProg.scrub #cineHead{width:5px;margin-left:-2.5px}
+  #cineNow{font-family:'JetBrains Mono',monospace;font-size:11.5px;opacity:.9;white-space:nowrap;min-width:58px}
+  #cineStage.pan{cursor:grab}
+  #cineStage.panning{cursor:grabbing}
   #cineCount{font-family:'JetBrains Mono',monospace;font-size:11.5px;opacity:.85;white-space:nowrap}
   #cineKeys{font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.5;white-space:nowrap}
   #cineSide .cfold{display:flex;align-items:center;gap:6px;padding:6px 9px;background:var(--paper);
@@ -1122,7 +1131,13 @@
     <button class="mini primary" id="cinePlay">⏸</button>
     <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next (→)">⏭</button>
     <span id="cineCount">—</span>
-    <div id="cineProg"><div id="cineProgIn"></div></div>
+    <button class="mini ghost" id="cineFrB" data-i18n-title="vid.cine.frameBack" title="One frame back">,</button>
+    <div id="cineProg" data-i18n-title="vid.cine.scrub" title="Drag to move through the clip">
+      <div id="cineRange"></div><div id="cineProgIn"></div><div id="cineHead"></div>
+    </div>
+    <button class="mini ghost" id="cineFrF" data-i18n-title="vid.cine.frameFwd" title="One frame forward">.</button>
+    <span id="cineNow">00:00.0</span>
+    <button class="mini ghost" id="cineRange2" data-i18n-title="vid.cine.rangeT" title="Whole match / clip">⟷</button>
     <label><input type="checkbox" id="cineAuto" checked> <span data-i18n="vid.cine.autoplay">Auto-advance</span></label>
     <label><input type="checkbox" id="cineLoop"> <span data-i18n="vid.cine.loop">Repeat</span></label>
     <span id="cineKeys" data-i18n="vid.cine.keys">→ next · ← previous · space play</span>
@@ -1142,6 +1157,12 @@
     <button class="mini" id="cineOutHere" data-i18n-title="vid.cine.hereOut" title="End the clip at the current frame">⟐ <span data-i18n="vid.cine.here">set here</span></button>
     <span class="ctsep"></span>
     <span class="ctdur" id="cineDur">—</span>
+    <span class="ctsep"></span>
+    <span class="ctlbl" data-i18n="vid.cine.zoom">ZOOM</span>
+    <button class="mini ghost" id="cineZmM" data-i18n-title="vid.cine.zoomOut" title="Zoom out">−</button>
+    <span class="ctval" id="cineZmV">100%</span>
+    <button class="mini ghost" id="cineZmP" data-i18n-title="vid.cine.zoomIn" title="Zoom in">+</button>
+    <button class="mini ghost" id="cineZmR" data-i18n-title="vid.cine.zoomReset" title="Remove framing">⟲</button>
     <button class="mini ghost" id="cineRevert" data-i18n-title="vid.cine.revertT" title="Back to the original times"><span data-i18n="vid.cine.revert">Undo trim</span></button>
   </div>
 </div>
@@ -4368,7 +4389,7 @@ async function cineGo(i, modo){
   _cine.fim = false;
   try { v.currentTime = Math.max(0, it.start || 0); } catch (e) {}
   cineFraming(it);
-  cineTrimPaint();
+  cineTrimPaint(); cinePinta(); cineZoomPaint();
   if (_cine.tocando){ try { await v.play(); } catch (e) {} }
   else { try { v.pause(); } catch (e) {} }
   cineSyncBtn();
@@ -4385,6 +4406,7 @@ function cineTrimPaint(){
   const iv = $('cineInV'), ov = $('cineOutV'), dv = $('cineDur');
   if (iv) iv.textContent = fmt(ini, true);
   if (ov) ov.textContent = fmt(fim, true);
+  cinePinta();
   if (dv) dv.textContent = TX('vid.cine.dur') + ' ' + (fim - ini).toFixed(1) + 's';
   const rb = $('cineRevert');
   if (rb) rb.disabled = !(_cine && _cine.orig && _cine.orig[it.id]);
@@ -4434,16 +4456,218 @@ function cineSyncBtn(){
   b.title = _cine.tocando ? '' : (_cine.fim ? TX('vid.cine.replay') : '');
 }
 
+/* ══ TRILHA NAVEGAVEL DO PLAYER ═══════════════════════════════
+   A janela mostrada vai um pouco alem do corte, para voce poder
+   parar num quadro de fora e puxar o INICIO ou o FIM ate la.   */
+const CINE_MARGEM = 10;
+/* A barra mostra o JOGO INTEIRO: e assim que da para procurar um lance
+   a frente ou atras sem pensar no corte. O botao ao lado aproxima para
+   o lance (+-10s) quando voce precisa de precisao no INICIO/FIM.      */
+function cineJanela(){
+  const it = cineItem(); if (!it) return { a: 0, b: 1 };
+  const v = $('cineVid');
+  const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : null;
+  if (!_cine || !_cine.soLance){
+    return { a: 0, b: dur || Math.max(1, (it.end || 0) + CINE_MARGEM) };
+  }
+  const ini = it.start || 0, fim = (it.end != null ? it.end : ini + 8);
+  let a = Math.max(0, ini - CINE_MARGEM);
+  let b = fim + CINE_MARGEM;
+  if (dur) b = Math.min(dur, b);
+  if (b - a < 0.5) b = a + 0.5;
+  return { a: a, b: b };
+}
+function cinePinta(){
+  const it = cineItem(); if (!it) return;
+  const v = $('cineVid');
+  const j = cineJanela(), larg = Math.max(0.001, j.b - j.a);
+  const ini = it.start || 0, fim = (it.end != null ? it.end : ini + 8);
+  const pc = x => (Math.min(1, Math.max(0, (x - j.a) / larg)) * 100).toFixed(2) + '%';
+  const faixa = $('cineRange'), cheio = $('cineProgIn'), cab = $('cineHead'), agora = $('cineNow');
+  if (faixa){
+    const L = Math.min(1, Math.max(0, (ini - j.a) / larg)) * 100;
+    /* num jogo inteiro o lance vira um risco de nada: garante 4px de largura */
+    const W = Math.max(0.6, Math.min(1, Math.max(0, (fim - ini) / larg)) * 100);
+    faixa.style.left = L.toFixed(2) + '%';
+    faixa.style.width = W.toFixed(2) + '%';
+  }
+  const t = v.currentTime || 0;
+  if (cheio){
+    /* a parte azul vai do inicio do corte ate onde voce esta */
+    const de = Math.min(Math.max(t, ini), fim);
+    cheio.style.left = pc(ini);
+    cheio.style.width = (Math.min(1, Math.max(0, (de - ini) / larg)) * 100).toFixed(2) + '%';
+  }
+  if (cab) cab.style.left = pc(t);
+  if (agora) agora.textContent = fmt(t, true);
+}
+function cineSeek(t){
+  const v = $('cineVid');
+  const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : null;
+  /* limite e o video, nao o corte */
+  const lim = dur ? Math.min(dur, Math.max(0, t)) : Math.max(0, t);
+  try { v.currentTime = lim; } catch (e) {}
+  if (_cine) _cine.fim = false;
+  cinePinta(); cineSyncBtn();
+}
+function cineTempoDoX(cx){
+  const el = $('cineProg'); const r = el.getBoundingClientRect();
+  const f = r.width ? (cx - r.left) / r.width : 0;
+  const j = cineJanela();
+  return j.a + Math.min(1, Math.max(0, f)) * (j.b - j.a);
+}
+function cineLigarTrilha(){
+  const el = $('cineProg'); if (!el) return;
+  const mover = (e) => { if (_cine && _cine.arrastando) cineSeek(cineTempoDoX(e.clientX)); };
+  const soltar = () => {
+    if (!_cine || !_cine.arrastando) return;
+    _cine.arrastando = false;
+    el.classList.remove('scrub');
+    document.removeEventListener('mousemove', mover);
+    document.removeEventListener('mouseup', soltar);
+    /* estava tocando antes de arrastar: volta a tocar de onde parou */
+    if (_cine.voltaATocar){ _cine.voltaATocar = false; _cine.tocando = true; try { $('cineVid').play(); } catch (e) {} cineSyncBtn(); }
+  };
+  el.addEventListener('mousedown', (e) => {
+    if (!_cine) return;
+    e.preventDefault();
+    _cine.arrastando = true;
+    _cine.voltaATocar = _cine.tocando;
+    if (_cine.tocando){ try { $('cineVid').pause(); } catch (err) {} _cine.tocando = false; cineSyncBtn(); }
+    el.classList.add('scrub');
+    cineSeek(cineTempoDoX(e.clientX));
+    document.addEventListener('mousemove', mover);
+    document.addEventListener('mouseup', soltar);
+  });
+  /* dedo: mesma coisa no toque */
+  el.addEventListener('touchstart', (e) => {
+    if (!_cine || !e.touches[0]) return;
+    _cine.arrastando = true; el.classList.add('scrub');
+    cineSeek(cineTempoDoX(e.touches[0].clientX));
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    if (_cine && _cine.arrastando && e.touches[0]) cineSeek(cineTempoDoX(e.touches[0].clientX));
+  }, { passive: true });
+  el.addEventListener('touchend', () => { if (_cine){ _cine.arrastando = false; $('cineProg').classList.remove('scrub'); } });
+}
+
+/* ══ ZOOM DENTRO DO PLAYER ════════════════════════════════════
+   Comeca do enquadramento que voce definiu no corte e grava por
+   cima dele — no lance original, que e quem manda.              */
+const CINE_ZPASSO = 0.1, CINE_ZMAX = 4;
+function cineZoomAtual(it){
+  const ez = zoomDoLance(it);
+  const v = $('cineVid');
+  return {
+    zoom: (ez && ez.zoom) || 1,
+    panX: (ez && ez.panX) || 0,
+    panY: (ez && ez.panY) || 0,
+    stageW: (ez && ez.stageW) || v.clientWidth || 1,
+    stageH: (ez && ez.stageH) || v.clientHeight || 1
+  };
+}
+/* grava no lance original (biblioteca) e no item da playlist */
+function cineZoomSalvar(it, z){
+  const limpar = !z || z.zoom <= 1.001;
+  const ez = limpar ? null : { zoom: z.zoom, panX: z.panX, panY: z.panY, stageW: z.stageW, stageH: z.stageH };
+  it.exportZoom = ez ? Object.assign({}, ez) : null;
+  try { projPersist(); } catch (e) {}
+  try {
+    const all = libAll();
+    const ses = all[it.srcKey];
+    if (ses && Array.isArray(ses.events)){
+      const alvo = (it.t != null ? it.t : it.start);
+      let orig = ses.events.find(e => Math.abs((e.t != null ? e.t : e.start) - alvo) < 0.35);
+      if (!orig) orig = ses.events.find(e => Math.abs(e.start - it.start) < 0.6);
+      if (orig){
+        if (ez) orig.exportZoom = Object.assign({}, ez); else delete orig.exportZoom;
+        if (state.file && sessionKey() === it.srcKey){
+          const cur = state.events.find(e => e.id === orig.id);
+          if (cur){ if (ez) cur.exportZoom = Object.assign({}, ez); else delete cur.exportZoom; }
+        }
+        libWrite(all);
+        try { renderPlaylists(); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  cineZoomPaint();
+  cineFramingDireto(it, ez);
+}
+/* aplica sem reconsultar a biblioteca (durante o arraste seria lento) */
+function cineFramingDireto(it, ez){
+  const v = $('cineVid');
+  if (!ez || !(ez.zoom > 1.001)){ v.style.transform = 'none'; $('cineStage').classList.remove('pan'); return; }
+  const w = v.clientWidth || 1, h = v.clientHeight || 1;
+  const tx = (ez.panX || 0) * (w / (ez.stageW || w));
+  const ty = (ez.panY || 0) * (h / (ez.stageH || h));
+  v.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + ez.zoom + ')';
+  $('cineStage').classList.add('pan');
+}
+function cineZoomPaint(){
+  const it = cineItem();
+  const el = $('cineZmV'); if (!el) return;
+  const z = it ? cineZoomAtual(it) : { zoom: 1 };
+  el.textContent = Math.round(z.zoom * 100) + '%';
+  const r = $('cineZmR'); if (r) r.disabled = z.zoom <= 1.001;
+  $('cineStage').classList.toggle('pan', z.zoom > 1.001);
+}
+function cineZoomPasso(d){
+  const it = cineItem(); if (!it) return;
+  const z = cineZoomAtual(it);
+  z.stageW = $('cineVid').clientWidth || z.stageW;
+  z.stageH = $('cineVid').clientHeight || z.stageH;
+  z.zoom = Math.round(Math.max(1, Math.min(CINE_ZMAX, z.zoom + d)) * 100) / 100;
+  if (z.zoom <= 1.001){ z.zoom = 1; z.panX = 0; z.panY = 0; }
+  cineZoomSalvar(it, z);
+}
+/* arrastar a imagem move o enquadramento (so com zoom) */
+function cineLigarPan(){
+  const stage = $('cineStage'); if (!stage) return;
+  let ini = null;
+  stage.addEventListener('mousedown', (e) => {
+    const it = cineItem(); if (!it) return;
+    const z = cineZoomAtual(it);
+    if (!(z.zoom > 1.001)) return;      /* sem zoom, clicar continua sendo play/pause */
+    e.preventDefault();
+    ini = { x: e.clientX, y: e.clientY, z: z, mexeu: false };
+    stage.classList.add('panning');
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!ini) return;
+    const dx = e.clientX - ini.x, dy = e.clientY - ini.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) ini.mexeu = true;
+    const it = cineItem(); if (!it) return;
+    const v = $('cineVid');
+    const w = v.clientWidth || 1, h = v.clientHeight || 1;
+    const z = Object.assign({}, ini.z);
+    z.panX = ini.z.panX + dx * ((z.stageW || w) / w);
+    z.panY = ini.z.panY + dy * ((z.stageH || h) / h);
+    cineFramingDireto(it, z);
+    ini.atual = z;
+  });
+  document.addEventListener('mouseup', () => {
+    if (!ini) return;
+    const it = cineItem();
+    const mexeu = ini.mexeu, z = ini.atual;
+    stage.classList.remove('panning');
+    ini = null;
+    if (mexeu && it && z){ cineZoomSalvar(it, z); log(TX('vid.cine.zoomSaved')); }
+  });
+}
+
 function cineWire(){
   const v = $('cineVid'); if (!v) return;
   /* corta no fim do lance e emenda o proximo */
   v.addEventListener('timeupdate', () => {
     if (!_cine) return;
     const it = _cine.items[_cine.i]; if (!it) return;
+    cinePinta();
+    /* arrastando a trilha ou parado: nunca emenda sozinho */
+    if (_cine.arrastando || !_cine.tocando) return;
     const fim = (it.end != null ? it.end : (it.start || 0) + 8);
-    const dur = Math.max(0.1, fim - (it.start || 0));
-    const p = Math.min(1, Math.max(0, (v.currentTime - (it.start || 0)) / dur));
-    const bar = $('cineProgIn'); if (bar) bar.style.width = (p * 100).toFixed(1) + '%';
+    /* longe do corte voce esta navegando o jogo: nao e "fim do lance",
+       entao nada de emendar nem repetir por conta propria */
+    if (v.currentTime < (it.start || 0) - 0.5 || v.currentTime > fim + 2) return;
     if (v.currentTime >= fim - 0.03){
       /* repetir tem prioridade: o lance roda em loop enquanto voce fala */
       if ($('cineLoop') && $('cineLoop').checked){
@@ -4511,7 +4735,10 @@ function cineWire(){
     const f = plFolderCreate(_cine.pl, nome);
     if (f){ log(TX('vid.fold.created') + f.name); cineResync((_cine.items[_cine.i] || {}).id); }
   });
-  $('cineStage').addEventListener('click', () => $('cinePlay').click());
+  $('cineStage').addEventListener('click', (e) => {
+    if ($('cineStage').classList.contains('panning')) return;   /* foi arraste, nao clique */
+    $('cinePlay').click();
+  });
   $('cineInM').addEventListener('click', () => { const it = cineItem(); if (it) cineSetIn((it.start || 0) - CINE_PASSO); });
   $('cineInP').addEventListener('click', () => { const it = cineItem(); if (it) cineSetIn((it.start || 0) + CINE_PASSO); });
   $('cineInHere').addEventListener('click', () => cineSetIn(v.currentTime, false));
@@ -4519,6 +4746,20 @@ function cineWire(){
   $('cineOutP').addEventListener('click', () => { const it = cineItem(); if (it) cineSetOut((it.end || 0) + CINE_PASSO); });
   $('cineOutHere').addEventListener('click', () => cineSetOut(v.currentTime));
   $('cineRevert').addEventListener('click', cineRevert);
+  $('cineRange2').addEventListener('click', () => {
+    if (!_cine) return;
+    _cine.soLance = !_cine.soLance;
+    $('cineRange2').textContent = _cine.soLance ? '⤢' : '⟷';
+    $('cineRange2').title = TX(_cine.soLance ? 'vid.cine.wholeGame' : 'vid.cine.clipOnly');
+    cinePinta();
+  });
+  $('cineFrB').addEventListener('click', () => cineSeek(v.currentTime - 1 / 30));
+  $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + 1 / 30));
+  $('cineZmM').addEventListener('click', () => cineZoomPasso(-CINE_ZPASSO));
+  $('cineZmP').addEventListener('click', () => cineZoomPasso(CINE_ZPASSO));
+  $('cineZmR').addEventListener('click', () => { const it = cineItem(); if (it) cineZoomSalvar(it, null); });
+  cineLigarTrilha();
+  cineLigarPan();
   /* na fase de captura: com o player aberto, os atalhos da bancada
      nao podem roubar a seta nem o espaco */
   document.addEventListener('keydown', (e) => {
@@ -4535,6 +4776,8 @@ function cineWire(){
     else if (e.key === ' '){ e.preventDefault(); e.stopPropagation(); $('cinePlay').click(); }
     else if (e.key === 'i' || e.key === 'I'){ e.stopPropagation(); cineSetIn($('cineVid').currentTime, false); }
     else if (e.key === 'o' || e.key === 'O'){ e.stopPropagation(); cineSetOut($('cineVid').currentTime); }
+    else if (e.key === ','){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime - 1 / 30); }
+    else if (e.key === '.'){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime + 1 / 30); }
   }, true);
 }
 cineWire();
