@@ -473,13 +473,15 @@
   #cineSide .cirow .n{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);min-width:20px;text-align:right}
   #cineSide .cirow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #cineBar{flex:none;display:flex;align-items:center;gap:9px;margin-top:10px;color:#fff;flex-wrap:wrap}
-  #cineProg{flex:1;min-width:140px;height:16px;position:relative;cursor:pointer;display:flex;align-items:center}
-  #cineProg::before{content:'';position:absolute;left:0;right:0;height:5px;background:rgba(255,255,255,.18);border-radius:3px}
-  #cineProgIn{position:absolute;left:0;height:5px;background:var(--blue);border-radius:3px}
-  #cineHead{position:absolute;width:3px;height:14px;background:#fff;border-radius:2px;margin-left:-1.5px;
-    box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none}
-  #cineProg.scrub #cineHead{width:5px;margin-left:-2.5px}
+  #cineProg{flex:1;min-width:180px;height:22px;position:relative;cursor:pointer;display:flex;align-items:center}
+  #cineProg::before{content:'';position:absolute;left:0;right:0;height:7px;background:rgba(255,255,255,.18);border-radius:4px}
+  #cineProg:hover::before{background:rgba(255,255,255,.26)}
+  #cineProgIn{position:absolute;left:0;height:7px;background:var(--blue);border-radius:4px}
+  #cineHead{position:absolute;width:4px;height:20px;background:#fff;border-radius:2px;margin-left:-2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.4);pointer-events:none}
+  #cineProg.scrub #cineHead{width:6px;margin-left:-3px;height:22px}
   #cineNow{font-family:'JetBrains Mono',monospace;font-size:11.5px;opacity:.9;white-space:nowrap;min-width:58px}
+  #cineZmS.sujo{background:#e8a33d;border-color:#e8a33d;color:#1a1a1a;font-weight:600}
   #cineStage.pan{cursor:grab}
   #cineStage.panning{cursor:grabbing}
   #cineCount{font-family:'JetBrains Mono',monospace;font-size:11.5px;opacity:.85;white-space:nowrap}
@@ -1159,6 +1161,7 @@
     <button class="mini ghost" id="cineZmM" data-i18n-title="vid.cine.zoomOut" title="Zoom out">−</button>
     <span class="ctval" id="cineZmV">100%</span>
     <button class="mini ghost" id="cineZmP" data-i18n-title="vid.cine.zoomIn" title="Zoom in">+</button>
+    <button class="mini" id="cineZmS" data-i18n-title="vid.cine.zoomSetT" title="Fix this framing on the clip">⟐ <span data-i18n="vid.cine.zoomSet">Set</span></button>
     <button class="mini ghost" id="cineZmR" data-i18n-title="vid.cine.zoomReset" title="Remove framing">⟲</button>
     <button class="mini ghost" id="cineRevert" data-i18n-title="vid.cine.revertT" title="Back to the original times"><span data-i18n="vid.cine.revert">Undo trim</span></button>
   </div>
@@ -4384,6 +4387,7 @@ async function cineGo(i, modo){
   }
   $('cineMsg').textContent = '';
   _cine.fim = false;
+  cineVistaLimpa();
   try { v.currentTime = Math.max(0, it.start || 0); } catch (e) {}
   cineFraming(it);
   cineTrimPaint(); cinePinta(); cineZoomPaint();
@@ -4465,14 +4469,15 @@ function cineJanela(){
   if (b - a < 0.2) b = a + 0.2;
   return { a: a, b: b };
 }
-function cinePinta(){
+function cinePinta(){ cinePintaEm(null); }
+function cinePintaEm(tForcado){
   const it = cineItem(); if (!it) return;
   const v = $('cineVid');
   const j = cineJanela(), larg = Math.max(0.001, j.b - j.a);
   const ini = it.start || 0, fim = (it.end != null ? it.end : ini + 8);
   const pc = x => (Math.min(1, Math.max(0, (x - j.a) / larg)) * 100).toFixed(2) + '%';
   const cheio = $('cineProgIn'), cab = $('cineHead'), agora = $('cineNow');
-  const t = v.currentTime || 0;
+  const t = (tForcado != null) ? tForcado : (v.currentTime || 0);
   if (cheio){ cheio.style.left = '0%'; cheio.style.width = pc(t); }
   if (cab) cab.style.left = pc(t);
   /* relogio do lance: quanto ja correu do corte e quanto ele dura */
@@ -4485,6 +4490,38 @@ function cineSeek(t){
   if (_cine) _cine.fim = false;
   cinePinta(); cineSyncBtn();
 }
+/* Arrastar com o dedo/mouse manda dezenas de eventos por segundo. Pedir
+   um currentTime exato em cada um trava a imagem: o navegador descarta o
+   pedido anterior e so mostra quadro quando alcanca o ponto exato.
+   Entao: o cabecote e o relogio andam na hora (a mao nunca "cola"), e o
+   video e buscado uma vez por quadro de tela, por aproximacao.        */
+function cineSeekSuave(t){
+  if (!_cine) return;
+  const v = $('cineVid');
+  const j = cineJanela();
+  const alvo = Math.max(j.a, Math.min(j.b, t));
+  _cine.alvoSeek = alvo;
+  _cine.fim = false;
+  cinePintaEm(alvo);
+  if (_cine.rafSeek) return;
+  _cine.rafSeek = requestAnimationFrame(() => {
+    _cine.rafSeek = 0;
+    if (!_cine) return;
+    const x = _cine.alvoSeek;
+    try {
+      /* fastSeek pula para o quadro-chave mais proximo: e o que da fluidez */
+      if (typeof v.fastSeek === 'function') v.fastSeek(x); else v.currentTime = x;
+    } catch (e) { try { v.currentTime = x; } catch (e2) {} }
+  });
+}
+/* fecha o arraste no ponto exato */
+function cineSeekFim(){
+  if (!_cine) return;
+  const v = $('cineVid');
+  if (_cine.rafSeek){ cancelAnimationFrame(_cine.rafSeek); _cine.rafSeek = 0; }
+  if (_cine.alvoSeek != null){ try { v.currentTime = _cine.alvoSeek; } catch (e) {} _cine.alvoSeek = null; }
+  cinePinta();
+}
 function cineTempoDoX(cx){
   const el = $('cineProg'); const r = el.getBoundingClientRect();
   const f = r.width ? (cx - r.left) / r.width : 0;
@@ -4493,10 +4530,11 @@ function cineTempoDoX(cx){
 }
 function cineLigarTrilha(){
   const el = $('cineProg'); if (!el) return;
-  const mover = (e) => { if (_cine && _cine.arrastando) cineSeek(cineTempoDoX(e.clientX)); };
+  const mover = (e) => { if (_cine && _cine.arrastando) cineSeekSuave(cineTempoDoX(e.clientX)); };
   const soltar = () => {
     if (!_cine || !_cine.arrastando) return;
     _cine.arrastando = false;
+    cineSeekFim();
     el.classList.remove('scrub');
     document.removeEventListener('mousemove', mover);
     document.removeEventListener('mouseup', soltar);
@@ -4521,9 +4559,9 @@ function cineLigarTrilha(){
     cineSeek(cineTempoDoX(e.touches[0].clientX));
   }, { passive: true });
   el.addEventListener('touchmove', (e) => {
-    if (_cine && _cine.arrastando && e.touches[0]) cineSeek(cineTempoDoX(e.touches[0].clientX));
+    if (_cine && _cine.arrastando && e.touches[0]) cineSeekSuave(cineTempoDoX(e.touches[0].clientX));
   }, { passive: true });
-  el.addEventListener('touchend', () => { if (_cine){ _cine.arrastando = false; $('cineProg').classList.remove('scrub'); } });
+  el.addEventListener('touchend', () => { if (_cine){ _cine.arrastando = false; cineSeekFim(); $('cineProg').classList.remove('scrub'); } });
 }
 
 /* ══ ZOOM DENTRO DO PLAYER ════════════════════════════════════
@@ -4581,19 +4619,54 @@ function cineFramingDireto(it, ez){
 function cineZoomPaint(){
   const it = cineItem();
   const el = $('cineZmV'); if (!el) return;
-  const z = it ? cineZoomAtual(it) : { zoom: 1 };
+  const z = it ? (cineVista() || { zoom: 1 }) : { zoom: 1 };
   el.textContent = Math.round(z.zoom * 100) + '%';
-  const r = $('cineZmR'); if (r) r.disabled = z.zoom <= 1.001;
+  const r = $('cineZmR');
+  if (r) r.disabled = !it || (cineZoomAtual(it).zoom <= 1.001 && z.zoom <= 1.001);
+  const sfix = $('cineZmS');
+  if (sfix){
+    const sujo = cineZoomSujo();
+    sfix.classList.toggle('sujo', sujo);
+    sfix.title = sujo ? TX('vid.cine.zoomPend') : TX('vid.cine.zoomSetT');
+  }
   $('cineStage').classList.toggle('pan', z.zoom > 1.001);
+}
+/* o que esta na tela agora: o que voce fixou, ou o que esta mexendo */
+function cineVista(){
+  const it = cineItem(); if (!it) return null;
+  if (_cine && _cine.vista) return _cine.vista;
+  return cineZoomAtual(it);
 }
 function cineZoomPasso(d){
   const it = cineItem(); if (!it) return;
-  const z = cineZoomAtual(it);
+  const z = Object.assign({}, cineVista());
   z.stageW = $('cineVid').clientWidth || z.stageW;
   z.stageH = $('cineVid').clientHeight || z.stageH;
   z.zoom = Math.round(Math.max(1, Math.min(CINE_ZMAX, z.zoom + d)) * 100) / 100;
   if (z.zoom <= 1.001){ z.zoom = 1; z.panX = 0; z.panY = 0; }
-  cineZoomSalvar(it, z);
+  cineVistaAplica(z);
+}
+/* mostra sem gravar — o lance so muda quando voce clica em Fixar */
+function cineVistaAplica(z){
+  if (!_cine) return;
+  _cine.vista = z;
+  cineFramingDireto(cineItem(), (z && z.zoom > 1.001) ? z : null);
+  cineZoomPaint();
+}
+function cineVistaLimpa(){ if (_cine) _cine.vista = null; }
+/* compara a vista com o que esta gravado no lance */
+function cineZoomSujo(){
+  const it = cineItem(); if (!it || !_cine || !_cine.vista) return false;
+  const a = cineZoomAtual(it), b = _cine.vista;
+  return Math.abs(a.zoom - b.zoom) > 0.001 || Math.abs(a.panX - b.panX) > 0.5 || Math.abs(a.panY - b.panY) > 0.5;
+}
+function cineZoomFixar(){
+  const it = cineItem(); if (!it) return;
+  const z = _cine && _cine.vista ? _cine.vista : cineZoomAtual(it);
+  cineZoomSalvar(it, z.zoom > 1.001 ? z : null);
+  cineVistaLimpa();
+  cineZoomPaint();
+  log(z.zoom > 1.001 ? TX('vid.cine.zoomSaved') : TX('vid.cine.zoomCleared'));
 }
 /* arrastar a imagem move o enquadramento (so com zoom) */
 function cineLigarPan(){
@@ -4601,7 +4674,7 @@ function cineLigarPan(){
   let ini = null;
   stage.addEventListener('mousedown', (e) => {
     const it = cineItem(); if (!it) return;
-    const z = cineZoomAtual(it);
+    const z = cineVista() || cineZoomAtual(it);
     if (!(z.zoom > 1.001)) return;      /* sem zoom, clicar continua sendo play/pause */
     e.preventDefault();
     ini = { x: e.clientX, y: e.clientY, z: z, mexeu: false };
@@ -4622,11 +4695,10 @@ function cineLigarPan(){
   });
   document.addEventListener('mouseup', () => {
     if (!ini) return;
-    const it = cineItem();
     const mexeu = ini.mexeu, z = ini.atual;
     stage.classList.remove('panning');
     ini = null;
-    if (mexeu && it && z){ cineZoomSalvar(it, z); log(TX('vid.cine.zoomSaved')); }
+    if (mexeu && z) cineVistaAplica(z);   /* fica na tela; Fixar e que grava */
   });
 }
 
@@ -4722,7 +4794,12 @@ function cineWire(){
   $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + 1 / 30));
   $('cineZmM').addEventListener('click', () => cineZoomPasso(-CINE_ZPASSO));
   $('cineZmP').addEventListener('click', () => cineZoomPasso(CINE_ZPASSO));
-  $('cineZmR').addEventListener('click', () => { const it = cineItem(); if (it) cineZoomSalvar(it, null); });
+  $('cineZmS').addEventListener('click', cineZoomFixar);
+  $('cineZmR').addEventListener('click', () => {
+    const it = cineItem(); if (!it) return;
+    cineVistaLimpa(); cineZoomSalvar(it, null); cineZoomPaint();
+    log(TX('vid.cine.zoomCleared'));
+  });
   cineLigarTrilha();
   cineLigarPan();
   /* na fase de captura: com o player aberto, os atalhos da bancada
