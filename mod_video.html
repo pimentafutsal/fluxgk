@@ -2857,6 +2857,31 @@ function enforceClipBounds(){
   if (c.editing) renderTrim();
 }
 
+/* O enquadramento salvo no lance so valia na exportacao: abrir o lance
+   mostrava o quadro inteiro, mesmo com "Framed (195%)" escrito na barra.
+   Aqui ele passa a valer tambem na tela — proporcional ao tamanho atual
+   do palco, porque o pan foi gravado em pixels do palco de entao.      */
+function aplicarEnquadramento(ev){
+  const ez = ev && ev.exportZoom;
+  if (!ez || !(ez.zoom > 1.001)) return false;
+  const r = stage.getBoundingClientRect();
+  const fx = ez.stageW ? (r.width / ez.stageW) : 1;
+  const fy = ez.stageH ? (r.height / ez.stageH) : 1;
+  setZoom(ez.zoom, (ez.panX || 0) * fx, (ez.panY || 0) * fy);
+  return true;
+}
+/* vista de antes de entrar no lance, para devolver ao sair */
+var _vistaAntesDoLance = null;
+function guardarVista(){
+  if (_vistaAntesDoLance) return;                     /* ja guardada */
+  _vistaAntesDoLance = { zoom: state.zoom, panX: state.panX, panY: state.panY };
+}
+function devolverVista(){
+  if (!_vistaAntesDoLance) return;
+  const v0 = _vistaAntesDoLance; _vistaAntesDoLance = null;
+  setZoom(v0.zoom, v0.panX, v0.panY);
+}
+
 function openClip(ev, tag, edit){
   if (!ev) return;
   /* etiqueta ausente (apagada ou nao encontrada) travava a abertura do lance */
@@ -2871,6 +2896,9 @@ function openClip(ev, tag, edit){
   $('clipBar').classList.add('on');
   stage.classList.add('clipmode');
   updateClipFrameBtn();
+  /* o lance abre no enquadramento que voce salvou nele */
+  guardarVista();
+  aplicarEnquadramento(ev);
   if (edit){
     startTrimEdit();
   } else {
@@ -2887,6 +2915,7 @@ function exitClip(){
   if (!state.clip) return;
   if (state.clip.editing) stopTrimEdit(false);
   state.clip = null;
+  devolverVista();
   $('clipBar').classList.remove('on');
   $('trimWrap').classList.remove('on');
   stage.classList.remove('clipmode');
@@ -2930,6 +2959,7 @@ $('clipFrame').addEventListener('click', async () => {
   c.ev.exportZoom = { zoom: state.zoom, panX: state.panX, panY: state.panY,
     stageW: stage.getBoundingClientRect().width, stageH: stage.getBoundingClientRect().height };
   saveSession();
+  try { renderPlaylists(); } catch (e) {}
   updateClipFrameBtn();
   log(TX('vid.f.framingSavedSp') + Math.round(state.zoom * 100) + '%.', 'ok');
 });
@@ -5098,6 +5128,10 @@ function jumpToCurrent(){
   document.querySelectorAll('.erow.current').forEach(r => r.classList.remove('current'));
   const row = document.querySelector('.erow[data-evid="' + ev.id + '"]');
   if (row) row.classList.add('current');
+  /* cada lance da sequencia entra com o proprio enquadramento; os sem
+     enquadramento voltam ao quadro inteiro para nao herdar o anterior */
+  guardarVista();
+  if (!aplicarEnquadramento(ev)) setZoom(1, 0, 0);
   video.currentTime = ev.start;
   video.play();
 }
@@ -5111,7 +5145,9 @@ function tickPlaylist(){
   }
 }
 function stopPlaylist(){
+  const tinha = !!playSession;
   playSession = null;
+  if (tinha) devolverVista();
   video.pause();
   $('nowPlaying').classList.remove('on');
   document.querySelectorAll('.erow.current').forEach(r => r.classList.remove('current'));
