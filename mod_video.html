@@ -1491,9 +1491,12 @@ function projSnapshot(ev){
     gk: ev.gk || '', outcome: ev.outcome || ''
   };
 }
-function projPlaylistCreate(name, evs){
+function projPlaylistCreate(name, evs, analiseId){
   const p = currentProject(); if (!p) return null;
   const pl = { id: 'pl' + Math.random().toString(36).slice(2, 9), name: (name || 'Playlist').slice(0, 60), items: (evs || []).map(projSnapshot) };
+  /* nasce presa a analise de onde foi criada: sem isso ela so herda a
+     analise quando ganha o primeiro lance, e ate la fica solta */
+  if (analiseId) pl.analiseId = analiseId;
   projPlaylistsOf(p).push(pl); projPersist(); return pl;
 }
 function projPlaylistAdd(plId, evs){
@@ -1675,6 +1678,16 @@ function analiseToggle(p, a){ if (!a) return; if (a.fechada) delete a.fechada; e
 function videoAnaliseId(p, v){
   const id = v && v.analiseId;
   return (id && analisePorId(p, id)) ? id : '';
+}
+/* Qual analise e a do jogo aberto agora na bancada. Devolve o id, ''
+   quando o jogo esta fora de analise, ou null quando nao da para saber
+   (sem video aberto, ou video que nao pertence a este projeto).        */
+function analiseDoVideoAberto(p){
+  if (!p || !state.file) return null;
+  const chave = (typeof sessionKey === 'function') ? sessionKey() : null;
+  const v = (p.videos || []).find(x => x.srcName === state.file.name || (chave && x.srcKey === chave));
+  if (!v) return null;
+  return videoAnaliseId(p, v);
 }
 /* a analise da playlist: a que voce escolheu ou, se nao escolheu,
    a dos jogos que ela usa (a que aparece em mais lances) */
@@ -4961,18 +4974,40 @@ function openCtxMenu(x, y){
   if (currentProject()){
     const projP = currentProject();
     const ppSubs = [];
-    projPlaylistsOf(projP).forEach(pl => {
+    /* O projeto guarda a liga inteira. Se o menu listar tudo, os lances do
+       jogo 2 caem nas playlists do jogo 1. Entao aqui so entram as playlists
+       da analise a que o jogo ABERTO pertence.                              */
+    const anAberta = analiseDoVideoAberto(projP);
+    const temAnalises = projAnalises(projP).length > 0;
+    const filtrar = temAnalises && anAberta !== null;
+    const lista = filtrar
+      ? projPlaylistsOf(projP).filter(pl => playlistAnalise(projP, pl) === anAberta)
+      : projPlaylistsOf(projP);
+    if (filtrar){
+      const a = anAberta ? analisePorId(projP, anAberta) : null;
+      const cab = document.createElement('div'); cab.className = 'ctxhead';
+      cab.textContent = a ? ('🗂 ' + a.name) : TX('vid.an.loose');
+      ppSubs.push(cab);
+    }
+    lista.forEach(pl => {
       ppSubs.push(ctxItem(pl.name + ' (' + (pl.items ? pl.items.length : 0) + ')', () => {
         const nn = projPlaylistAdd(pl.id, sel);
         log(nn + TX('vid.f.addedToProject') + pl.name + '".', 'ok');
         if (currentTab === 'project') renderProjectTab();
       }));
     });
-    if (ppSubs.length) ppSubs.push(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
+    /* jogo fora de analise, com analises existindo: avisa em vez de listar tudo */
+    if (filtrar && !anAberta && !lista.length){
+      const av = document.createElement('div'); av.className = 'ctxhead';
+      av.style.cssText = 'white-space:normal;max-width:230px;line-height:1.35';
+      av.textContent = TX('vid.an.noneForVideo');
+      ppSubs.push(av);
+    }
+    if (lista.length) ppSubs.push(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
     ppSubs.push(ctxItem(TX('vid.proj.newList'), async () => {
       const nm = await askText(TX('vid.proj.newListPrompt'));
       if (!nm || !nm.trim()) return;
-      const pl = projPlaylistCreate(nm.trim(), sel);
+      const pl = projPlaylistCreate(nm.trim(), sel, filtrar ? anAberta : '');
       if (pl) log('Playlist "' + pl.name + TX('vid.f.createdWith') + sel.length + ' clip(s).', 'ok');
       if (currentTab === 'project') renderProjectTab();
     }));
