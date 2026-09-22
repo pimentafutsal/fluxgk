@@ -94,6 +94,24 @@
       });
     }).catch(function(e){console.error("[FluxGK] falha ao carregar Firebase",e);});
   }
+  /* A dashboard era desenhada assim que os JOGOS chegavam, mas as
+     configuracoes (resultados, momentos, competencias…) vinham depois,
+     em listeners proprios. Ate elas chegarem, "Defesa" e "Gol sofrido"
+     nao casavam com nenhum tipo conhecido: 0 defesas, 0 gols, 0% — e
+     bastava sair e voltar para a tela redesenhar certo.
+     Agora qualquer configuracao que chega repinta a pagina aberta. */
+  var _repintaT = null;
+  function _repintarPagina(){
+    clearTimeout(_repintaT);
+    _repintaT = setTimeout(function(){
+      try{
+        var a = document.querySelector('.page.active'); if(!a) return;
+        var id = a.id.replace('page-','');
+        if(id === 'dashboard') renderDashboard();
+        else if(id === 'history') renderHistory();
+      }catch(e){}
+    }, 80);
+  }
   function _statsLoadAll(db){
     db.ref(_SPATH.games).on('value',function(snap){
       var g=snap.val();
@@ -101,13 +119,13 @@
       if(!window._uiBooted){window._uiBooted=true;bootUI();}
       else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
-    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{populateAllSelects();}catch(e){}});
-    db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}});
-    db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}});
-    db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}});
-    db.ref(_SPATH.offtypes).on('value',function(snap){var v=snap.val();if(v)ST.offtypes=_asArr(v);try{renderOffForms();renderList('offtypes');}catch(e){}});
-    db.ref(_SPATH.offresults).on('value',function(snap){var v=snap.val();if(v)ST.offresults=_asArr(v);try{renderOffForms();renderList('offresults');}catch(e){}});
-    db.ref(_SPATH.hdists).on('value',function(snap){var v=snap.val();if(v)ST.hdists=_asArr(v);try{renderSkillMomentGroups();renderList('hdists');}catch(e){}});
+    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.offtypes).on('value',function(snap){var v=snap.val();if(v)ST.offtypes=_asArr(v);try{renderOffForms();renderList('offtypes');}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.offresults).on('value',function(snap){var v=snap.val();if(v)ST.offresults=_asArr(v);try{renderOffForms();renderList('offresults');}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.hdists).on('value',function(snap){var v=snap.val();if(v)ST.hdists=_asArr(v);try{renderSkillMomentGroups();renderList('hdists');}catch(e){}_repintarPagina();});
     db.ref(_SPATH.results).on('value',function(snap){
       var v=_asArr(snap.val());
       if(!v.length) return;
@@ -116,6 +134,7 @@
       ST.resultKinds={};
       v.forEach(function(x){ if(x&&x.v!=null) ST.resultKinds[x.v]=x.k||''; });
       try{renderSkillMomentGroups();renderList('results');}catch(e){}
+      _repintarPagina();   /* os tipos chegaram: defesas e gols passam a contar */
     });
     db.ref(_SPATH.opponents).on('value',function(snap){
       var v=snap.val();
