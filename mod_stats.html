@@ -237,6 +237,28 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .chbox canvas{position:absolute;inset:0;width:100%!important;height:100%!important;}
 /* faixa fina de numeros do dashboard */
 .dstrip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+/* faixa de recortes: o que esta filtrado e como voltar */
+.drchips{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 10px;min-height:26px;}
+.drhint{font-size:11.5px;color:var(--mute);}
+.drchip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:20px;cursor:pointer;
+  font-family:inherit;font-size:11.5px;color:var(--text);}
+.drchip:hover{background:color-mix(in srgb,var(--accent) 18%,transparent);}
+.drchip .drk{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);}
+.drchip .drv{font-weight:600;}
+.drchip .drx{color:var(--mute);font-size:10px;}
+.drcount{font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-left:4px;}
+.drclear{margin-left:auto;padding:4px 10px;border:1px solid var(--border2);background:var(--surface);
+  border-radius:20px;cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--text);}
+.drclear:hover{border-color:var(--accent);color:var(--accent);}
+.drsub{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px;}
+.drtab{width:100%;border-collapse:collapse;font-size:12px;}
+.drtab th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--mute);font-weight:500;padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.drtab td{padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.drtab tbody tr:hover{background:var(--surface2);}
+.drtab .mono{font-family:var(--mono);font-size:11px;color:var(--mute);}
+.drmore{font-size:11.5px;color:var(--mute);padding:8px 2px;}
 .dcell{flex:1;min-width:0;text-align:center;padding:11px 6px;border-right:1px solid var(--border);}
 .dcell:last-child{border-right:none;}
 .dnum{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.05;}
@@ -356,6 +378,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <select id="dash-comp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option data-i18n="st.allComps" value="">All Competitions</option></select>
     </div>
   </div>
+  <div id="dash-chips" class="drchips"></div>
   <!-- faixa fina de numeros: substitui os 5 cartoes altos -->
   <div class="dstrip mb16">
     <div class="dcell"><div class="dnum" id="kpi-games">0</div><div data-i18n="st.games" class="dlbl">Games</div></div>
@@ -393,6 +416,9 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
     <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
+
+  <!-- detalhe do recorte: mapas daquelas acoes + lance a lance -->
+  <div id="dash-drill" style="display:none"></div>
 </div>
 
 <!-- RECORD GAME -->
@@ -1781,13 +1807,18 @@ function ensureChartBox(ctx){
   box.style.height=(parseInt(ctx.getAttribute('height'),10)||150)+'px';
   return box;
 }
-function mkChart(id,type,labels,data,colors,horiz){
+function mkChart(id,type,labels,data,colors,horiz,aoClicar,crus){
   const ctx=document.getElementById(id); if(!ctx) return;
   if(CHARTS[id]) CHARTS[id].destroy();
   ensureChartBox(ctx);
   const a=acc();
   const bg=colors||labels.map((_,i)=>[a,'#d4d4d4','#a3a3a3','#737373','#e5e5e5','#525252'][i%6]);
   const opts={...baseChartOpts(),indexAxis:horiz?'y':'x'};
+  /* clicar numa barra/fatia recorta a dashboard naquele valor */
+  if(typeof aoClicar==='function'){
+    opts.onClick=function(evt,els){ if(els&&els.length) aoClicar((crus||labels)[els[0].index]); };
+    opts.onHover=function(evt,els){ try{ evt.native.target.style.cursor = (els&&els.length)?'pointer':'default'; }catch(e){} };
+  }
   if(type!=='doughnut') opts.scales={x:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}},y:{ticks:{color:'#555',font:{size:10}},grid:{color:'#e5e5e5'},border:{color:'transparent'}}};
   else opts.plugins.legend={display:true,labels:{color:'#737373',font:{size:11},boxWidth:12}};
   CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:bg,borderColor:type==='doughnut'?'#f5f5f5':'transparent',borderWidth:type==='doughnut'?3:0,borderRadius:horiz?0:4}]},options:opts});
@@ -1796,14 +1827,16 @@ function mkChart(id,type,labels,data,colors,horiz){
    Antes filtrava so pela lista fixa em ingles: como as coletas guardam o
    rotulo escolhido (ex.: "Transicao", "Protecao de Baliza"), os graficos de
    Momento e Tipo apareciam vazios ou so com "1vs1".                        */
-function orderedChart(id,type,obj,order,colors,horiz){
+function orderedChart(id,type,obj,order,colors,horiz,campo,ofensiva){
   const presentes=Object.keys(obj);
   const conhecidos=(order||[]).filter(l=>obj[l]!=null);
   const extras=presentes.filter(l=>!(order||[]).includes(l)).sort();
   const labels=conhecidos.concat(extras);
   const data=labels.map(l=>obj[l]||0);
   const cores=(typeof colors==='function')?labels.map(colors):colors;
-  mkChart(id,type,labels.map(l=>stLbl(l)),data,cores,horiz);
+  /* o rotulo na tela e traduzido, mas o recorte usa o valor cru da coleta */
+  const aoClicar = campo ? function(cru){ drillSet(campo, cru, !!ofensiva); } : null;
+  mkChart(id,type,labels.map(l=>stLbl(l)),data,cores,horiz,aoClicar,labels);
 }
 
 // ═══ HEATMAPS ═════════════════════════════════════════════════════
@@ -1815,7 +1848,7 @@ function goalHeatmapHtml(shots,total,cellH){
   return `<div style="height:7px;background:#0a0a0a;border-radius:4px 4px 0 0;width:100%;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f4f4f1;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;width:100%;">
     ${zones.map((z,i)=>{const c=counts[i];const p=pctOf(c,total);const ins=c/max;const bright=ins>0.45;
-      return `<div class="hm-cell" style="height:${cellH}px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:5px;">
+      return `<div class="hm-cell" onclick="drillSet('goalZone',${z.id},false)" title="${esc(TX('st.dr.hint'))}" style="cursor:pointer;height:${cellH}px;background:rgba(10,10,10,${(ins*.6+.06).toFixed(2)});border-radius:5px;">
         <div style="font-weight:700;font-size:14px;color:${bright?'#fafaf7':'#0a0a0a'}">${c}</div>
         <div style="font-size:9px;color:${bright?'#333':'#555'};font-family:var(--mono);">${z.l}·${p}%</div>
       </div>`;}).join('')}
@@ -1900,12 +1933,111 @@ function courtHeatmapHtml(shots,total,maxW){
 }
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+/* ═══ RECORTE POR CLIQUE ═══════════════════════════════════════
+   Clicar numa barra/fatia recorta a dashboard inteira naquele valor:
+   os numeros do topo, todos os graficos e os mapas passam a falar so
+   daquelas acoes. Os recortes se somam (Gol sofrido + Bola parada) e
+   cada um sai sozinho pela sua etiqueta. "Voltar ao panorama" limpa.
+   _drillS e das finalizacoes; _drillO, das acoes ofensivas.        */
+var _drillS = {}, _drillO = {};
+function _drillAtivo(){ return Object.keys(_drillS).length + Object.keys(_drillO).length > 0; }
+function drillSet(campo, valor, ofensiva){
+  const alvo = ofensiva ? _drillO : _drillS;
+  if (valor == null || valor === '') return;
+  /* clicar de novo no mesmo valor tira o recorte — liga/desliga */
+  if (String(alvo[campo]) === String(valor)) delete alvo[campo];
+  else alvo[campo] = valor;
+  renderDashboard();
+}
+function drillDel(campo, ofensiva){
+  if (ofensiva) delete _drillO[campo]; else delete _drillS[campo];
+  renderDashboard();
+}
+function drillClear(){ _drillS = {}; _drillO = {}; renderDashboard(); }
+function _drillAplica(lista, mapa){
+  const campos = Object.keys(mapa);
+  if (!campos.length) return lista;
+  return lista.filter(function(x){
+    return campos.every(function(c){ return String(x[c] == null ? '' : x[c]) === String(mapa[c]); });
+  });
+}
+/* etiqueta legivel de um valor recortado (zona vira numero mesmo) */
+function _drillLbl(campo, valor){
+  if (campo === 'goalZone' || campo === 'courtZone') return String(valor);
+  return (typeof stLbl === 'function') ? stLbl(valor) : String(valor);
+}
+function renderDrillChips(totShots, nShots, totOffs, nOffs){
+  const box = document.getElementById('dash-chips'); if (!box) return;
+  if (!_drillAtivo()){ box.innerHTML = '<span class="drhint">' + TX('st.dr.hint') + '</span>'; return; }
+  let h = '';
+  const chip = function(campo, valor, ofensiva){
+    return '<button class="drchip" title="' + esc(TX('st.dr.clearOne')) + '" onclick="drillDel(\'' + campo + '\',' + (ofensiva ? 'true' : 'false') + ')">'
+      + '<span class="drk">' + esc(TX('st.dr.f.' + campo, campo)) + '</span>'
+      + '<span class="drv">' + esc(_drillLbl(campo, valor)) + '</span><span class="drx">✕</span></button>';
+  };
+  Object.keys(_drillS).forEach(function(c){ h += chip(c, _drillS[c], false); });
+  Object.keys(_drillO).forEach(function(c){ h += chip(c, _drillO[c], true); });
+  const partes = [];
+  if (Object.keys(_drillS).length) partes.push(nShots + ' ' + TX('st.dr.of') + ' ' + totShots + ' ' + TX('st.dr.shots'));
+  if (Object.keys(_drillO).length) partes.push(nOffs + ' ' + TX('st.dr.of') + ' ' + totOffs + ' ' + TX('st.dr.actions'));
+  h += '<span class="drcount">' + TX('st.dr.showing') + ' ' + partes.join(' · ') + '</span>';
+  h += '<button class="drclear" onclick="drillClear()">↺ ' + esc(TX('st.dr.clear')) + '</button>';
+  box.innerHTML = h;
+}
+
+/* ── detalhe: mapas + lance a lance, so com recorte ligado ── */
+function renderDrillDetail(shots, games){
+  const box = document.getElementById('dash-drill'); if (!box) return;
+  if (!Object.keys(_drillS).length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  /* de que jogo veio cada finalizacao, para a lista dizer o adversario */
+  const dono = new Map();
+  games.forEach(function(g){ (g.shots || []).forEach(function(sh){ dono.set(sh, g); }); });
+  const n = shots.length;
+  const LIM = 80;
+  const linhas = shots.slice(0, LIM).map(function(sh){
+    const g = dono.get(sh) || {};
+    const jogo = (g.opponent || '—') + (g.date ? ' · ' + g.date : '');
+    return '<tr>'
+      + '<td class="mono">' + esc(sh.minute == null ? '—' : sh.minute) + '</td>'
+      + '<td>' + esc(jogo) + '</td>'
+      + '<td>' + esc(sh.gk || '—') + '</td>'
+      + '<td>' + esc(sh.moment ? stLbl(sh.moment) : '—') + '</td>'
+      + '<td>' + esc(sh.skill ? stLbl(sh.skill) : '—') + '</td>'
+      + '<td>' + esc(sh.hDistance ? stLbl(sh.hDistance) : '—') + '</td>'
+      + '<td>' + esc(sh.result ? stLbl(sh.result) : '—') + '</td>'
+      + '<td class="mono">' + esc(sh.goalZone == null ? '—' : sh.goalZone) + '</td>'
+      + '</tr>';
+  }).join('');
+  box.innerHTML =
+    '<div class="card" style="margin-top:14px">'
+    + '<div class="card-title">' + esc(TX('st.dr.detail')) + '</div>'
+    + '<div class="g2" style="margin-top:10px;gap:14px">'
+    +   '<div><div class="drsub">' + esc(TX('st.dr.goalMap')) + '</div>' + goalHeatmapHtml(shots, n, 46) + '</div>'
+    +   '<div><div class="drsub">' + esc(TX('st.dr.courtMap')) + '</div>' + courtHeatmapHtml(shots, n, 150) + '</div>'
+    + '</div>'
+    + '<div class="drsub" style="margin-top:16px">' + esc(TX('st.dr.list')) + '</div>'
+    + (n ? ('<div style="overflow-x:auto"><table class="drtab"><thead><tr>'
+        + '<th>' + esc(TX('st.dr.thMin')) + '</th><th>' + esc(TX('st.dr.thGame')) + '</th>'
+        + '<th>' + esc(TX('st.dr.thGk')) + '</th><th>' + esc(TX('st.dr.thMoment')) + '</th>'
+        + '<th>' + esc(TX('st.dr.thSkill')) + '</th><th>' + esc(TX('st.dr.thDist')) + '</th>'
+        + '<th>' + esc(TX('st.dr.thResult')) + '</th><th>' + esc(TX('st.dr.thZone')) + '</th>'
+        + '</tr></thead><tbody>' + linhas + '</tbody></table></div>'
+        + (n > LIM ? '<div class="drmore">' + esc(TX('st.dr.more').replace('{n}', n - LIM)) + '</div>' : ''))
+      : '<div class="drmore">' + esc(TX('st.dr.none')) + '</div>')
+    + '</div>';
+}
+
 function renderDashboard(){
   const f={season:document.getElementById('dash-season').value,gk:document.getElementById('dash-gk').value,opp:document.getElementById('dash-opp').value,comp:document.getElementById('dash-comp').value};
   const games=ST.games.filter(g=>(!f.season||g.season===f.season)&&(!f.opp||g.opponent===f.opp)&&(!f.comp||g.competition===f.comp));
   // filter shots by gk if selected
   let shots=games.flatMap(g=>g.shots);
   if(f.gk) shots=shots.filter(s=>s.gk===f.gk);
+  const _totShots=shots.length;
+  shots=_drillAplica(shots,_drillS);     /* recorte feito clicando nos graficos */
   const s=calcStats(shots);
   document.getElementById('kpi-games').textContent=games.length;
   document.getElementById('kpi-shots').textContent=s.total;
@@ -1915,17 +2047,21 @@ function renderDashboard(){
   /* ── acoes ofensivas do goleiro (mesmos filtros do painel) ── */
   let offs=games.flatMap(g=>_asArr(g.offActions));
   if(f.gk) offs=offs.filter(o=>o.gk===f.gk);
+  const _totOffs=offs.length;
+  offs=_drillAplica(offs,_drillO);
   const elOffs=document.getElementById('kpi-offs'); if(elOffs) elOffs.textContent=offs.length;
+  renderDrillChips(_totShots,shots.length,_totOffs,offs.length);
+  renderDrillDetail(shots,games);
 
   /* So desenha os graficos da sub-aba visivel: um canvas escondido nasce com
      tamanho zero no Chart.js e sairia em branco ao voltar para a aba. */
   if(_dashSub==='def'){
-    orderedChart('ch-result','bar',countBy(shots,'result'),cfgOrder(ST.results,RESULT_ORDER),resultColor,false);
-    orderedChart('ch-moment','bar',countBy(shots,'moment'),cfgOrder(ST.moments,MOMENT_ORDER),null,false);
-    orderedChart('ch-skill','doughnut',countBy(shots,'skill'),cfgOrder(ST.skills,SKILL_ORDER),null,false);
+    orderedChart('ch-result','bar',countBy(shots,'result'),cfgOrder(ST.results,RESULT_ORDER),resultColor,false,'result');
+    orderedChart('ch-moment','bar',countBy(shots,'moment'),cfgOrder(ST.moments,MOMENT_ORDER),null,false,'moment');
+    orderedChart('ch-skill','doughnut',countBy(shots,'skill'),cfgOrder(ST.skills,SKILL_ORDER),null,false,'skill');
   } else if(_dashSub==='off'){
-    orderedChart('ch-offtype','doughnut',countBy(offs,'type'),ST.offtypes,null,false);
-    orderedChart('ch-offres','bar',countBy(offs,'result'),ST.offresults,null,false);
+    orderedChart('ch-offtype','doughnut',countBy(offs,'type'),ST.offtypes,null,false,'type',true);
+    orderedChart('ch-offres','bar',countBy(offs,'result'),ST.offresults,null,false,'result',true);
     const okEl=document.getElementById('dash-off-kpis');
     if(okEl){
       const porRes=countBy(offs,'result');
@@ -1934,7 +2070,7 @@ function renderDashboard(){
         + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
     }
   } else {
-    orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),cfgOrder(ST.hdists,HDIST_ORDER),null,true);
+    orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),cfgOrder(ST.hdists,HDIST_ORDER),null,true,'hDistance');
     document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total,52);
     document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total,150);
   }
