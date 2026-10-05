@@ -4252,6 +4252,49 @@ function cineItemMenu(x, y, it){
   }));
   menu.appendChild(ctxItem(TX('vid.cine.moveTo'), null, { sub: subs }));
 
+  /* ── mover / copiar para OUTRA playlist do projeto ──
+     As playlists da mesma analise vem primeiro; as das outras ficam
+     abaixo, com o nome da analise, para nao misturar jogos sem querer. */
+  const outras = projPlaylistsOf(_cine.proj).filter(x => x.id !== _cine.pl.id);
+  if (outras.length){
+    const minha = playlistAnalise(_cine.proj, _cine.pl);
+    const ordenadas = outras.slice().sort((x, y) => {
+      const ax = playlistAnalise(_cine.proj, x) === minha ? 0 : 1;
+      const ay = playlistAnalise(_cine.proj, y) === minha ? 0 : 1;
+      return ax - ay || (x.name || '').localeCompare(y.name || '');
+    });
+    const monta = (acao) => {
+      const out = []; let grupoAtual = null;
+      ordenadas.forEach(pl2 => {
+        const g = playlistAnalise(_cine.proj, pl2);
+        if (g !== grupoAtual){
+          grupoAtual = g;
+          const a2 = g ? analisePorId(_cine.proj, g) : null;
+          const h = document.createElement('div'); h.className = 'ctxhead';
+          h.textContent = a2 ? ('🗂 ' + a2.name) : TX('vid.an.loose');
+          out.push(h);
+        }
+        out.push(ctxItem(pl2.name + ' (' + ((pl2.items || []).length) + ')', () => acao(pl2)));
+      });
+      return out;
+    };
+    menu.appendChild(ctxItem(TX('vid.cine.moveList'), null, { sub: monta(pl2 => {
+      const atual = (_cine.items[_cine.i] || {}).id;
+      const seguia = atual !== it.id;                 /* saiu o lance que tocava? */
+      projMoveItem(_cine.pl.id, pl2.id, it.id);
+      log(TX('vid.cine.movedTo') + pl2.name + '".');
+      /* sumiu daqui: reaproveita a mesma logica de quando se remove */
+      _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey);
+      if (!_cine.items.length){ cineClose(); return; }
+      if (seguia){ const i2 = _cine.items.findIndex(x => x.id === atual); if (i2 >= 0) _cine.i = i2; cineRenderList(); cineCount(); cineTrimPaint(); }
+      else { const pos = Math.min(_cine.i, _cine.items.length - 1); _cine.i = -1; cineGo(pos, 'pause'); }
+    }) }));
+    menu.appendChild(ctxItem(TX('vid.cine.copyList'), null, { sub: monta(pl2 => {
+      projCopyItem(pl2.id, it);
+      log(TX('vid.cine.copiedTo') + pl2.name + '".');
+    }) }));
+  }
+
   const i = _cine.items.indexOf(it);
   if (i > 0) menu.appendChild(ctxItem('▲ ' + TX('vid.proj.itemUp'), () => cineMove(it.id, -1)));
   if (i < _cine.items.length - 1) menu.appendChild(ctxItem('▼ ' + TX('vid.proj.itemDown'), () => cineMove(it.id, 1)));
