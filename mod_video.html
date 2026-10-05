@@ -346,6 +346,8 @@
     border-radius:8px;box-shadow:0 14px 36px rgba(10,10,10,.28);padding:5px;display:none;max-height:300px;overflow-y:auto;
   }
   .ctxitem:hover > .ctxsub{display:block}
+  .ctxsub.left{left:auto;right:100%}
+  .ctxsub.up{top:auto;bottom:-5px}
   .erow .et{font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
   .erow .er{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
   .erow .eord{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:20px;text-align:right;flex:none}
@@ -408,6 +410,24 @@
   .pfold button{padding:1px 6px;font-size:10px}
   .pitem .pfsel{max-width:110px;font-size:11px;padding:2px 4px;border:1px solid var(--line);
     border-radius:4px;background:#fff;color:var(--ink);font-family:inherit}
+  /* painel do ⋯ : para onde mandar o lance */
+  .papanel{border:1px dashed var(--line);border-radius:8px;padding:9px 11px;margin:2px 0 10px;background:var(--paper)}
+  .patit{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:7px}
+  .pagrp{font-size:11.5px;font-weight:700;margin:9px 0 3px;color:var(--ink)}
+  .pagrp:first-of-type{margin-top:0}
+  .parow{display:flex;align-items:center;gap:7px;padding:3px 0 3px 12px;font-size:12.5px}
+  .parow .panm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .parow .pact{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex:none}
+  .parow .paqui{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);flex:none;padding-right:4px}
+  .pabt{flex:none;padding:2px 9px;font-size:11px;border:1px solid var(--line);border-radius:14px;
+    background:var(--card);color:var(--ink);cursor:pointer;font-family:inherit}
+  .pabt:hover{border-color:var(--ink)}
+  .pabt.dup{border-color:var(--blue);color:var(--blue)}
+  .pabt.dup:hover{background:var(--blue);color:#fff}
+  .pape{display:flex;align-items:center;gap:9px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .padica{font-size:11px;color:var(--muted)}
 
   /* ---------- aba Projetos: analises e secoes recolhiveis ---------- */
   .ancard{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;background:var(--card)}
@@ -1534,25 +1554,57 @@ function projAddClipToPlaylist(toId, clip){
   projPersist(); renderProjectTab();
 }
 /* painelzinho inline de ações (mover/copiar para outras playlists / nova) */
+/* Painel do ⋯ : antes era uma fileira de botoes com nomes repetidos
+   ("Ações ofensivas" em tres analises diferentes) e nada dizia a qual
+   jogo cada um pertencia. Agora vem agrupado por analise, uma linha por
+   playlist, com MOVER e DUPLICAR lado a lado — duplicar e o caminho
+   para mandar o lance a outro subprojeto sem perde-lo na origem.   */
 function projBuildActionsPanel(currentPlId, onPick){
   const p = currentProject(); if (!p) return document.createElement('div');
-  const panel = document.createElement('div');
-  panel.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:8px;margin:2px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
-  const others = projPlaylistsOf(p).filter(pl => pl.id !== currentPlId);
-  const mk = (label, fn, cls) => { const b = document.createElement('button'); b.className = 'mini' + (cls ? ' ' + cls : ''); b.textContent = label; b.addEventListener('click', fn); return b; };
-  if (currentPlId){ // veio de uma playlist: oferece mover e copiar
-    const lm = document.createElement('span'); lm.style.cssText = 'font-size:11px;color:var(--muted)'; lm.textContent = TX('vid.proj.moveTo') + ':';
-    panel.appendChild(lm);
-    others.forEach(pl => panel.appendChild(mk('→ ' + pl.name, () => onPick('move', pl.id))));
-    const lc = document.createElement('span'); lc.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px'; lc.textContent = TX('vid.proj.copyTo') + ':';
-    panel.appendChild(lc);
-    others.forEach(pl => panel.appendChild(mk('⧉ ' + pl.name, () => onPick('copy', pl.id))));
-  } else { // veio da visão por etiqueta: só adicionar
-    const la = document.createElement('span'); la.style.cssText = 'font-size:11px;color:var(--muted)'; la.textContent = TX('vid.proj.addToList') + ':';
-    panel.appendChild(la);
-    projPlaylistsOf(p).forEach(pl => panel.appendChild(mk('+ ' + pl.name, () => onPick('add', pl.id))));
-  }
-  panel.appendChild(mk(TX('vid.proj.newList'), async () => { const nm = await askText(TX('vid.proj.newListPrompt')); if (nm && nm.trim()) onPick('new', nm.trim()); }, 'primary'));
+  const panel = document.createElement('div'); panel.className = 'papanel';
+  const tit = document.createElement('div'); tit.className = 'patit';
+  tit.textContent = TX('vid.pa.title');
+  panel.appendChild(tit);
+
+  const todas = projPlaylistsOf(p);
+  /* grupos na ordem das analises, e no fim o que esta fora de analise */
+  const grupos = projAnalises(p).map(a => ({ a: a, pls: todas.filter(pl => playlistAnalise(p, pl) === a.id) }));
+  const soltas = todas.filter(pl => !playlistAnalise(p, pl));
+  if (soltas.length) grupos.push({ a: null, pls: soltas });
+
+  const bt = (txt, tit2, cls, fn) => {
+    const b = document.createElement('button'); b.className = 'pabt' + (cls ? ' ' + cls : '');
+    b.textContent = txt; b.title = tit2; b.addEventListener('click', fn); return b;
+  };
+  grupos.forEach(g => {
+    if (!g.pls.length) return;
+    const h = document.createElement('div'); h.className = 'pagrp';
+    h.textContent = g.a ? ('🗂 ' + g.a.name) : TX('vid.an.loose');
+    panel.appendChild(h);
+    g.pls.forEach(pl => {
+      const row = document.createElement('div'); row.className = 'parow';
+      const nm = document.createElement('span'); nm.className = 'panm'; nm.textContent = pl.name;
+      const ct = document.createElement('span'); ct.className = 'pact'; ct.textContent = (pl.items || []).length;
+      row.appendChild(nm); row.appendChild(ct);
+      if (pl.id === currentPlId){
+        const aq = document.createElement('span'); aq.className = 'paqui'; aq.textContent = TX('vid.pa.here');
+        row.appendChild(aq);
+      } else if (currentPlId){
+        row.appendChild(bt('→ ' + TX('vid.pa.move'), TX('vid.pa.moveT'), '', () => onPick('move', pl.id)));
+        row.appendChild(bt('⧉ ' + TX('vid.pa.copy'), TX('vid.pa.copyT'), 'dup', () => onPick('copy', pl.id)));
+      } else {
+        row.appendChild(bt('+ ' + TX('vid.pa.add'), TX('vid.pa.addT'), 'dup', () => onPick('add', pl.id)));
+      }
+      panel.appendChild(row);
+    });
+  });
+
+  const pe = document.createElement('div'); pe.className = 'pape';
+  const nova = document.createElement('button'); nova.className = 'mini primary'; nova.textContent = TX('vid.proj.newList');
+  nova.addEventListener('click', async () => { const nm = await askText(TX('vid.proj.newListPrompt')); if (nm && nm.trim()) onPick('new', nm.trim()); });
+  const dica = document.createElement('span'); dica.className = 'padica'; dica.textContent = TX('vid.pa.hint');
+  pe.appendChild(nova); pe.appendChild(dica);
+  panel.appendChild(pe);
   return panel;
 }
 /* ===== vínculo de pasta (File System Access API + IndexedDB) =====
@@ -4207,8 +4259,26 @@ function cinePos(menu, x, y){
   menu.classList.add('on');
   menu.style.left = '0px'; menu.style.top = '0px';
   const r = menu.getBoundingClientRect();
-  menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
-  menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+  const left = Math.min(x, window.innerWidth - r.width - 8);
+  const top = Math.min(y, window.innerHeight - r.height - 8);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  ajustarSubmenus(menu);
+}
+/* O submenu abria sempre a direita do menu. Com o menu colado na borda
+   (lista lateral do player), ele nascia fora da tela e as opcoes de
+   destino ficavam invisiveis. Aqui ele vira de lado ou para cima. */
+function ajustarSubmenus(menu){
+  const r = menu.getBoundingClientRect();
+  const LARG = 200;   /* largura minima de um submenu */
+  const viraEsquerda = (r.right + LARG) > window.innerWidth - 8;
+  menu.querySelectorAll('.ctxitem.has-sub').forEach(it => {
+    const sub = it.querySelector('.ctxsub'); if (!sub) return;
+    sub.classList.toggle('left', viraEsquerda);
+    const ir = it.getBoundingClientRect();
+    /* item na metade de baixo: ancora o submenu pelo pe */
+    sub.classList.toggle('up', ir.top > window.innerHeight * 0.55);
+  });
 }
 async function cineRename(it){
   const nv = await askText(TX('vid.cine.renameT'), it.name || it.tagName || '');
@@ -4255,27 +4325,20 @@ function cineItemMenu(x, y, it){
   /* ── mover / copiar para OUTRA playlist do projeto ──
      As playlists da mesma analise vem primeiro; as das outras ficam
      abaixo, com o nome da analise, para nao misturar jogos sem querer. */
-  const outras = projPlaylistsOf(_cine.proj).filter(x => x.id !== _cine.pl.id);
+  /* Durante a apresentacao so faz sentido o subprojeto aberto: as playlists
+     dos outros jogos ficam para a aba Projetos, onde da para duplicar. */
+  const minha = playlistAnalise(_cine.proj, _cine.pl);
+  const outras = projPlaylistsOf(_cine.proj)
+    .filter(x => x.id !== _cine.pl.id && playlistAnalise(_cine.proj, x) === minha)
+    .sort((x, y) => (x.name || '').localeCompare(y.name || ''));
   if (outras.length){
-    const minha = playlistAnalise(_cine.proj, _cine.pl);
-    const ordenadas = outras.slice().sort((x, y) => {
-      const ax = playlistAnalise(_cine.proj, x) === minha ? 0 : 1;
-      const ay = playlistAnalise(_cine.proj, y) === minha ? 0 : 1;
-      return ax - ay || (x.name || '').localeCompare(y.name || '');
-    });
     const monta = (acao) => {
-      const out = []; let grupoAtual = null;
-      ordenadas.forEach(pl2 => {
-        const g = playlistAnalise(_cine.proj, pl2);
-        if (g !== grupoAtual){
-          grupoAtual = g;
-          const a2 = g ? analisePorId(_cine.proj, g) : null;
-          const h = document.createElement('div'); h.className = 'ctxhead';
-          h.textContent = a2 ? ('🗂 ' + a2.name) : TX('vid.an.loose');
-          out.push(h);
-        }
-        out.push(ctxItem(pl2.name + ' (' + ((pl2.items || []).length) + ')', () => acao(pl2)));
-      });
+      const out = [];
+      const a2 = minha ? analisePorId(_cine.proj, minha) : null;
+      const h = document.createElement('div'); h.className = 'ctxhead';
+      h.textContent = a2 ? ('🗂 ' + a2.name) : TX('vid.an.loose');
+      out.push(h);
+      outras.forEach(pl2 => out.push(ctxItem(pl2.name + ' (' + ((pl2.items || []).length) + ')', () => acao(pl2))));
       return out;
     };
     menu.appendChild(ctxItem(TX('vid.cine.moveList'), null, { sub: monta(pl2 => {
@@ -4938,6 +5001,7 @@ function openPlaylistItemMenu(x, y, pl, ev, tag){
   const r = menu.getBoundingClientRect();
   menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+  ajustarSubmenus(menu);
 }
 
 /* move um lance dentro da playlist (a ordem vive em pl.evIds) */
@@ -5151,6 +5215,7 @@ function openCtxMenu(x, y){
   const mw = menu.offsetWidth, mh = menu.offsetHeight;
   menu.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
+  ajustarSubmenus(menu);
 }
 
 /* ---------------- sequential playback ---------------- */
