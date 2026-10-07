@@ -208,7 +208,7 @@ select.fi option{background:var(--paper)}
         </div>
         <input type="file" id="exImgInput" accept="image/*" style="display:none" onchange="handleImgFile(this)">
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button data-i18n="plan.tacticalCourt" id="btnTactica" class="btn btn-o btn-sm" onclick="openTactica()">⚽ Create on Tactical Court</button>
+          <button id="btnTactica" class="btn btn-o btn-sm" onclick="openTactica()">⚽ Create on Tactical Court</button>
           <button data-i18n="plan.fromLib" class="btn btn-o btn-sm" id="fromLibBtn" onclick="openExPicker()">📚 From Exercise Library</button>
         </div>
       </div>
@@ -503,7 +503,7 @@ window.addEventListener('message', function(e){
   }
   _HUB=d;
   /* idioma definido no hub (persist=false: a escolha e do hub) */
-  if(d.lang) FluxGKI18n.setLang(d.lang,false);
+  if(d.lang){ FluxGKI18n.setLang(d.lang,false); try{ _updTaticaBtn(); }catch(err){} }
   if(_PATH.sessions && _PATH.sessions !== d.dataPath + '/planner/sessions'){
     _sessLidas = false; savedSessions = [];   /* outro clube/temporada: espera a resposta nova */
   }
@@ -658,6 +658,20 @@ function handleImgDrop(e){
 /* Desenho da quadra tatica do exercicio aberto no formulario.
    Antes so a figura era guardada; reabrir a quadra comecava do zero. */
 var _currentTatica=null;
+/* O Firebase recusa a gravacao inteira se houver um unico 'undefined'.
+   Limpa antes de guardar o desenho dentro do exercicio. */
+function _semUndefined(v){
+  if(Array.isArray(v)) return v.map(_semUndefined).filter(function(x){ return x!==undefined; });
+  if(v && typeof v==='object'){
+    const o={};
+    Object.keys(v).forEach(function(k){
+      const x=_semUndefined(v[k]);
+      if(x!==undefined) o[k]=x;
+    });
+    return o;
+  }
+  return v===undefined ? undefined : v;
+}
 function setExImg(dataUrl){
   _currentImgData=dataUrl;
   document.getElementById('exImgPreview').src=dataUrl;
@@ -982,6 +996,7 @@ function openTactica(){
      senao o aviso 'tatica-ready' dispara o envio */
   if(_taticaPronta) _enviarCenaTatica();
   if(_currentTatica) toast(TX('plan.msg.diagramReopen'));
+  else if(_currentImgData) toast(TX('plan.msg.diagramOld'),7000);
 }
 /* o botao muda de texto quando o exercicio ja tem desenho */
 function _updTaticaBtn(){
@@ -997,7 +1012,7 @@ window.addEventListener('message', e=>{
   }
   if(d && d.type==='fluxgk-tatica-image' && d.dataUrl){
     setExImg(d.dataUrl);
-    if(d.cena) _currentTatica=d.cena;   /* guarda o desenho, nao so a figura */
+    if(d.cena) _currentTatica=_semUndefined(d.cena);   /* guarda o desenho, nao so a figura */
     _updTaticaBtn();
     closeTactica();
     toast(TX('plan.msg.diagramCaptured'));

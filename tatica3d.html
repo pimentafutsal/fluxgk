@@ -2038,8 +2038,21 @@ $('b-photo').onclick = ()=>{
 function cenaAtual(){
   return {
     app:'FluxGK Tatica 3D', v:1,
-    objetos: placeables.map(o=>({k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3), r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3), c:(o.userData.cor!=null?o.userData.cor:undefined)})),
-    desenhos: drawings.map(d=>({s:d.userData.style, c:d.userData.color, p:d.userData.pts, b:!!d.userData.canBend, k:d.userData.ctrl||null}))
+    objetos: placeables.map(o=>{
+      const r = { k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3),
+                  r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3) };
+      /* a chave so existe quando ha cor: um 'undefined' aqui faz o Firebase
+         recusar a gravacao inteira do exercicio, e o desenho se perdia */
+      if(o.userData.cor != null) r.c = o.userData.cor;
+      return r;
+    }),
+    desenhos: drawings.map(d=>{
+      const r = { s:d.userData.style, c:d.userData.color,
+                  p:(d.userData.pts||[]).map(pt=>[+(+pt[0]).toFixed(3), +(+pt[1]).toFixed(3)]),
+                  b:!!d.userData.canBend };
+      if(Array.isArray(d.userData.ctrl) && d.userData.ctrl.length) r.k = d.userData.ctrl;
+      return r;
+    })
   };
 }
 $('b-save').onclick = ()=>{
