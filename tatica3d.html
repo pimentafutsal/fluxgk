@@ -1981,7 +1981,9 @@ if(EMBED){
   useBtn.textContent = TX('tat.useInExercise');
   useBtn.onclick = ()=>{
     const url = captureReport();
-    window.parent.postMessage({type:'fluxgk-tatica-image', dataUrl:url}, '*');
+    /* a cena vai junto: assim o exercicio pode ser reaberto para editar,
+       em vez de so guardar a figura achatada */
+    window.parent.postMessage({type:'fluxgk-tatica-image', dataUrl:url, cena:cenaAtual()}, '*');
     toast(TX('tat.msg.imgSent'));
   };
   const closeBtn = document.createElement('button');
@@ -1990,6 +1992,19 @@ if(EMBED){
   closeBtn.onclick = ()=>window.parent.postMessage({type:'fluxgk-tatica-close'}, '*');
   document.getElementById('topbar').appendChild(useBtn);
   document.getElementById('topbar').appendChild(closeBtn);
+
+  /* o Planner manda o desenho ja feito para continuar de onde parou */
+  window.addEventListener('message', function(e){
+    const d = e.data;
+    if(!d || d.type !== 'fluxgk-tatica-load') return;
+    if(window.parent !== window && e.source !== window.parent) return;
+    try{
+      if(d.cena && carregarCena(d.cena)) toast(TX('tat.msg.projLoaded'));
+      else if(!d.cena) carregarCena({objetos:[],desenhos:[]});   /* exercicio sem desenho: quadra limpa */
+    }catch(err){ console.warn('[tatica] cena nao carregou', err); }
+  });
+  /* avisa que ja esta de pe, para o Planner saber quando mandar a cena */
+  try{ window.parent.postMessage({type:'fluxgk-tatica-ready'}, '*'); }catch(e){}
 }
 
 /* a paleta e o toast ficam logo abaixo da barra; se a barra quebra em 2 linhas,
@@ -2017,12 +2032,18 @@ $('b-photo').onclick = ()=>{
   a.click();
   toast(TX('tat.msg.imgSaved'));
 };
-$('b-save').onclick = ()=>{
-  const data = {
+/* A cena inteira em JSON — serve para o arquivo .json e tambem para
+   viajar junto com a imagem ate o exercicio do Planner, de modo que o
+   desenho possa ser reaberto e alterado depois. */
+function cenaAtual(){
+  return {
     app:'FluxGK Tatica 3D', v:1,
     objetos: placeables.map(o=>({k:o.userData.kind, x:+o.position.x.toFixed(3), z:+o.position.z.toFixed(3), r:+o.rotation.y.toFixed(4), s:+o.scale.x.toFixed(3), c:(o.userData.cor!=null?o.userData.cor:undefined)})),
     desenhos: drawings.map(d=>({s:d.userData.style, c:d.userData.color, p:d.userData.pts, b:!!d.userData.canBend, k:d.userData.ctrl||null}))
   };
+}
+$('b-save').onclick = ()=>{
+  const data = cenaAtual();
   const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
   const a = document.createElement('a');
   a.download = 'fluxgk-tatica-' + stamp() + '.json';
@@ -2036,35 +2057,39 @@ $('fileinput').addEventListener('change', e=>{
   if(!f) return;
   const r = new FileReader();
   r.onload = ()=>{
-    try{
-      const data = JSON.parse(r.result);
-      [...placeables].forEach(removeObject);
-      [...drawings].forEach(removeDrawing);
-      undoStack.length = 0;
-      teamCount.jogador = 1; teamCount.adversario = 1;
-      (data.objetos||[]).forEach(o=>{
-        if(!BUILDERS[o.k]) return;
-        const ob = addObject(o.k, o.x, o.z, o.r, (o.c!=null?o.c:undefined));
-        if(o.s) ob.scale.setScalar(o.s);
-      });
-      (data.desenhos||[]).forEach(d=>{
-        drawStyleBackup(d, ()=> {
-          strokePts = d.p.map(pt=>new THREE.Vector3(pt[0],0,pt[1]));
-          finishStroke();
-          const g = drawings[drawings.length-1];
-          if(g){
-            g.userData.canBend = (d.b !== undefined) ? !!d.b : (d.p.length === 2);
-            if(Array.isArray(d.k) && d.k.length >= 2) g.userData.ctrl = d.k;  /* pontos de curvatura */
-          }
-        });
-      });
-      undoStack.length = 0;
-      toast(TX('tat.msg.projLoaded'));
-    }catch(err){ toast(TX('tat.msg.invalidFile')); }
+    try{ carregarCena(JSON.parse(r.result)); toast(TX('tat.msg.projLoaded')); }
+    catch(err){ toast(TX('tat.msg.invalidFile')); }
     e.target.value = '';
   };
   r.readAsText(f);
 });
+/* Limpa a quadra e remonta a cena guardada. Usado pelo arquivo .json e
+   por quem embute a quadra (o Planner manda o desenho do exercicio). */
+function carregarCena(data){
+  if(!data) return false;
+  [...placeables].forEach(removeObject);
+  [...drawings].forEach(removeDrawing);
+  undoStack.length = 0;
+  teamCount.jogador = 1; teamCount.adversario = 1;
+  (data.objetos||[]).forEach(o=>{
+    if(!BUILDERS[o.k]) return;
+    const ob = addObject(o.k, o.x, o.z, o.r, (o.c!=null?o.c:undefined));
+    if(o.s) ob.scale.setScalar(o.s);
+  });
+  (data.desenhos||[]).forEach(d=>{
+    drawStyleBackup(d, ()=> {
+      strokePts = d.p.map(pt=>new THREE.Vector3(pt[0],0,pt[1]));
+      finishStroke();
+      const g = drawings[drawings.length-1];
+      if(g){
+        g.userData.canBend = (d.b !== undefined) ? !!d.b : (d.p.length === 2);
+        if(Array.isArray(d.k) && d.k.length >= 2) g.userData.ctrl = d.k;  /* pontos de curvatura */
+      }
+    });
+  });
+  undoStack.length = 0;
+  return true;
+}
 function drawStyleBackup(d, fn){
   const ps = drawStyle, pc = drawColor;
   drawStyle = d.s; drawColor = d.c;

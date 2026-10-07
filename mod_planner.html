@@ -208,7 +208,7 @@ select.fi option{background:var(--paper)}
         </div>
         <input type="file" id="exImgInput" accept="image/*" style="display:none" onchange="handleImgFile(this)">
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button data-i18n="plan.tacticalCourt" class="btn btn-o btn-sm" onclick="openTactica()">⚽ Create on Tactical Court</button>
+          <button data-i18n="plan.tacticalCourt" id="btnTactica" class="btn btn-o btn-sm" onclick="openTactica()">⚽ Create on Tactical Court</button>
           <button data-i18n="plan.fromLib" class="btn btn-o btn-sm" id="fromLibBtn" onclick="openExPicker()">📚 From Exercise Library</button>
         </div>
       </div>
@@ -655,6 +655,9 @@ function handleImgDrop(e){
   reader.onload=ev=>setExImg(ev.target.result);
   reader.readAsDataURL(file);
 }
+/* Desenho da quadra tatica do exercicio aberto no formulario.
+   Antes so a figura era guardada; reabrir a quadra comecava do zero. */
+var _currentTatica=null;
 function setExImg(dataUrl){
   _currentImgData=dataUrl;
   document.getElementById('exImgPreview').src=dataUrl;
@@ -673,6 +676,8 @@ function setExImg(dataUrl){
 }
 function clearExImg(){
   _currentImgData=null;
+  _currentTatica=null;
+  _updTaticaBtn();
   document.getElementById('exImgPreview').src='';
   document.getElementById('imgPreviewWrap').style.display='none';
   document.getElementById('imgPlaceholder').style.display='flex';
@@ -702,6 +707,8 @@ function openWizard(idx=-1, mode='session'){
   document.getElementById('exVar').value     = ex?ex.variations:'';
   document.getElementById('exMat').value     = ex?ex.materials:'';
   if(ex&&ex.img) setExImg(ex.img); else clearExImg();
+  /* abrir um exercicio ja feito traz o desenho dele para poder alterar */
+  _currentTatica = (ex && ex.tatica) || null; _updTaticaBtn();
   document.getElementById('wizModal').classList.add('open');
   // Mark session as open when first exercise is added
   if(_wizMode==='session') _sessionOpen=true;
@@ -724,6 +731,8 @@ function confirmEx(){
     materials: document.getElementById('exMat').value.trim(),
     img:       _currentImgData||null,
   };
+  /* o desenho viaja com o exercicio: biblioteca, sessao e nuvem */
+  if(_currentTatica) ex.tatica=_currentTatica;
   /* nunca gravar undefined: o Firebase rejeita a escrita inteira */
   if(_currentImgData && _currentImgData.indexOf('image/jpeg')>-1) ex.imgQ='jpeg';
   if(_wizMode==='lib'){
@@ -953,21 +962,43 @@ function pickLibEx(i){
   document.getElementById('exVar').value   = ex.variations||'';
   document.getElementById('exMat').value   = ex.materials||'';
   if(ex.img) setExImg(ex.img); else clearExImg();
+  _currentTatica = ex.tatica || null; _updTaticaBtn();
   closeExPicker();
   toast(TX('plan.msg.loadedFromLib'));
 }
 
 // ── TACTICAL COURT (iframe embed) ─────────────────────────────
+var _taticaPronta=false;
+function _enviarCenaTatica(){
+  const fr=document.getElementById('tacticaFrame');
+  if(!fr||!fr.contentWindow) return;
+  try{ fr.contentWindow.postMessage({type:'fluxgk-tatica-load', cena:_currentTatica||null}, '*'); }catch(e){}
+}
 function openTactica(){
   const fr=document.getElementById('tacticaFrame');
-  if(!fr.src) fr.src='tatica3d.html?embed=1';
+  if(!fr.src){ _taticaPronta=false; fr.src='tatica3d.html?embed=1'; }
   document.getElementById('tacticaModal').classList.add('open');
+  /* o iframe fica montado entre aberturas: se ja estiver de pe, manda agora;
+     senao o aviso 'tatica-ready' dispara o envio */
+  if(_taticaPronta) _enviarCenaTatica();
+  if(_currentTatica) toast(TX('plan.msg.diagramReopen'));
+}
+/* o botao muda de texto quando o exercicio ja tem desenho */
+function _updTaticaBtn(){
+  const b=document.getElementById('btnTactica'); if(!b) return;
+  b.textContent = _currentTatica ? TX('plan.tacticalEdit') : TX('plan.tacticalCourt');
 }
 function closeTactica(){ document.getElementById('tacticaModal').classList.remove('open'); }
 window.addEventListener('message', e=>{
   const d=e.data;
+  if(d && d.type==='fluxgk-tatica-ready'){
+    _taticaPronta=true;
+    if(document.getElementById('tacticaModal').classList.contains('open')) _enviarCenaTatica();
+  }
   if(d && d.type==='fluxgk-tatica-image' && d.dataUrl){
     setExImg(d.dataUrl);
+    if(d.cena) _currentTatica=d.cena;   /* guarda o desenho, nao so a figura */
+    _updTaticaBtn();
     closeTactica();
     toast(TX('plan.msg.diagramCaptured'));
   }
