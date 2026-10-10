@@ -365,6 +365,23 @@
   .shead.none .snm{font-weight:400;color:var(--muted);font-style:italic}
   .shead .sct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
   .shead button{padding:1px 7px;font-size:10.5px}
+  /* aviso de gravacao: fica por cima de tudo ate ser resolvido */
+  #svAlerta{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:400;display:none;
+    max-width:560px;width:calc(100% - 36px);background:var(--card);border:2px solid var(--red,#c0392b);
+    border-radius:10px;padding:13px 15px;box-shadow:0 14px 40px rgba(10,10,10,.3)}
+  #svAlerta.on{display:block}
+  #svAlerta .sva-t{font-weight:800;font-size:12.5px;letter-spacing:.04em;color:var(--red,#c0392b);margin-bottom:4px}
+  #svAlerta .sva-m{font-size:13px;line-height:1.4;margin-bottom:10px}
+  #svAlerta .sva-b{display:flex;gap:7px;flex-wrap:wrap}
+  #svAlerta.warn{border-color:#e8a33d}
+  #svAlerta.warn .sva-t{color:#b87514}
+  #svSelo{flex:none;margin-right:10px;padding:2px 9px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card);font-family:'JetBrains Mono',monospace;font-size:10.5px;cursor:pointer;color:var(--muted)}
+  #svSelo.ok{border-color:#2f9e44;color:#2f9e44}
+  #svSelo.indo{border-color:var(--line);color:var(--muted)}
+  #svSelo.ruim{border-color:#c0392b;background:#c0392b;color:#fff;font-weight:700;
+    animation:svpulse 1.1s ease-in-out infinite}
+  @keyframes svpulse{0%,100%{opacity:1}50%{opacity:.55}}
   .empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
 
   /* ---------- playlist do PROJETO: editar na tela ---------- */
@@ -7525,6 +7542,247 @@ async function exportCombined(items, baseName){
 
 /* ---------------- biblioteca de jogos ---------------- */
 const LIB_KEY = 'fluxgk_videolab_library_v1';
+/* ══════════════════════════════════════════════════════════════
+   GRAVACAO DA BIBLIOTECA — o que deu errado e o que mudou
+
+   1) pullFromCloud SUBSTITUIA a biblioteca local pela da nuvem.
+      Se a gravacao da nuvem tivesse falhado no meio da coleta, abrir
+      o modulo de novo apagava o que so existia no navegador. Foi
+      assim que um segundo tempo inteiro sumiu.
+      Agora mescla sessao a sessao e, no empate, fica com a que tem
+      MAIS lances. Uma sessao que so existe aqui nunca e removida.
+
+   2) A gravacao na nuvem nao tinha tratamento de erro nenhum — nem
+      .catch(). Firebase recusando a gravacao (tamanho, permissao,
+      rede) era um erro engolido e o trabalho seguia como se estivesse
+      salvo. Agora falha e um aviso fixo na tela, com nova tentativa.
+
+   3) Falta de espaco no navegador virava uma linha no registro, facil
+      de nao ver. Agora e o mesmo aviso fixo.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---- aviso fixo, impossivel de nao ver ---- */
+function svAlerta(tipo, titulo, msg, acoes){
+  let el = document.getElementById('svAlerta');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'svAlerta';
+    document.body.appendChild(el);
+  }
+  el.className = 'on ' + (tipo || '');
+  el.innerHTML = '';
+  const t = document.createElement('div'); t.className = 'sva-t'; t.textContent = titulo;
+  const m = document.createElement('div'); m.className = 'sva-m'; m.textContent = msg;
+  el.appendChild(t); el.appendChild(m);
+  const bar = document.createElement('div'); bar.className = 'sva-b';
+  (acoes || []).forEach(a => {
+    const b = document.createElement('button'); b.className = 'mini';
+    b.textContent = a.txt; b.addEventListener('click', a.fn);
+    bar.appendChild(b);
+  });
+  const x = document.createElement('button'); x.className = 'mini ghost';
+  x.textContent = '✕'; x.addEventListener('click', svAlertaOff);
+  bar.appendChild(x);
+  el.appendChild(bar);
+}
+function svAlertaOff(){ const el = document.getElementById('svAlerta'); if (el) el.className = ''; }
+
+/* Caches de OUTROS modulos que tem copia na nuvem e podem ser descartados
+   para abrir espaco. A biblioteca de video nunca entra nesta lista. */
+function svLiberarEspaco(){
+  var alvos = [];
+  try{
+    for (var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if (!k) continue;
+      if (k.indexOf('glc_users/') === 0 || k.indexOf('fluxgk_sess_mirror::') === 0) alvos.push(k);
+    }
+  }catch(e){ return false; }
+  if (!alvos.length) return false;
+  var mb = 0;
+  alvos.forEach(function(k){
+    try{ mb += (localStorage.getItem(k) || '').length; localStorage.removeItem(k); }catch(e){}
+  });
+  console.warn('[FluxGK] video: liberou ' + (mb/1048576).toFixed(2) + ' MB de cache de outros modulos para poder gravar');
+  return true;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GUARDA DO SALVAMENTO
+   Cortar um jogo leva horas. Antes, se a gravacao parasse de
+   funcionar, nada na tela dizia isso — o trabalho seguia como se
+   estivesse salvo e sumia no fechamento da aba.
+
+   Agora, em ordem de quem avisa primeiro:
+   1. Selo permanente no rodape: salvo / salvando / NAO SALVO.
+   2. Aviso ANTES de estourar, quando o armazenamento passa de 80%.
+   3. Ao estourar: faixa vermelha fixa + backup baixado sozinho.
+   4. Ao tentar fechar a aba com corte nao salvo: o navegador pergunta.
+   ══════════════════════════════════════════════════════════════ */
+var _svUltimoOk = 0;      /* quando gravou pela ultima vez, de verdade */
+var _svPendente = 0;      /* quantos lances ainda nao confirmados */
+var _svAvisouCheio = 0;   /* para nao repetir o aviso de 80% toda hora */
+var _svBaixouBk = false;  /* backup de emergencia: so uma vez por episodio */
+
+/* quanto do armazenamento do navegador ja foi usado (0 a 1) */
+function svUsoLocal(){
+  try{
+    var t = 0;
+    for (var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      t += (k || '').length + (localStorage.getItem(k) || '').length;
+    }
+    return t / (5 * 1024 * 1024);   /* o Chrome da ~5 MB para o site inteiro */
+  }catch(e){ return 0; }
+}
+
+/* ---- selo permanente no rodape ---- */
+function svSelo(estado){
+  var el = document.getElementById('svSelo');
+  if (!el){
+    el = document.createElement('button');
+    el.id = 'svSelo';
+    el.title = TX('vid.sv.badgeTip');
+    el.addEventListener('click', svSeloClique);
+    var alvo = document.querySelector('#statusBar .inner');
+    if (alvo) alvo.insertBefore(el, alvo.firstChild); else document.body.appendChild(el);
+  }
+  var hora = _svUltimoOk ? new Date(_svUltimoOk).toLocaleTimeString().slice(0, 5) : '--:--';
+  if (estado === 'ruim'){
+    el.className = 'ruim';
+    el.textContent = '⚠ ' + TX('vid.sv.badgeNo') + (_svPendente ? ' · ' + _svPendente : '');
+  } else if (estado === 'indo'){
+    el.className = 'indo';
+    el.textContent = '… ' + TX('vid.sv.badgeWait');
+  } else {
+    el.className = 'ok';
+    el.textContent = '✓ ' + TX('vid.sv.badgeOk') + ' ' + hora;
+  }
+}
+function svSeloClique(){
+  var pc = Math.round(svUsoLocal() * 100);
+  var hora = _svUltimoOk ? new Date(_svUltimoOk).toLocaleTimeString() : '—';
+  var ruim = _svLocalRuim || _svNuvemRuim;
+  svAlerta(ruim ? 'err' : '',
+    ruim ? TX('vid.sv.badgeNo') : (TX('vid.sv.badgeOk') + ' ' + hora),
+    TX('vid.sv.since') + ' ' + hora + ' · ' + pc + '% · ' +
+      (state.events ? state.events.length : 0) + ' ' + TX('vid.f.clips'),
+    [ { txt: TX('vid.sv.backup'), fn: libBaixarCopia },
+      { txt: TX('vid.sv.free'), fn: svLiberarPedido } ]);
+}
+function svLiberarPedido(){
+  var antes = svUsoLocal();
+  if (svLiberarEspaco()){
+    var mb = ((antes - svUsoLocal()) * 5).toFixed(2);
+    log(TX('vid.sv.freedMB').replace('{n}', mb), 'ok');
+    svAlertaOff();
+    _svAvisouCheio = 0;
+    try { libWrite(_libMem); } catch(e){}
+  } else {
+    log(TX('vid.sv.nothingToFree'), 'err');
+  }
+}
+
+/* ---- aviso ANTES de estourar ---- */
+function svChecarEspaco(){
+  var u = svUsoLocal();
+  if (u < 0.80) { _svAvisouCheio = 0; return; }
+  if (Date.now() - _svAvisouCheio < 180000) return;   /* no maximo a cada 3 min */
+  _svAvisouCheio = Date.now();
+  svAlerta('warn', TX('vid.sv.nearFull'),
+    TX('vid.sv.nearFullMsg').replace('{p}', Math.round(u * 100)),
+    [ { txt: TX('vid.sv.free'), fn: svLiberarPedido },
+      { txt: TX('vid.sv.backup'), fn: libBaixarCopia } ]);
+}
+
+/* ---- backup de emergencia, sozinho, uma vez por episodio ---- */
+function svBackupEmergencia(){
+  if (_svBaixouBk) return;
+  _svBaixouBk = true;
+  try{
+    var dados = JSON.stringify({
+      _fluxgk: 'emergencia',
+      quando: new Date().toISOString(),
+      arquivo: state.file ? state.file.name : null,
+      events: state.events || [],
+      drawings: state.drawings || [],
+      biblioteca: _libMem || {},
+      projetos: state.projects || []
+    });
+    var b = new Blob([dados], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.download = 'fluxgk-EMERGENCIA-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.json';
+    a.href = URL.createObjectURL(b);
+    a.click();
+    log(TX('vid.sv.autoBk'), 'ok');
+  }catch(e){ console.error('[FluxGK] backup de emergencia falhou', e); }
+}
+
+/* ---- a aba nao fecha calada com trabalho nao salvo ---- */
+window.addEventListener('beforeunload', function(e){
+  if (!_svLocalRuim && !_svNuvemRuim) return;
+  e.preventDefault();
+  e.returnValue = TX('vid.sv.leave');
+  return TX('vid.sv.leave');
+});
+
+/* ---- quanto de cada sessao existe: para decidir quem vence ---- */
+function _pesoSessao(s){
+  if (!s) return -1;
+  return ((s.events || []).length * 1000) + ((s.drawings || []).length);
+}
+/* a mais nova vence; empatando no tempo, a mais cheia vence; e uma
+   cópia com MENOS lances nunca substitui uma com mais */
+function _melhorSessao(local, nuvem){
+  if (!local) return nuvem;
+  if (!nuvem) return local;
+  const pl = _pesoSessao(local), pn = _pesoSessao(nuvem);
+  if (pn > pl) return nuvem;
+  if (pl > pn) return local;
+  return ((nuvem.savedAt || 0) >= (local.savedAt || 0)) ? nuvem : local;
+}
+/* Junta nuvem e navegador sem perder nada dos dois lados. */
+function libMesclar(local, nuvem){
+  const out = {};
+  Object.keys(local || {}).forEach(k => { out[k] = local[k]; });
+  let vindas = 0, mantidas = [];
+  Object.keys(nuvem || {}).forEach(k => {
+    const esc = _melhorSessao(local ? local[k] : null, nuvem[k]);
+    if (!local || !local[k]) vindas++;
+    else if (esc === local[k] && _pesoSessao(local[k]) > _pesoSessao(nuvem[k])) mantidas.push(local[k].name || k);
+    out[k] = esc;
+  });
+  return { lib: out, vindas: vindas, mantidas: mantidas };
+}
+/* copia de seguranca de antes de mesclar — some depois de 7 dias */
+const LIB_BK = 'fluxgk_videolab_library_bk';
+function libGuardarCopia(){
+  try{
+    const cru = localStorage.getItem(LIB_KEY);
+    if (!cru) return;
+    localStorage.setItem(LIB_BK, JSON.stringify({ at: Date.now(), lib: cru }));
+  }catch(e){ /* sem espaco: a mesclagem ja protege */ }
+}
+function libCopiaGuardada(){
+  try{
+    const d = JSON.parse(localStorage.getItem(LIB_BK) || 'null');
+    if (!d || !d.lib) return null;
+    if (Date.now() - (d.at || 0) > 7 * 864e5) return null;
+    return { at: d.at, lib: JSON.parse(d.lib) };
+  }catch(e){ return null; }
+}
+/* baixa a biblioteca inteira como .json — o botao do aviso */
+function libBaixarCopia(){
+  try{
+    const cru = localStorage.getItem(LIB_KEY) || JSON.stringify(libAll());
+    const b = new Blob([cru], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.download = 'fluxgk-biblioteca-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.json';
+    a.href = URL.createObjectURL(b);
+    a.click();
+  }catch(e){ log('backup: ' + (e && e.message || e), 'err'); }
+}
+
 
 /* Espelho em memoria: no iframe do iPad o localStorage pode nao persistir.
    Mantendo a biblioteca na memoria, ela sobrevive à sessão e sobe correta
@@ -7542,10 +7800,46 @@ function libAll(){
 }
 function libWrite(all){
   _libMem = all || {};
-  try { localStorage.setItem(LIB_KEY, JSON.stringify(_libMem)); }
-  catch (e) { log(TX('vid.msg.storageFull'), 'err'); }
+  svSelo('indo');
+  try {
+    const txt = JSON.stringify(_libMem);
+    localStorage.setItem(LIB_KEY, txt);
+    /* le de volta: so conta como salvo o que o navegador realmente guardou */
+    if ((localStorage.getItem(LIB_KEY) || '').length !== txt.length) throw new Error('gravacao incompleta');
+    _svUltimoOk = Date.now(); _svPendente = 0; _svBaixouBk = false;
+    if (_svLocalRuim){ _svLocalRuim = false; svAlertaOff(); }
+    svSelo(_svNuvemRuim ? 'ruim' : 'ok');
+    svChecarEspaco();          /* avisa antes de encher, nao depois */
+  }
+  catch (e) {
+    /* Antes: uma linha no registro. O trabalho continuava so na memoria
+       e sumia no primeiro recarregamento, sem ninguem perceber.
+       O navegador da ~5 MB para o site INTEIRO: caches de outros modulos
+       (que tem copia na nuvem) podem estar ocupando esse espaco. Libera e
+       tenta de novo antes de desistir. */
+    if (svLiberarEspaco()){
+      try {
+        localStorage.setItem(LIB_KEY, JSON.stringify(_libMem));
+        _svUltimoOk = Date.now(); _svPendente = 0;
+        svSelo('ok');
+        log(TX('vid.sv.freed'), 'ok');
+        if (typeof pushToCloud === 'function') pushToCloud();
+        return;
+      } catch (e2) {}
+    }
+    _svLocalRuim = true;
+    _svPendente = (state.events || []).length;
+    svSelo('ruim');
+    log(TX('vid.msg.storageFull'), 'err');
+    svAlerta('err', TX('vid.sv.localFail'), TX('vid.sv.localFailMsg'), [
+      { txt: TX('vid.sv.free'), fn: svLiberarPedido },
+      { txt: TX('vid.sv.backup'), fn: libBaixarCopia }
+    ]);
+    svBackupEmergencia();      /* nao espera voce clicar: baixa sozinho */
+  }
   if (typeof pushToCloud === 'function') pushToCloud();
 }
+var _svLocalRuim = false, _svNuvemRuim = false;
 /* A biblioteca é indexada por "nome|tamanho" do arquivo, e nomes têm PONTO (.mp4).
    O Firebase NÃO aceita chaves com . # $ [ ] / — então na nuvem gravamos a
    biblioteca como LISTA (cada item guarda sua própria chave em __key) e
@@ -8343,9 +8637,27 @@ function pushToCloud(){
         updatedAt: Date.now(),
       };
       if (!_videoDataPath) return;   /* sem contexto do hub: nao grava fora de users/{uid} */
-      fbDB.ref(_videoDataPath).set(payload);
-    } catch (e) { /* falha de rede — fica local */ }
+      /* Antes nao havia .catch(): o Firebase podia recusar a gravacao
+         (tamanho, permissao, rede) e o erro era engolido — voce seguia
+         cortando achando que estava salvo. */
+      fbDB.ref(_videoDataPath).set(payload)
+        .then(() => {
+          if (_svNuvemRuim){ _svNuvemRuim = false; svAlertaOff(); log(TX('vid.sv.ok'), 'ok'); }
+          svSelo(_svLocalRuim ? 'ruim' : 'ok');
+        })
+        .catch((err) => { _svFalhouNuvem(err); });
+    } catch (e) { _svFalhouNuvem(e); }
   }, 600);
+}
+function _svFalhouNuvem(err){
+  _svNuvemRuim = true;
+  svSelo('ruim');
+  console.error('[FluxGK] video: gravacao na nuvem falhou', err);
+  log('cloud: ' + ((err && err.message) || err), 'err');
+  svAlerta('err', TX('vid.sv.cloudFail'), TX('vid.sv.cloudFailMsg'), [
+    { txt: TX('vid.sv.retry'), fn: () => { svAlertaOff(); pushToCloud(); } },
+    { txt: TX('vid.sv.backup'), fn: libBaixarCopia }
+  ]);
 }
 
 /* grava AGORA (sem debounce) e devolve se foi para a nuvem — usado pelo botao "Salvar dashboard" */
@@ -8375,7 +8687,17 @@ function pullFromCloud(){
     try {
       if (data){
         if (data.library){
-          libWrite(libFromCloud(data.library));   // decodifica a lista → objeto por "nome|tamanho"
+          /* A nuvem NAO manda mais sozinha: mescla sessao a sessao e,
+             no conflito, fica a versao com mais lances. Antes isto era
+             um libWrite() direto e apagava o que so existia aqui. */
+          libGuardarCopia();
+          const r = libMesclar(libAll(), libFromCloud(data.library));
+          libWrite(r.lib);
+          if (r.mantidas.length){
+            log(TX('vid.sv.kept') + ' ' + r.mantidas.join(', '), 'ok');
+            log(TX('vid.sv.rescue'));
+          }
+          log(TX('vid.sv.merged'));
         }
         if (data.dashboards && Array.isArray(data.dashboards.dashboards) && data.dashboards.dashboards.length){
           state.dashboards = data.dashboards.dashboards;

@@ -470,6 +470,23 @@ function compList(){ if(!Array.isArray(PZ.comps)) PZ.comps=[]; return PZ.comps; 
 function compById(id){ return compList().filter(function(c){return c.id===id;})[0]||null; }
 function gameColor(e){ if(e&&e.compId){ var c=compById(e.compId); if(c&&c.color) return c.color; } return evColor('game'); }
 function evPillColor(e){ return (e&&e.type==='target')?evColor('target'):gameColor(e); }
+/* A cor do texto das etiquetas vinha da folha de estilo do modulo (.calev).
+   A pagina de exportacao tem folha propria e nao a conhecia: a etiqueta saia
+   com fundo colorido e texto preto. Agora a tinta vai escrita na propria
+   etiqueta — e calculada, para o amarelo de amistoso nao virar branco no branco. */
+function tintaSobre(cor){
+  var h = String(cor||'').trim().replace('#','');
+  if(h.length === 3) h = h.split('').map(function(x){ return x+x; }).join('');
+  if(!/^[0-9a-f]{6}$/i.test(h)) return '#fff';
+  function canal(i){
+    var c = parseInt(h.substr(i,2),16)/255;
+    return c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+  }
+  var L = 0.2126*canal(0) + 0.7152*canal(2) + 0.0722*canal(4);
+  /* branco, como na tela do modulo. So cores muito claras (amarelo de
+     amistoso, branco) trocam para tinta escura, senao sumiriam. */
+  return (1.05/(L+0.05)) >= 2.0 ? '#fff' : '#111';
+}
 function evBadge(e,px){ return (e&&e.badge)?'<img src="'+e.badge+'" style="width:'+px+'px;height:'+px+'px;object-fit:contain;border-radius:2px;vertical-align:-2px;margin-right:3px;background:#fff">':''; }
 function compAdd(){
   var nm=$('comp-name'), cc=$('comp-color'); if(!nm) return;
@@ -596,7 +613,7 @@ function dayCellHTML(iso, other, opt){
     var cor = it.color || defColor(lv);
     var titulo = esc(lvlName(lv)) + ': ' + esc(it.name);
     if(opt.plain){
-      return '<div style="font-size:'+fP+';font-weight:700;color:#fff;background:'+cor+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+titulo+'">'+corpo+'</div>';
+      return '<div style="font-size:'+fP+';font-weight:700;color:'+tintaSobre(cor)+';background:'+cor+';border-radius:2px;padding:0 3px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="'+titulo+'">'+corpo+'</div>';
     }
     var editavel = (level && lv === level);
     return '<div class="perstrip" style="background:'+cor+(editavel?'':';opacity:.45;pointer-events:none')+'"'
@@ -612,7 +629,10 @@ function dayCellHTML(iso, other, opt){
      aparecem no topo do dia, antes de qualquer ciclo ou tematica.     */
   eventsOn(iso).forEach(function(e){
     var img = e.badge ? evBadge(e, print?9:12) : (e.type==='game'?'⚽ ':'★ ');
-    out += '<div class="calev" style="background:'+evPillColor(e)+';font-size:'+fP+';pointer-events:none;margin-bottom:2px" title="'+esc(e.label)+'">'+img+esc(e.label||'')+'</div>';
+    var corEv = evPillColor(e);
+    out += '<div class="calev" style="background:'+corEv+';color:'+tintaSobre(corEv)
+      + ';font-weight:600;border-radius:3px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
+      + ';font-size:'+fP+';pointer-events:none;margin-bottom:2px" title="'+esc(e.label)+'">'+img+esc(e.label||'')+'</div>';
   });
   sortByStart(itemsOf('macro')).forEach(function(it){ if(cobre(it)) out += strip(it,'macro'); });
   var raiz = dayThemesRoot();
@@ -643,7 +663,7 @@ function renderDayThemes(){
   var rows=''; var map=themesOfMeso(_dtMeso);   /* tematicas DESTE meso */
   eachDay(mz.start,mz.end,function(iso){
     var dt=new Date(iso+'T00:00:00');
-    var evtag=eventsOn(iso).map(function(e){return '<span style="font-size:11px;color:#fff;background:'+evPillColor(e)+';border-radius:3px;padding:1px 5px;margin-left:6px">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</span>';}).join('');
+    var evtag=eventsOn(iso).map(function(e){var c=evPillColor(e);return '<span style="font-size:11px;color:'+tintaSobre(c)+';background:'+c+';border-radius:3px;padding:1px 5px;margin-left:6px">'+(e.type==='game'?'⚽':'★')+' '+esc(e.label||'')+'</span>';}).join('');
     rows+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line,#eee)">'
       +'<div style="min-width:132px;font-size:12.5px"><b>'+esc(wd[dt.getDay()])+'</b> '+fmtDate(iso)+evtag+'</div>'
       +'<input class="fi dt-in" data-iso="'+iso+'" value="'+esc(map[iso]||'')+'" placeholder="'+esc(TXf('period.dtPh','Theme for the day…'))+'" style="flex:1">'

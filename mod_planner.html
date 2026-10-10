@@ -1349,9 +1349,28 @@ function _espelhoLer(){
     return Array.isArray(arr) ? arr.filter(function(x){ return x && x.id; }) : [];
   }catch(e){ return []; }
 }
+/* O espelho e rede de seguranca, nao backup completo: guardar sessao inteira
+   (com os desenhos dos exercicios em base64) passou de 1,5 MB e ajudou a
+   estourar os ~5 MB que o navegador da ao site inteiro. Guarda o essencial
+   para poder devolver a sessao, sem as imagens. */
+function _espelhoEnxuta(s){
+  if(!s) return s;
+  const c = Object.assign({}, s);
+  c.exercises = (s.exercises||[]).map(function(e){
+    const x = Object.assign({}, e);
+    delete x.img; delete x.tatica;   /* imagem e desenho ficam na nuvem */
+    return x;
+  });
+  return c;
+}
 function _espelhoGravar(arr){
-  try{ localStorage.setItem(_espelhoKey(), JSON.stringify(arr.slice(0, 300))); }
-  catch(e){ console.warn('[FluxGK] planner: espelho local cheio', e); }
+  const lista = (arr||[]).slice(0, 40).map(_espelhoEnxuta);
+  try{ localStorage.setItem(_espelhoKey(), JSON.stringify(lista)); return; }catch(e){}
+  try{ localStorage.setItem(_espelhoKey(), JSON.stringify(lista.slice(0, 10))); }
+  catch(e2){
+    try{ localStorage.removeItem(_espelhoKey()); }catch(e3){}
+    console.warn('[FluxGK] planner: sem espaco no navegador para o espelho — a nuvem segue sendo a fonte');
+  }
 }
 function _espelhoSalvar(s){
   if(!s || !s.id) return;

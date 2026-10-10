@@ -1024,9 +1024,33 @@ function loadUserState(){
     }
   }catch(e){}
 }
+/* Cache local do Controle de Carga. Era gravado inteiro — com as fotos dos
+   goleiros em base64 — e chegou a 3,1 MB sozinho. O navegador so da ~5 MB
+   para o site TODO: isso sufocava os outros modulos, e quem ficava sem
+   espaco falhava em silencio. A nuvem e a fonte da verdade; aqui basta o
+   suficiente para abrir offline. */
 function save(){
   if(!_uid)return;
-  try{localStorage.setItem(lsKey(),JSON.stringify(ST));}catch(e){}
+  try{ localStorage.setItem(lsKey(),JSON.stringify(ST)); return; }catch(e){}
+  /* nao coube: grava uma versao enxuta (sem fotos, so os ultimos registros) */
+  try{
+    const enxuto = Object.assign({}, ST);
+    enxuto.players = {};
+    Object.keys(ST.players||{}).forEach(function(k){
+      const p = ST.players[k]||{};
+      enxuto.players[k] = { id:p.id, name:p.name };   /* a foto fica so na nuvem */
+      if(p.status){ enxuto.players[k].status=p.status; enxuto.players[k].statusDesde=p.statusDesde||''; enxuto.players[k].statusNota=p.statusNota||''; }
+    });
+    enxuto.sessions = (ST.sessions||[]).slice(-150);
+    if(enxuto.brand) enxuto.brand = Object.assign({}, enxuto.brand, { logo:'' });
+    localStorage.setItem(lsKey(), JSON.stringify(enxuto));
+    console.warn('[FluxGK] load: cache local reduzido por falta de espaco no navegador');
+  }catch(e2){
+    /* ainda nao coube: joga fora o cache em vez de deixar lixo ocupando
+       o espaco que os outros modulos precisam */
+    try{ localStorage.removeItem(lsKey()); }catch(e3){}
+    console.warn('[FluxGK] load: sem espaco no navegador — trabalhando so pela nuvem');
+  }
 }
 
 // ── RTDB WRITE HELPERS ────────────────────────────────────
