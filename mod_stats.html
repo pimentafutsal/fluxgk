@@ -376,6 +376,18 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <select id="dash-gk" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option data-i18n="st.allGks" value="">All GKs</option></select>
       <select id="dash-opp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option data-i18n="st.allOpponents" value="">All Opponents</option></select>
       <select id="dash-comp" style="width:auto;font-size:12px;" onchange="renderDashboard()"><option data-i18n="st.allComps" value="">All Competitions</option></select>
+      <select id="dash-ha" style="width:auto;font-size:12px;" onchange="renderDashboard()">
+        <option data-i18n="st.allVenues" value="">Home and away</option>
+        <option data-i18n="st.home" value="home">Home</option>
+        <option data-i18n="st.away" value="away">Away</option>
+        <option data-i18n="st.neutral" value="neutral">Neutral</option>
+      </select>
+      <select id="dash-out" style="width:auto;font-size:12px;" onchange="renderDashboard()">
+        <option data-i18n="st.allOutcomes" value="">All results</option>
+        <option data-i18n="st.win" value="W">Win</option>
+        <option data-i18n="st.draw" value="D">Draw</option>
+        <option data-i18n="st.loss" value="L">Loss</option>
+      </select>
     </div>
   </div>
   <div id="dash-chips" class="drchips"></div>
@@ -387,6 +399,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="dcell"><div class="dnum" style="color:var(--red)" id="kpi-goals">0</div><div data-i18n="st.goalsConceded" class="dlbl">Goals Conceded</div></div>
     <div class="dcell"><div class="dnum" id="kpi-savepct">—</div><div data-i18n="st.saveRate" class="dlbl">Save Rate</div></div>
     <div class="dcell"><div class="dnum" id="kpi-offs">0</div><div data-i18n="st.offSummary" class="dlbl">Offensive actions</div></div>
+    <div class="dcell"><div class="dnum" id="kpi-record" style="font-size:19px">—</div><div data-i18n="st.record" class="dlbl">Record</div></div>
   </div>
 
   <!-- sub-abas: 3 graficos por vez em vez de 9 empilhados -->
@@ -449,6 +462,33 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
         <div><div data-i18n="st.date" class="label">Date *</div><input type="date" id="rec-date"></div>
         <div><div data-i18n="st.opponent" class="label">Opponent *</div><select id="rec-opp"><option data-i18n="st.selectOpponent" value="">Select opponent…</option></select></div>
         <div><div data-i18n="st.competition" class="label">Competition</div><select id="rec-comp"><option data-i18n="st.selectComp" value="">Select competition…</option></select></div>
+        <div><div data-i18n="st.homeAway" class="label">Home / Away</div>
+          <select id="rec-ha" onchange="recSyncMeta()">
+            <option data-i18n="st.home" value="home">Home</option>
+            <option data-i18n="st.away" value="away">Away</option>
+            <option data-i18n="st.neutral" value="neutral">Neutral</option>
+          </select></div>
+        <div><div data-i18n="st.venue" class="label">Venue</div>
+          <input type="text" id="rec-venue" maxlength="60" placeholder="Arena or city (optional)" data-i18n-placeholder="st.venuePh" oninput="recSyncMeta()"></div>
+      </div>
+      <!-- placar e resultado: o resultado sai do placar, mas pode ser corrigido
+           (jogo decidido nos penaltis nao e empate no retrospecto) -->
+      <div class="g2 mb16" style="align-items:end">
+        <div><div data-i18n="st.score" class="label">Score</div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <input type="number" id="rec-gf" min="0" max="99" style="width:62px;text-align:center" oninput="recSyncMeta()" title="" data-i18n-title="st.scoreUs">
+            <span style="color:var(--mute);font-weight:700">×</span>
+            <input type="number" id="rec-ga" min="0" max="99" style="width:62px;text-align:center" oninput="recSyncMeta()" title="" data-i18n-title="st.scoreThem">
+            <span id="rec-score-who" style="font-size:11px;color:var(--mute)"></span>
+          </div></div>
+        <div><div data-i18n="st.outcome" class="label">Result</div>
+          <select id="rec-out" onchange="recSyncMeta()">
+            <option value="">—</option>
+            <option data-i18n="st.win" value="W">Win</option>
+            <option data-i18n="st.draw" value="D">Draw</option>
+            <option data-i18n="st.loss" value="L">Loss</option>
+          </select>
+          <div id="rec-out-auto" style="font-size:11px;color:var(--mute);margin-top:4px"></div></div>
       </div>
       <div class="mb16">
         <div data-i18n="st.shotsLink" class="label">Link to the shots video</div>
@@ -801,7 +841,8 @@ let reportType = 'game';
 
 function newGame(){
   const y = new Date().getFullYear();
-  return {id:Date.now(),date:'',opponent:'',competition:'',gk:'',season:`${y}-${String(y+1).slice(2)}`,shots:[],offActions:[]};
+  return {id:Date.now(),date:'',opponent:'',competition:'',gk:'',season:`${y}-${String(y+1).slice(2)}`,
+          homeAway:'home',venue:'',gf:null,ga:null,outcome:'',shots:[],offActions:[]};
 }
 
 // ═══ STORAGE ══════════════════════════════════════════════════════
@@ -1236,6 +1277,31 @@ function recSyncMeta(){
   if(g('rec-comp')) CUR.competition=g('rec-comp').value;
   if(g('rec-link')) CUR.shotsLink=g('rec-link').value.trim();
   if(g('rec-offlink')) CUR.offLink=g('rec-offlink').value.trim();
+  if(g('rec-ha')) CUR.homeAway=g('rec-ha').value||'home';
+  if(g('rec-venue')) CUR.venue=g('rec-venue').value.trim();
+  const num=v=>{ const n=parseInt(v,10); return (isFinite(n)&&n>=0)?n:null; };
+  if(g('rec-gf')) CUR.gf=num(g('rec-gf').value);
+  if(g('rec-ga')) CUR.ga=num(g('rec-ga').value);
+  /* o seletor vazio significa "siga o placar"; preenchido, voce mandou */
+  if(g('rec-out')) CUR.outcome=g('rec-out').value||'';
+  recPintaResultado();
+}
+/* resultado deduzido do placar — '' quando nao ha placar */
+function outcomeDoPlacar(g){
+  if(!g || g.gf==null || g.ga==null) return '';
+  return g.gf>g.ga ? 'W' : (g.gf<g.ga ? 'L' : 'D');
+}
+/* o que vale para contagens: o que voce marcou, senao o placar */
+function outcomeDe(g){ return (g && g.outcome) || outcomeDoPlacar(g); }
+function outcomeLabel(o){ return o==='W'?TX('st.win'):o==='D'?TX('st.draw'):o==='L'?TX('st.loss'):'—'; }
+function outcomeSigla(o){ return o==='W'?TX('st.winShort'):o==='D'?TX('st.drawShort'):o==='L'?TX('st.lossShort'):''; }
+function outcomeCor(o){ return o==='W'?'var(--green)':o==='L'?'var(--red)':'var(--mute)'; }
+function recPintaResultado(){
+  const auto=outcomeDoPlacar(CUR);
+  const el=document.getElementById('rec-out-auto');
+  if(el) el.textContent = auto ? (TX('st.auto')+': '+outcomeLabel(auto)) : '';
+  const quem=document.getElementById('rec-score-who');
+  if(quem) quem.textContent = CUR.opponent ? (TX('st.scoreUs')+' × '+CUR.opponent) : '';
 }
 function recNextToShots(){
   recSyncMeta();
@@ -1525,8 +1591,13 @@ function renderHistory(){
     const d=document.createElement('div'); d.className='game-row';
     d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-weight:700;font-size:14px;">${g.opponent||TX('st.unknown')} <span style="color:var(--mute);font-weight:400;font-size:12px;">— ${g.date||'—'}</span></div>
-        <div style="font-size:11px;color:var(--mute);margin-top:3px;">${g.competition||'—'} · GKs: ${gkList} · Season ${g.season} · ${g.shots.length} shots</div>
+        <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${(function(){const o=outcomeDe(g);return o?('<span class="badge" style="background:'+outcomeCor(o)+';color:#fff;font-weight:700">'+outcomeSigla(o)+'</span>'):'';})()}
+          <span>${g.opponent||TX('st.unknown')}</span>
+          ${(g.gf!=null&&g.ga!=null)?('<span style="font-family:var(--mono);font-size:13px">'+g.gf+' × '+g.ga+'</span>'):''}
+          <span style="color:var(--mute);font-weight:400;font-size:12px;">— ${g.date||'—'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--mute);margin-top:3px;">${g.competition||'—'} · ${TX(g.homeAway==='away'?'st.away':g.homeAway==='neutral'?'st.neutral':'st.home')}${g.venue?' · '+g.venue:''} · GKs: ${gkList} · Season ${g.season} · ${g.shots.length} shots</div>
         <div style="margin-top:8px;display:flex;gap:14px;">
           <span style="font-size:12px;color:var(--green);">${s.saves} saves</span>
           <span style="font-size:12px;color:var(--red);">${s.goals} goals</span>
@@ -1716,6 +1787,8 @@ function openGameInRecord(id){
   const g=ST.games.find(g=>g.id==id); if(!g) return;
   // Deep-copy game into CUR (offActions pode faltar em jogos antigos)
   CUR={...g, shots:g.shots.map(s=>({...s})), offActions:_asArr(g.offActions).map(a=>({...a}))};
+  if(CUR.gf===undefined) CUR.gf=null;
+  if(CUR.ga===undefined) CUR.ga=null;
   editingGameId=id;
   lastShotGk=g.shots.length?g.shots[g.shots.length-1].gk||null:null;
   // Navigate to Record page
@@ -1730,6 +1803,12 @@ function openGameInRecord(id){
   if(linkEl) linkEl.value=CUR.shotsLink||'';
   const offLinkEl=document.getElementById('rec-offlink');
   if(offLinkEl) offLinkEl.value=CUR.offLink||'';
+  const haEl=document.getElementById('rec-ha');       if(haEl) haEl.value=CUR.homeAway||'home';
+  const venEl=document.getElementById('rec-venue');   if(venEl) venEl.value=CUR.venue||'';
+  const gfEl=document.getElementById('rec-gf');       if(gfEl) gfEl.value=(CUR.gf==null?'':CUR.gf);
+  const gaEl=document.getElementById('rec-ga');       if(gaEl) gaEl.value=(CUR.ga==null?'':CUR.ga);
+  const outEl=document.getElementById('rec-out');     if(outEl) outEl.value=CUR.outcome||'';
+  try{ recPintaResultado(); }catch(e){}
   // Show banner
   const banner=document.getElementById('rec-edit-banner');
   if(banner) banner.style.display='flex';
@@ -2031,8 +2110,10 @@ function renderDrillDetail(shots, games){
 }
 
 function renderDashboard(){
-  const f={season:document.getElementById('dash-season').value,gk:document.getElementById('dash-gk').value,opp:document.getElementById('dash-opp').value,comp:document.getElementById('dash-comp').value};
-  const games=ST.games.filter(g=>(!f.season||g.season===f.season)&&(!f.opp||g.opponent===f.opp)&&(!f.comp||g.competition===f.comp));
+  const _v=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const f={season:_v('dash-season'),gk:_v('dash-gk'),opp:_v('dash-opp'),comp:_v('dash-comp'),ha:_v('dash-ha'),out:_v('dash-out')};
+  const games=ST.games.filter(g=>(!f.season||g.season===f.season)&&(!f.opp||g.opponent===f.opp)&&(!f.comp||g.competition===f.comp)
+    &&(!f.ha||(g.homeAway||'home')===f.ha)&&(!f.out||outcomeDe(g)===f.out));
   // filter shots by gk if selected
   let shots=games.flatMap(g=>g.shots);
   if(f.gk) shots=shots.filter(s=>s.gk===f.gk);
@@ -2050,6 +2131,17 @@ function renderDashboard(){
   const _totOffs=offs.length;
   offs=_drillAplica(offs,_drillO);
   const elOffs=document.getElementById('kpi-offs'); if(elOffs) elOffs.textContent=offs.length;
+  /* retrospecto: vitorias-empates-derrotas e gols do recorte */
+  const rec={W:0,D:0,L:0,gf:0,ga:0};
+  games.forEach(g=>{ const o=outcomeDe(g); if(rec[o]!=null) rec[o]++;
+    if(g.gf!=null) rec.gf+=g.gf; if(g.ga!=null) rec.ga+=g.ga; });
+  const elRec=document.getElementById('kpi-record');
+  if(elRec){
+    elRec.innerHTML = (rec.W+rec.D+rec.L)
+      ? ('<span style="color:var(--green)">'+rec.W+'</span>-'+rec.D+'-<span style="color:var(--red)">'+rec.L+'</span>'
+         +'<span style="font-size:11px;color:var(--mute);font-family:var(--mono)"> · '+rec.gf+':'+rec.ga+'</span>')
+      : '—';
+  }
   renderDrillChips(_totShots,shots.length,_totOffs,offs.length);
   renderDrillDetail(shots,games);
 

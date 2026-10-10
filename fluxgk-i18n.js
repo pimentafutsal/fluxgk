@@ -591,6 +591,13 @@
     'st.dr.f.result':'Result','st.dr.f.moment':'Moment','st.dr.f.skill':'Skill',
     'st.dr.f.hDistance':'Distance','st.dr.f.goalZone':'Goal zone','st.dr.f.courtZone':'Court zone',
     'st.dr.f.type':'Type','st.dr.f.offresult':'Offensive result',
+    /* --- local, placar e resultado do jogo --- */
+    'st.venue':'Venue','st.homeAway':'Home / Away','st.home':'Home','st.away':'Away','st.neutral':'Neutral',
+    'st.venuePh':'Arena or city (optional)','st.score':'Score','st.scoreUs':'Us','st.scoreThem':'Them',
+    'st.outcome':'Result','st.auto':'automatic','st.win':'Win','st.draw':'Draw','st.loss':'Loss',
+    'st.winShort':'W','st.drawShort':'D','st.lossShort':'L',
+    'st.allVenues':'Home and away','st.allOutcomes':'All results',
+    'st.record':'Record','st.gf':'GF','st.ga':'GA',
     'st.allSeasons':'All Seasons','st.allGks':'All GKs','st.allOpponents':'All Opponents',
     'st.allComps':'All Competitions','st.allGames':'All Games','st.all':'All',
     /* metricas */
@@ -1630,6 +1637,13 @@
     'st.dr.f.result':'Resultado','st.dr.f.moment':'Momento','st.dr.f.skill':'Competência',
     'st.dr.f.hDistance':'Distância','st.dr.f.goalZone':'Zona da baliza','st.dr.f.courtZone':'Zona da quadra',
     'st.dr.f.type':'Tipo','st.dr.f.offresult':'Resultado ofensivo',
+    /* --- local, placar e resultado do jogo --- */
+    'st.venue':'Local','st.homeAway':'Mando','st.home':'Casa','st.away':'Fora','st.neutral':'Neutro',
+    'st.venuePh':'Ginásio ou cidade (opcional)','st.score':'Placar','st.scoreUs':'Nós','st.scoreThem':'Eles',
+    'st.outcome':'Resultado','st.auto':'automático','st.win':'Vitória','st.draw':'Empate','st.loss':'Derrota',
+    'st.winShort':'V','st.drawShort':'E','st.lossShort':'D',
+    'st.allVenues':'Casa e fora','st.allOutcomes':'Todos os resultados',
+    'st.record':'Retrospecto','st.gf':'GP','st.ga':'GC',
     'st.allSeasons':'Todas as Temporadas','st.allGks':'Todos os Goleiros','st.allOpponents':'Todos os Adversários',
     'st.allComps':'Todas as Competições','st.allGames':'Todos os Jogos','st.all':'Todos',
     /* metricas */
