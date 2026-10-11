@@ -7856,7 +7856,8 @@ async function exportCombined(items, baseName){
   // 1) resolver TODAS as fontes pela pasta vinculada (senão aborta pedindo para vincular)
   const keys = [];
   order.forEach(i => { if (i.srcKey && !keys.includes(i.srcKey)) keys.push(i.srcKey); });
-  const fileMap = {}; const missing = [];
+  const fileMap = {}; const missing = []; const pulados = [];
+  const nomeDaFonte = k => (order.find(i => i.srcKey === k) || {}).srcName || '';
   for (const k of keys){
     const nm = (order.find(i => i.srcKey === k) || {}).srcName || k;
     let f = null; try { f = await projResolveFile(p, nm); } catch (e) {}
@@ -7881,8 +7882,15 @@ async function exportCombined(items, baseName){
   function loadSource(key){
     return new Promise((res, rej) => {
       if (curKey === key && tv.readyState >= 1){ res(); return; }
+      /* sem o arquivo, createObjectURL lancava "Overload resolution failed",
+         que nao diz nada. Agora o erro nomeia o video que faltou. */
+      const arq = fileMap[key];
+      if (!arq || typeof arq.size !== 'number'){
+        rej(new Error(TX('vid.proj.notFound') + (nomeDaFonte(key) || key)));
+        return;
+      }
       if (curURL){ try { URL.revokeObjectURL(curURL); } catch (e) {} }
-      curURL = URL.createObjectURL(fileMap[key]); curKey = key;
+      curURL = URL.createObjectURL(arq); curKey = key;
       const on = () => { tv.removeEventListener('loadedmetadata', on); res(); };
       tv.addEventListener('loadedmetadata', on);
       tv.addEventListener('error', () => rej(new Error('load ' + key)), { once: true });
@@ -7985,7 +7993,13 @@ async function exportCombined(items, baseName){
     }
     function playItem(it){
       return new Promise(async (resolve) => {
-        try { await loadSource(it.srcKey); } catch (e) { resolve(); return; }
+        try { await loadSource(it.srcKey); }
+        catch (e) {
+          /* antes sumia calado e o MP4 saia com lances faltando */
+          pulados.push((it.name || it.tagName || '') + ' · ' + (it.srcName || it.srcKey));
+          log('⚠ ' + (e.message || e), 'err');
+          resolve(); return;
+        }
         const drawings = withDraw ? ((libAll()[it.srcKey] || {}).drawings || []) : [];
         const played = new Set();
         let frozen = null, frozenUntil = 0, seeking = null;
@@ -8021,11 +8035,18 @@ async function exportCombined(items, baseName){
     exporting = false; hideProgress();
     if (cancelRequested){ log(TX('vid.msg.exportCanceled2'), 'err'); _pendingSaveHandle = undefined; return; }
     const blob = new Blob(chunks, { type: mime });
+    if (!blob.size){
+      log(TX('vid.proj.expNada'), 'err');
+      if (pulados.length) log(TX('vid.proj.expSkipped').replace('{n}', pulados.length) + ' ' + pulados.join(' · '), 'err');
+      _pendingSaveHandle = undefined; return;
+    }
     const saved = await saveBlob(blob, _exportBaseName + '.' + ext, mime);
     _pendingSaveHandle = undefined;
     log(saved ? (TX('vid.proj.expDone') + saved + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)') : TX('vid.msg.noFileSaved'), 'ok');
+    if (pulados.length) log(TX('vid.proj.expSkipped').replace('{n}', pulados.length) + ' ' + pulados.join(' · '), 'err');
   } catch (e){
     exporting = false; hideProgress(); _pendingSaveHandle = undefined;
+    console.error('[FluxGK] export falhou', e);
     log('Export: ' + (e.message || e), 'err');
   }
 }
@@ -8606,6 +8627,9 @@ async function pickSaveLocation(suggestedName, mime){
 
 // grava um blob num handle já escolhido; se não houver handle, faz download tradicional
 async function writeBlob(blob, handle, suggestedName){
+  /* guarda-corpo: um conteudo invalido aqui virava "Overload resolution
+     failed" no createObjectURL, mensagem que nao ajuda ninguem */
+  if (!(blob instanceof Blob)) throw new Error('writeBlob: conteudo invalido (' + (typeof blob) + ')');
   if (handle && handle !== 'cancel'){
     try {
       const w = await handle.createWritable();
@@ -8624,6 +8648,7 @@ async function writeBlob(blob, handle, suggestedName){
 }
 
 async function saveBlob(blob, suggestedName, mime){
+  if (!(blob instanceof Blob)) throw new Error('saveBlob: conteudo invalido (' + (typeof blob) + ')');
   // se um destino já foi escolhido no clique de Exportar, grava direto nele
   if (typeof _pendingSaveHandle !== 'undefined'){
     return await writeBlob(blob, _pendingSaveHandle, suggestedName);
