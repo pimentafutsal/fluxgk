@@ -1215,7 +1215,7 @@ Object.assign(T, {
   rpIndividual: { pt: 'Relatório de desenvolvimento', en: 'Development report', ru: 'Отчёт о развитии' },
   rpIndividualD: { pt: 'Um por goleiro: identificação, perfil técnico competência a competência, evolução, plano com as restrições e o diário do período.', en: 'One per goalkeeper: identification, competency-by-competency profile, progress, plan with constraints and the period log.', ru: 'По каждому вратарю: данные, профиль по компетенциям, динамика, план с ограничениями и дневник за период.' },
   rpOnePager: { pt: 'Uma página por atleta', en: 'One page per athlete', ru: 'Одна страница на спортсмена' },
-  rpOnePagerD: { pt: 'Resumo em folha única: foto, dados, as três médias, pontos fortes e a desenvolver, e o objetivo da temporada.', en: 'Single-sheet summary: photo, data, the three averages, strengths and areas to develop, and the season goal.', ru: 'Сводка на одном листе: фото, данные, три средних балла, сильные и слабые стороны, цель сезона.' },
+  rpOnePagerD: { pt: 'Versão curta do relatório de desenvolvimento, em folha única: foto, dados, as médias, pontos fortes e a desenvolver. Escolha este ou o completo.', en: 'Short version of the development report on a single sheet: photo, data, averages, strengths and areas to develop. Choose this or the full one.', ru: 'Краткая версия отчёта о развитии на одном листе. Выберите её или полную.' },
   rpSquad: { pt: 'Comparativo do elenco', en: 'Squad comparison', ru: 'Сравнение состава' },
   rpSquadD: { pt: 'Todos lado a lado: tabela da situação atual, evolução coletiva por eixo e a nota de cada um em cada competência.', en: 'Everyone side by side: current standing, group progress per axis and each score per competency.', ru: 'Все вместе: текущее состояние, динамика по направлениям и баллы по каждой компетенции.' },
   rpPeriod: { pt: 'Fechamento de período', en: 'Period review', ru: 'Итоги периода' },
@@ -5006,6 +5006,7 @@ Object.assign(T, {
   ];
   function viewReports() {
     const r = App.rp;
+    if (r.types && r.types.individual && r.types.onePager) r.types.onePager = false;
     const list = App.gks.filter(g => !g.archived);
     const sel = rpSelected();
     const range = rpRange();
@@ -5198,7 +5199,17 @@ Object.assign(T, {
       c.onchange = () => { r.secs[c.dataset.rpsec] = c.checked; render(); };
     });
     document.querySelectorAll('[data-rptype]').forEach(c => {
-      c.onchange = () => { r.types[c.dataset.rptype] = c.checked; render(); };
+      c.onchange = () => {
+        const k = c.dataset.rptype;
+        r.types[k] = c.checked;
+        /* "Uma pagina por atleta" e o resumo do "Relatorio de desenvolvimento".
+           Marcados juntos, o PDF trazia os mesmos goleiros duas vezes — todos
+           os resumos e depois todos os completos, com pontos fortes e perfil
+           repetidos. Agora marcar um desmarca o outro. */
+        if (c.checked && k === 'individual') r.types.onePager = false;
+        if (c.checked && k === 'onePager') r.types.individual = false;
+        render();
+      };
     });
     const f = $('#rpFrom'), tt = $('#rpTo');
     if (f) f.onchange = () => { r.from = f.value; render(); };
