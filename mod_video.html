@@ -443,6 +443,23 @@
   .pabt:hover{border-color:var(--ink)}
   .pabt.dup{border-color:var(--blue);color:var(--blue)}
   .pabt.dup:hover{background:var(--blue);color:#fff}
+  .rellb{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .relgrp{margin-bottom:14px}
+  .relgrp.off{opacity:.5}
+  .relgh{display:flex;align-items:center;gap:8px;padding:7px 2px;cursor:pointer;font-size:13px;
+    border-bottom:1px solid var(--line);margin-bottom:8px}
+  .relgh .relgn{font-weight:700}
+  .relan{margin-bottom:9px}
+  .relgrp .relrow{margin-left:14px}
+  .relrow{border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:9px;background:var(--paper)}
+  .relh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .relh .relnm{font-weight:700;font-size:13.5px}
+  .relh .relct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+  .relin,.relta{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
+    background:var(--card);color:var(--ink);font-family:inherit;font-size:12.5px}
+  .relin{margin-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:11px}
+  .relta{resize:vertical;line-height:1.45}
   .exrow{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;
     margin-bottom:5px;background:var(--card);font-size:13px;cursor:grab}
   .exrow.off{opacity:.45}
@@ -1157,6 +1174,24 @@
   <div class="fpresize" id="plGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
 </div>
 
+<!-- RELATORIO DE VIDEO PARA A DIRECAO -->
+<div class="st-ov" id="relOv" style="z-index:175">
+  <div class="st-sh" style="max-width:680px">
+    <div class="modal-hdr" style="margin-bottom:4px">
+      <h2 style="font-size:15px;font-weight:600"><span data-i18n="vid.rel.open">Report for the board</span>
+        <span id="relTitulo" style="font-weight:400;color:var(--muted)"></span></h2>
+      <button class="modal-close" onclick="relFechar()">✕</button>
+    </div>
+    <div id="relHint" style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste the YouTube link of each playlist and write what the board should notice.</div>
+    <label class="rellb" data-i18n="vid.rel.geral">Opening note</label>
+    <textarea id="relGeral" class="relta" rows="3" data-i18n-placeholder="vid.rel.geralPh" placeholder="A paragraph opening the report (optional)."></textarea>
+    <div id="relList" style="margin-top:12px"></div>
+    <button class="mini primary" style="margin-top:12px;padding:8px 18px" onclick="relGerar()">
+      <span data-i18n="vid.rel.gen">Generate report</span>
+    </button>
+  </div>
+</div>
+
 <!-- EXPORTAR TODAS AS PLAYLISTS NUM VIDEO SO -->
 <div class="st-ov" id="exAllOv" style="z-index:170">
   <div class="st-sh" style="max-width:620px">
@@ -1757,6 +1792,260 @@ function updateProjBar(){
    Monta uma fila unica com os lances de varias playlists, na ordem
    que voce definir, e coloca entre elas uma tela com o nome da
    proxima — para o goleiro saber o que vai assistir.           */
+/* ══ RELATÓRIO DE VÍDEO PARA A DIREÇÃO ═════════════════════════
+   Os vídeos vao para o YouTube; aqui se monta o documento que os
+   acompanha: link de cada playlist, o que voce quer dizer sobre
+   ela, e a lista dos lances. Mesma capa, fontes e cores dos
+   outros relatorios do ecossistema (referencia: Periodization).
+   ══════════════════════════════════════════════════════════════ */
+var _rel = null;   /* { proj, analise } */
+
+function relClube(){
+  var prof = (_lastContext && _lastContext.profile) || {};
+  var cor = prof.clubColor || getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1E4FFF';
+  return {
+    cor: /^#[0-9a-fA-F]{3,8}$/.test(cor) ? cor : '#1E4FFF',
+    nome: window._fluxgkClub || prof.clubName || 'FluxGK',
+    escudo: prof.clubBadge || '',
+    treinador: window._fluxgkCoach || '',
+    temporada: window._fluxgkSeason || ''
+  };
+}
+/* grupos do relatorio: uma analise (um jogo ou uma rodada) por capitulo.
+   _rel.sel guarda quais entram — com uma analise so, o relatorio sai
+   igual ao de antes; com varias, vira o relatorio do periodo.        */
+function relGrupos(){
+  if (!_rel) return [];
+  const p = _rel.proj;
+  const out = projAnalises(p).map(function(a){
+    return { id: a.id, an: a, nome: a.name,
+             pls: projPlaylistsOf(p).filter(function(pl){
+               return playlistAnalise(p, pl) === a.id && (pl.items || []).length; }) };
+  });
+  const soltas = projPlaylistsOf(p).filter(function(pl){
+    return !playlistAnalise(p, pl) && (pl.items || []).length; });
+  if (soltas.length) out.push({ id: '', an: null, nome: TX('vid.rel.looseG'), pls: soltas });
+  return out.filter(function(g){ return g.pls.length; });
+}
+function relSelecionados(){
+  return relGrupos().filter(function(g){ return _rel.sel[g.id]; });
+}
+function relAbrir(p, analise){
+  _rel = { proj: p, analise: analise, sel: {} };
+  const gs = relGrupos();
+  if (!gs.length){ log(TX('vid.rel.vazio'), 'err'); _rel = null; return; }
+  /* vindo do cabecalho de uma analise, so ela vem marcada; pelo botao do
+     periodo, todas — e voce desmarca o que nao quiser */
+  gs.forEach(function(g){ _rel.sel[g.id] = analise ? (g.id === analise.id) : true; });
+  relPinta();
+  document.getElementById('relOv').classList.add('on');
+}
+function relFechar(){ relSalvar(); document.getElementById('relOv').classList.remove('on'); _rel = null; }
+function relToggleG(id){ _rel.sel[id] = !_rel.sel[id]; relSalvar(); relPinta(); }
+
+function relPinta(){
+  const box = document.getElementById('relList'); if (!box || !_rel) return;
+  box.innerHTML = '';
+  const gs = relGrupos();
+  const varios = gs.length > 1;
+  gs.forEach(function(g){
+    const bloco = document.createElement('div'); bloco.className = 'relgrp' + (_rel.sel[g.id] ? '' : ' off');
+    if (varios){
+      const h = document.createElement('label'); h.className = 'relgh';
+      const ck = document.createElement('input'); ck.type = 'checkbox'; ck.checked = !!_rel.sel[g.id];
+      ck.addEventListener('change', function(){ relToggleG(g.id); });
+      const nm = document.createElement('span'); nm.className = 'relgn'; nm.textContent = '🗂 ' + g.nome;
+      const ct = document.createElement('span'); ct.className = 'relct';
+      ct.textContent = g.pls.length + ' ' + TX('vid.rel.mPl').toLowerCase();
+      h.appendChild(ck); h.appendChild(nm); h.appendChild(ct);
+      bloco.appendChild(h);
+    }
+    if (_rel.sel[g.id]){
+      if (varios && g.an){
+        const an = document.createElement('textarea'); an.className = 'relta relan'; an.rows = 2;
+        an.placeholder = TX('vid.rel.anNota'); an.value = g.an.relNota || '';
+        an.addEventListener('change', function(){ g.an.relNota = an.value.trim(); projPersist(); });
+        bloco.appendChild(an);
+      }
+      g.pls.forEach(function(pl){
+        const card = document.createElement('div'); card.className = 'relrow';
+        const h2 = document.createElement('div'); h2.className = 'relh';
+        const nm2 = document.createElement('span'); nm2.className = 'relnm'; nm2.textContent = pl.name;
+        const ct2 = document.createElement('span'); ct2.className = 'relct';
+        ct2.textContent = (pl.items || []).length + ' ' + TX('vid.f.clips');
+        h2.appendChild(nm2); h2.appendChild(ct2); card.appendChild(h2);
+        const lk = document.createElement('input'); lk.type = 'url'; lk.className = 'relin';
+        lk.placeholder = TX('vid.rel.linkPh'); lk.value = pl.linkYT || '';
+        lk.addEventListener('change', function(){ pl.linkYT = lk.value.trim(); projPersist(); });
+        card.appendChild(lk);
+        const tx = document.createElement('textarea'); tx.className = 'relta'; tx.rows = 3;
+        tx.placeholder = TX('vid.rel.notaPh'); tx.value = pl.nota || '';
+        tx.addEventListener('change', function(){ pl.nota = tx.value.trim(); projPersist(); });
+        card.appendChild(tx);
+        bloco.appendChild(card);
+      });
+    }
+    box.appendChild(bloco);
+  });
+  const g2 = document.getElementById('relGeral');
+  if (g2) g2.value = _rel.proj.relNota || '';
+  const t = document.getElementById('relTitulo');
+  if (t){
+    const n = relSelecionados().length;
+    t.textContent = (n === 1 ? relSelecionados()[0].nome : n + ' ' + TX('vid.rel.nAnas'));
+  }
+  const dica = document.getElementById('relHint');
+  if (dica) dica.textContent = varios ? TX('vid.rel.pickAn') : TX('vid.rel.hint');
+}
+function relSalvar(){
+  if (!_rel) return;
+  const g = document.getElementById('relGeral');
+  if (g) _rel.proj.relNota = g.value.trim();
+  /* os campos ja gravam no change; aqui so garante o que ficou em foco */
+  document.querySelectorAll('#relList .relrow').forEach(function(card){
+    const lk = card.querySelector('.relin'), tx = card.querySelector('.relta');
+    const nome = (card.querySelector('.relnm') || {}).textContent;
+    const pl = projPlaylistsOf(_rel.proj).find(function(x){ return x.name === nome; });
+    if (!pl) return;
+    if (lk) pl.linkYT = lk.value.trim();
+    if (tx) pl.nota = tx.value.trim();
+  });
+  projPersist();
+}
+
+/* ---- o documento ---- */
+function relGerar(){
+  relSalvar();
+  var p = _rel.proj, C = relClube();
+  var grupos = relSelecionados();
+  if (!grupos.length){ log(TX('vid.rel.noneAn'), 'err'); return; }
+  var e = function(v){ return String(v == null ? '' : v).replace(/[&<>"]/g, function(c){
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var hoje = new Date().toLocaleDateString(TX('data.pdf.locale', 'en-GB'),
+    { day: '2-digit', month: 'short', year: 'numeric' });
+  var titulo = TX('vid.rel.title');
+  var umSo = grupos.length === 1;
+  var sub = umSo ? grupos[0].nome : (grupos[0].nome + '  →  ' + grupos[grupos.length - 1].nome);
+  var nPl = 0, nLances = 0;
+  grupos.forEach(function(g){ nPl += g.pls.length;
+    g.pls.forEach(function(pl){ nLances += (pl.items || []).length; }); });
+  var geral = p.relNota || '';
+  var P = C.cor;
+
+  /* cada playlist e um bloco; com varios jogos, cada analise abre um capitulo */
+  var n = 0;
+  var corpo = grupos.map(function(g, gi){
+    var cab = umSo ? '' :
+      ('<div class="cap' + (gi ? '' : ' cap-first') + '">'
+       + '<div class="cap-l">' + e(TX('vid.rel.chapter')) + ' ' + (gi + 1) + '</div>'
+       + '<div class="cap-t">' + e(g.nome) + '</div>'
+       + '<div class="cap-s">' + g.pls.length + ' ' + e(TX('vid.rel.mPl').toLowerCase()) + '</div>'
+       + (g.an && g.an.relNota ? '<div class="cap-n">' + e(g.an.relNota).replace(/\n/g, '<br>') + '</div>' : '')
+       + '</div>');
+    var blocos = g.pls.map(function(pl, i){
+      plNormaliza(pl);
+      var itens = plFlat(pl).filter(function(x){ return x && x.srcKey; });
+      n++;
+      var linhas = itens.map(function(it, k){
+        var nome = it.name || it.tagName || TX('vid.f.clip', 'clip');
+        return '<tr><td class="c2">' + (k + 1) + '</td>'
+          + '<td class="c1">' + e(nome) + (it.spec ? '<span class="spec">' + e(it.spec) + '</span>' : '') + '</td>'
+          + '<td class="c2">' + e(it.gk || '—') + '</td>'
+          + '<td class="c2">' + e(it.srcName || '') + '</td>'
+          + '<td class="c2 mono">' + fmt(it.start) + ' → ' + fmt(it.end) + '</td></tr>';
+      }).join('');
+      var link = (pl.linkYT || '').trim();
+      var quebra = (umSo && i) || (!umSo && i);
+      return '<div class="sec' + (quebra ? ' sec-break' : '') + '">'
+        + '<div class="sec-h"><span class="sec-n">' + n + '</span>' + e(pl.name)
+        + '<span class="cnt">' + itens.length + ' ' + e(TX('vid.f.clips')) + '</span></div>'
+        + (link ? '<a class="lk" href="' + e(link) + '">▶ ' + e(TX('vid.rel.watch')) + '</a>'
+                + '<div class="lkurl">' + e(link) + '</div>'
+                : '<div class="semlk">' + e(TX('vid.rel.semLink')) + '</div>')
+        + (pl.nota ? '<div class="nota">' + e(pl.nota).replace(/\n/g, '<br>') + '</div>' : '')
+        + '<table><thead><tr><th>#</th><th>' + e(TX('vid.rel.thClip')) + '</th><th>' + e(TX('vid.rel.thGk'))
+        + '</th><th>' + e(TX('vid.rel.thSrc')) + '</th><th>' + e(TX('vid.rel.thTime')) + '</th></tr></thead>'
+        + '<tbody>' + linhas + '</tbody></table></div>';
+    }).join('');
+    return cab + blocos;
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + e(titulo) + ' — ' + e(sub) + '</title>'
+   + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+   + '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+   + '<style>*{box-sizing:border-box;margin:0;padding:0}'
+   + 'body{font-family:\'Space Grotesk\',\'Helvetica Neue\',Helvetica,Arial,sans-serif;background:#fafaf7;color:#0a0a0a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+   + '@page{size:A4;margin:16mm 14mm}@page:first{margin:0}'
+   + '.cover{background:' + P + ';color:#fff;padding:52px 52px 48px;min-height:297mm;display:flex;flex-direction:column;page-break-after:always}'
+   + '.cover-top{flex:1}'
+   + '.cover-tag{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:18px}'
+   + '.cover-badge{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin-bottom:28px;overflow:hidden}'
+   + '.cover-badge img{width:56px;height:56px;object-fit:contain;border-radius:10px}'
+   + '.cover-title{font-size:44px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:10px}'
+   + '.cover-sub{font-size:16px;color:rgba(255,255,255,.60);margin-bottom:36px}'
+   + '.cover-range{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:10px 16px;font-size:15px;font-weight:600;margin-bottom:36px}'
+   + '.cover-meta{display:flex;gap:36px;flex-wrap:wrap}'
+   + '.meta-item{display:flex;flex-direction:column;gap:3px}'
+   + '.meta-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38)}'
+   + '.meta-value{font-size:13px;font-weight:600;color:rgba(255,255,255,.88)}'
+   + '.cover-footer{margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.08em;text-transform:uppercase}'
+   + '.intro{margin-bottom:26px}'
+   + '.intro .t{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#737373;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e5e5e5}'
+   + '.intro .b{background:#fff;border-left:3px solid ' + P + ';padding:13px 16px;font-size:12.5px;line-height:1.65;color:#222;white-space:pre-wrap}'
+   + '.cap{page-break-before:always;padding:34px 0 22px;margin-bottom:22px;border-bottom:3px solid ' + P + '}'
+   + '.cap-first{page-break-before:auto}'
+   + '.cap-l{font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#999;margin-bottom:7px}'
+   + '.cap-t{font-size:30px;font-weight:700;letter-spacing:-.8px;color:' + P + ';margin-bottom:5px}'
+   + '.cap-s{font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#999}'
+   + '.cap-n{margin-top:13px;background:#fff;border-left:3px solid ' + P + ';padding:11px 14px;font-size:12.5px;line-height:1.6;color:#222;white-space:pre-wrap}'
+   + '.sec{margin-bottom:26px;page-break-inside:avoid}'
+   + '.sec-break{page-break-before:always}'
+   + '.sec-h{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#0a0a0a;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ' + P + '}'
+   + '.sec-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:' + P + ';color:#fff;font-size:11px;font-weight:700;flex:none}'
+   + '.cnt{margin-left:auto;font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:500;color:#999;letter-spacing:.04em}'
+   + '.lk{display:inline-block;background:' + P + ';color:#fff;text-decoration:none;font-weight:600;font-size:12px;padding:7px 14px;border-radius:6px;margin-bottom:6px}'
+   + '.lkurl{font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#999;word-break:break-all;margin-bottom:11px}'
+   + '.semlk{font-size:11.5px;color:#b0b0b0;font-style:italic;margin-bottom:11px}'
+   + '.nota{background:#fff;border-left:3px solid ' + P + ';padding:11px 14px;font-size:12.5px;line-height:1.6;color:#222;margin-bottom:12px;white-space:pre-wrap}'
+   + 'table{width:100%;border-collapse:collapse;font-size:11px;background:#fff}'
+   + 'th{text-align:left;font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;padding:6px 9px;border-bottom:2px solid #e5e5e5}'
+   + 'td{padding:6px 9px;border-bottom:1px solid #f0f0f0;vertical-align:top}'
+   + '.c1{font-weight:600;color:#0a0a0a}.c2{color:#666;white-space:nowrap}'
+   + '.mono{font-family:\'JetBrains Mono\',monospace;font-size:10px}'
+   + '.spec{display:block;font-size:9.5px;color:#888;font-weight:400;margin-top:1px}'
+   + '.footer{display:flex;justify-content:space-between;font-size:9px;color:#aaa;padding-top:16px;border-top:1px solid #eee;margin-top:24px}'
+   + '.no-print{text-align:center;padding:26px}@media print{.no-print{display:none}}'
+   + '</style></head><body>'
+   + '<div class="cover"><div class="cover-top">'
+   +   '<div class="cover-tag">FluxGK</div>'
+   +   '<div class="cover-badge">' + (C.escudo ? '<img src="' + e(C.escudo) + '">' : e((C.nome || 'GK').slice(0, 2).toUpperCase())) + '</div>'
+   +   '<div class="cover-title">' + e(titulo) + '</div>'
+   +   '<div class="cover-sub">' + e(C.nome) + '</div>'
+   +   '<div class="cover-range">' + e(sub) + '</div>'
+   +   '<div class="cover-meta">'
+   +     (umSo ? '' : '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.anas')) + '</div><div class="meta-value">' + grupos.length + '</div></div>')
+   +     '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.mPl')) + '</div><div class="meta-value">' + nPl + '</div></div>'
+   +     '<div class="meta-item"><div class="meta-label">' + e(TX('vid.f.clips')) + '</div><div class="meta-value">' + nLances + '</div></div>'
+   +     (C.temporada ? '<div class="meta-item"><div class="meta-label">' + e(TX('season', 'Season')) + '</div><div class="meta-value">' + e(C.temporada) + '</div></div>' : '')
+   +     '<div class="meta-item"><div class="meta-label">' + e(TX('data.pdf.generated', 'Generated')) + '</div><div class="meta-value">' + e(hoje) + '</div></div>'
+   +     (C.treinador ? '<div class="meta-item"><div class="meta-label">' + e(TX('common.coach', 'Coach')) + '</div><div class="meta-value">' + e(C.treinador) + '</div></div>' : '')
+   +   '</div></div>'
+   +   '<div class="cover-footer"><span>FluxGK · ' + e(C.nome) + '</span>'
+   +   '<span>' + e(TX('data.pdf.methodValue', 'Constraints-Based Approach · Ecological Dynamics')) + '</span></div>'
+   + '</div>'
+   + (geral ? '<div class="intro"><div class="t">' + e(TX('vid.rel.geral')) + '</div><div class="b">' + e(geral) + '</div></div>' : '')
+   + corpo
+   + '<div class="footer"><span>FluxGK · ' + e(C.nome) + '</span><span>' + e(hoje) + '</span></div>'
+   + '<div class="no-print"><button onclick="window.print()" style="padding:11px 26px;background:' + P + ';color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:14px">🖨 '
+   + e(TX('period.print', 'Print / Save as PDF')) + '</button></div>'
+   + '</body></html>';
+
+  var w = window.open('', '_blank');
+  if (!w){ log(TX('vid.rel.popup'), 'err'); return; }
+  w.document.write(html); w.document.close();
+  relFechar();
+}
+
 var _exAll = null;   /* { pl:[{id,on}], cartelas:bool, dur:number } */
 
 function exAllAbrir(p, analise){
@@ -2288,7 +2577,10 @@ function renderProjectTab(){
       const a = analiseCreate(p, nome);
       if (a){ log(TX('vid.an.created') + a.name); renderProjectTab(); }
     });
-    anHdr.appendChild(anT); anHdr.appendChild(anNew);
+    const anRel = document.createElement('button'); anRel.className = 'mini ghost';
+    anRel.textContent = TX('vid.rel.period'); anRel.title = TX('vid.rel.periodT');
+    anRel.addEventListener('click', () => relAbrir(p, null));
+    anHdr.appendChild(anT); anHdr.appendChild(anRel); anHdr.appendChild(anNew);
     box.appendChild(anHdr);
 
     const vids = (p.videos || []).slice().sort((a, b) => (a.srcName || '').localeCompare(b.srcName || ''));
@@ -2315,6 +2607,9 @@ function renderProjectTab(){
       head.appendChild(nm); head.appendChild(ct);
       const sp = document.createElement('span'); sp.style.flex = '1'; head.appendChild(sp);
       if (a){
+        const bRel = document.createElement('button'); bRel.className = 'mini ghost'; bRel.textContent = TX('vid.rel.btn');
+        bRel.title = TX('vid.rel.open');
+        bRel.addEventListener('click', (e) => { e.stopPropagation(); relAbrir(p, a); });
         const bExpAll = document.createElement('button'); bExpAll.className = 'mini'; bExpAll.textContent = TX('vid.ex.all');
         bExpAll.title = TX('vid.ex.allTitle');
         bExpAll.addEventListener('click', (e) => { e.stopPropagation(); exAllAbrir(p, a); });
@@ -2344,7 +2639,7 @@ function renderProjectTab(){
           if (!(await askConfirm(TX('vid.an.del'), TX('vid.an.delQ') + a.name + TX('vid.an.delQ2'), TX('vid.delete')))) return;
           analiseDelete(p, a.id); renderProjectTab();
         });
-        head.appendChild(bExpAll); head.appendChild(bRen); head.appendChild(bUp); head.appendChild(bDn); head.appendChild(bX);
+        head.appendChild(bRel); head.appendChild(bExpAll); head.appendChild(bRen); head.appendChild(bUp); head.appendChild(bDn); head.appendChild(bX);
         head.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
           analiseToggle(p, a); renderProjectTab();
