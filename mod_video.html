@@ -457,6 +457,10 @@
   .relh .relnm{font-weight:700;font-size:13.5px}
   .relh .relct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
   .relh .relhora{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);font-weight:600;flex:none}
+  .relcaps{border:1px solid var(--line);border-radius:7px;background:var(--card);padding:5px 0;margin-bottom:4px}
+  .relcap{display:flex;align-items:baseline;gap:9px;padding:4px 11px;font-size:12.5px}
+  .relcapt{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);min-width:42px}
+  .relcapn{font-weight:600;flex:1}
   .relchap{display:flex;align-items:center;gap:9px;margin:10px 0 7px}
   .relchap button{padding:1px 9px;font-size:11px}
   .relin,.relta{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
@@ -1898,32 +1902,29 @@ function relPinta(){
         an.addEventListener('change', function(){ g.an.relNota = an.value.trim(); projPersist(); });
         bloco.appendChild(an);
       }
-      /* capitulos: onde cada playlist entra no video do jogo */
+      /* O relatorio e de comentario geral: as playlists aparecem so como
+         indice do video (nao se escreve nada sobre cada uma). */
       const caps = relCapitulos(g);
-      const ch = document.createElement('div'); ch.className = 'relchap';
-      const cht = document.createElement('span'); cht.className = 'rellb'; cht.style.margin = '0';
-      cht.textContent = TX('vid.rel.chap');
-      const cb = document.createElement('button'); cb.className = 'mini ghost'; cb.textContent = TX('vid.rel.chapCopy');
-      cb.addEventListener('click', function(){ relCopiarCapitulos(g); });
-      ch.appendChild(cht); ch.appendChild(cb);
-      bloco.appendChild(ch);
-      const horas = {};
-      caps.forEach(function(c){ horas[c.pl.id] = relMMSS(c.em); });
-      g.pls.forEach(function(pl){
-        const card = document.createElement('div'); card.className = 'relrow';
-        const h2 = document.createElement('div'); h2.className = 'relh';
-        const nm2 = document.createElement('span'); nm2.className = 'relnm'; nm2.textContent = pl.name;
-        const ct2 = document.createElement('span'); ct2.className = 'relct';
-        ct2.textContent = (pl.items || []).length + ' ' + TX('vid.f.clips');
-        const hh = document.createElement('span'); hh.className = 'relhora';
-        hh.textContent = '⏱ ' + (horas[pl.id] || '--:--');
-        h2.appendChild(hh); h2.appendChild(nm2); h2.appendChild(ct2); card.appendChild(h2);
-        const tx = document.createElement('textarea'); tx.className = 'relta'; tx.rows = 3;
-        tx.placeholder = TX('vid.rel.notaPh'); tx.value = pl.nota || '';
-        tx.addEventListener('change', function(){ pl.nota = tx.value.trim(); projPersist(); });
-        card.appendChild(tx);
-        bloco.appendChild(card);
-      });
+      if (caps.length){
+        const ch = document.createElement('div'); ch.className = 'relchap';
+        const cht = document.createElement('span'); cht.className = 'rellb'; cht.style.margin = '0';
+        cht.textContent = TX('vid.rel.chap');
+        const cb = document.createElement('button'); cb.className = 'mini ghost'; cb.textContent = TX('vid.rel.chapCopy');
+        cb.addEventListener('click', function(){ relCopiarCapitulos(g); });
+        ch.appendChild(cht); ch.appendChild(cb);
+        bloco.appendChild(ch);
+        const ul = document.createElement('div'); ul.className = 'relcaps';
+        caps.forEach(function(c){
+          const li = document.createElement('div'); li.className = 'relcap';
+          const t = document.createElement('span'); t.className = 'relcapt'; t.textContent = relMMSS(c.em);
+          const n2 = document.createElement('span'); n2.className = 'relcapn'; n2.textContent = c.pl.name;
+          const q = document.createElement('span'); q.className = 'relct';
+          q.textContent = (plFlat(c.pl) || []).filter(function(x){ return x && x.srcKey; }).length + ' ' + TX('vid.f.clips');
+          li.appendChild(t); li.appendChild(n2); li.appendChild(q);
+          ul.appendChild(li);
+        });
+        bloco.appendChild(ul);
+      }
     }
     box.appendChild(bloco);
   });
@@ -1942,12 +1943,6 @@ function relSalvar(){
   const g = document.getElementById('relGeral');
   if (g) _rel.proj.relNota = g.value.trim();
   /* os campos ja gravam no change; aqui so garante o que ficou em foco */
-  document.querySelectorAll('#relList .relrow').forEach(function(card){
-    const tx = card.querySelector('.relta');
-    const nome = (card.querySelector('.relnm') || {}).textContent;
-    const pl = projPlaylistsOf(_rel.proj).find(function(x){ return x.name === nome; });
-    if (pl && tx) pl.nota = tx.value.trim();
-  });
   projPersist();
 }
 
@@ -2042,29 +2037,8 @@ function relGerar(){
        + (g.an && g.an.relNota ? '<div class="cap-n">' + e(g.an.relNota).replace(/\n/g, '<br>') + '</div>' : '')
        + capsHtml
        + '</div>';
-    var blocos = g.pls.map(function(pl, i){
-      plNormaliza(pl);
-      var itens = plFlat(pl).filter(function(x){ return x && x.srcKey; });
-      n++;
-      var linhas = itens.map(function(it, k){
-        var nome = it.name || it.tagName || TX('vid.f.clip', 'clip');
-        return '<tr><td class="c2">' + (k + 1) + '</td>'
-          + '<td class="c1">' + e(nome) + (it.spec ? '<span class="spec">' + e(it.spec) + '</span>' : '') + '</td>'
-          + '<td class="c2">' + e(it.gk || '—') + '</td>'
-          + '<td class="c2">' + e(it.srcName || '') + '</td>'
-          + '<td class="c2 mono">' + fmt(it.start) + ' → ' + fmt(it.end) + '</td></tr>';
-      }).join('');
-      /* a playlist e um trecho do video do jogo: marca o minuto, nao um link */
-      var hm = hora[pl.id] || '';
-      return '<div class="sec' + (i ? ' sec-break' : '') + '">'
-        + '<div class="sec-h"><span class="sec-n">' + n + '</span>' + e(pl.name)
-        + (hm ? '<span class="hm">⏱ ' + hm + '</span>' : '')
-        + '<span class="cnt">' + itens.length + ' ' + e(TX('vid.f.clips')) + '</span></div>'
-        + (pl.nota ? '<div class="nota">' + e(pl.nota).replace(/\n/g, '<br>') + '</div>' : '')
-        + '<table><thead><tr><th>#</th><th>' + e(TX('vid.rel.thClip')) + '</th><th>' + e(TX('vid.rel.thGk'))
-        + '</th><th>' + e(TX('vid.rel.thSrc')) + '</th><th>' + e(TX('vid.rel.thTime')) + '</th></tr></thead>'
-        + '<tbody>' + linhas + '</tbody></table></div>';
-    }).join('');
+    /* nada de secao por playlist: o relatorio e de comentario geral */
+    var blocos = '';
     return cab + blocos;
   }).join('');
 
@@ -2090,8 +2064,8 @@ function relGerar(){
    + '.intro{margin-bottom:26px}'
    + '.intro .t{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#737373;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e5e5e5}'
    + '.intro .b{background:#fff;border-left:3px solid ' + P + ';padding:13px 16px;font-size:12.5px;line-height:1.65;color:#222;white-space:pre-wrap}'
-   + '.cap{page-break-before:always;padding:34px 0 22px;margin-bottom:22px;border-bottom:3px solid ' + P + '}'
-   + '.cap-first{page-break-before:auto}'
+   + '.cap{padding:22px 0 20px;margin-bottom:20px;border-bottom:3px solid ' + P + ';page-break-inside:avoid}'
+   + '.cap-first{padding-top:0}'
    + '.cap-l{font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#999;margin-bottom:7px}'
    + '.cap-t{font-size:30px;font-weight:700;letter-spacing:-.8px;color:' + P + ';margin-bottom:5px}'
    + '.cap-s{font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#999}'
