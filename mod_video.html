@@ -443,6 +443,14 @@
   .pabt:hover{border-color:var(--ink)}
   .pabt.dup{border-color:var(--blue);color:var(--blue)}
   .pabt.dup:hover{background:var(--blue);color:#fff}
+  .exrow{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;
+    margin-bottom:5px;background:var(--card);font-size:13px;cursor:grab}
+  .exrow.off{opacity:.45}
+  .exrow.dragging{opacity:.4}
+  .exrow .exnum{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:20px}
+  .exrow .exnm{font-weight:600}
+  .exrow .exct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
+  .exrow button{padding:1px 7px;font-size:10px}
   .pape{display:flex;align-items:center;gap:9px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line);flex-wrap:wrap}
   .padica{font-size:11px;color:var(--muted)}
 
@@ -1149,6 +1157,29 @@
   <div class="fpresize" id="plGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
 </div>
 
+<!-- EXPORTAR TODAS AS PLAYLISTS NUM VIDEO SO -->
+<div class="st-ov" id="exAllOv" style="z-index:170">
+  <div class="st-sh" style="max-width:620px">
+    <div class="modal-hdr" style="margin-bottom:4px">
+      <h2 style="font-size:15px;font-weight:600"><span data-i18n="vid.ex.allTitle">Export every playlist in one video</span></h2>
+      <button class="modal-close" onclick="exAllFechar()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:11px" data-i18n="vid.ex.allHint">Tick what goes in, drag or use the arrows to set the order.</div>
+    <div id="exAllList"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px">
+        <input type="checkbox" id="exAllCards" checked> <span data-i18n="vid.ex.cards">Title screen between playlists</span>
+      </label>
+      <input type="number" id="exAllDur" value="2.5" min="0.5" max="10" step="0.5" style="width:62px">
+      <span style="font-size:12px;color:var(--muted)" data-i18n="vid.ex.cardsSec">seconds</span>
+      <span id="exAllTotal" style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></span>
+    </div>
+    <button class="mini primary" style="margin-top:12px;padding:8px 18px" onclick="exAllExportar()">
+      <span data-i18n="vid.ex.go">Export</span>
+    </button>
+  </div>
+</div>
+
 <!-- PLAYER EM SEQUENCIA: toca a playlist do projeto atravessando videos -->
 <div id="cineOv">
   <div id="cineTop">
@@ -1722,6 +1753,108 @@ function updateProjBar(){
   if (state.projectMode && p){ bar.style.display = 'flex'; const nm = $('projBarName'); if (nm) nm.textContent = p.name; }
   else bar.style.display = 'none';
 }
+/* ══ EXPORTAR TODAS AS PLAYLISTS NUM VIDEO SO ══════════════════
+   Monta uma fila unica com os lances de varias playlists, na ordem
+   que voce definir, e coloca entre elas uma tela com o nome da
+   proxima — para o goleiro saber o que vai assistir.           */
+var _exAll = null;   /* { pl:[{id,on}], cartelas:bool, dur:number } */
+
+function exAllAbrir(p, analise){
+  const todas = projPlaylistsOf(p).filter(pl =>
+    analise ? playlistAnalise(p, pl) === analise.id : true);
+  if (!todas.length) return;
+  /* a ordem comeca a que esta na tela; marcadas as que tem lance */
+  _exAll = {
+    proj: p, analise: analise, dur: 2.5, cartelas: true,
+    pl: todas.map(pl => ({ id: pl.id, on: (pl.items || []).length > 0 }))
+  };
+  exAllPinta();
+  document.getElementById('exAllOv').classList.add('on');
+}
+function exAllFechar(){ document.getElementById('exAllOv').classList.remove('on'); _exAll = null; }
+function exAllPl(id){ return projPlaylistsOf(_exAll.proj).find(x => x.id === id); }
+
+function exAllMover(i, d){
+  const a = _exAll.pl, j = i + d;
+  if (j < 0 || j >= a.length) return;
+  const t = a[i]; a[i] = a[j]; a[j] = t;
+  exAllPinta();
+}
+function exAllToggle(i){ _exAll.pl[i].on = !_exAll.pl[i].on; exAllPinta(); }
+
+function exAllPinta(){
+  const box = document.getElementById('exAllList'); if (!box || !_exAll) return;
+  box.innerHTML = '';
+  let total = 0;
+  _exAll.pl.forEach((reg, i) => {
+    const pl = exAllPl(reg.id); if (!pl) return;
+    const n = (pl.items || []).length;
+    if (reg.on) total += n;
+    const row = document.createElement('div');
+    row.className = 'exrow' + (reg.on ? '' : ' off');
+    row.draggable = true;
+    row.addEventListener('dragstart', e => { _exDrag = i; row.classList.add('dragging');
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); } catch (err) {} });
+    row.addEventListener('dragend', () => { _exDrag = null; exAllPinta(); });
+    row.addEventListener('dragover', e => { if (_exDrag != null && _exDrag !== i) e.preventDefault(); });
+    row.addEventListener('drop', e => {
+      if (_exDrag == null || _exDrag === i) return;
+      e.preventDefault();
+      const a = _exAll.pl, mov = a.splice(_exDrag, 1)[0];
+      a.splice(i, 0, mov); _exDrag = null; exAllPinta();
+    });
+
+    const num = document.createElement('span'); num.className = 'exnum';
+    num.textContent = reg.on ? (_exAll.pl.slice(0, i).filter(x => x.on).length + 1) + '.' : '—';
+    const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = reg.on;
+    chk.addEventListener('change', () => exAllToggle(i));
+    const nm = document.createElement('span'); nm.className = 'exnm'; nm.textContent = pl.name;
+    const ct = document.createElement('span'); ct.className = 'exct';
+    ct.textContent = n ? (n + ' ' + TX('vid.f.clips')) : TX('vid.ex.empty');
+    const sp = document.createElement('span'); sp.style.flex = '1';
+    const up = document.createElement('button'); up.className = 'mini ghost'; up.textContent = '▲';
+    up.disabled = i === 0; up.addEventListener('click', () => exAllMover(i, -1));
+    const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.textContent = '▼';
+    dn.disabled = i === _exAll.pl.length - 1; dn.addEventListener('click', () => exAllMover(i, 1));
+
+    row.appendChild(num); row.appendChild(chk); row.appendChild(nm); row.appendChild(ct);
+    row.appendChild(sp); row.appendChild(up); row.appendChild(dn);
+    box.appendChild(row);
+  });
+  const tot = document.getElementById('exAllTotal');
+  if (tot) tot.textContent = total + ' ' + TX('vid.ex.total');
+}
+var _exDrag = null;
+
+/* monta a fila final e manda exportar */
+function exAllExportar(){
+  if (!_exAll) return;
+  const p = _exAll.proj;
+  const cartelas = document.getElementById('exAllCards').checked;
+  const dur = parseFloat(document.getElementById('exAllDur').value) || 2.5;
+  const fila = [];
+  const nomes = [];
+  _exAll.pl.forEach(reg => {
+    if (!reg.on) return;
+    const pl = exAllPl(reg.id); if (!pl) return;
+    plNormaliza(pl);
+    const itens = plFlat(pl).filter(it => it && it.srcKey);
+    if (!itens.length) return;
+    nomes.push(pl.name);
+    if (cartelas) fila.push({
+      _cartela: pl.name,
+      _sub: (_exAll.analise ? _exAll.analise.name : p.name) + ' · ' + itens.length + ' ' + TX('vid.f.clips'),
+      _dur: dur,
+      color: (itens[0] && itens[0].color) || '#1E4FFF'
+    });
+    itens.forEach(it => fila.push(it));
+  });
+  if (!fila.length){ log(TX('vid.ex.none'), 'err'); return; }
+  const base = p.name + ' - ' + (_exAll.analise ? _exAll.analise.name : nomes.join(' + '));
+  exAllFechar();
+  exportCombined(fila, base);
+}
+
 /* ══ ANALISES — pastas de jogos dentro do projeto ══════════════
    Um projeto guarda a Liga inteira; cada analise guarda os jogos
    daquela rodada e as playlists feitas a partir deles. A playlist
@@ -2182,6 +2315,9 @@ function renderProjectTab(){
       head.appendChild(nm); head.appendChild(ct);
       const sp = document.createElement('span'); sp.style.flex = '1'; head.appendChild(sp);
       if (a){
+        const bExpAll = document.createElement('button'); bExpAll.className = 'mini'; bExpAll.textContent = TX('vid.ex.all');
+        bExpAll.title = TX('vid.ex.allTitle');
+        bExpAll.addEventListener('click', (e) => { e.stopPropagation(); exAllAbrir(p, a); });
         const bRen = document.createElement('button'); bRen.className = 'mini ghost'; bRen.textContent = '✎';
         bRen.title = TX('vid.an.rename');
         bRen.addEventListener('click', async (e) => {
@@ -2208,7 +2344,7 @@ function renderProjectTab(){
           if (!(await askConfirm(TX('vid.an.del'), TX('vid.an.delQ') + a.name + TX('vid.an.delQ2'), TX('vid.delete')))) return;
           analiseDelete(p, a.id); renderProjectTab();
         });
-        head.appendChild(bRen); head.appendChild(bUp); head.appendChild(bDn); head.appendChild(bX);
+        head.appendChild(bExpAll); head.appendChild(bRen); head.appendChild(bUp); head.appendChild(bDn); head.appendChild(bX);
         head.addEventListener('click', (e) => {
           if (e.target.closest('button')) return;
           analiseToggle(p, a); renderProjectTab();
@@ -7391,18 +7527,20 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
    ===================================================================== */
 async function exportCombined(items, baseName){
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
-  const order = (items || []).filter(it => it && it.srcKey);
+  /* cartelas (telas com o nome da playlist) nao tem video: entram na fila
+     do mesmo jeito e sao desenhadas direto no canvas */
+  const order = (items || []).filter(it => it && (it.srcKey || it._cartela));
   if (!order.length){ log(TX('vid.proj.expEmpty'), 'err'); return; }
   /* playlists montadas antes desta correcao nao guardaram o enquadramento:
      busca no lance original, pela fonte e pelo tempo, antes de exportar */
   /* mesma regra do player: o lance original manda, o item e reserva.
      Assim o MP4 sai com o enquadramento que voce viu na tela. */
-  try{ order.forEach(it => { if (typeof zoomDoLance === 'function') zoomDoLance(it); }); }catch(e){}
+  try{ order.forEach(it => { if (it.srcKey && typeof zoomDoLance === 'function') zoomDoLance(it); }); }catch(e){}
   const p = currentProject();
 
   // 1) resolver TODAS as fontes pela pasta vinculada (senão aborta pedindo para vincular)
   const keys = [];
-  order.forEach(i => { if (!keys.includes(i.srcKey)) keys.push(i.srcKey); });
+  order.forEach(i => { if (i.srcKey && !keys.includes(i.srcKey)) keys.push(i.srcKey); });
   const fileMap = {}; const missing = [];
   for (const k of keys){
     const nm = (order.find(i => i.srcKey === k) || {}).srcName || k;
@@ -7494,6 +7632,42 @@ async function exportCombined(items, baseName){
         cx.fillStyle = '#fff'; cx.textBaseline = 'middle'; cx.fillText(ev.name, pad * 1.7, pad + outH * 0.035);
       }
     }
+    /* tela de separacao: fundo escuro, nome grande e uma tarja da cor */
+    function pintaCartela(it, prog){
+      cx.fillStyle = '#0a0a0a'; cx.fillRect(0, 0, outW, outH);
+      const cor = it.color || '#1E4FFF';
+      cx.fillStyle = cor; cx.fillRect(0, outH * 0.5 - outH * 0.004, outW, outH * 0.008);
+      cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
+      let tam = Math.round(outH * 0.085);
+      cx.font = '700 ' + tam + 'px "Space Grotesk", sans-serif';
+      while (cx.measureText(it._cartela).width > outW * 0.86 && tam > 16){
+        tam -= 2; cx.font = '700 ' + tam + 'px "Space Grotesk", sans-serif';
+      }
+      cx.fillStyle = '#fff';
+      cx.fillText(it._cartela, outW / 2, outH * 0.5 - outH * 0.035);
+      if (it._sub){
+        cx.font = '500 ' + Math.round(outH * 0.030) + 'px "JetBrains Mono", monospace';
+        cx.fillStyle = 'rgba(255,255,255,.62)';
+        cx.fillText(it._sub, outW / 2, outH * 0.5 + outH * 0.075);
+      }
+      /* risquinho que anda, so para a tela nao parecer travada */
+      cx.fillStyle = 'rgba(255,255,255,.22)';
+      cx.fillRect(outW * 0.3, outH * 0.86, outW * 0.4 * Math.min(1, prog), 2);
+      cx.textAlign = 'left';
+    }
+    function playCartela(it){
+      return new Promise(resolve => {
+        const ms = Math.max(0.5, it._dur || 2.5) * 1000;
+        const t0 = performance.now();
+        (function loop(){
+          if (cancelRequested){ resolve(); return; }
+          const p = (performance.now() - t0) / ms;
+          pintaCartela(it, p);
+          if (p >= 1){ resolve(); return; }
+          requestAnimationFrame(loop);
+        })();
+      });
+    }
     function playItem(it){
       return new Promise(async (resolve) => {
         try { await loadSource(it.srcKey); } catch (e) { resolve(); return; }
@@ -7523,7 +7697,8 @@ async function exportCombined(items, baseName){
     for (let i = 0; i < order.length; i++){
       if (cancelRequested) break;
       setProgress(i / order.length, TX('vid.proj.expProgress') + (i + 1) + '/' + order.length);
-      await playItem(order[i]);
+      if (order[i]._cartela) await playCartela(order[i]);
+      else await playItem(order[i]);
     }
     try { rec.stop(); } catch (e) {}
     await stopped;
