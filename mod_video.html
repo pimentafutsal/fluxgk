@@ -456,6 +456,9 @@
   .relh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .relh .relnm{font-weight:700;font-size:13.5px}
   .relh .relct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+  .relh .relhora{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);font-weight:600;flex:none}
+  .relchap{display:flex;align-items:center;gap:9px;margin:10px 0 7px}
+  .relchap button{padding:1px 9px;font-size:11px}
   .relin,.relta{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
     background:var(--card);color:var(--ink);font-family:inherit;font-size:12.5px}
   .relin{margin-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:11px}
@@ -1881,23 +1884,40 @@ function relPinta(){
       bloco.appendChild(h);
     }
     if (_rel.sel[g.id]){
-      if (varios && g.an){
+      /* UM video por jogo: o link e da analise, nao de cada playlist */
+      const dono = g.an || _rel.proj;
+      const lb = document.createElement('label'); lb.className = 'rellb';
+      lb.textContent = TX('vid.rel.anLink');
+      const lkA = document.createElement('input'); lkA.type = 'url'; lkA.className = 'relin';
+      lkA.placeholder = TX('vid.rel.anLinkPh'); lkA.value = dono.linkYT || '';
+      lkA.addEventListener('change', function(){ dono.linkYT = lkA.value.trim(); projPersist(); });
+      bloco.appendChild(lb); bloco.appendChild(lkA);
+      if (g.an){
         const an = document.createElement('textarea'); an.className = 'relta relan'; an.rows = 2;
         an.placeholder = TX('vid.rel.anNota'); an.value = g.an.relNota || '';
         an.addEventListener('change', function(){ g.an.relNota = an.value.trim(); projPersist(); });
         bloco.appendChild(an);
       }
+      /* capitulos: onde cada playlist entra no video do jogo */
+      const caps = relCapitulos(g);
+      const ch = document.createElement('div'); ch.className = 'relchap';
+      const cht = document.createElement('span'); cht.className = 'rellb'; cht.style.margin = '0';
+      cht.textContent = TX('vid.rel.chap');
+      const cb = document.createElement('button'); cb.className = 'mini ghost'; cb.textContent = TX('vid.rel.chapCopy');
+      cb.addEventListener('click', function(){ relCopiarCapitulos(g); });
+      ch.appendChild(cht); ch.appendChild(cb);
+      bloco.appendChild(ch);
+      const horas = {};
+      caps.forEach(function(c){ horas[c.pl.id] = relMMSS(c.em); });
       g.pls.forEach(function(pl){
         const card = document.createElement('div'); card.className = 'relrow';
         const h2 = document.createElement('div'); h2.className = 'relh';
         const nm2 = document.createElement('span'); nm2.className = 'relnm'; nm2.textContent = pl.name;
         const ct2 = document.createElement('span'); ct2.className = 'relct';
         ct2.textContent = (pl.items || []).length + ' ' + TX('vid.f.clips');
-        h2.appendChild(nm2); h2.appendChild(ct2); card.appendChild(h2);
-        const lk = document.createElement('input'); lk.type = 'url'; lk.className = 'relin';
-        lk.placeholder = TX('vid.rel.linkPh'); lk.value = pl.linkYT || '';
-        lk.addEventListener('change', function(){ pl.linkYT = lk.value.trim(); projPersist(); });
-        card.appendChild(lk);
+        const hh = document.createElement('span'); hh.className = 'relhora';
+        hh.textContent = '⏱ ' + (horas[pl.id] || '--:--');
+        h2.appendChild(hh); h2.appendChild(nm2); h2.appendChild(ct2); card.appendChild(h2);
         const tx = document.createElement('textarea'); tx.className = 'relta'; tx.rows = 3;
         tx.placeholder = TX('vid.rel.notaPh'); tx.value = pl.nota || '';
         tx.addEventListener('change', function(){ pl.nota = tx.value.trim(); projPersist(); });
@@ -1923,14 +1943,57 @@ function relSalvar(){
   if (g) _rel.proj.relNota = g.value.trim();
   /* os campos ja gravam no change; aqui so garante o que ficou em foco */
   document.querySelectorAll('#relList .relrow').forEach(function(card){
-    const lk = card.querySelector('.relin'), tx = card.querySelector('.relta');
+    const tx = card.querySelector('.relta');
     const nome = (card.querySelector('.relnm') || {}).textContent;
     const pl = projPlaylistsOf(_rel.proj).find(function(x){ return x.name === nome; });
-    if (!pl) return;
-    if (lk) pl.linkYT = lk.value.trim();
-    if (tx) pl.nota = tx.value.trim();
+    if (pl && tx) pl.nota = tx.value.trim();
   });
   projPersist();
+}
+
+/* Com um video por jogo, cada playlist e um trecho dele. Aqui se calcula
+   onde cada uma comeca, somando a cartela e a duracao dos lances na ordem
+   em que foram exportados. E o que vira capitulo no YouTube.          */
+function relCapitulos(g){
+  if (!g || !g.pls.length) return [];
+  var dono = g.an || _rel.proj;
+  var ordem = Array.isArray(dono.expOrdem) ? dono.expOrdem : null;
+  var dur = (typeof dono.expDur === 'number') ? dono.expDur : 2.5;
+  var pls = g.pls.slice();
+  if (ordem){
+    pls.sort(function(a, b){
+      var ia = ordem.indexOf(a.id), ib = ordem.indexOf(b.id);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+    pls = pls.filter(function(pl){ return ordem.indexOf(pl.id) >= 0; }).concat(
+          pls.filter(function(pl){ return ordem.indexOf(pl.id) < 0; }));
+  }
+  var t = 0;
+  return pls.map(function(pl){
+    var ini = t;
+    t += dur;                                   /* a tela com o nome */
+    (plFlat(pl) || []).forEach(function(it){
+      if (it && it.srcKey) t += Math.max(0, (it.end || 0) - (it.start || 0));
+    });
+    return { pl: pl, em: ini, fim: t };
+  });
+}
+function relMMSS(seg){
+  seg = Math.max(0, Math.round(seg));
+  var h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60), s2 = seg % 60;
+  var mm = String(m).padStart(2, '0'), ss = String(s2).padStart(2, '0');
+  return h ? (h + ':' + mm + ':' + ss) : (mm + ':' + ss);
+}
+function relCopiarCapitulos(g){
+  var txt = relCapitulos(g).map(function(c){ return relMMSS(c.em) + ' ' + c.pl.name; }).join('\n');
+  try{
+    navigator.clipboard.writeText(txt);
+    log(TX('vid.rel.chapOk'), 'ok');
+  }catch(e){
+    var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand('copy'); log(TX('vid.rel.chapOk'), 'ok'); }catch(e2){}
+    ta.remove();
+  }
 }
 
 /* ---- o documento ---- */
@@ -1955,13 +2018,30 @@ function relGerar(){
   /* cada playlist e um bloco; com varios jogos, cada analise abre um capitulo */
   var n = 0;
   var corpo = grupos.map(function(g, gi){
-    var cab = umSo ? '' :
-      ('<div class="cap' + (gi ? '' : ' cap-first') + '">'
-       + '<div class="cap-l">' + e(TX('vid.rel.chapter')) + ' ' + (gi + 1) + '</div>'
+    /* UM video por jogo: o link e os capitulos moram no cabecalho da analise */
+    var dono = g.an || p;
+    var caps = relCapitulos(g);
+    var hora = {}; caps.forEach(function(c){ hora[c.pl.id] = relMMSS(c.em); });
+    var lkA = (dono.linkYT || '').trim();
+    var capsHtml = caps.length
+      ? ('<div class="chaps"><div class="chaps-t">' + e(TX('vid.rel.chap')) + '</div>'
+         + caps.map(function(c){
+             return '<div class="chap"><span class="chap-t">' + relMMSS(c.em) + '</span>'
+                  + '<span class="chap-n">' + e(c.pl.name) + '</span>'
+                  + '<span class="chap-c">' + (plFlat(c.pl) || []).filter(function(x){ return x && x.srcKey; }).length
+                  + ' ' + e(TX('vid.f.clips')) + '</span></div>'; }).join('')
+         + '</div>')
+      : '';
+    var cab = '<div class="cap' + (gi ? '' : ' cap-first') + '">'
+       + (umSo ? '' : '<div class="cap-l">' + e(TX('vid.rel.chapter')) + ' ' + (gi + 1) + '</div>')
        + '<div class="cap-t">' + e(g.nome) + '</div>'
        + '<div class="cap-s">' + g.pls.length + ' ' + e(TX('vid.rel.mPl').toLowerCase()) + '</div>'
+       + (lkA ? '<a class="lk lk-an" href="' + e(lkA) + '">▶ ' + e(TX('vid.rel.watchAn')) + '</a>'
+              + '<div class="lkurl">' + e(lkA) + '</div>'
+              : '<div class="semlk">' + e(TX('vid.rel.semLink')) + '</div>')
        + (g.an && g.an.relNota ? '<div class="cap-n">' + e(g.an.relNota).replace(/\n/g, '<br>') + '</div>' : '')
-       + '</div>');
+       + capsHtml
+       + '</div>';
     var blocos = g.pls.map(function(pl, i){
       plNormaliza(pl);
       var itens = plFlat(pl).filter(function(x){ return x && x.srcKey; });
@@ -1974,14 +2054,12 @@ function relGerar(){
           + '<td class="c2">' + e(it.srcName || '') + '</td>'
           + '<td class="c2 mono">' + fmt(it.start) + ' → ' + fmt(it.end) + '</td></tr>';
       }).join('');
-      var link = (pl.linkYT || '').trim();
-      var quebra = (umSo && i) || (!umSo && i);
-      return '<div class="sec' + (quebra ? ' sec-break' : '') + '">'
+      /* a playlist e um trecho do video do jogo: marca o minuto, nao um link */
+      var hm = hora[pl.id] || '';
+      return '<div class="sec' + (i ? ' sec-break' : '') + '">'
         + '<div class="sec-h"><span class="sec-n">' + n + '</span>' + e(pl.name)
+        + (hm ? '<span class="hm">⏱ ' + hm + '</span>' : '')
         + '<span class="cnt">' + itens.length + ' ' + e(TX('vid.f.clips')) + '</span></div>'
-        + (link ? '<a class="lk" href="' + e(link) + '">▶ ' + e(TX('vid.rel.watch')) + '</a>'
-                + '<div class="lkurl">' + e(link) + '</div>'
-                : '<div class="semlk">' + e(TX('vid.rel.semLink')) + '</div>')
         + (pl.nota ? '<div class="nota">' + e(pl.nota).replace(/\n/g, '<br>') + '</div>' : '')
         + '<table><thead><tr><th>#</th><th>' + e(TX('vid.rel.thClip')) + '</th><th>' + e(TX('vid.rel.thGk'))
         + '</th><th>' + e(TX('vid.rel.thSrc')) + '</th><th>' + e(TX('vid.rel.thTime')) + '</th></tr></thead>'
@@ -2018,6 +2096,14 @@ function relGerar(){
    + '.cap-t{font-size:30px;font-weight:700;letter-spacing:-.8px;color:' + P + ';margin-bottom:5px}'
    + '.cap-s{font-family:\'JetBrains Mono\',monospace;font-size:10px;color:#999}'
    + '.cap-n{margin-top:13px;background:#fff;border-left:3px solid ' + P + ';padding:11px 14px;font-size:12.5px;line-height:1.6;color:#222;white-space:pre-wrap}'
+   + '.lk-an{margin-top:14px}'
+   + '.chaps{margin-top:14px;background:#fff;border:1px solid #e9e9e9;border-radius:6px;padding:10px 13px}'
+   + '.chaps-t{font-family:\'JetBrains Mono\',monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#999;margin-bottom:7px}'
+   + '.chap{display:flex;align-items:baseline;gap:10px;padding:3px 0;font-size:12px}'
+   + '.chap-t{font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:' + P + ';min-width:46px}'
+   + '.chap-n{font-weight:600;flex:1}'
+   + '.chap-c{font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:#aaa}'
+   + '.hm{font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:' + P + '}'
    + '.sec{margin-bottom:26px;page-break-inside:avoid}'
    + '.sec-break{page-break-before:always}'
    + '.sec-h{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#0a0a0a;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ' + P + '}'
@@ -2159,6 +2245,11 @@ function exAllExportar(){
     itens.forEach(it => fila.push(it));
   });
   if (!fila.length){ log(TX('vid.ex.none'), 'err'); return; }
+  /* guarda como ficou: o relatorio usa isto para calcular os capitulos */
+  const dono = _exAll.analise || p;
+  dono.expOrdem = _exAll.pl.filter(function(r){ return r.on; }).map(function(r){ return r.id; });
+  dono.expDur = cartelas ? dur : 0;
+  projPersist();
   const base = p.name + ' - ' + (_exAll.analise ? _exAll.analise.name : nomes.join(' + '));
   exAllFechar();
   exportCombined(fila, base);
@@ -7901,7 +7992,13 @@ async function exportCombined(items, baseName){
   const withTitle = $('expTitle') ? $('expTitle').checked : false;
 
   try {
-    await loadSource(order[0].srcKey);
+    /* Este carregamento inicial existe so para medir o tamanho do quadro.
+       Ele usava order[0] — que, com as telas de separacao, e uma CARTELA
+       sem video: loadSource recebia undefined e a exportacao morria logo
+       no comeco. Agora procura o primeiro item que tem video de verdade. */
+    const primeiro = order.find(it => it && it.srcKey);
+    if (!primeiro){ exporting = false; hideProgress(); log(TX('vid.proj.expEmpty'), 'err'); return; }
+    await loadSource(primeiro.srcKey);
     const resH = parseInt(($('expRes') || {}).value, 10) || 0;
     const vw0 = tv.videoWidth || 1280, vh0 = tv.videoHeight || 720;
     const outW = resH ? Math.round(resH * vw0 / vh0 / 2) * 2 : vw0;
