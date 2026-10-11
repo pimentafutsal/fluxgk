@@ -1088,6 +1088,7 @@ async function rtPushAll(){
   if(ST.brand&&(ST.brand.name||ST.brand.color||ST.brand.logo))upd[uPath("config/branding")]=ST.brand;
   upd[uPath("config/wbFields")]=wbFields();
   upd[uPath("config/postFields")]=postFields();
+  if(Array.isArray(ST.trainingTypes)&&ST.trainingTypes.length) upd[uPath("trainingTypes")]=ST.trainingTypes;
   if(!Object.keys(upd).length){dotG();return;}
   dotY();
   try{await _rf.update(_rf.ref(_db,"/"),upd);dotG();}
@@ -1111,6 +1112,21 @@ function rtListen(){
       const rb=rem.config.branding;
       const brandChanged=JSON.stringify(rb)!==JSON.stringify(ST.brand);
       if(brandChanged&&(rb.name||rb.color||rb.logo)){ST.brand={...ST.brand,...rb};applyTheme();changed=true;}
+    }
+    /* Os tipos de treino eram GRAVADOS na nuvem mas nunca LIDOS de volta:
+       viviam so no cache do navegador. Sem o cache, voltavam aos tres
+       padroes. Agora a nuvem devolve, e as duas listas se somam — nada
+       se perde de nenhum dos lados. */
+    if(Array.isArray(rem.trainingTypes) && rem.trainingTypes.length){
+      const atuais = Array.isArray(ST.trainingTypes) ? ST.trainingTypes : [];
+      const juntos = atuais.slice();
+      rem.trainingTypes.forEach(function(t){
+        if(t && juntos.indexOf(t) < 0) juntos.push(t);
+      });
+      if(JSON.stringify(juntos) !== JSON.stringify(atuais)){
+        ST.trainingTypes = juntos; changed = true;
+        try{ renderTypeSelects(); }catch(e){}
+      }
     }
     if(rem.players){
       Object.entries(rem.players).forEach(([id,p])=>{
