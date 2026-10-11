@@ -457,6 +457,9 @@
   .relh .relnm{font-weight:700;font-size:13.5px}
   .relh .relct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
   .relh .relhora{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);font-weight:600;flex:none}
+  .rellink{display:flex;gap:7px;margin-bottom:6px}
+  .rellink .relin{margin-bottom:0}
+  .rellink .relbt{flex:none;width:190px;font-family:inherit;font-size:12px}
   .relcaps{border:1px solid var(--line);border-radius:7px;background:var(--card);padding:5px 0;margin-bottom:4px}
   .relcap{display:flex;align-items:baseline;gap:9px;padding:4px 11px;font-size:12.5px}
   .relcapt{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);min-width:42px}
@@ -1851,7 +1854,7 @@ function relGrupos(){
   });
   const soltas = projPlaylistsOf(p).filter(function(pl){
     return !playlistAnalise(p, pl) && (pl.items || []).length; });
-  if (soltas.length) out.push({ id: '', an: null, nome: TX('vid.rel.looseG'), pls: soltas });
+  if (soltas.length) out.push({ id: '', an: null, nome: TX('vid.rel.looseG','Fora de análise'), pls: soltas });
   return out.filter(function(g){ return g.pls.length; });
 }
 function relSelecionados(){
@@ -1860,7 +1863,7 @@ function relSelecionados(){
 function relAbrir(p, analise){
   _rel = { proj: p, analise: analise, sel: {} };
   const gs = relGrupos();
-  if (!gs.length){ log(TX('vid.rel.vazio'), 'err'); _rel = null; return; }
+  if (!gs.length){ log(TX('vid.rel.vazio','Nenhuma playlist com lances.'), 'err'); _rel = null; return; }
   /* vindo do cabecalho de uma analise, so ela vem marcada; pelo botao do
      periodo, todas — e voce desmarca o que nao quiser */
   gs.forEach(function(g){ _rel.sel[g.id] = analise ? (g.id === analise.id) : true; });
@@ -1883,7 +1886,7 @@ function relPinta(){
       ck.addEventListener('change', function(){ relToggleG(g.id); });
       const nm = document.createElement('span'); nm.className = 'relgn'; nm.textContent = '🗂 ' + g.nome;
       const ct = document.createElement('span'); ct.className = 'relct';
-      ct.textContent = g.pls.length + ' ' + TX('vid.rel.mPl').toLowerCase();
+      ct.textContent = g.pls.length + ' ' + TX('vid.rel.mPl','Playlists').toLowerCase();
       h.appendChild(ck); h.appendChild(nm); h.appendChild(ct);
       bloco.appendChild(h);
     }
@@ -1891,15 +1894,27 @@ function relPinta(){
       /* UM video por jogo: o link e da analise, nao de cada playlist */
       const dono = g.an || _rel.proj;
       const lb = document.createElement('label'); lb.className = 'rellb';
-      lb.textContent = TX('vid.rel.anLink');
+      lb.textContent = TX('vid.rel.anLink','Link do vídeo deste jogo');
+      const linha = document.createElement('div'); linha.className = 'rellink';
       const lkA = document.createElement('input'); lkA.type = 'url'; lkA.className = 'relin';
-      lkA.placeholder = TX('vid.rel.anLinkPh'); lkA.value = dono.linkYT || '';
-      lkA.addEventListener('change', function(){ dono.linkYT = lkA.value.trim(); projPersist(); });
-      bloco.appendChild(lb); bloco.appendChild(lkA);
+      lkA.placeholder = TX('vid.rel.anLinkPh','https://youtu.be/…'); lkA.value = dono.linkYT || '';
+      /* grava a cada tecla: fechar a aba no meio de uma frase nao perde nada */
+      const guarda = function(){ dono.linkYT = lkA.value.trim(); relAgenda(); };
+      lkA.addEventListener('input', guarda); lkA.addEventListener('change', guarda);
+      /* o texto do botao e seu: "Assistir ao jogo", "Ver no YouTube"… */
+      const bt = document.createElement('input'); bt.type = 'text'; bt.className = 'relin relbt'; bt.maxLength = 40;
+      bt.placeholder = TX('vid.rel.watchAn','▶ Assistir ao vídeo');
+      bt.title = TX('vid.rel.btLabel','Texto do botão no relatório');
+      bt.value = dono.linkTxt || '';
+      const guardaBt = function(){ dono.linkTxt = bt.value.trim(); relAgenda(); };
+      bt.addEventListener('input', guardaBt); bt.addEventListener('change', guardaBt);
+      linha.appendChild(lkA); linha.appendChild(bt);
+      bloco.appendChild(lb); bloco.appendChild(linha);
       if (g.an){
         const an = document.createElement('textarea'); an.className = 'relta relan'; an.rows = 2;
-        an.placeholder = TX('vid.rel.anNota'); an.value = g.an.relNota || '';
-        an.addEventListener('change', function(){ g.an.relNota = an.value.trim(); projPersist(); });
+        an.placeholder = TX('vid.rel.anNota','Comentário sobre este jogo.'); an.value = g.an.relNota || '';
+        const guardaNota = function(){ g.an.relNota = an.value.trim(); relAgenda(); };
+        an.addEventListener('input', guardaNota); an.addEventListener('change', guardaNota);
         bloco.appendChild(an);
       }
       /* O relatorio e de comentario geral: as playlists aparecem so como
@@ -1908,8 +1923,8 @@ function relPinta(){
       if (caps.length){
         const ch = document.createElement('div'); ch.className = 'relchap';
         const cht = document.createElement('span'); cht.className = 'rellb'; cht.style.margin = '0';
-        cht.textContent = TX('vid.rel.chap');
-        const cb = document.createElement('button'); cb.className = 'mini ghost'; cb.textContent = TX('vid.rel.chapCopy');
+        cht.textContent = TX('vid.rel.chap','Capítulos');
+        const cb = document.createElement('button'); cb.className = 'mini ghost'; cb.textContent = TX('vid.rel.chapCopy','Copiar capítulos');
         cb.addEventListener('click', function(){ relCopiarCapitulos(g); });
         ch.appendChild(cht); ch.appendChild(cb);
         bloco.appendChild(ch);
@@ -1933,11 +1948,15 @@ function relPinta(){
   const t = document.getElementById('relTitulo');
   if (t){
     const n = relSelecionados().length;
-    t.textContent = (n === 1 ? relSelecionados()[0].nome : n + ' ' + TX('vid.rel.nAnas'));
+    t.textContent = (n === 1 ? relSelecionados()[0].nome : n + ' ' + TX('vid.rel.nAnas','análises'));
   }
   const dica = document.getElementById('relHint');
-  if (dica) dica.textContent = varios ? TX('vid.rel.pickAn') : TX('vid.rel.hint');
+  if (dica) dica.textContent = varios ? TX('vid.rel.pickAn','Marque as análises que entram no relatório.') : TX('vid.rel.hint','Cole o link do vídeo e escreva o comentário.');
 }
+/* grava pouco depois da ultima tecla: nada se perde ao fechar a aba,
+   e nao se manda uma gravacao por letra digitada */
+var _relT = null;
+function relAgenda(){ clearTimeout(_relT); _relT = setTimeout(function(){ projPersist(); }, 500); }
 function relSalvar(){
   if (!_rel) return;
   const g = document.getElementById('relGeral');
@@ -1983,10 +2002,10 @@ function relCopiarCapitulos(g){
   var txt = relCapitulos(g).map(function(c){ return relMMSS(c.em) + ' ' + c.pl.name; }).join('\n');
   try{
     navigator.clipboard.writeText(txt);
-    log(TX('vid.rel.chapOk'), 'ok');
+    log(TX('vid.rel.chapOk','Capítulos copiados.'), 'ok');
   }catch(e){
     var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta);
-    ta.select(); try{ document.execCommand('copy'); log(TX('vid.rel.chapOk'), 'ok'); }catch(e2){}
+    ta.select(); try{ document.execCommand('copy'); log(TX('vid.rel.chapOk','Capítulos copiados.'), 'ok'); }catch(e2){}
     ta.remove();
   }
 }
@@ -1996,12 +2015,12 @@ function relGerar(){
   relSalvar();
   var p = _rel.proj, C = relClube();
   var grupos = relSelecionados();
-  if (!grupos.length){ log(TX('vid.rel.noneAn'), 'err'); return; }
+  if (!grupos.length){ log(TX('vid.rel.noneAn','Marque pelo menos uma análise.'), 'err'); return; }
   var e = function(v){ return String(v == null ? '' : v).replace(/[&<>"]/g, function(c){
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var hoje = new Date().toLocaleDateString(TX('data.pdf.locale', 'en-GB'),
     { day: '2-digit', month: 'short', year: 'numeric' });
-  var titulo = TX('vid.rel.title');
+  var titulo = TX('vid.rel.title','Relatório de vídeo');
   var umSo = grupos.length === 1;
   var sub = umSo ? grupos[0].nome : (grupos[0].nome + '  →  ' + grupos[grupos.length - 1].nome);
   var nPl = 0, nLances = 0;
@@ -2019,7 +2038,7 @@ function relGerar(){
     var hora = {}; caps.forEach(function(c){ hora[c.pl.id] = relMMSS(c.em); });
     var lkA = (dono.linkYT || '').trim();
     var capsHtml = caps.length
-      ? ('<div class="chaps"><div class="chaps-t">' + e(TX('vid.rel.chap')) + '</div>'
+      ? ('<div class="chaps"><div class="chaps-t">' + e(TX('vid.rel.chap','Capítulos')) + '</div>'
          + caps.map(function(c){
              return '<div class="chap"><span class="chap-t">' + relMMSS(c.em) + '</span>'
                   + '<span class="chap-n">' + e(c.pl.name) + '</span>'
@@ -2028,12 +2047,12 @@ function relGerar(){
          + '</div>')
       : '';
     var cab = '<div class="cap' + (gi ? '' : ' cap-first') + '">'
-       + (umSo ? '' : '<div class="cap-l">' + e(TX('vid.rel.chapter')) + ' ' + (gi + 1) + '</div>')
+       + (umSo ? '' : '<div class="cap-l">' + e(TX('vid.rel.chapter','Análise')) + ' ' + (gi + 1) + '</div>')
        + '<div class="cap-t">' + e(g.nome) + '</div>'
-       + '<div class="cap-s">' + g.pls.length + ' ' + e(TX('vid.rel.mPl').toLowerCase()) + '</div>'
-       + (lkA ? '<a class="lk lk-an" href="' + e(lkA) + '">▶ ' + e(TX('vid.rel.watchAn')) + '</a>'
+       + '<div class="cap-s">' + g.pls.length + ' ' + e(TX('vid.rel.mPl','Playlists').toLowerCase()) + '</div>'
+       + (lkA ? '<a class="lk lk-an" href="' + e(lkA) + '">' + e((dono.linkTxt || '').trim() || ('▶ ' + TX('vid.rel.watchAn','Assistir ao vídeo'))) + '</a>'
               + '<div class="lkurl">' + e(lkA) + '</div>'
-              : '<div class="semlk">' + e(TX('vid.rel.semLink')) + '</div>')
+              : '<div class="semlk">' + e(TX('vid.rel.semLink','Sem link ainda.')) + '</div>')
        + (g.an && g.an.relNota ? '<div class="cap-n">' + e(g.an.relNota).replace(/\n/g, '<br>') + '</div>' : '')
        + capsHtml
        + '</div>';
@@ -2103,8 +2122,8 @@ function relGerar(){
    +   '<div class="cover-sub">' + e(C.nome) + '</div>'
    +   '<div class="cover-range">' + e(sub) + '</div>'
    +   '<div class="cover-meta">'
-   +     (umSo ? '' : '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.anas')) + '</div><div class="meta-value">' + grupos.length + '</div></div>')
-   +     '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.mPl')) + '</div><div class="meta-value">' + nPl + '</div></div>'
+   +     (umSo ? '' : '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.anas','Análises')) + '</div><div class="meta-value">' + grupos.length + '</div></div>')
+   +     '<div class="meta-item"><div class="meta-label">' + e(TX('vid.rel.mPl','Playlists')) + '</div><div class="meta-value">' + nPl + '</div></div>'
    +     '<div class="meta-item"><div class="meta-label">' + e(TX('vid.f.clips')) + '</div><div class="meta-value">' + nLances + '</div></div>'
    +     (C.temporada ? '<div class="meta-item"><div class="meta-label">' + e(TX('season', 'Season')) + '</div><div class="meta-value">' + e(C.temporada) + '</div></div>' : '')
    +     '<div class="meta-item"><div class="meta-label">' + e(TX('data.pdf.generated', 'Generated')) + '</div><div class="meta-value">' + e(hoje) + '</div></div>'
@@ -2113,7 +2132,7 @@ function relGerar(){
    +   '<div class="cover-footer"><span>FluxGK · ' + e(C.nome) + '</span>'
    +   '<span>' + e(TX('data.pdf.methodValue', 'Constraints-Based Approach · Ecological Dynamics')) + '</span></div>'
    + '</div>'
-   + (geral ? '<div class="intro"><div class="t">' + e(TX('vid.rel.geral')) + '</div><div class="b">' + e(geral) + '</div></div>' : '')
+   + (geral ? '<div class="intro"><div class="t">' + e(TX('vid.rel.geral','Nota de abertura')) + '</div><div class="b">' + e(geral) + '</div></div>' : '')
    + corpo
    + '<div class="footer"><span>FluxGK · ' + e(C.nome) + '</span><span>' + e(hoje) + '</span></div>'
    + '<div class="no-print"><button onclick="window.print()" style="padding:11px 26px;background:' + P + ';color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:14px">🖨 '
@@ -2121,7 +2140,7 @@ function relGerar(){
    + '</body></html>';
 
   var w = window.open('', '_blank');
-  if (!w){ log(TX('vid.rel.popup'), 'err'); return; }
+  if (!w){ log(TX('vid.rel.popup','O navegador bloqueou a janela nova — libere pop-ups.'), 'err'); return; }
   w.document.write(html); w.document.close();
   relFechar();
 }
