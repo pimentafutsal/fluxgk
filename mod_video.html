@@ -7201,7 +7201,7 @@ function editDrawing(d){
     editingDrawingIds = group.map(x => x.id);
     editingDrawingId = d.id; // principal (mantém compatibilidade)
     shapes = [];
-    group.forEach(g => g.shapes.forEach(s => shapes.push(cloneShape(s))));
+    group.forEach(g => (g.shapes || []).forEach(s => shapes.push(cloneShape(s))));
     $('freezeSec').value = d.freeze || 3;
     setDrawMode(true);
     redrawShapes();
@@ -8058,7 +8058,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         cx.save();
         applyFraming();
         cx.translate(ox, oy);
-        activeDraw.shapes.forEach(s => drawShape(cx, s, dw, dh));
+        (activeDraw.shapes || []).forEach(s => drawShape(cx, s, dw, dh));
         cx.restore();
       }
 
@@ -8115,7 +8115,23 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
        pausa tudo. Antes, qualquer um desses travava a exportacao para
        sempre. Agora, passado o tempo, ela segue sozinha.                 */
     let seekDesde = 0, pausadoDesde = 0;
+    /* um erro dentro do laco matava a gravacao em silencio (tela parada,
+       barra parada). Agora o erro vai para o registro e a gravacao segue. */
+    let _errosTick = 0;
     function tick(){
+      try { tickCorpo(); }
+      catch (e){
+        console.error('[FluxGK] export tick', e);
+        if (++_errosTick === 1) log('Export: ' + (e && e.message || e), 'err');
+        if (_errosTick > 300){ cleanup(); reject(e); return; }
+        /* sai do freeze em que estava para nao repetir o mesmo erro */
+        if (frozenDrawing){ playedDrawings.add(frozenDrawing.id); frozenDrawing = null; }
+        if (seekingDraw){ playedDrawings.add(seekingDraw.id); seekingDraw = null; }
+        try { video.play().catch(() => {}); } catch (e2) {}
+        raf = requestAnimationFrame(tick);
+      }
+    }
+    function tickCorpo(){
       if (cancelRequested){ cleanup(); reject(new Error('CANCELLED')); return; }
       const ev = group[gi];
       if (trocando){ raf = requestAnimationFrame(tick); return; }
@@ -8911,7 +8927,9 @@ function restoreSession(){
   if (hasEvents || hasDrawings){
     state.events = s.events || [];
     state.nextEventId = s.nextEventId || (state.events.length ? Math.max.apply(null, state.events.map(e => e.id)) + 1 : 1);
-    state.drawings = s.drawings || [];
+    /* a nuvem (Firebase) nao guarda lista vazia: um freeze sem desenho
+       voltava sem o campo 'shapes' e travava a exportacao nele */
+    state.drawings = (s.drawings || []).filter(Boolean).map(d => { if (!Array.isArray(d.shapes)) d.shapes = []; return d; });
     state.measureScale = (typeof s.measureScale === 'number') ? s.measureScale : null;
     state.namedPlaylists = s.namedPlaylists || [];
     log('Session restored from the library: ' + state.events.length + ' '+TX('vid.f.clips')+', ' + state.drawings.length + ' '+TX('vid.f.drawings')+'.', 'ok');
