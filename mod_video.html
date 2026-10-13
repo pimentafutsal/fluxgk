@@ -7976,6 +7976,9 @@ function restoreTabAfterRecording(){
 function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, wmText, withAudio, name, idx, total){
   return new Promise((resolve, reject) => {
     ensureVideoVisible();   /* sem isto o canvas grava quadros pretos */
+    /* modo desenho aberto e freeze da tela nao podem disputar o video com o gravador */
+    try { if (drawMode) setDrawMode(false); } catch (e) {}
+    try { cancelFreeze(); } catch (e) {}
     const c = document.createElement('canvas');
     c.width = outW; c.height = outH;
     const cx = c.getContext('2d');
@@ -8107,6 +8110,11 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     }
 
     let trocando = false;   /* pulando para o proximo lance: espera o seek */
+    /* Vigias: um video de 10 GB em 4K pode demorar (ou nunca avisar) que
+       terminou de buscar um ponto, e um clique no video durante a gravacao
+       pausa tudo. Antes, qualquer um desses travava a exportacao para
+       sempre. Agora, passado o tempo, ela segue sozinha.                 */
+    let seekDesde = 0, pausadoDesde = 0;
     function tick(){
       if (cancelRequested){ cleanup(); reject(new Error('CANCELLED')); return; }
       const ev = group[gi];
@@ -8114,7 +8122,9 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
 
       // aguardando o seek terminar para congelar no frame EXATO do desenho
       if (seekingDraw){
-        if (!video.seeking){
+        if (!seekDesde) seekDesde = performance.now();
+        if (!video.seeking || performance.now() - seekDesde > 2500){
+          seekDesde = 0;
           frozenDrawing = seekingDraw;
           seekingDraw = null;
           frozenUntil = performance.now() + Math.max(0.5, frozenDrawing.freeze || 3) * 1000;
@@ -8152,6 +8162,12 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         return;
       }
 
+      /* aqui o video tem de estar tocando; parado ha mais de meio segundo
+         (clique, tecla, engasgo do navegador) = manda tocar de novo */
+      if (video.paused && !video.ended){
+        if (!pausadoDesde) pausadoDesde = performance.now();
+        else if (performance.now() - pausadoDesde > 500){ pausadoDesde = 0; try { video.play().catch(() => {}); } catch (e) {} }
+      } else pausadoDesde = 0;
       drawFrameWith(null);
       /* camera lenta: o gravador e em tempo real, entao desacelerar o video
          na tela e o que deixa o trecho lento dentro do arquivo */
@@ -8171,8 +8187,10 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       raf = requestAnimationFrame(tick);
     }
     function startSeqAt(t, cb){
-      const onSeek = () => { video.removeEventListener('seeked', onSeek); cb(); };
+      let feito = false;
+      const onSeek = () => { if (feito) return; feito = true; video.removeEventListener('seeked', onSeek); cb(); };
       video.addEventListener('seeked', onSeek);
+      setTimeout(onSeek, 5000);          /* seek que nunca avisa nao trava mais */
       video.currentTime = t;
     }
     function finish(){
