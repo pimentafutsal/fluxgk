@@ -7875,6 +7875,17 @@ $('expRun').addEventListener('click', async () => {
 });
 
 /* ---------------- exportação recodificada (canvas + MediaRecorder) ---------------- */
+/* Tamanho do video regravado. Regravar e sempre em tempo real (o
+   navegador toca o lance e filma a tela), e em 4K o computador nao da
+   conta: o video engasga, a exportacao se arrasta e o arquivo sai com
+   travadas. Com o mesmo bitrate, 4K tambem nao fica mais nitido que
+   1080p. Entao, quando a fonte passa de 1080p e voce nao escolheu outra
+   resolucao, a regravacao sai em 1080p.                                */
+function expTamanho(vw, vh, resH){
+  const alvo = resH || (vh > 1080 ? 1080 : 0);
+  if (!alvo) return { w: vw, h: vh };
+  return { w: Math.round(alvo * vw / vh / 2) * 2, h: alvo };
+}
 async function exportReencodedDirect(evs, outName){
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   exporting = true;
@@ -7887,7 +7898,8 @@ async function exportReencodedDirect(evs, outName){
     const base = (outName || 'fluxgk_lance.mp4').replace(/\.(mp4|webm)$/i, '');
     log(TX('vid.f.exportingFraming'));
     /* NAO reordenar: a sequencia recebida (playlist) e a que vale no video final */
-    await recordGroup(evs.slice(), vw, vh, mime, ext, 8e6,
+    const tam = expTamanho(vw, vh, 0);
+    await recordGroup(evs.slice(), tam.w, tam.h, mime, ext, 8e6,
       false, false, '', true, base, 1, 1);
   } catch (err) {
     if (err && err.message === 'CANCELLED') log(TX('vid.msg.exportCanceled2'), 'err');
@@ -7916,8 +7928,8 @@ async function exportReencoded(evs){
 
     const vw = video.videoWidth, vh = video.videoHeight;
     if (!vw){ log(TX('vid.msg.dimFail'), 'err'); exporting = false; return; }
-    const outW = resH ? Math.round(resH * vw / vh / 2) * 2 : vw;
-    const outH = resH || vh;
+    const tam = expTamanho(vw, vh, resH);
+    const outW = tam.w, outH = tam.h;
 
     const mime = fmtSel === 'webm'
       ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm')
@@ -8172,6 +8184,16 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     function cleanup(){ cancelAnimationFrame(raf); try { rec.stop(); } catch (e) {} restore(); }
     function restore(){ video.muted = wasMuted; video.playbackRate = wasRate; }
 
+    /* regravar leva o tempo do proprio video: avisa quanto vai demorar */
+    try{
+      let est = 0;
+      group.forEach(e => {
+        est += Math.max(0, e.end - e.start);
+        (state.drawings || []).forEach(d => { if (d.t >= e.start - 0.06 && d.t <= e.end) est += Math.max(0.5, d.freeze || 3); });
+      });
+      const mm = Math.floor(est / 60), ss = Math.round(est % 60);
+      log(TX('vid.exp.eta', 'Regravando em tempo real · cerca de ') + (mm ? mm + ' min ' : '') + ss + ' s · ' + outW + '×' + outH);
+    }catch(e){}
     setProgress(0, 'Preparing re-encode ' + idx + '/' + total);
     startSeqAt(group[0].start, () => {
       rec.start(200);
@@ -8257,8 +8279,8 @@ async function exportCombined(items, baseName){
     await loadSource(primeiro.srcKey);
     const resH = parseInt(($('expRes') || {}).value, 10) || 0;
     const vw0 = tv.videoWidth || 1280, vh0 = tv.videoHeight || 720;
-    const outW = resH ? Math.round(resH * vw0 / vh0 / 2) * 2 : vw0;
-    const outH = resH || vh0;
+    const tam = expTamanho(vw0, vh0, resH);
+    const outW = tam.w, outH = tam.h;
     const qual = (($('expQuality') || {}).value) || 'high';
     const bitrate = qual === 'high' ? 8e6 : qual === 'medium' ? 4e6 : 2e6;
     const mime = fmtSel === 'webm'
