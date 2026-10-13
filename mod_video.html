@@ -204,6 +204,17 @@
     border:1px solid var(--blue);border-top:none;background:var(--card);
   }
   #trimWrap.on{display:flex}
+  /* camera lenta num trecho do lance */
+  #slowRow{display:none;align-items:center;gap:8px;padding:8px 14px;flex-wrap:wrap;
+    border:1px solid var(--blue);border-top:none;background:#fff8ec}
+  #slowRow.on{display:flex}
+  .slowlbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;opacity:.7;font-weight:700}
+  .slowval{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;min-width:130px;text-align:center}
+  .slowhint{font-size:11.5px;opacity:.65}
+  .slowsel{font-size:12px;padding:2px 4px;border-radius:5px}
+  #cineSlowBand{position:absolute;height:7px;background:rgba(255,170,40,.85);border-radius:2px;pointer-events:none;display:none}
+  #cineSlowBox{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+  #cineSlowBox .slowsel{background:#222;color:#fff;border:1px solid rgba(255,255,255,.25)}
   .ttime{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;min-width:62px;text-align:center}
   #trimTrack{
     position:relative;flex:1;min-width:220px;height:28px;background:var(--paper);
@@ -1000,9 +1011,11 @@
         <button class="mini" id="clipReplay" title="Play the clip from the start" data-i18n-title="vid.tt.playClip">↺ Replay</button>
         <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins" data-i18n-title="vid.tt.editMargins">✎ Edit time</button>
         <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing" data-i18n-title="vid.tt.saveFraming">🔍 Frame</button>
+        <button class="mini" id="clipSlow" title="Slow motion on part of this clip" data-i18n-title="vid.slow.btnT">🐢 Slow</button>
         <button class="mini" id="clipExport" title="Export this clip (.mp4)" data-i18n-title="vid.tt.exportClip">⤓ Export</button>
         <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video" data-i18n-title="vid.tt.exitClip">✕ Exit clip</button>
       </div>
+      <div id="slowRow"></div>
       <div id="trimWrap">
         <span class="ttime" id="trimInLbl">00:00.0</span>
         <div id="trimTrack">
@@ -1268,7 +1281,7 @@
     <span id="cineCount">—</span>
     <button class="mini ghost" id="cineFrB" data-i18n-title="vid.cine.frameBack" title="One frame back">,</button>
     <div id="cineProg" data-i18n-title="vid.cine.scrub" title="Drag to move through the clip">
-      <div id="cineProgIn"></div><div id="cineHead"></div>
+      <div id="cineSlowBand"></div><div id="cineProgIn"></div><div id="cineHead"></div>
     </div>
     <button class="mini ghost" id="cineFrF" data-i18n-title="vid.cine.frameFwd" title="One frame forward">.</button>
     <span id="cineNow">0.0s / 0.0s</span>
@@ -1298,6 +1311,9 @@
     <button class="mini ghost" id="cineZmP" data-i18n-title="vid.cine.zoomIn" title="Zoom in">+</button>
     <button class="mini" id="cineZmS" data-i18n-title="vid.cine.zoomSetT" title="Fix this framing on the clip">⟐ <span data-i18n="vid.cine.zoomSet">Set</span></button>
     <button class="mini ghost" id="cineZmR" data-i18n-title="vid.cine.zoomReset" title="Remove framing">⟲</button>
+    <span class="ctsep"></span>
+    <span id="cineSlowBox"></span>
+    <span class="ctsep"></span>
     <button class="mini ghost" id="cineRevert" data-i18n-title="vid.cine.revertT" title="Back to the original times"><span data-i18n="vid.cine.revert">Undo trim</span></button>
   </div>
 </div>
@@ -1623,6 +1639,7 @@ function projSnapshot(ev){
     /* o enquadramento salvo no lance tem de viajar junto: sem isso a playlist
        do projeto exportava sempre o quadro inteiro */
     exportZoom: ev.exportZoom ? Object.assign({}, ev.exportZoom) : null,
+    slow: slowValido(ev.slow) ? Object.assign({}, ev.slow) : null,
     gk: ev.gk || '', outcome: ev.outcome || ''
   };
 }
@@ -1665,6 +1682,7 @@ function projAddClipToPlaylist(toId, clip){
   const tg = findTag(clip.tagId);
   to.items.push({ id: 'i' + Math.random().toString(36).slice(2, 9), srcKey: clip.srcKey, srcName: clip.srcName, tagId: clip.tagId, tagName: tg ? tg.name : '', color: tg ? tg.color : '#888', name: clip.name || '', note: clip.note || '', spec: clip.spec || '', t: clip.t, start: clip.start, end: clip.end,
     exportZoom: clip.exportZoom ? Object.assign({}, clip.exportZoom) : null,
+    slow: slowValido(clip.slow) ? Object.assign({}, clip.slow) : null,
     gk: clip.gk || '', outcome: clip.outcome || '' });
   projPersist(); renderProjectTab();
 }
@@ -1989,7 +2007,10 @@ function relCapitulos(g){
     var ini = t;
     t += dur;                                   /* a tela com o nome */
     (plFlat(pl) || []).forEach(function(it){
-      if (it && it.srcKey) t += Math.max(0, (it.end || 0) - (it.start || 0));
+      if (it && it.srcKey){
+        t += Math.max(0, (it.end || 0) - (it.start || 0));
+        t += slowExtra(slowDoLance(it), it.start || 0, it.end || 0);   /* trecho lento dura mais */
+      }
     });
     return { pl: pl, em: ini, fim: t };
   });
@@ -2521,7 +2542,8 @@ function playlistCard(p, pl){
             });
             const meta = document.createElement('div'); meta.className = 'pmeta';
             meta.textContent = (it.spec ? it.spec + ' · ' : '') + (it.srcName || '') + ' · ' + fmt(it.start) + '→' + fmt(it.end)
-              + (it.exportZoom && it.exportZoom.zoom > 1.001 ? ' · 🔍' + Math.round(it.exportZoom.zoom * 100) + '%' : '');
+              + (it.exportZoom && it.exportZoom.zoom > 1.001 ? ' · 🔍' + Math.round(it.exportZoom.zoom * 100) + '%' : '')
+              + (slowValido(it.slow) ? ' · 🐢' + slowTxtRate(it.slow.rate) : '');
             tx.appendChild(nm2); tx.appendChild(meta);
 
             const actWrap = document.createElement('div'); actWrap.style.width = '100%';
@@ -3453,6 +3475,11 @@ function applySeekRange(){
 function enforceClipBounds(){
   const c = state.clip;
   if (!c) return;
+  /* durante a exportacao quem manda no video e o gravador. Antes, com um
+     lance aberto na Analise, esta trava puxava o video de volta para o
+     lance aberto no meio da gravacao: o arquivo pulava de lance, perdia o
+     enquadramento e os freezes. */
+  if (exporting) return;
   const b = viewBounds();
   if (video.currentTime > b.b + 0.05){
     video.pause();
@@ -3488,6 +3515,218 @@ function devolverVista(){
   setZoom(v0.zoom, v0.panX, v0.panY);
 }
 
+/* ══ CAMERA LENTA NUM TRECHO DO LANCE ═════════════════════════
+   ev.slow = { a, b, rate } — a e b sao tempos do video original,
+   dentro do lance. So aquele trecho desacelera; o resto do lance
+   segue em velocidade normal, na tela e no arquivo exportado.
+   Mora no lance original (biblioteca) e viaja para as playlists
+   do projeto, como o enquadramento.                             */
+const SLOW_RATES = [0.25, 0.5, 0.75];
+const SLOW_PADRAO = 1.5;            /* segundos, quando so um lado foi marcado */
+var _slowRateEscolhida = 0.5;
+function slowValido(sl){
+  return !!(sl && typeof sl.a === 'number' && typeof sl.b === 'number' &&
+    sl.b - sl.a >= 0.1 && sl.rate > 0 && sl.rate < 1);
+}
+function slowTxtRate(r){ return String(r).replace('.', ',') + 'x'; }
+function slowTaxa(sl, t){ return (slowValido(sl) && t >= sl.a && t < sl.b) ? sl.rate : null; }
+/* segundos a mais que o trecho lento acrescenta ao lance [ini, fim] */
+function slowExtra(sl, ini, fim){
+  if (!slowValido(sl)) return 0;
+  const sob = Math.max(0, Math.min(fim, sl.b) - Math.max(ini, sl.a));
+  return sob / sl.rate - sob;
+}
+/* acompanha um <video>: entrou no trecho, desacelera; saiu, volta a
+   velocidade que estava antes (a que voce escolheu nos botoes) */
+function slowGuia(el, sl, st){
+  if (!el) return;
+  const r = slowTaxa(sl, el.currentTime || 0);
+  if (r != null){
+    if (!st.dentro){ st.dentro = true; st.base = el.playbackRate; }
+    if (Math.abs(el.playbackRate - r) > 0.001) el.playbackRate = r;
+  } else if (st.dentro){
+    st.dentro = false;
+    el.playbackRate = (st.base && st.base >= 1) ? st.base : 1;
+  }
+}
+/* lance original de um item de playlist (fonte da verdade) */
+function _slowOrig(it, all){
+  const ses = all[it.srcKey];
+  if (!ses || !Array.isArray(ses.events)) return null;
+  const alvo = (it.t != null ? it.t : it.start);
+  let orig = ses.events.find(e => Math.abs((e.t != null ? e.t : e.start) - alvo) < 0.35);
+  if (!orig) orig = ses.events.find(e => Math.abs(e.start - it.start) < 0.6);
+  return orig || null;
+}
+function slowDoLance(it){
+  if (!it) return null;
+  try{
+    const orig = _slowOrig(it, libAll());
+    if (orig){
+      const sl = slowValido(orig.slow) ? orig.slow : null;
+      if (JSON.stringify(it.slow || null) !== JSON.stringify(sl)){
+        it.slow = sl ? Object.assign({}, sl) : null;
+        try { projPersist(); } catch (e) {}
+      }
+      return sl;
+    }
+  }catch(e){}
+  return slowValido(it.slow) ? it.slow : null;
+}
+/* grava a partir do player da playlist: no item e no lance original */
+function slowGravarItem(it, sl){
+  it.slow = sl ? Object.assign({}, sl) : null;
+  try { projPersist(); } catch (e) {}
+  try{
+    const all = libAll();
+    const orig = _slowOrig(it, all);
+    if (orig){
+      if (sl) orig.slow = Object.assign({}, sl); else delete orig.slow;
+      if (state.file && sessionKey() === it.srcKey){
+        const cur = state.events.find(e => e.id === orig.id);
+        if (cur){ if (sl) cur.slow = Object.assign({}, sl); else delete cur.slow; }
+      }
+      libWrite(all);
+    }
+  }catch(e){}
+  try { renderPlaylists(); } catch (e) {}
+  try { renderProjectTab(); } catch (e) {}
+}
+/* grava a partir da analise (lance aberto) */
+function slowGravarEv(ev, sl){
+  if (sl) ev.slow = Object.assign({}, sl); else delete ev.slow;
+  saveSession();
+  try { renderPlaylists(); } catch (e) {}
+}
+
+/* a mesma fileira de controles serve a analise e ao player da playlist.
+   ctx: { el(), ini(), fim(), get(), set(sl) } */
+function slowMontar(box, ctx){
+  if (!box) return;
+  box.innerHTML = '';
+  const sl = ctx.get();
+  const ok = slowValido(sl);
+  const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const lbl = mk('span', 'slowlbl ctlbl', '🐢 ' + TX('vid.slow.lbl', 'CÂMERA LENTA'));
+  const bA = mk('button', 'mini', '⟐ ' + TX('vid.slow.from', 'início aqui'));
+  bA.title = TX('vid.slow.fromT', 'O trecho lento começa no quadro atual');
+  const val = mk('span', 'slowval', ok ? (fmt(sl.a, true) + ' → ' + fmt(sl.b, true)) : TX('vid.slow.none', 'sem trecho'));
+  const bB = mk('button', 'mini', '⟐ ' + TX('vid.slow.to', 'fim aqui'));
+  bB.title = TX('vid.slow.toT', 'O trecho lento termina no quadro atual');
+  const sel = mk('select', 'slowsel');
+  sel.title = TX('vid.slow.rateT', 'Velocidade do trecho lento');
+  SLOW_RATES.forEach(r => { const o = mk('option', '', slowTxtRate(r)); o.value = r;
+    if (Math.abs((ok ? sl.rate : _slowRateEscolhida) - r) < 0.001) o.selected = true; sel.appendChild(o); });
+  const bVer = mk('button', 'mini ghost', '▶ ' + TX('vid.slow.see', 'ver'));
+  bVer.title = TX('vid.slow.seeT', 'Toca a partir de 1 s antes do trecho lento');
+  bVer.disabled = !ok;
+  const bX = mk('button', 'mini ghost', '⟲');
+  bX.title = TX('vid.slow.clear', 'Remover câmera lenta');
+  bX.disabled = !ok;
+
+  const grava = (novo) => { ctx.set(novo); ctx.repinta(); };
+  bA.addEventListener('click', () => {
+    const el = ctx.el(), ini = ctx.ini(), fim = ctx.fim();
+    const t = Math.max(ini, Math.min(fim - 0.1, el.currentTime));
+    const cur = ctx.get();
+    const b = (slowValido(cur) && cur.b > t + 0.1) ? cur.b : Math.min(fim, t + SLOW_PADRAO);
+    grava({ a: +t.toFixed(3), b: +b.toFixed(3), rate: slowValido(cur) ? cur.rate : _slowRateEscolhida });
+    log(TX('vid.slow.saved', 'Câmera lenta gravada no lance.'), 'ok');
+  });
+  bB.addEventListener('click', () => {
+    const el = ctx.el(), ini = ctx.ini(), fim = ctx.fim();
+    const t = Math.max(ini + 0.1, Math.min(fim, el.currentTime));
+    const cur = ctx.get();
+    const a = (slowValido(cur) && cur.a < t - 0.1) ? cur.a : Math.max(ini, t - SLOW_PADRAO);
+    grava({ a: +a.toFixed(3), b: +t.toFixed(3), rate: slowValido(cur) ? cur.rate : _slowRateEscolhida });
+    log(TX('vid.slow.saved', 'Câmera lenta gravada no lance.'), 'ok');
+  });
+  sel.addEventListener('change', () => {
+    _slowRateEscolhida = parseFloat(sel.value) || 0.5;
+    const cur = ctx.get();
+    if (slowValido(cur)) grava(Object.assign({}, cur, { rate: _slowRateEscolhida }));
+    sel.blur();
+  });
+  bVer.addEventListener('click', () => {
+    const cur = ctx.get(); if (!slowValido(cur)) return;
+    const el = ctx.el();
+    try { el.currentTime = Math.max(ctx.ini(), cur.a - 1); } catch (e) {}
+    if (ctx.play) ctx.play(); else { try { el.play(); } catch (e) {} }
+  });
+  bX.addEventListener('click', () => {
+    grava(null);
+    log(TX('vid.slow.cleared', 'Câmera lenta removida.'));
+  });
+  [lbl, bA, val, bB, sel, bVer, bX].forEach(e => box.appendChild(e));
+  if (!ok && ctx.dica){
+    box.appendChild(mk('span', 'slowhint', TX('vid.slow.hint', 'Pare o vídeo onde a câmera lenta começa e clique em "início aqui".')));
+  }
+}
+
+/* --- analise: botao na barra do lance + fileira embaixo --- */
+function slowClipCtx(){
+  return {
+    el: () => video,
+    ini: () => state.clip ? state.clip.ev.start : 0,
+    fim: () => state.clip ? state.clip.ev.end : 0,
+    get: () => state.clip ? state.clip.ev.slow : null,
+    set: (sl) => { if (state.clip) slowGravarEv(state.clip.ev, sl); },
+    repinta: slowClipPinta,
+    dica: true
+  };
+}
+function slowClipPinta(){
+  const c = state.clip, btn = $('clipSlow'), row = $('slowRow');
+  if (!btn || !row) return;
+  const sl = c ? c.ev.slow : null;
+  if (slowValido(sl)){
+    btn.textContent = '🐢 ' + slowTxtRate(sl.rate);
+    btn.classList.add('primary');
+  } else {
+    btn.textContent = TX('vid.slow.btn', '🐢 Lento');
+    btn.classList.remove('primary');
+  }
+  if (row.classList.contains('on')) slowMontar(row, slowClipCtx());
+}
+$('clipSlow').addEventListener('click', () => {
+  if (!state.clip) return;
+  const row = $('slowRow');
+  row.classList.toggle('on');
+  slowClipPinta();
+});
+
+/* --- player da playlist --- */
+function cineSlowPinta(){
+  const box = $('cineSlowBox'); if (!box || !_cine) return;
+  slowMontar(box, {
+    el: () => $('cineVid'),
+    ini: () => { const it = cineItem(); return it ? (it.start || 0) : 0; },
+    fim: () => { const it = cineItem(); return it ? (it.end != null ? it.end : (it.start || 0) + 8) : 0; },
+    get: () => _cine ? _cine.slow : null,
+    set: (sl) => { const it = cineItem(); if (!it) return; _cine.slow = sl; slowGravarItem(it, sl); },
+    play: () => { if (!_cine) return; _cine.tocando = true; _cine.fim = false; try { $('cineVid').play(); } catch (e) {} cineSyncBtn(); },
+    repinta: () => { cineSlowPinta(); cinePinta(); },
+    dica: false
+  });
+}
+
+/* um laco so, por quadro de tela: o timeupdate (4x por segundo) deixaria
+   o comeco e o fim do trecho lento ate 1/4 s fora do lugar */
+var _slowStA = {}, _slowStC = {};
+function slowLaco(){
+  requestAnimationFrame(slowLaco);
+  if (typeof exporting !== 'undefined' && exporting) return;   /* a exportacao guia sozinha */
+  let sl = null;
+  if (state.clip) sl = state.clip.ev.slow;
+  else if (typeof playSession !== 'undefined' && playSession){
+    const e = playSession.list[playSession.idx]; sl = e ? e.slow : null;
+  }
+  slowGuia(video, sl, _slowStA);
+  const cv = document.getElementById('cineVid');
+  if (cv) slowGuia(cv, (typeof _cine !== 'undefined' && _cine) ? _cine.slow : null, _slowStC);
+}
+requestAnimationFrame(slowLaco);
+
 function openClip(ev, tag, edit){
   if (!ev) return;
   /* etiqueta ausente (apagada ou nao encontrada) travava a abertura do lance */
@@ -3502,6 +3741,7 @@ function openClip(ev, tag, edit){
   $('clipBar').classList.add('on');
   stage.classList.add('clipmode');
   updateClipFrameBtn();
+  slowClipPinta();
   /* o lance abre no enquadramento que voce salvou nele */
   guardarVista();
   aplicarEnquadramento(ev);
@@ -3524,6 +3764,7 @@ function exitClip(){
   devolverVista();
   $('clipBar').classList.remove('on');
   $('trimWrap').classList.remove('on');
+  $('slowRow').classList.remove('on');
   stage.classList.remove('clipmode');
   applySeekRange();
 }
@@ -5093,7 +5334,8 @@ async function cineGo(i, modo){
   cineVistaLimpa();
   try { v.currentTime = Math.max(0, it.start || 0); } catch (e) {}
   cineFraming(it);
-  cineTrimPaint(); cinePinta(); cineZoomPaint();
+  _cine.slow = slowDoLance(it);
+  cineTrimPaint(); cinePinta(); cineZoomPaint(); cineSlowPinta();
   if (_cine.tocando){ try { await v.play(); } catch (e) {} }
   else { try { v.pause(); } catch (e) {} }
   cineSyncBtn();
@@ -5183,6 +5425,12 @@ function cinePintaEm(tForcado){
   const t = (tForcado != null) ? tForcado : (v.currentTime || 0);
   if (cheio){ cheio.style.left = '0%'; cheio.style.width = pc(t); }
   if (cab) cab.style.left = pc(t);
+  const band = $('cineSlowBand'), sl = _cine && _cine.slow;
+  if (band){
+    if (slowValido(sl)){ band.style.display = 'block'; band.style.left = pc(sl.a);
+      band.style.width = ((Math.min(1, Math.max(0, (sl.b - j.a) / larg)) - Math.min(1, Math.max(0, (sl.a - j.a) / larg))) * 100).toFixed(2) + '%'; }
+    else band.style.display = 'none';
+  }
   /* relogio do lance: quanto ja correu do corte e quanto ele dura */
   if (agora) agora.textContent = Math.max(0, t - ini).toFixed(1) + 's / ' + (fim - ini).toFixed(1) + 's';
 }
@@ -5798,7 +6046,7 @@ function jumpToCurrent(){
   video.play();
 }
 function tickPlaylist(){
-  if (!playSession) return;
+  if (!playSession || exporting) return;
   const ev = playSession.list[playSession.idx];
   if (video.currentTime >= ev.end - 0.05){
     playSession.idx++;
@@ -7438,7 +7686,8 @@ function expHasFraming(){
 }
 function expNeedsReencode(){
   return $('expTitle').checked || $('expWatermark').checked || parseInt($('expRes').value, 10) > 0
-    || $('expFormat').value === 'webm' || $('expQuality').value !== 'high' || expHasDrawings() || expHasFraming();
+    || $('expFormat').value === 'webm' || $('expQuality').value !== 'high' || expHasDrawings() || expHasFraming()
+    || selectedEvents().some(e => slowValido(e.slow));
 }
 
 function renderExportTab(){
@@ -7830,8 +8079,11 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
 
     function activeDrawingAt(t){
       if (!state.drawings) return null;
+      const evA = group[gi];
       for (const d of state.drawings){
         if (playedDrawings.has(d.id)) continue;
+        /* so os freezes que estao DENTRO do lance que esta gravando */
+        if (evA && (d.t < evA.start - 0.06 || d.t > evA.end)) continue;
         /* pausa pura (sem desenho) vale sempre; desenhos respeitam a opcao "incluir desenhos" */
         const puroFreeze = !d.shapes || !d.shapes.length;
         if (!puroFreeze && !_expWithDraw) continue;
@@ -7842,9 +8094,11 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       return null;
     }
 
+    let trocando = false;   /* pulando para o proximo lance: espera o seek */
     function tick(){
       if (cancelRequested){ cleanup(); reject(new Error('CANCELLED')); return; }
       const ev = group[gi];
+      if (trocando){ raf = requestAnimationFrame(tick); return; }
 
       // aguardando o seek terminar para congelar no frame EXATO do desenho
       if (seekingDraw){
@@ -7887,13 +8141,20 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       }
 
       drawFrameWith(null);
+      /* camera lenta: o gravador e em tempo real, entao desacelerar o video
+         na tela e o que deixa o trecho lento dentro do arquivo */
+      { const r = slowTaxa(ev.slow, video.currentTime) || 1;
+        if (Math.abs(video.playbackRate - r) > 0.001) video.playbackRate = r; }
       setProgress((gi + (video.currentTime - ev.start) / Math.max(0.1, ev.end - ev.start)) / group.length,
         'Recodificando ' + idx + '/' + total + ' · clip ' + (gi + 1) + '/' + group.length);
       if (video.currentTime >= ev.end - 0.03 || video.ended){
         gi++;
         if (gi >= group.length){ finish(); return; }
-        video.currentTime = group[gi].start;
-        video.play();
+        /* antes tocava enquanto o seek nao terminava: entravam quadros do
+           lance anterior com o enquadramento do proximo */
+        trocando = true;
+        video.pause();
+        startSeqAt(group[gi].start, () => { trocando = false; video.play(); });
       }
       raf = requestAnimationFrame(tick);
     }
@@ -8092,12 +8353,16 @@ async function exportCombined(items, baseName){
           log('⚠ ' + (e.message || e), 'err');
           resolve(); return;
         }
-        const drawings = withDraw ? ((libAll()[it.srcKey] || {}).drawings || []) : [];
+        /* pausas puras (freeze sem desenho) valem sempre; desenhos so com a opcao */
+        const drawings = ((libAll()[it.srcKey] || {}).drawings || [])
+          .filter(d => withDraw || !d.shapes || !d.shapes.length);
+        const lento = slowDoLance(it);
+        tv.playbackRate = 1;
         const played = new Set();
         let frozen = null, frozenUntil = 0, seeking = null;
         try {
           tv.currentTime = Math.max(0, it.start);
-          await new Promise(r => { const on = () => { tv.removeEventListener('seeked', on); r(); }; tv.addEventListener('seeked', on); setTimeout(r, 1500); });
+          await new Promise(r => { const on = () => { tv.removeEventListener('seeked', on); r(); }; tv.addEventListener('seeked', on); setTimeout(r, 8000); });
         } catch (e) {}
         tv.play().catch(() => {});
         function activeAt(t){ for (const d of drawings){ if (played.has(d.id)) continue; if (t >= d.t - 0.06 && t <= d.t + 0.5 && d.t >= it.start && d.t <= it.end) return d; } return null; }
@@ -8108,7 +8373,9 @@ async function exportCombined(items, baseName){
           const d = activeAt(tv.currentTime);
           if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > 0.02){ seeking = d; tv.currentTime = d.t; } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
           paint(null, it);
-          if (tv.currentTime >= it.end - 0.03 || tv.ended){ tv.pause(); resolve(); return; }
+          { const r = slowTaxa(lento, tv.currentTime) || 1;
+            if (Math.abs(tv.playbackRate - r) > 0.001) tv.playbackRate = r; }
+          if (tv.currentTime >= it.end - 0.03 || tv.ended){ tv.pause(); tv.playbackRate = 1; resolve(); return; }
           requestAnimationFrame(loop);
         }
         requestAnimationFrame(loop);
@@ -8789,7 +9056,9 @@ async function exportEvents(events, outName, label){
   // se algum lance tem enquadramento (zoom) ou há desenhos a gravar, usa o caminho recodificado
   const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
   const needsDraw = state.drawings && state.drawings.length > 0;
-  if (needsZoom || needsDraw){
+  /* trecho lento nao da para fazer so recortando o arquivo: precisa regravar */
+  const needsSlow = events.some(e => slowValido(e.slow));
+  if (needsZoom || needsDraw || needsSlow){
     _expWithDraw = needsDraw;
     await exportReencodedDirect(events, outName);
     return;
