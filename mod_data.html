@@ -1558,10 +1558,29 @@ window.submitPost=async function(){
   if(!ST.currentPlayer){showToast(TX("data.msg.pickGk"),"err");return;}
   if(!selPSE){showToast(TX("data.msg.pickRpe"),"err");return;}
   const dur=parseInt(document.getElementById("duration").value)||0;if(dur<1){showToast(TX("data.msg.enterDuration"),"err");return;}
-  const preId=document.getElementById("postLinkPre").value;
+  let preId=document.getElementById("postLinkPre").value;
+  const antigo=editId?ST.sessions.find(function(s){return s.id===editId&&s.type==="post";}):null;
+  /* pos antigo cujo pre nao existe mais: a edicao mantem data/hora/tipo dele */
+  if(!preId&&antigo&&!ST.sessions.some(function(s){return s.id===antigo.preId;})){
+    const e0=Object.assign({},antigo,{pse:selPSE,duration:dur,ua:selPSE*dur},readFields(activePost()),{ts:Date.now()});
+    saveSession(e0);
+    editId=null;
+    document.getElementById("postFormTitle").textContent=TX("data.post.title");
+    document.getElementById("cancelEditPost").style.display="none";
+    selPSE=null;document.querySelectorAll(".pse-btn").forEach(function(b){b.classList.remove("active");});
+    document.getElementById("duration").value="";
+    showToast(TX("data.msg.sessionUpdated"));
+    renderAll();
+    return;
+  }
   if(!preId){showToast(TX("data.msg.pickPre"),"err");return;}
   const preS=ST.sessions.find(function(s){return s.id===preId;});
   if(!preS){showToast(TX("data.msg.preNotFound"),"err");return;}
+  /* trocou o pre ligado a este pos: o pre antigo volta a ficar aberto */
+  if(antigo&&antigo.preId&&antigo.preId!==preId){
+    const velho=ST.sessions.find(function(s){return s.id===antigo.preId;});
+    if(velho&&velho.postId===antigo.id){delete velho.postId;save();rtSaveSession(velho);}
+  }
   /* trava de seguranca: o pre TEM de ser do goleiro selecionado.
      Sem isto, uma lista desatualizada fechava o pre de OUTRO atleta e
      deixava o pos deste solto (o "pos-treino isolado").               */
@@ -2047,8 +2066,14 @@ function renderOpenPreSessions(){
   sel.innerHTML='<option data-i18n="data.post.selectPre" value="">-- Select a pre-training session --</option>';
   if(!ST.currentPlayer){ sel.style.display="none"; if(msg)msg.style.display="block"; return; }
   // Open pre = has no postId
+  /* editando um pos-treino, o pre dele ja esta fechado (tem postId) e sumia
+     da lista: o campo ficava vazio e o salvar recusava com "selecione o
+     pre-treino". O pre do proprio pos sendo editado tambem entra. */
+  const editPost=editId?ST.sessions.find(function(x){return x.id===editId&&x.type==="post";}):null;
   const openPres=ST.sessions.filter(function(s){
-    return s._pk===ST.currentPlayer&&s.type==="pre"&&!s.postId;
+    if(s._pk!==ST.currentPlayer||s.type!=="pre")return false;
+    if(!s.postId)return true;
+    return !!editPost&&(s.postId===editPost.id||s.id===editPost.preId);
   }).sort(function(a,b){return b.date.localeCompare(a.date);});
   if(!openPres.length){
     sel.style.display="none";
