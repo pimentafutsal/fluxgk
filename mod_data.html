@@ -135,6 +135,22 @@ textarea{width:100%;resize:vertical;min-height:110px}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mt)}
 .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .legend-line{width:13px;height:2px;flex-shrink:0;border-radius:1px}
+/* bem-estar: todas / separadas / combinacao */
+.wb-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wb-tabs{margin-left:auto;display:flex;gap:3px;text-transform:none;letter-spacing:0}
+.wb-tab{font:inherit;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;border:0.5px solid var(--bd2);background:transparent;color:var(--mt);cursor:pointer}
+.wb-tab.active{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.wb-mini{padding:6px 0;border-top:0.5px solid var(--bd)}
+.wb-mini:first-child{border-top:none;padding-top:0}
+.wb-mini-h{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:2px}
+.wb-mini-n{font-weight:600;color:var(--tx)}
+.wb-mini-d{color:var(--ht);font-size:10px}
+.wb-pick{font-size:11px;color:var(--mt);margin-bottom:6px}
+.wb-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.wb-chip{font:inherit;font-size:11.5px;display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;border:0.5px solid var(--bd2);background:transparent;color:var(--mt);cursor:pointer;opacity:.6}
+.wb-chip.on{opacity:1;color:var(--tx);border-color:var(--c);background:var(--bg2)}
+.wb-inv{font-size:10px;color:var(--ht)}
+.wb-note{font-size:11px;color:var(--mt);margin-top:6px;line-height:1.4}
 
 /* ── HISTORY ──────────────────────────────────── */
 .session-list{max-height:480px;overflow-y:auto}
@@ -526,10 +542,23 @@ textarea{width:100%;resize:vertical;min-height:110px}
       <div class="legend-item"><span class="legend-dot" style="background:rgba(216,90,48,.6)"></span><span data-i18n="data.series.rpePer">RPE/session</span></div>
       <div class="legend-item"><span class="legend-line" style="background:var(--a)"></span><span data-i18n="data.series.movavg">Moving avg</span></div>
     </div></div>
-  <div class="chart-wrap"><h3><i class="ti ti-activity"></i> <span data-i18n="data.series.wellbeing">Pre-training well-being</span></h3>
+  <div class="chart-wrap"><h3 class="wb-h"><i class="ti ti-activity"></i> <span data-i18n="data.series.wellbeing">Pre-training well-being</span>
+      <span class="wb-tabs">
+        <button class="wb-tab active" data-wbv="all" onclick="wbVista('all')" data-i18n="data.wb.all">All</button>
+        <button class="wb-tab" data-wbv="sep" onclick="wbVista('sep')" data-i18n="data.wb.sep">Separate</button>
+        <button class="wb-tab" data-wbv="combo" onclick="wbVista('combo')" data-i18n="data.wb.combo">Combination</button>
+      </span></h3>
+    <div id="wbAll">
     <div class="cwrap" style="height:165px"><canvas data-i18n="data.series.wbData" id="wellChart" role="img" aria-label="Well-being">Well-being.</canvas></div>
     <div class="chart-legend">
       <span id="wbLegend" style="display:contents"></span>
+    </div></div>
+    <div id="wbSep" style="display:none"></div>
+    <div id="wbCombo" style="display:none">
+      <div class="wb-pick" data-i18n="data.wb.pick">Pick the variables to combine:</div>
+      <div id="wbChips" class="wb-chips"></div>
+      <div class="cwrap" style="height:180px"><canvas id="wbComboChart"></canvas></div>
+      <div id="wbComboNote" class="wb-note"></div>
     </div></div>
   <div class="chart-wrap"><h3><i class="ti ti-chart-pie"></i> <span data-i18n="data.series.typeDist">Training type distribution</span></h3>
     <div id="typeChartWrap" style="min-height:120px"></div>
@@ -1779,6 +1808,114 @@ function renderDashboard(){
 
 // ── CHARTS (time series view) ──
 let CH={};
+
+/* ══ BEM-ESTAR: SEPARADAS E COMBINACAO ════════════════════════
+   "Todas" e o grafico de sempre. "Separadas" empilha um grafico
+   pequeno por variavel, no mesmo eixo de datas. "Combinacao" traca
+   a media das variaveis que voce marcar — as de "maior = pior"
+   (fadiga, dor, estresse) entram invertidas, para que na linha
+   combinada maior seja sempre melhor. Sem suavizacao: os pontos
+   sao os dias coletados.                                         */
+let _wbPre=[], _wbBase=null, _wbView="all";
+const WB_COMBO_KEY="fluxgk_wb_combo";
+let _wbSelMem=null;   /* a escolha vale mesmo se o navegador nao deixar gravar */
+function wbComboSel(){
+  const ativos=activeWb().map(f=>f.key);
+  let sel=_wbSelMem;
+  if(!sel){ try{ sel=JSON.parse(localStorage.getItem(WB_COMBO_KEY)||"null"); }catch(e){} }
+  if(!Array.isArray(sel)) sel=ativos.slice();
+  sel=sel.filter(k=>ativos.includes(k));
+  return sel;
+}
+function wbComboSave(sel){ _wbSelMem=sel.slice(); try{ localStorage.setItem(WB_COMBO_KEY,JSON.stringify(sel)); }catch(e){} }
+function wbLimpa(prefixo){ Object.keys(CH).forEach(k=>{ if(k.indexOf(prefixo)===0){ try{CH[k].destroy();}catch(e){} delete CH[k]; } }); }
+window.wbVista=function(v){
+  _wbView=v;
+  document.querySelectorAll(".wb-tab").forEach(b=>b.classList.toggle("active",b.dataset.wbv===v));
+  const a=document.getElementById("wbAll"),s=document.getElementById("wbSep"),c=document.getElementById("wbCombo");
+  if(a)a.style.display=v==="all"?"":"none";
+  if(s)s.style.display=v==="sep"?"":"none";
+  if(c)c.style.display=v==="combo"?"":"none";
+  wbDesenhaVista();
+};
+function wbDesenhaVista(){
+  if(_wbView==="sep") wbRenderSep();
+  else if(_wbView==="combo") wbRenderCombo();
+}
+function wbRenderSep(){
+  const box=document.getElementById("wbSep"); if(!box||!_wbBase)return;
+  wbLimpa("wbs_");
+  box.innerHTML="";
+  const lb=_wbPre.map(s=>fd(s.date));
+  activeWb().forEach(function(f,i){
+    const cor=f.color||"#185FA5";
+    const row=document.createElement("div"); row.className="wb-mini";
+    row.innerHTML='<div class="wb-mini-h"><span class="legend-dot" style="background:'+cor+'"></span><span class="wb-mini-n">'+_esc(f.label)+'</span><span class="wb-mini-d">'+_esc(dirSub(f))+'</span></div>'
+      +'<div class="cwrap" style="height:78px"><canvas id="wbs_'+i+'"></canvas></div>';
+    box.appendChild(row);
+    const ultimo=i===activeWb().length-1;
+    const b=_wbBase;
+    CH["wbs_"+f.key]=new Chart(document.getElementById("wbs_"+i),{type:"line",
+      data:{labels:lb,datasets:[{label:f.label,data:_wbPre.map(s=>s[f.key]==null?null:s[f.key]),borderColor:cor,backgroundColor:hexRgba(cor,.08),
+        borderWidth:2,pointRadius:2.5,tension:.3,fill:true,spanGaps:true}]},
+      options:{...b,scales:{
+        x:{...b.scales.x,ticks:{...b.scales.x.ticks,display:ultimo}},
+        y:{...b.scales.y,min:Number(f.min),max:Number(f.max),ticks:{...b.scales.y.ticks,stepSize:wbAxisStep(Number(f.max))}}}}});
+  });
+  if(!activeWb().length) box.innerHTML='<div class="wb-note">'+TX("data.noFields","No parameters configured — add them in Settings.")+'</div>';
+}
+window.wbToggleCombo=function(key){
+  let sel=wbComboSel();
+  sel=sel.includes(key)?sel.filter(k=>k!==key):sel.concat([key]);
+  wbComboSave(sel);
+  wbRenderCombo();
+};
+function wbRenderCombo(){
+  const chips=document.getElementById("wbChips"), note=document.getElementById("wbComboNote");
+  if(!chips||!_wbBase)return;
+  wbLimpa("wbc_");
+  const sel=wbComboSel();
+  chips.innerHTML=activeWb().map(function(f){
+    const on=sel.includes(f.key), cor=f.color||"#185FA5";
+    return '<button class="wb-chip'+(on?" on":"")+'" style="--c:'+cor+'" onclick="wbToggleCombo(\''+f.key+'\')">'
+      +'<span class="legend-dot" style="background:'+cor+'"></span>'+_esc(f.label)+(f.dir==="down"?' <span class="wb-inv">⇅</span>':'')+'</button>';
+  }).join("");
+  const campos=activeWb().filter(f=>sel.includes(f.key));
+  const cv=document.getElementById("wbComboChart");
+  if(!campos.length){
+    if(cv)cv.style.display="none";
+    if(note)note.textContent=TX("data.wb.pickOne","Select at least one variable.");
+    return;
+  }
+  if(cv)cv.style.display="";
+  /* mesma escala em todas as marcadas: mostra nela; escalas diferentes: 0–100% */
+  const mesma=campos.every(f=>Number(f.min)===Number(campos[0].min)&&Number(f.max)===Number(campos[0].max));
+  const mn=mesma?Number(campos[0].min):0, mx=mesma?Number(campos[0].max):100;
+  const serie=_wbPre.map(function(s){
+    let soma=0,n=0;
+    campos.forEach(function(f){
+      const v=s[f.key]; if(v==null||isNaN(v))return;
+      const lo=Number(f.min),hi=Number(f.max);
+      const pos=f.dir==="down"?(lo+hi-Number(v)):Number(v);        /* inverte: maior = melhor */
+      soma+=mesma?pos:((pos-lo)/Math.max(1,hi-lo)*100); n++;
+    });
+    return n?+(soma/n).toFixed(2):null;
+  });
+  const b=_wbBase;
+  CH.wbc_main=new Chart(cv,{type:"line",
+    data:{labels:_wbPre.map(s=>fd(s.date)),datasets:[{label:TX("data.wb.index","Index"),data:serie,borderColor:"#1E4FFF",backgroundColor:"rgba(30,79,255,.08)",
+      borderWidth:2.5,pointRadius:3,tension:.3,fill:true,spanGaps:true}]},
+    options:{...b,plugins:{...b.plugins,tooltip:{callbacks:{
+        label:function(ctx){return TX("data.wb.index","Index")+": "+(ctx.parsed.y==null?"—":ctx.parsed.y)+(mesma?"":"%");},
+        afterLabel:function(ctx){const s=_wbPre[ctx.dataIndex]||{};return campos.map(f=>f.label+" "+(s[f.key]==null?"—":s[f.key])).join(" · ");}
+      }}},
+      scales:{...b.scales,y:{...b.scales.y,min:mn,max:mx,ticks:{...b.scales.y.ticks,stepSize:mesma?wbAxisStep(mx):25}}}}});
+  const inv=campos.filter(f=>f.dir==="down").map(f=>f.label);
+  if(note) note.textContent=TX("data.wb.avgOf","Average of")+": "+campos.map(f=>f.label).join(" + ")
+    +(inv.length?" · "+TX("data.wb.inverted","inverted so that higher = better")+": "+inv.join(", "):"")
+    +" · "+TX("data.wb.higherBetter","higher = better")+(mesma?"":" · 0–100%");
+}
+
 function destroyCharts(){Object.values(CH).forEach(c=>{try{c.destroy();}catch(e){}});CH={};}
 function mAvg(d,w){return d.map((_,i)=>{const s=d.slice(Math.max(0,i-w+1),i+1);return Math.round(s.reduce((a,v)=>a+v,0)/s.length);});}
 function fd(s){if(!s)return"";const[y,m,d]=s.split("-");return`${d}/${m}/${y.slice(2)}`;}
@@ -1836,6 +1973,8 @@ function renderCharts(post,pre){
     var _lg=document.getElementById("wbLegend");
     if(_lg) _lg.innerHTML=activeWb().map(function(f){return '<div class="legend-item"><span class="legend-dot" style="background:'+(f.color||"#185FA5")+'"></span><span>'+_esc(f.label)+'</span></div>';}).join("");
   }
+  _wbPre=pre||[]; _wbBase=base;
+  if(pre.length) wbDesenhaVista();
 
   // ── ACWR chart ──
   if(post.length>=4){
