@@ -3515,10 +3515,14 @@ function caixaDoPalco(SW, SH, vw, vh, ox, oy, dw, dh){
   return { x: ox - v.x * k, y: oy - v.y * k, w: SW * k, h: SH * k };
 }
 /* palco em que um desenho foi feito (os antigos nao guardavam: usa o atual) */
+var _ultimoPalco = null;   /* ultimo tamanho visto do player (a aba pode estar escondida na exportacao) */
 function palcoDoDesenho(d){
   if (d && d.sw && d.sh) return { w: d.sw, h: d.sh };
   const r = stage.getBoundingClientRect();
-  return { w: r.width, h: r.height };
+  if (r.width && r.height){ _ultimoPalco = { w: r.width, h: r.height }; return _ultimoPalco; }
+  if (_ultimoPalco) return _ultimoPalco;
+  try { const g = JSON.parse(localStorage.getItem('fluxgk_vl_palco') || 'null'); if (g && g.w && g.h) return g; } catch (e) {}
+  return { w: 0, h: 0 };
 }
 /* fator do deslocamento (pan) do enquadramento: pixels do palco -> pixels da saida */
 function fatorPan(ez, vw, vh, dw, outW){
@@ -6356,6 +6360,8 @@ function labelBox(ctx, x, y, txt){
 function resizeDrawCanvas(){
   const r = stage.getBoundingClientRect();
   if (!r.width || !r.height) return;
+  _ultimoPalco = { w: r.width, h: r.height };
+  try { localStorage.setItem('fluxgk_vl_palco', JSON.stringify(_ultimoPalco)); } catch (e) {}
   const dpr = window.devicePixelRatio || 1;
   drawCanvas.width = Math.round(r.width * dpr);
   drawCanvas.height = Math.round(r.height * dpr);
@@ -8422,6 +8428,32 @@ async function exportCombined(items, baseName){
   exporting = true; cancelRequested = false;
   const tv = document.createElement('video');
   tv.muted = true; tv.playsInline = true; tv.preload = 'auto';
+  /* O video de trabalho fica na pagina (invisivel) para o navegador informar
+     o quadro exato exibido — o mesmo controle de quadro da exportacao de um
+     video so. Fora da pagina essa informacao nao chega.                   */
+  tv.style.cssText = 'position:fixed;left:0;top:0;width:4px;height:4px;opacity:0.01;pointer-events:none;z-index:-1';
+  try { document.body.appendChild(tv); } catch (e) {}
+  let tvMT = null, tvPF = 0, tvFd = 1 / 30, tvAm = [], tvProx = null, tvVivo = true;
+  function tvTempo(){ return (tvMT != null && Math.abs(tvMT - tv.currentTime) < 1) ? tvMT : tv.currentTime; }
+  if (tv.requestVideoFrameCallback){
+    const tvCb = (agora, md) => {
+      try{
+        if (tvMT != null && !tv.paused && Math.abs(tv.playbackRate - 1) < 0.001){
+          const dt = md.mediaTime - tvMT, pf = md.presentedFrames - tvPF;
+          if (pf === 1 && dt > 0.008 && dt < 0.1){
+            tvAm.push(dt); if (tvAm.length > 90) tvAm.shift();
+            const o = tvAm.slice().sort((a, b) => a - b); tvFd = o[Math.floor(o.length / 2)];
+          }
+        }
+        tvMT = md.mediaTime; tvPF = md.presentedFrames;
+        /* para NO quadro do freeze, sem passar dele */
+        if (tvProx != null && !tv.paused && tvMT >= tvProx - tvFd * 0.5) tv.pause();
+      }catch(e){}
+      if (tvVivo) tv.requestVideoFrameCallback(tvCb);
+    };
+    tv.requestVideoFrameCallback(tvCb);
+  }
+  function tvFim(){ tvVivo = false; try { tv.pause(); tv.remove(); } catch (e) {} }
   let curKey = null, curURL = null;
   function loadSource(key){
     return new Promise((res, rej) => {
@@ -8435,6 +8467,7 @@ async function exportCombined(items, baseName){
       }
       if (curURL){ try { URL.revokeObjectURL(curURL); } catch (e) {} }
       curURL = URL.createObjectURL(arq); curKey = key;
+      tvMT = null; tvAm = []; tvFd = 1 / 30;          /* outro video: outro fps */
       const on = () => { tv.removeEventListener('loadedmetadata', on); res(); };
       tv.addEventListener('loadedmetadata', on);
       tv.addEventListener('error', () => rej(new Error('load ' + key)), { once: true });
@@ -8450,7 +8483,7 @@ async function exportCombined(items, baseName){
        sem video: loadSource recebia undefined e a exportacao morria logo
        no comeco. Agora procura o primeiro item que tem video de verdade. */
     const primeiro = order.find(it => it && it.srcKey);
-    if (!primeiro){ exporting = false; hideProgress(); log(TX('vid.proj.expEmpty'), 'err'); return; }
+    if (!primeiro){ tvFim(); exporting = false; hideProgress(); log(TX('vid.proj.expEmpty'), 'err'); return; }
     await loadSource(primeiro.srcKey);
     const resH = parseInt(($('expRes') || {}).value, 10) || 0;
     const vw0 = tv.videoWidth || 1280, vh0 = tv.videoHeight || 720;
@@ -8468,7 +8501,7 @@ async function exportCombined(items, baseName){
     const stream = cv.captureStream(30);
     let rec;
     try { rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate }); }
-    catch (e){ exporting = false; hideProgress(); log('MediaRecorder: ' + (e.message || e), 'err'); return; }
+    catch (e){ tvFim(); exporting = false; hideProgress(); log('MediaRecorder: ' + (e.message || e), 'err'); return; }
     const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
     const stopped = new Promise(res => { rec.onstop = res; });
     rec.start(200);
@@ -8566,18 +8599,47 @@ async function exportCombined(items, baseName){
           await new Promise(r => { const on = () => { tv.removeEventListener('seeked', on); r(); }; tv.addEventListener('seeked', on); setTimeout(r, 8000); });
         } catch (e) {}
         tv.play().catch(() => {});
-        function activeAt(t){ for (const d of drawings){ if (played.has(d.id)) continue; if (t >= d.t - quadroDur() * 0.5 && t <= d.t + 0.5 && d.t >= it.start && d.t <= it.end) return d; } return null; }
+        /* mesma logica da exportacao de um video so: para no quadro exato do
+           freeze, e so pinta o desenho quando ESSE quadro esta na imagem */
+        const meio = () => tvFd * 0.5;
+        const elig = d => !played.has(d.id) && d.t >= it.start - 0.06 && d.t <= it.end;
+        function activeAt(t){ for (const d of drawings){ if (elig(d) && t >= d.t - meio() && t <= d.t + 1.0) return d; } return null; }
+        function prox(t){ let m = null; drawings.forEach(d => { if (elig(d) && d.t >= t - meio() && (m == null || d.t < m)) m = d.t; }); return m; }
+        const alvo = d => d.fr ? d.t + tvFd * 0.3 : d.t;
+        let seekDesde = 0, seekOkDesde = 0;
+        function congela(d){
+          frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
+          _pintandoDesenho = d; paint(d.shapes, it);
+        }
         function loop(){
-          if (cancelRequested){ resolve(); return; }
-          /* buscando o quadro do freeze: nao pinta o quadro errado com o desenho por cima */
-          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; _pintandoDesenho = frozen; paint(frozen.shapes, it); } requestAnimationFrame(loop); return; }
+          if (cancelRequested){ tvProx = null; resolve(); return; }
+          tvProx = prox(tvTempo());
+          if (seeking){
+            const agora = performance.now();
+            if (tv.seeking) seekOkDesde = 0; else if (!seekOkDesde) seekOkDesde = agora;
+            const naTela = Math.abs(tvTempo() - seeking.t) <= (seeking.fr ? meio() : tvFd * 1.5);
+            const chegou = !tv.seeking && (naTela || (seekOkDesde && agora - seekOkDesde > 800));
+            if (chegou || agora - seekDesde > 15000){
+              if (!chegou) log(TX('vid.exp.freezeSlow', 'Freeze: o vídeo demorou para chegar ao quadro — gravado no quadro mais próximo.'), 'err');
+              const d0 = seeking; seeking = null; congela(d0);
+            }
+            /* enquanto busca, nao pinta nada: fica o ultimo quadro bom */
+            requestAnimationFrame(loop); return;
+          }
           if (frozen){ _pintandoDesenho = frozen; paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
-          const d = activeAt(tv.currentTime);
-          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > (d.fr ? quadroDur() * 0.5 : 0.02)){ seeking = d; tv.currentTime = alvoDoQuadro(d); } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; _pintandoDesenho = d; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
+          const d = activeAt(tvTempo());
+          if (d){
+            tv.pause();
+            if (Math.abs(tvTempo() - d.t) > (d.fr ? meio() : 0.02)){
+              seeking = d; seekDesde = performance.now(); seekOkDesde = 0;
+              tv.currentTime = alvo(d);
+            } else congela(d);
+            requestAnimationFrame(loop); return;
+          }
           paint(null, it);
           { const r = slowTaxa(lento, tv.currentTime) || 1;
             if (Math.abs(tv.playbackRate - r) > 0.001) tv.playbackRate = r; }
-          if (tv.currentTime >= it.end - 0.03 || tv.ended){ tv.pause(); tv.playbackRate = 1; resolve(); return; }
+          if (tv.currentTime >= it.end - 0.03 || tv.ended){ tvProx = null; tv.pause(); tv.playbackRate = 1; resolve(); return; }
           requestAnimationFrame(loop);
         }
         requestAnimationFrame(loop);
@@ -8592,6 +8654,7 @@ async function exportCombined(items, baseName){
     }
     try { rec.stop(); } catch (e) {}
     await stopped;
+    tvFim();
     if (curURL){ try { URL.revokeObjectURL(curURL); } catch (e) {} }
     exporting = false; hideProgress();
     if (cancelRequested){ log(TX('vid.msg.exportCanceled2'), 'err'); _pendingSaveHandle = undefined; return; }
@@ -8607,6 +8670,7 @@ async function exportCombined(items, baseName){
     if (pulados.length) log(TX('vid.proj.expSkipped').replace('{n}', pulados.length) + ' ' + pulados.join(' · '), 'err');
   } catch (e){
     exporting = false; hideProgress(); _pendingSaveHandle = undefined;
+    tvFim();
     console.error('[FluxGK] export falhou', e);
     log('Export: ' + (e.message || e), 'err');
   }
