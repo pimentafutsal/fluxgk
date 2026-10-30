@@ -8270,10 +8270,10 @@ $('expRun').addEventListener('click', async () => {
         const ev = evs[i];
         const tag = findTag(ev.tagId) || { name: 'lance', color: '#8a8a8a' };   /* etiqueta apagada nao pode travar a exportacao */
         const base = ev.name ? safeName(ev.name) : (safeName(tag.name) + '_lance' + (i + 1));
-        await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)));
+        await exportEvents([ev], base + '.mp4', ev.name || (tag.name + ' ' + (i + 1)), { comDesenhos: $('expDraw').checked });
       }
     } else {
-      await exportEvents(evs, (_exportBaseName || 'fluxgk_compilado') + '.mp4', TX('vid.f.compilation') + evs.length + ' clips)');
+      await exportEvents(evs, (_exportBaseName || 'fluxgk_compilado') + '.mp4', TX('vid.f.compilation') + evs.length + ' clips)', { comDesenhos: $('expDraw').checked });
     }
     _pendingSaveHandle = undefined;
     return;
@@ -9625,16 +9625,23 @@ function _expComAudio(){
   const el = $('expAudio');
   return el ? !!el.checked : true;
 }
-async function exportEvents(events, outName, label){
+async function exportEvents(events, outName, label, opts){
   if (!state.file){ log(TX('vid.msg.loadBeforeExport'), 'err'); return; }
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
-  // se algum lance tem enquadramento (zoom) ou há desenhos a gravar, usa o caminho recodificado
+  /* A opcao "Gravar os desenhos" da aba Export vale aqui tambem. Antes,
+     havendo QUALQUER desenho no jogo, este caminho ligava os desenhos por
+     conta propria — por isso saiam mesmo com a opcao desmarcada.
+     Freeze sem desenho (pausa pura) continua valendo sempre.            */
+  const comDesenhos = !(opts && opts.comDesenhos === false);
+  const dentro = d => events.some(e => d.t >= e.start - 0.06 && d.t <= e.end);
+  const temDesenho = comDesenhos && (state.drawings || []).some(d => (d.shapes || []).length && dentro(d));
+  const temFreeze = (state.drawings || []).some(d => !(d.shapes || []).length && dentro(d));
+  // se algum lance tem enquadramento (zoom) ou há desenhos/freezes a gravar, usa o caminho recodificado
   const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
-  const needsDraw = state.drawings && state.drawings.length > 0;
   /* trecho lento nao da para fazer so recortando o arquivo: precisa regravar */
   const needsSlow = events.some(e => slowValido(e.slow));
-  if (needsZoom || needsDraw || needsSlow){
-    _expWithDraw = needsDraw;
+  if (needsZoom || temDesenho || temFreeze || needsSlow){
+    _expWithDraw = comDesenhos;
     await exportReencodedDirect(events, outName);
     return;
   }
