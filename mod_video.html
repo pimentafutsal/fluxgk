@@ -3445,8 +3445,8 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Space'){ e.preventDefault(); togglePlay(); }
   else if (e.key === 'ArrowLeft'){ e.preventDefault(); seekClamped(video.currentTime - 5); }
   else if (e.key === 'ArrowRight'){ e.preventDefault(); seekClamped(video.currentTime + 5); }
-  else if (e.key === ','){ video.pause(); seekClamped(video.currentTime - 1 / 30); }
-  else if (e.key === '.'){ video.pause(); seekClamped(video.currentTime + 1 / 30); }
+  else if (e.key === ','){ video.pause(); seekClamped(tempoQuadroVisto() - quadroDur() + quadroDur() * 0.3); }
+  else if (e.key === '.'){ video.pause(); seekClamped(tempoQuadroVisto() + quadroDur() + quadroDur() * 0.3); }
 });
 
 /* =====================================================================
@@ -5741,8 +5741,8 @@ function cineWire(){
   $('cineOutP').addEventListener('click', () => { const it = cineItem(); if (it) cineSetOut((it.end || 0) + CINE_PASSO); });
   $('cineOutHere').addEventListener('click', () => cineSetOut(v.currentTime));
   $('cineRevert').addEventListener('click', cineRevert);
-  $('cineFrB').addEventListener('click', () => cineSeek(v.currentTime - 1 / 30));
-  $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + 1 / 30));
+  $('cineFrB').addEventListener('click', () => cineSeek(v.currentTime - quadroDur()));
+  $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + quadroDur()));
   $('cineZmM').addEventListener('click', () => cineZoomPasso(-CINE_ZPASSO));
   $('cineZmP').addEventListener('click', () => cineZoomPasso(CINE_ZPASSO));
   $('cineZmS').addEventListener('click', cineZoomFixar);
@@ -5769,8 +5769,8 @@ function cineWire(){
     else if (e.key === ' '){ e.preventDefault(); e.stopPropagation(); $('cinePlay').click(); }
     else if (e.key === 'i' || e.key === 'I'){ e.stopPropagation(); cineSetIn($('cineVid').currentTime, false); }
     else if (e.key === 'o' || e.key === 'O'){ e.stopPropagation(); cineSetOut($('cineVid').currentTime); }
-    else if (e.key === ','){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime - 1 / 30); }
-    else if (e.key === '.'){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime + 1 / 30); }
+    else if (e.key === ','){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime - quadroDur()); }
+    else if (e.key === '.'){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime + quadroDur()); }
   }, true);
 }
 cineWire();
@@ -6236,6 +6236,66 @@ let selectedShape = null;  // desenho selecionado para editar propriedades
 let shapes = [], curShape = null, pending = null;
 let editingDrawingId = null, editingDrawingIds = [];
 let prevT = 0, activeFreeze = null, freezeTimer = null, _freezeSeeking = false;
+
+/* ══ PRECISAO DE QUADRO ═══════════════════════════════════════
+   O tempo que o navegador informa (currentTime) nao e o quadro que
+   esta na tela: ao pausar, principalmente em 4K, ele fica alguns
+   quadros A FRENTE do que voce esta vendo. O desenho era gravado
+   nesse tempo adiantado — e por isso aparecia uns quadros depois
+   na reproducao e na exportacao.
+   Agora acompanhamos o quadro realmente exibido (requestVideoFrameCallback):
+   - o desenho/freeze grava o tempo DO QUADRO VISTO;
+   - ao pausar, o video encaixa exatamente nesse quadro;
+   - o passo quadro a quadro usa o fps real do video;
+   - a reproducao e a exportacao param no quadro exato.          */
+var _quadroMT = null, _quadroPF = 0, _fpsAmostras = [], _frameDur = 1 / 30;
+function quadroDur(){ return _frameDur; }
+/* posicao para buscar um quadro: um pouco depois do inicio dele, para o
+   navegador nao arredondar para o quadro anterior */
+function alvoDoQuadro(d){ return d && d.fr ? d.t + _frameDur * 0.3 : d.t; }
+/* tempo do quadro que esta na tela agora */
+function tempoQuadroVisto(){
+  if (_quadroMT != null && Math.abs(_quadroMT - video.currentTime) < 1) return _quadroMT;
+  return video.currentTime;
+}
+(function vigiaQuadro(){
+  if (!video.requestVideoFrameCallback) return;
+  const cb = (agora, md) => {
+    try{
+      if (_quadroMT != null && !video.paused && Math.abs(video.playbackRate - 1) < 0.001){
+        const dt = md.mediaTime - _quadroMT, pf = md.presentedFrames - _quadroPF;
+        if (pf === 1 && dt > 0.008 && dt < 0.1){
+          _fpsAmostras.push(dt); if (_fpsAmostras.length > 90) _fpsAmostras.shift();
+          const o = _fpsAmostras.slice().sort((a, b) => a - b);
+          _frameDur = o[Math.floor(o.length / 2)];
+        }
+      }
+      _quadroMT = md.mediaTime; _quadroPF = md.presentedFrames;
+      /* exportando: para NO quadro do freeze, sem passar dele */
+      if (exporting && _expProxFreeze != null && !video.paused && _quadroMT >= _expProxFreeze - _frameDur * 0.5){
+        video.pause();
+      }
+      /* reproducao normal: o freeze dispara no quadro, nao 1/4 s depois */
+      if (!exporting) checkDrawingFreeze();
+    }catch(e){}
+    video.requestVideoFrameCallback(cb);
+  };
+  video.requestVideoFrameCallback(cb);
+})();
+var _expProxFreeze = null;
+video.addEventListener('loadedmetadata', () => { _quadroMT = null; _fpsAmostras = []; _frameDur = 1 / 30; });
+/* pausou: encaixa o tempo no quadro que ficou na tela */
+video.addEventListener('pause', () => {
+  if (exporting) return;
+  const ct = video.currentTime;
+  setTimeout(() => {
+    if (exporting || !video.paused || video.seeking || activeFreeze || _freezeSeeking) return;
+    if (video.currentTime !== ct || _quadroMT == null) return;      /* alguem ja buscou outro ponto */
+    if (Math.abs(video.currentTime - _quadroMT) > _frameDur * 0.5 && Math.abs(video.currentTime - _quadroMT) < 1){
+      video.currentTime = _quadroMT + _frameDur * 0.3;
+    }
+  }, 120);
+});
 
 function hexToRgba(hex, a){
   let h = hex.replace('#', '');
@@ -7090,10 +7150,11 @@ document.addEventListener('keydown', (e) => {
 /* ---------------- desenhos salvos no tempo (freeze frame) ---------------- */
 function checkDrawingFreeze(){
   if (exporting) return; // durante a exportação o freeze é controlado pelo gravador
-  const t = video.currentTime;
+  const t = tempoQuadroVisto();
+  const meio = quadroDur() * 0.5;
   if (!activeFreeze && !drawMode && !video.paused && state.drawings && state.drawings.length){
     for (const d of state.drawings){
-      if (prevT < d.t && t >= d.t && (t - d.t) < 1.5){
+      if (prevT < d.t - meio && t >= d.t - meio && (t - d.t) < 1.5){
         startFreeze(d);
         break;
       }
@@ -7105,11 +7166,11 @@ function startFreeze(d){
   video.pause();
   activeFreeze = d;
   // volta ao frame EXATO em que o desenho foi feito (o timeupdate pode ter passado alguns frames)
-  if (Math.abs(video.currentTime - d.t) > 0.02){
+  if (Math.abs(tempoQuadroVisto() - d.t) > quadroDur() * 0.5){
     _freezeSeeking = true;
     const restore = () => { video.removeEventListener('seeked', restore); _freezeSeeking = false; resizeDrawCanvas(); redrawShapes(); };
     video.addEventListener('seeked', restore);
-    video.currentTime = d.t;
+    video.currentTime = alvoDoQuadro(d);
   } else {
     resizeDrawCanvas();
   }
@@ -7150,8 +7211,10 @@ $('drawSave').addEventListener('click', () => {
     editingDrawingId = null;
     editingDrawingIds = [];
   } else {
-    state.drawings.push({ id: Date.now(), t: video.currentTime, freeze: f, shapes: shapes.slice() });
-    log(TX('vid.f.drawingSaved')+' ' + fmt(video.currentTime, true) + ' '+TX('vid.f.freezesFor')+' ' + f + 's.', 'ok');
+    /* grava no quadro que esta NA TELA (fr = tempo exato do quadro) */
+    const tq = tempoQuadroVisto();
+    state.drawings.push({ id: Date.now(), t: tq, fr: 1, freeze: f, shapes: shapes.slice() });
+    log(TX('vid.f.drawingSaved')+' ' + fmt(tq, true) + ' '+TX('vid.f.freezesFor')+' ' + f + 's.', 'ok');
   }
   shapes = [];
   redrawShapes();
@@ -7168,7 +7231,7 @@ $('drawSave').addEventListener('click', () => {
    ══════════════════════════════════════════════════════════════ */
 function addFreezeOnly(){
   if (!state.file){ log(TX('vid.msg.loadFirstDot'), 'err'); return; }
-  const t = video.currentTime;
+  const t = tempoQuadroVisto();      /* o quadro que voce esta vendo, nao o relogio do video */
   const f = Math.min(60, Math.max(0.5, parseFloat($('freezeSec') && $('freezeSec').value) || 3));
   /* ja existe algo marcado neste mesmo instante? entao so ajusta a duracao */
   const existente = (state.drawings || []).find(d => Math.abs(d.t - t) < 0.05);
@@ -7176,10 +7239,11 @@ function addFreezeOnly(){
     existente.freeze = f;
     log(TX('vid.f.freezeUpdated', 'Freeze updated at ') + fmt(t, true) + ' — ' + f + 's.', 'ok');
   } else {
-    state.drawings.push({ id: Date.now(), t: t, freeze: f, shapes: [] });
+    state.drawings.push({ id: Date.now(), t: t, fr: 1, freeze: f, shapes: [] });
     log(TX('vid.f.freezeAdded', 'Freeze added at ') + fmt(t, true) + ' — ' + f + 's.', 'ok');
   }
   video.pause();
+  try { video.currentTime = t + quadroDur() * 0.3; } catch (e) {}
   saveSession();
   renderDrawList();
 }
@@ -7209,7 +7273,7 @@ function editDrawing(d){
     log(TX('vid.f.editingDrawing')+' ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
   };
   video.addEventListener('seeked', apply);
-  video.currentTime = d.t;
+  video.currentTime = alvoDoQuadro(d);
 }
 
 function renderDrawList(){
@@ -8092,29 +8156,48 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
     let seekingDraw = null;     // aguardando o seek preciso até o frame do desenho
     const playedDrawings = new Set(); // desenhos já exibidos (não repetir)
 
+    function elegivel(d){
+      if (!d || playedDrawings.has(d.id)) return false;
+      const evA = group[gi];
+      /* so os freezes que estao DENTRO do lance que esta gravando */
+      if (evA && (d.t < evA.start - 0.06 || d.t > evA.end)) return false;
+      /* pausa pura (sem desenho) vale sempre; desenhos respeitam a opcao "incluir desenhos" */
+      const puroFreeze = !d.shapes || !d.shapes.length;
+      if (!puroFreeze && !_expWithDraw) return false;
+      return true;
+    }
     function activeDrawingAt(t){
       if (!state.drawings) return null;
-      const evA = group[gi];
+      const meio = quadroDur() * 0.5;
       for (const d of state.drawings){
-        if (playedDrawings.has(d.id)) continue;
-        /* so os freezes que estao DENTRO do lance que esta gravando */
-        if (evA && (d.t < evA.start - 0.06 || d.t > evA.end)) continue;
-        /* pausa pura (sem desenho) vale sempre; desenhos respeitam a opcao "incluir desenhos" */
-        const puroFreeze = !d.shapes || !d.shapes.length;
-        if (!puroFreeze && !_expWithDraw) continue;
-        if (t >= d.t - 0.06 && t <= d.t + 0.5){ // chegou no instante do desenho
-          return d;
-        }
+        if (!elegivel(d)) continue;
+        if (t >= d.t - meio && t <= d.t + 1.0) return d;   // chegou no quadro do desenho
       }
       return null;
     }
+    /* proximo freeze a frente: o vigia de quadros pausa exatamente nele */
+    function proximoFreeze(t){
+      let m = null;
+      (state.drawings || []).forEach(d => {
+        if (!elegivel(d) || d.t < t - quadroDur() * 0.5) return;
+        if (m == null || d.t < m) m = d.t;
+      });
+      return m;
+    }
+    /* enquanto o video busca o quadro do freeze, repete o ultimo quadro bom
+       — antes, o desenho era pintado em cima do quadro errado            */
+    const bk = document.createElement('canvas'); bk.width = outW; bk.height = outH;
+    const bkx = bk.getContext('2d');
+    let temBk = false;
+    function guardaQuadro(){ try { bkx.drawImage(c, 0, 0); temBk = true; } catch (e) {} }
+    function seguraQuadro(){ if (temBk){ try { cx.drawImage(bk, 0, 0); } catch (e) {} } }
 
     let trocando = false;   /* pulando para o proximo lance: espera o seek */
     /* Vigias: um video de 10 GB em 4K pode demorar (ou nunca avisar) que
        terminou de buscar um ponto, e um clique no video durante a gravacao
        pausa tudo. Antes, qualquer um desses travava a exportacao para
        sempre. Agora, passado o tempo, ela segue sozinha.                 */
-    let seekDesde = 0, pausadoDesde = 0;
+    let seekDesde = 0, seekOkDesde = 0, pausadoDesde = 0;
     /* um erro dentro do laco matava a gravacao em silencio (tela parada,
        barra parada). Agora o erro vai para o registro e a gravacao segue. */
     let _errosTick = 0;
@@ -8136,16 +8219,27 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       const ev = group[gi];
       if (trocando){ raf = requestAnimationFrame(tick); return; }
 
+      const meio = quadroDur() * 0.5;
+      _expProxFreeze = proximoFreeze(tempoQuadroVisto());
+
       // aguardando o seek terminar para congelar no frame EXATO do desenho
       if (seekingDraw){
-        if (!seekDesde) seekDesde = performance.now();
-        if (!video.seeking || performance.now() - seekDesde > 2500){
-          seekDesde = 0;
+        const agora = performance.now();
+        if (!seekDesde) seekDesde = agora;
+        if (video.seeking) seekOkDesde = 0; else if (!seekOkDesde) seekOkDesde = agora;
+        const naTela = Math.abs(tempoQuadroVisto() - seekingDraw.t) <= (seekingDraw.fr ? meio : quadroDur() * 1.5);
+        /* so congela quando o quadro certo ESTA na tela; sem confirmacao do
+           navegador, aceita 0,8 s depois do fim da busca */
+        const chegou = !video.seeking && (naTela || (seekOkDesde && agora - seekOkDesde > 800));
+        const desistiu = agora - seekDesde > 15000;
+        if (chegou || desistiu){
+          if (!chegou) log(TX('vid.exp.freezeSlow', 'Freeze: o vídeo demorou para chegar ao quadro — gravado no quadro mais próximo.'), 'err');
+          seekDesde = 0; seekOkDesde = 0;
           frozenDrawing = seekingDraw;
           seekingDraw = null;
-          frozenUntil = performance.now() + Math.max(0.5, frozenDrawing.freeze || 3) * 1000;
-        }
-        drawFrameWith(frozenDrawing || seekingDraw);
+          frozenUntil = agora + Math.max(0.5, frozenDrawing.freeze || 3) * 1000;
+          drawFrameWith(frozenDrawing);
+        } else seguraQuadro();
         raf = requestAnimationFrame(tick);
         return;
       }
@@ -8163,12 +8257,15 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       }
 
       // chegou num desenho? trava no frame EXATO (seek) para não desincronizar
-      const d = activeDrawingAt(video.currentTime);
+      const d = activeDrawingAt(tempoQuadroVisto());
       if (d){
         video.pause();
-        if (Math.abs(video.currentTime - d.t) > 0.02){
-          seekingDraw = d;
-          video.currentTime = d.t;   // frame exato onde o desenho foi salvo
+        if (Math.abs(tempoQuadroVisto() - d.t) > (d.fr ? meio : 0.02)){
+          /* passou do quadro: volta nele, segurando o ultimo quadro bom */
+          guardaQuadro();
+          seekingDraw = d; seekDesde = 0; seekOkDesde = 0;
+          video.currentTime = alvoDoQuadro(d);
+          seguraQuadro();
         } else {
           frozenDrawing = d;
           frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
@@ -8216,7 +8313,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       restore();
     }
     function cleanup(){ cancelAnimationFrame(raf); try { rec.stop(); } catch (e) {} restore(); }
-    function restore(){ video.muted = wasMuted; video.playbackRate = wasRate; }
+    function restore(){ _expProxFreeze = null; video.muted = wasMuted; video.playbackRate = wasRate; }
 
     /* regravar leva o tempo do proprio video: avisa quanto vai demorar */
     try{
@@ -8421,13 +8518,14 @@ async function exportCombined(items, baseName){
           await new Promise(r => { const on = () => { tv.removeEventListener('seeked', on); r(); }; tv.addEventListener('seeked', on); setTimeout(r, 8000); });
         } catch (e) {}
         tv.play().catch(() => {});
-        function activeAt(t){ for (const d of drawings){ if (played.has(d.id)) continue; if (t >= d.t - 0.06 && t <= d.t + 0.5 && d.t >= it.start && d.t <= it.end) return d; } return null; }
+        function activeAt(t){ for (const d of drawings){ if (played.has(d.id)) continue; if (t >= d.t - quadroDur() * 0.5 && t <= d.t + 0.5 && d.t >= it.start && d.t <= it.end) return d; } return null; }
         function loop(){
           if (cancelRequested){ resolve(); return; }
-          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; } paint(frozen ? frozen.shapes : null, it); requestAnimationFrame(loop); return; }
+          /* buscando o quadro do freeze: nao pinta o quadro errado com o desenho por cima */
+          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; paint(frozen.shapes, it); } requestAnimationFrame(loop); return; }
           if (frozen){ paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
           const d = activeAt(tv.currentTime);
-          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > 0.02){ seeking = d; tv.currentTime = d.t; } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
+          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > (d.fr ? quadroDur() * 0.5 : 0.02)){ seeking = d; tv.currentTime = alvoDoQuadro(d); } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
           paint(null, it);
           { const r = slowTaxa(lento, tv.currentTime) || 1;
             if (Math.abs(tv.playbackRate - r) > 0.001) tv.playbackRate = r; }
