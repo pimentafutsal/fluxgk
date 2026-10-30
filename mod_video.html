@@ -136,6 +136,16 @@
   #stage.dragging{cursor:grabbing}
   #stage:fullscreen{max-height:none;border-radius:0;display:flex;align-items:center;justify-content:center;background:#000}
   #stage:fullscreen video{height:100vh;max-height:none;object-fit:contain}
+  /* tela cheia do PLAYER: video + ferramentas de desenho + controles.
+     Assim da para desenhar sem sair da tela cheia. */
+  #videoWrap:fullscreen{display:flex;flex-direction:column;background:#000;width:100vw;height:100vh}
+  #videoWrap:fullscreen > :not(#stageRow):not(#drawbar):not(.pbar){display:none !important}
+  #videoWrap:fullscreen #stageRow{flex:1;min-height:0}
+  #videoWrap:fullscreen #stage{max-height:none;height:100%;border-radius:0;display:flex;align-items:center;justify-content:center}
+  #videoWrap:fullscreen #stage video{width:100%;height:100%;max-height:none;object-fit:contain}
+  #videoWrap:fullscreen .pbar{background:#111;color:#fff;padding:6px 10px}
+  #videoWrap:fullscreen .pbar button{color:#fff}
+  #videoWrap:fullscreen #drawRail{border-radius:0}
   video{width:100%;display:block;background:#000;max-height:80vh;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-select:none}
 
   #drawCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
@@ -145,6 +155,31 @@
     background:rgba(10,10,10,.7);padding:6px 8px;border-radius:6px;z-index:6;max-width:calc(100% - 20px);
   }
   #drawbar.on{display:flex}
+  /* tela de desenho: ferramentas em coluna fora da imagem, propriedades embaixo */
+  #stageRow{display:flex;align-items:stretch}
+  #stageRow #stage{flex:1;min-width:0}
+  #drawRail{display:none;flex-direction:column;gap:4px;padding:6px 5px;background:#111;border-radius:8px 0 0 0}
+  body.desenhando #drawRail{display:flex}
+  #drawRail .dtool{border:none;background:rgba(255,255,255,.1);color:#fff;font-size:15px;width:34px;height:32px;padding:0;border-radius:5px;cursor:pointer}
+  #drawRail .dtool:hover{background:rgba(255,255,255,.24)}
+  #drawRail .dtool.active{background:var(--blue)}
+  #drawbar.fora{position:static;max-width:none;border-radius:0;background:#111;padding:7px 10px;gap:7px}
+  #drawbar.fora #drawProps{order:99}
+  #drawbar .dgroup{display:inline-flex;align-items:center;gap:5px}
+  #drawbar #drawFreeze{width:52px;padding:3px 5px;border:none;border-radius:4px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px}
+  #drawbar #drawSave.salvar{background:var(--blue);font-weight:600;margin-left:auto}
+  #drawbar #drawNavTxt{min-width:44px;text-align:center}
+  #drawbar button:disabled{opacity:.35;cursor:default}
+  body.desenhando .zoomctl, body.desenhando #clipBack, body.desenhando #tagPanel, body.desenhando #plPanel{display:none !important}
+  body.desenhando .pbar #playBtn, body.desenhando .pbar #back5, body.desenhando .pbar #fwd5, body.desenhando .pbar .speeds{opacity:.35;pointer-events:none}
+  body.desenhando.previa .pbar{pointer-events:none}
+  .seekwrap{position:relative;flex:1;min-width:140px;display:flex;align-items:center}
+  .seekwrap input[type=range]{width:100%}
+  #seekMarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+  .smark{position:absolute;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;padding:0;border-radius:2px;transform:rotate(45deg);
+    background:#FFD400;border:1px solid #0a0a0a;pointer-events:auto;cursor:pointer;z-index:2}
+  .smark.fz{background:#fff}
+  .smark.on{background:var(--blue);width:11px;height:11px;margin:-5.5px 0 0 -5.5px}
   #drawbar button{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;padding:4px 9px;border-radius:4px}
   #drawbar button:hover{background:rgba(255,255,255,.28)}
   #drawbar button.active{background:var(--blue)}
@@ -3180,6 +3215,7 @@ video.addEventListener('pause', () => { $('playBtn').textContent = '▶'; });
 /* ---------------- player: controles ---------------- */
 function togglePlay(){
   if (!state.file) return;
+  if (drawMode && !_preview){ avisoTravado(); return; }
   cancelFreeze();
   if (video.paused) video.play(); else video.pause();
 }
@@ -3264,7 +3300,7 @@ function nudgePan(dx, dy){
 }
 $('fsBtn').addEventListener('click', () => {
   if (isAppFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
-  const el = stage;
+  const el = $('videoWrap');   /* o player inteiro (com ferramentas), nao so a imagem */
   try {
     const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
     if (r && r.catch) r.catch(() => toggleAppFullscreen());   /* plano B: tela cheia do app / preencher janela */
@@ -3442,6 +3478,13 @@ document.addEventListener('keydown', (e) => {
     const dy = e.key === 'ArrowUp' ? passo : e.key === 'ArrowDown' ? -passo : 0;
     if (nudgePan(dx, dy)) { e.preventDefault(); return; }
   }
+  /* desenhando: o video fica no quadro. Sem nenhum traco ainda, , e . escolhem o quadro */
+  if (drawMode && !_preview){
+    const passo = (e.key === ',' || e.key === '.');
+    if (e.code === 'Space' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || (passo && (shapes.length || desenhoSujo()))){
+      e.preventDefault(); avisoTravado(); return;
+    }
+  }
   if (e.code === 'Space'){ e.preventDefault(); togglePlay(); }
   else if (e.key === 'ArrowLeft'){ e.preventDefault(); seekClamped(video.currentTime - 5); }
   else if (e.key === 'ArrowRight'){ e.preventDefault(); seekClamped(video.currentTime + 5); }
@@ -3471,6 +3514,7 @@ function applySeekRange(){
   const b = viewBounds();
   seekEl.min = b.a;
   seekEl.max = b.b || 100;
+  try { pintaMarcas(); } catch (e) {}
 }
 function enforceClipBounds(){
   const c = state.clip;
@@ -3518,6 +3562,8 @@ function caixaDoPalco(SW, SH, vw, vh, ox, oy, dw, dh){
 var _ultimoPalco = null;   /* ultimo tamanho visto do player (a aba pode estar escondida na exportacao) */
 function palcoDoDesenho(d){
   if (d && d.sw && d.sh) return { w: d.sw, h: d.sh };
+  /* desenhos antigos foram feitos no palco normal (sem a coluna de ferramentas) */
+  if (_palcoNormal) return _palcoNormal;
   const r = stage.getBoundingClientRect();
   if (r.width && r.height){ _ultimoPalco = { w: r.width, h: r.height }; return _ultimoPalco; }
   if (_ultimoPalco) return _ultimoPalco;
@@ -3763,8 +3809,12 @@ function slowLaco(){
 }
 requestAnimationFrame(slowLaco);
 
-function openClip(ev, tag, edit){
+function openClip(ev, tag, edit, opts){
   if (!ev) return;
+  if (drawMode){
+    if (desenhoSujo()){ sairDoDesenho(() => openClip(ev, tag, edit, opts)); return; }
+    setDrawMode(false);
+  }
   /* etiqueta ausente (apagada ou nao encontrada) travava a abertura do lance */
   tag = tag || findTag(ev.tagId) || { name: TX('vid.f.clip', 'clip'), color: '#8a8a8a' };
   stopPlaylist();
@@ -3786,7 +3836,7 @@ function openClip(ev, tag, edit){
   } else {
     applySeekRange();
     video.currentTime = ev.start;
-    video.play();
+    if (!(opts && opts.parado)) video.play();
   }
 }
 function updateClipRange(){
@@ -4519,8 +4569,7 @@ function renderPlaylists(){
       bDraw.title = TX('vid.tt.drawClip');
       bDraw.addEventListener('click', (e) => {
         e.stopPropagation();
-        openClip(ev, g.tag);
-        setTimeout(() => { setDrawMode(true); log(TX('vid.f.drawModeOn')); }, 250);
+        desenharNoLance(ev, g.tag);
       });
 
       /* nome em cima (destaque) e tempos embaixo: o nome fica legivel
@@ -6030,8 +6079,7 @@ function openCtxMenu(x, y){
   menu.appendChild(ctxItem(TX('vid.drawings'), () => {
     const ev = sel[0];
     const tag = findTag(ev.tagId);
-    openClip(ev, tag);
-    setTimeout(() => { setDrawMode(true); log(TX('vid.f.drawModeOn')); }, 250);
+    desenharNoLance(ev, tag);
   }));
 
   menu.appendChild(Object.assign(document.createElement('div'), { className: 'ctxsep' }));
@@ -6361,6 +6409,17 @@ function resizeDrawCanvas(){
   const r = stage.getBoundingClientRect();
   if (!r.width || !r.height) return;
   _ultimoPalco = { w: r.width, h: r.height };
+  if (!drawMode) _palcoNormal = { w: r.width, h: r.height };
+  /* o palco mudou de tamanho no meio do desenho (tela cheia, janela):
+     os tracos em edicao acompanham o mesmo ponto do video */
+  const novo = { w: r.width, h: r.height };
+  if (drawMode && _palcoBuffer && (Math.abs(_palcoBuffer.w - novo.w) > 1 || Math.abs(_palcoBuffer.h - novo.h) > 1)){
+    shapes = converteShapes(shapes, _palcoBuffer, novo);
+    if (pending && Array.isArray(pending.points)) pending.points = converteShapes([{ points: pending.points }], _palcoBuffer, novo)[0].points;
+    try { _drawSnap = JSON.stringify(converteShapes(JSON.parse(_drawSnap), _palcoBuffer, novo)); } catch (e) {}
+    selectedShape = null;
+  }
+  _palcoBuffer = drawMode ? novo : null;
   try { localStorage.setItem('fluxgk_vl_palco', JSON.stringify(_ultimoPalco)); } catch (e) {}
   const dpr = window.devicePixelRatio || 1;
   drawCanvas.width = Math.round(r.width * dpr);
@@ -6370,6 +6429,12 @@ function resizeDrawCanvas(){
 }
 window.addEventListener('resize', resizeDrawCanvas);
 document.addEventListener('fullscreenchange', () => setTimeout(resizeDrawCanvas, 60));
+/* em tela cheia do player so o que esta DENTRO dele aparece: as janelas de
+   pergunta (descartar desenho, texto, calibracao) vao junto para dentro */
+document.addEventListener('fullscreenchange', () => {
+  const alvo = document.fullscreenElement || document.body;
+  ['askModal', 'nameModal'].forEach(id => { const m = document.getElementById(id); if (m && m.parentNode !== alvo) alvo.appendChild(m); });
+});
 
 function drawShape(ctx, s, W, H){
   ctx.save();
@@ -6723,7 +6788,9 @@ function redrawShapes(){
   dctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   dctx.restore();
   if (!r.width || !r.height) return;
-  const list = activeFreeze ? (activeFreeze.shapes || []) : shapes;
+  /* parado no quadro exato de um desenho salvo (fora do modo desenho): mostra */
+  if (!activeFreeze && !drawMode){ desenhosNoQuadro().forEach(d => pintaDesenhoSalvo(dctx, d, r)); return; }
+  const list = activeFreeze ? (activeFreeze.shapes || []) : (_ocultaBuffer ? [] : shapes);
   if (activeFreeze && activeFreeze.sw && activeFreeze.sh &&
       (Math.abs(activeFreeze.sw - r.width) > 2 || Math.abs(activeFreeze.sh - r.height) > 2)){
     /* a janela mudou de tamanho desde o desenho: reposiciona sobre o video */
@@ -6747,7 +6814,7 @@ function redrawShapes(){
 
 function setTool(t){
   drawTool = t;
-  document.querySelectorAll('#drawbar .dtool').forEach(x => x.classList.toggle('active', x.dataset.tool === t));
+  document.querySelectorAll('.dtool').forEach(x => x.classList.toggle('active', x.dataset.tool === t));
   if (t !== 'move' && selectedShape){ selectedShape = null; redrawShapes(); }
   // barra de propriedades contextual
   const showLens = t === 'lens', showText = t === 'text', showPoly = t === 'poly';
@@ -6769,33 +6836,40 @@ function finishPending(commit){
 }
 function setDrawMode(on){
   if (!on){
-    finishPending(true);
-    // saiu sem salvar: descarta traços não confirmados e a edição em curso
-    if (editingDrawingId != null){ editingDrawingId = null; editingDrawingIds = []; shapes = []; redrawShapes(); }
+    pararPreview(true);
+    finishPending(false);
+    /* sair do desenho SEMPRE limpa a tela: antes os traços nao salvos
+       ficavam por cima do video correndo */
+    editingDrawingId = null; editingDrawingIds = []; shapes = []; curShape = null;
     selectedShape = null;
   }
   drawMode = on;
   stage.classList.toggle('drawing', on);
+  document.body.classList.toggle('desenhando', on);
   $('drawbar').classList.toggle('on', on);
   $('drawBtn').style.background = on ? 'var(--blue)' : '';
+  try { seekEl.disabled = on; } catch (e) {}
   if (on){
     cancelFreeze();
     if (state.file) video.pause();
-    resizeDrawCanvas();
+    _drawSnap = JSON.stringify(shapes);
+    if ($('drawFreeze')) $('drawFreeze').value = $('freezeSec').value;
   }
+  /* a coluna de ferramentas muda o tamanho do palco: remede no quadro seguinte */
+  requestAnimationFrame(() => { resizeDrawCanvas(); pintaMarcas(); navDesenhos(); });
 }
-$('drawBtn').addEventListener('click', () => setDrawMode(!drawMode));
-$('drawExit').addEventListener('click', () => setDrawMode(false));
+$('drawBtn').addEventListener('click', () => { if (drawMode) sairDoDesenho(); else setDrawMode(true); });
+$('drawExit').addEventListener('click', () => sairDoDesenho());
 $('drawUndo').addEventListener('click', () => { finishPending(false); shapes.pop(); redrawShapes(); });
 $('drawClear').addEventListener('click', () => { shapes = []; curShape = null; pending = null; redrawShapes(); });
 $('drawCalib').addEventListener('click', () => {
   finishPending(true);
   drawTool = 'calib';
-  document.querySelectorAll('#drawbar .dtool').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.dtool').forEach(x => x.classList.remove('active'));
   log(TX('vid.f.calibHint'));
 });
 
-document.querySelectorAll('#drawbar .dtool').forEach(b => {
+document.querySelectorAll('.dtool').forEach(b => {
   b.addEventListener('click', () => {
     finishPending(true);
     setTool(b.dataset.tool);
@@ -7297,26 +7371,247 @@ function addFreezeOnly(){
 }
 if ($('freezeAdd')) $('freezeAdd').addEventListener('click', (e) => { e.stopPropagation(); addFreezeOnly(); });
 
+
+/* ══ TELA DE DESENHO — logica de editor esportivo ═════════════
+   - desenhar acontece SOBRE UM QUADRO: o video trava nele ate Salvar
+     ou Cancelar (antes ele continuava correndo com o desenho por cima);
+   - reabrir um desenho leva direto ao quadro dele;
+   - "Previa" toca o trecho e congela no desenho, como no video final;
+   - ferramentas numa coluna fora da imagem, propriedades embaixo;
+   - marcas dos desenhos na linha do tempo.                       */
+var _palcoBuffer = null, _drawSnap = '[]', _preview = null, _ocultaBuffer = false, _palcoNormal = null, _avisouTrava = 0;
+function desenhoSujo(){ return !!curShape || !!pending || JSON.stringify(shapes) !== _drawSnap; }
+function avisoTravado(){
+  if (Date.now() - _avisouTrava < 2500) return;
+  _avisouTrava = Date.now();
+  log(TX('vid.dr.locked', 'Desenhando: o vídeo fica parado neste quadro. Use ▶ Prévia para ver com o desenho, ou Salvar / Cancelar.'));
+}
+/* sai do desenho perguntando antes de jogar fora o que nao foi salvo */
+function sairDoDesenho(depois){
+  if (!drawMode){ if (depois) depois(); return; }
+  if (!desenhoSujo()){ setDrawMode(false); if (depois) depois(); return; }
+  askConfirm(TX('vid.dr.discardT', 'Desenho não salvo'),
+    TX('vid.dr.discardQ', 'Este desenho ainda não foi salvo. Descartar?'),
+    TX('vid.dr.discard', 'Descartar')).then(ok => {
+      if (!ok) return;
+      setDrawMode(false);
+      if (depois) depois();
+    });
+}
+/* converte traços de um tamanho de palco para outro, mantendo o ponto do VIDEO */
+function converteShapes(list, de, para){
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!list || !de || !para || !de.w || !de.h || !para.w || !para.h || !vw) return list || [];
+  if (Math.abs(de.w - para.w) < 1 && Math.abs(de.h - para.h) < 1) return list;
+  const a = vidNoPalco(de.w, de.h, vw, vh), b = vidNoPalco(para.w, para.h, vw, vh);
+  return list.map(s => {
+    const c = cloneShape(s);
+    if (Array.isArray(c.points)) c.points = c.points.map(p => {
+      const u = (p.x * de.w - a.x) / a.w, v = (p.y * de.h - a.y) / a.h;
+      return Object.assign({}, p, { x: (b.x + u * b.w) / para.w, y: (b.y + v * b.h) / para.h });
+    });
+    return c;
+  });
+}
+/* desenha um desenho salvo no palco atual, respeitando o palco em que foi feito */
+function pintaDesenhoSalvo(ctx, d, r){
+  const lst = d.shapes || [];
+  if (d.sw && d.sh && (Math.abs(d.sw - r.width) > 2 || Math.abs(d.sh - r.height) > 2)){
+    const v = vidNoPalco(r.width, r.height, video.videoWidth, video.videoHeight);
+    const bx = caixaDoPalco(d.sw, d.sh, video.videoWidth, video.videoHeight, v.x, v.y, v.w, v.h);
+    ctx.save(); ctx.translate(bx.x, bx.y);
+    lst.forEach(s => drawShape(ctx, s, bx.w, bx.h));
+    ctx.restore();
+  } else lst.forEach(s => drawShape(ctx, s, r.width, r.height));
+}
+/* parado exatamente no quadro de um desenho salvo: ele aparece */
+function desenhosNoQuadro(){
+  if (drawMode || !video.paused || !state.drawings || !state.drawings.length) return [];
+  const t = tempoQuadroVisto(), m = quadroDur() * 0.6;
+  return state.drawings.filter(d => (d.shapes || []).length && Math.abs(d.t - t) <= m);
+}
+['seeked', 'pause', 'play'].forEach(evn => video.addEventListener(evn, () => { if (!drawMode && !activeFreeze) redrawShapes(); }));
+
+/* trava: nada faz o video andar enquanto desenha (so a Previa) */
+video.addEventListener('play', () => {
+  if (drawMode && !_preview && !exporting){ video.pause(); avisoTravado(); }
+});
+
+/* desenhos do lance aberto (ou do jogo inteiro), em ordem */
+function desenhosDaVista(){
+  const b = viewBounds(), z = b.b || video.duration || 0;
+  return (state.drawings || []).filter(d => d.t >= b.a - 0.06 && d.t <= z + 0.06).sort((x, y) => x.t - y.t);
+}
+function navDesenhos(){
+  const box = $('drawNav'); if (!box) return;
+  const ds = desenhosDaVista();
+  if (!drawMode || !ds.length){ box.style.display = 'none'; return; }
+  box.style.display = '';
+  const i = ds.findIndex(d => d.id === editingDrawingId);
+  $('drawNavTxt').textContent = (i >= 0 ? (i + 1) + '/' + ds.length : TX('vid.dr.new', 'novo') + ' · ' + ds.length);
+  $('drawNavPrev').disabled = !(i > 0 || (i < 0 && ds.some(d => d.t < tempoQuadroVisto())));
+  $('drawNavNext').disabled = !((i >= 0 && i < ds.length - 1) || (i < 0 && ds.some(d => d.t > tempoQuadroVisto())));
+}
+function irDesenho(dir){
+  const ds = desenhosDaVista(); if (!ds.length) return;
+  const i = ds.findIndex(d => d.id === editingDrawingId);
+  let alvo = null;
+  if (i >= 0) alvo = ds[i + dir];
+  else { const t = tempoQuadroVisto(); alvo = dir > 0 ? ds.find(d => d.t > t) : ds.slice().reverse().find(d => d.t < t); }
+  if (alvo) editDrawing(alvo);
+}
+
+/* abre o lance pelo botao de desenho: direto no quadro do 1o desenho dele,
+   ou parado no inicio do lance para desenhar — nunca com o video correndo */
+function desenharNoLance(ev, tag){
+  sairDoDesenho(() => {
+    const ds = (state.drawings || []).filter(d => d.t >= ev.start - 0.06 && d.t <= ev.end).sort((a, b) => a.t - b.t);
+    openClip(ev, tag, false, { parado: true });
+    if (ds.length){ editDrawing(ds[0]); return; }
+    const go = () => { video.removeEventListener('seeked', go); setDrawMode(true); log(TX('vid.f.drawModeOn')); };
+    video.addEventListener('seeked', go);
+  });
+}
+
+/* ── Previa: toca 2 s antes, congela no desenho, segue 2 s, volta ao quadro ── */
+function previewDesenho(){
+  if (_preview){ pararPreview(false); return; }
+  if (!drawMode) return;
+  finishPending(true);
+  const t0 = tempoQuadroVisto();
+  const vb = viewBounds();
+  const fimV = vb.b || video.duration || (t0 + 2);
+  const dur = Math.min(60, Math.max(0.5, parseFloat($('drawFreeze').value) || 3));
+  _preview = { t0: t0, ini: Math.max(vb.a || 0, t0 - 2), fim: Math.min(fimV, t0 + 2), dur: dur, fase: 'antes', raf: 0, ate: 0 };
+  _ocultaBuffer = true; redrawShapes();
+  $('drawPrev').textContent = '■ ' + TX('vid.dr.stop', 'Parar');
+  document.body.classList.add('previa');
+  video.currentTime = _preview.ini;
+  const passo = () => {
+    const p = _preview; if (!p) return;
+    const t = tempoQuadroVisto();
+    if (p.fase === 'antes'){
+      if (video.paused && !video.seeking) video.play().catch(() => {});
+      if (t >= p.t0 - quadroDur() * 0.5 && !video.seeking){
+        video.pause();
+        if (Math.abs(t - p.t0) > quadroDur() * 0.5) video.currentTime = p.t0 + quadroDur() * 0.3;
+        p.fase = 'freeze'; p.ate = performance.now() + p.dur * 1000;
+        _ocultaBuffer = false; redrawShapes();
+      }
+    } else if (p.fase === 'freeze'){
+      if (performance.now() >= p.ate){ _ocultaBuffer = true; redrawShapes(); p.fase = 'depois'; video.play().catch(() => {}); }
+    } else if (p.fase === 'depois'){
+      if (t >= p.fim - 0.03 || video.ended || p.fim <= p.t0 + 0.05){ pararPreview(false); return; }
+    }
+    p.raf = requestAnimationFrame(passo);
+  };
+  _preview.raf = requestAnimationFrame(passo);
+}
+function pararPreview(silencioso){
+  if (!_preview) return;
+  const p = _preview; cancelAnimationFrame(p.raf); _preview = null;
+  document.body.classList.remove('previa');
+  video.pause();
+  _ocultaBuffer = false;
+  try { video.currentTime = p.t0 + quadroDur() * 0.3; } catch (e) {}
+  const b = $('drawPrev'); if (b) b.textContent = '▶ ' + TX('vid.dr.preview', 'Prévia');
+  if (!silencioso) redrawShapes();
+}
+
+/* ── marcas dos desenhos na linha do tempo ── */
+function pintaMarcas(){
+  const seek = $('seek'); if (!seek) return;
+  let box = $('seekMarks');
+  if (!box){
+    const wrap = document.createElement('span'); wrap.className = 'seekwrap';
+    seek.parentNode.insertBefore(wrap, seek); wrap.appendChild(seek);
+    box = document.createElement('div'); box.id = 'seekMarks'; wrap.appendChild(box);
+  }
+  box.innerHTML = '';
+  if (!state.file) return;
+  const a = parseFloat(seek.min) || 0, z = parseFloat(seek.max) || 0;
+  if (!(z > a)) return;
+  (state.drawings || []).forEach(d => {
+    if (d.t < a || d.t > z) return;
+    const f = (d.t - a) / (z - a);
+    const m = document.createElement('button');
+    m.className = 'smark' + ((d.shapes || []).length ? '' : ' fz') + (drawMode && d.id === editingDrawingId ? ' on' : '');
+    m.style.left = 'calc(7px + (100% - 14px) * ' + f.toFixed(5) + ')';
+    m.title = fmt(d.t, true) + ' · ' + ((d.shapes || []).length ? TX('vid.dr.markDraw', 'desenho — clique para editar') : TX('vid.dr.markFreeze', 'freeze — clique para editar'));
+    m.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); editDrawing(d); });
+    box.appendChild(m);
+  });
+}
+video.addEventListener('loadedmetadata', () => setTimeout(pintaMarcas, 50));
+window.addEventListener('resize', () => setTimeout(pintaMarcas, 50));
+
+/* ── monta a coluna de ferramentas e a barra de propriedades fora da imagem ── */
+(function montaTelaDesenho(){
+  const wrap = $('videoWrap'), bar = $('drawbar');
+  if (!wrap || !bar || $('drawRail')) return;
+  const row = document.createElement('div'); row.id = 'stageRow';
+  stage.parentNode.insertBefore(row, stage);
+  const rail = document.createElement('div'); rail.id = 'drawRail';
+  row.appendChild(rail); row.appendChild(stage);
+  bar.querySelectorAll('.dtool').forEach(b => rail.appendChild(b));
+  /* barra de propriedades logo abaixo do video */
+  row.parentNode.insertBefore(bar, row.nextSibling);
+  bar.classList.add('fora');
+  /* navegacao entre desenhos do lance + freeze + previa + cancelar/salvar */
+  const nav = document.createElement('span'); nav.id = 'drawNav'; nav.className = 'dgroup';
+  nav.innerHTML = '<button id="drawNavPrev" type="button">◀</button><span class="dlabel" id="drawNavTxt">—</span><button id="drawNavNext" type="button">▶</button>';
+  bar.insertBefore(nav, bar.firstChild);
+  const fz = document.createElement('span'); fz.className = 'dgroup';
+  fz.innerHTML = '<span class="dlabel">' + TX('vid.dr.freeze', 'freeze') + '</span><input type="number" id="drawFreeze" min="0.5" max="60" step="0.5" value="3"><span class="dlabel">s</span>';
+  const prev = document.createElement('button'); prev.id = 'drawPrev'; prev.type = 'button';
+  prev.textContent = '▶ ' + TX('vid.dr.preview', 'Prévia');
+  prev.title = TX('vid.dr.previewT', 'Toca 2 s antes, congela no desenho e segue 2 s — como no vídeo exportado');
+  const save = $('drawSave'), exit = $('drawExit');
+  bar.insertBefore(fz, save); bar.insertBefore(prev, save);
+  exit.textContent = TX('vid.dr.cancel', 'Cancelar');
+  exit.title = TX('vid.dr.cancelT', 'Sair sem salvar');
+  bar.insertBefore(exit, save);
+  save.classList.add('salvar');
+  $('drawNavPrev').addEventListener('click', () => irDesenho(-1));
+  $('drawNavNext').addEventListener('click', () => irDesenho(1));
+  prev.addEventListener('click', previewDesenho);
+  $('drawFreeze').addEventListener('change', () => { $('freezeSec').value = $('drawFreeze').value; });
+})();
+
 function cloneShape(s){
   return JSON.parse(JSON.stringify(s)); // preserva todas as propriedades (opacity, text, mag, hasBg, etc.)
 }
 
 function editDrawing(d){
+  /* reabrir: primeiro fecha o desenho atual (perguntando se nao foi salvo) */
+  if (drawMode && desenhoSujo()){ sairDoDesenho(() => editDrawing(d)); return; }
+  if (drawMode) setDrawMode(false);
   switchTab('analise');
   cancelFreeze();
+  video.pause();
+  /* desenho fora do lance aberto: sai do lance, senao a trava do lance puxava o video */
+  if (state.clip){ const b = viewBounds(); if (d.t < b.a - 0.05 || d.t > b.b + 0.05) exitClip(); }
   // posiciona o vídeo no quadro do desenho (pausado) e carrega TODOS os desenhos desse mesmo tempo
   const apply = () => {
     video.removeEventListener('seeked', apply);
     video.pause();
     // todos os desenhos no mesmo instante (tolerância de 1 frame)
     const group = state.drawings.filter(x => Math.abs(x.t - d.t) < 0.04);
+    $('freezeSec').value = d.freeze || 3;
+    shapes = [];
+    setDrawMode(true);
     editingDrawingIds = group.map(x => x.id);
     editingDrawingId = d.id; // principal (mantém compatibilidade)
-    shapes = [];
-    group.forEach(g => (g.shapes || []).forEach(s => shapes.push(cloneShape(s))));
-    $('freezeSec').value = d.freeze || 3;
-    setDrawMode(true);
-    redrawShapes();
+    /* carrega depois que a coluna de ferramentas entrou (o palco muda de
+       tamanho) e converte do palco em que o desenho foi feito */
+    requestAnimationFrame(() => {
+      resizeDrawCanvas();
+      const r = stage.getBoundingClientRect(), para = { w: r.width, h: r.height };
+      shapes = [];
+      group.forEach(g => converteShapes(g.shapes || [], palcoDoDesenho(g), para).forEach(s => shapes.push(cloneShape(s))));
+      _drawSnap = JSON.stringify(shapes);
+      redrawShapes(); pintaMarcas(); navDesenhos();
+    });
     const extra = group.length > 1 ? ' (' + group.length + TX('vid.f.mergedForEdit') : '';
     log(TX('vid.f.editingDrawing')+' ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
   };
@@ -7325,6 +7620,7 @@ function editDrawing(d){
 }
 
 function renderDrawList(){
+  try { pintaMarcas(); navDesenhos(); } catch (e) {}
   const box = $('drawList');
   box.innerHTML = '';
   const ds = (state.drawings || []).slice().sort((a, b) => a.t - b.t);
@@ -7340,13 +7636,13 @@ function renderDrawList(){
     tEl.className = 'et';
     tEl.textContent = fmt(d.t, true);
     tEl.title = TX('vid.tt.playZoom');
-    tEl.addEventListener('click', () => {
+    tEl.addEventListener('click', () => sairDoDesenho(() => {
       switchTab('analise');
       exitClip();
       cancelFreeze();
       video.currentTime = Math.max(0, d.t - 3);
       video.play();
-    });
+    }));
 
     const info = document.createElement('span');
     info.className = 'er';
