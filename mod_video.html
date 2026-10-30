@@ -8556,6 +8556,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         /* sai do freeze em que estava para nao repetir o mesmo erro */
         if (frozenDrawing){ playedDrawings.add(frozenDrawing.id); frozenDrawing = null; }
         if (seekingDraw){ playedDrawings.add(seekingDraw.id); seekingDraw = null; }
+        try { _expProxFreeze = proximoFreeze(tempoQuadroVisto() + quadroDur()); } catch (e3) { _expProxFreeze = null; }
         try { video.play().catch(() => {}); } catch (e2) {}
         raf = requestAnimationFrame(tick);
       }
@@ -8596,6 +8597,10 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         if (performance.now() >= frozenUntil){
           playedDrawings.add(frozenDrawing.id);
           frozenDrawing = null;
+          /* recalcula o proximo freeze ANTES de soltar o video. Antes o vigia
+             de quadros ainda via o freeze que acabou de passar, pausava de
+             novo e o video so voltava meio segundo depois (a "travadinha") */
+          _expProxFreeze = proximoFreeze(tempoQuadroVisto() + quadroDur());
           video.play();
         }
         raf = requestAnimationFrame(tick);
@@ -8625,7 +8630,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
          (clique, tecla, engasgo do navegador) = manda tocar de novo */
       if (video.paused && !video.ended){
         if (!pausadoDesde) pausadoDesde = performance.now();
-        else if (performance.now() - pausadoDesde > 500){ pausadoDesde = 0; try { video.play().catch(() => {}); } catch (e) {} }
+        else if (performance.now() - pausadoDesde > 150){ pausadoDesde = 0; try { video.play().catch(() => {}); } catch (e) {} }
       } else pausadoDesde = 0;
       drawFrameWith(null);
       /* camera lenta: o gravador e em tempo real, entao desacelerar o video
@@ -8640,6 +8645,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
         /* antes tocava enquanto o seek nao terminava: entravam quadros do
            lance anterior com o enquadramento do proximo */
         trocando = true;
+        _expProxFreeze = null;          /* o freeze do lance anterior nao vale no proximo */
         video.pause();
         startSeqAt(group[gi].start, () => { trocando = false; video.play(); });
       }
@@ -8902,7 +8908,7 @@ async function exportCombined(items, baseName){
         function activeAt(t){ for (const d of drawings){ if (elig(d) && t >= d.t - meio() && t <= d.t + 1.0) return d; } return null; }
         function prox(t){ let m = null; drawings.forEach(d => { if (elig(d) && d.t >= t - meio() && (m == null || d.t < m)) m = d.t; }); return m; }
         const alvo = d => d.fr ? d.t + tvFd * 0.3 : d.t;
-        let seekDesde = 0, seekOkDesde = 0;
+        let seekDesde = 0, seekOkDesde = 0, tvParadoDesde = 0;
         function congela(d){
           frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000;
           _pintandoDesenho = d; paint(d.shapes, it);
@@ -8922,7 +8928,7 @@ async function exportCombined(items, baseName){
             /* enquanto busca, nao pinta nada: fica o ultimo quadro bom */
             requestAnimationFrame(loop); return;
           }
-          if (frozen){ _pintandoDesenho = frozen; paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
+          if (frozen){ _pintandoDesenho = frozen; paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tvProx = prox(tvTempo() + tvFd); tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
           const d = activeAt(tvTempo());
           if (d){
             tv.pause();
@@ -8932,6 +8938,11 @@ async function exportCombined(items, baseName){
             } else congela(d);
             requestAnimationFrame(loop); return;
           }
+          /* aqui o video tem de estar tocando: parado sem motivo, volta a tocar */
+          if (tv.paused && !tv.ended){
+            if (!tvParadoDesde) tvParadoDesde = performance.now();
+            else if (performance.now() - tvParadoDesde > 150){ tvParadoDesde = 0; tv.play().catch(() => {}); }
+          } else tvParadoDesde = 0;
           paint(null, it);
           { const r = slowTaxa(lento, tv.currentTime) || 1;
             if (Math.abs(tv.playbackRate - r) > 0.001) tv.playbackRate = r; }
