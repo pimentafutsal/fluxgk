@@ -739,6 +739,7 @@
     'vid.cine.zoomOut':'Zoom out','vid.cine.zoomReset':'Remove framing',
     'vid.cine.zoomPan':'Drag the picture to move the framing','vid.cine.zoomSaved':'Framing saved on the clip.',
     'vid.exp.eta':'Re-encoding in real time · about ',
+    'vid.dr.locked':'Drawing: the video stays on this frame. Use ▶ Preview to watch it with the drawing, or Save / Cancel.','vid.dr.discardT':'Unsaved drawing','vid.dr.discardQ':'This drawing has not been saved. Discard it?','vid.dr.discard':'Discard','vid.dr.new':'new','vid.dr.stop':'Stop','vid.dr.preview':'Preview','vid.dr.previewT':'Plays 2 s before, freezes on the drawing and continues 2 s — like the exported video','vid.dr.cancel':'Cancel','vid.dr.cancelT':'Leave without saving','vid.dr.freeze':'freeze','vid.dr.markDraw':'drawing — click to edit','vid.dr.markFreeze':'freeze — click to edit',
     'vid.slow.btn':'🐢 Slow','vid.slow.btnT':'Slow motion on part of this clip','vid.slow.lbl':'SLOW MOTION',
     'vid.slow.from':'start here','vid.slow.fromT':'The slow part starts at the current frame',
     'vid.slow.to':'end here','vid.slow.toT':'The slow part ends at the current frame','vid.slow.none':'no slow part',
@@ -806,7 +807,7 @@
     /* exportacao */
     'vid.clipsToExport':'Clips to export','vid.checkInclude':'check what to include',
     'vid.videoProps':'Video properties','vid.quality':'Quality','vid.high':'High','vid.medium':'Medium',
-    'vid.low':'Low (smaller file)','vid.resolution':'Resolution','vid.original':'Original (no re-encode)',
+    'vid.low':'Low (smaller file)','vid.resolution':'Resolution','vid.original':'Original','vid.f.exactCut':'Exact cut, frame by frame — the clips start and end exactly where they were marked. ',
     'vid.format':'Format','vid.webm':'WebM (VP8/9)',
     'vid.overlayName':'Overlay the clip name on the video','vid.burnDrawings':'Burn the drawings into the video',
     'vid.watermark':'Watermark','vid.includeAudio':'Include audio',
@@ -1815,6 +1816,7 @@
     'vid.cine.zoomOut':'Afastar','vid.cine.zoomReset':'Tirar o enquadramento',
     'vid.cine.zoomPan':'Arraste a imagem para mover o enquadramento','vid.cine.zoomSaved':'Enquadramento salvo no lance.',
     'vid.exp.eta':'Regravando em tempo real · cerca de ',
+    'vid.dr.locked':'Desenhando: o vídeo fica parado neste quadro. Use ▶ Prévia para ver com o desenho, ou Salvar / Cancelar.','vid.dr.discardT':'Desenho não salvo','vid.dr.discardQ':'Este desenho ainda não foi salvo. Descartar?','vid.dr.discard':'Descartar','vid.dr.new':'novo','vid.dr.stop':'Parar','vid.dr.preview':'Prévia','vid.dr.previewT':'Toca 2 s antes, congela no desenho e segue 2 s — como no vídeo exportado','vid.dr.cancel':'Cancelar','vid.dr.cancelT':'Sair sem salvar','vid.dr.freeze':'freeze','vid.dr.markDraw':'desenho — clique para editar','vid.dr.markFreeze':'freeze — clique para editar',
     'vid.slow.btn':'🐢 Lento','vid.slow.btnT':'Câmera lenta num trecho deste lance','vid.slow.lbl':'CÂMERA LENTA',
     'vid.slow.from':'início aqui','vid.slow.fromT':'O trecho lento começa no quadro atual',
     'vid.slow.to':'fim aqui','vid.slow.toT':'O trecho lento termina no quadro atual','vid.slow.none':'sem trecho',
@@ -1928,7 +1930,7 @@
     /* exportacao */
     'vid.clipsToExport':'Clipes para exportar','vid.checkInclude':'marque o que incluir',
     'vid.videoProps':'Propriedades do vídeo','vid.quality':'Qualidade','vid.high':'Alta','vid.medium':'Média',
-    'vid.low':'Baixa (arquivo menor)','vid.resolution':'Resolução','vid.original':'Original (sem recodificar)',
+    'vid.low':'Baixa (arquivo menor)','vid.resolution':'Resolução','vid.original':'Original','vid.f.exactCut':'Corte exato, quadro a quadro — os lances começam e terminam exatamente onde foram marcados. ',
     'vid.format':'Formato','vid.webm':'WebM (VP8/9)',
     'vid.overlayName':'Sobrepor o nome do clipe no vídeo','vid.burnDrawings':'Gravar os desenhos no vídeo',
     'vid.watermark':'Marca d’água','vid.includeAudio':'Incluir áudio',

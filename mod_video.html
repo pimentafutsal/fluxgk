@@ -1125,7 +1125,7 @@
             <div class="exprow">
               <label data-i18n="vid.resolution">Resolution</label>
               <select id="expRes">
-                <option data-i18n="vid.original" value="0">Original (no re-encode)</option>
+                <option data-i18n="vid.original" value="0">Original</option>
                 <option value="1080">1080p</option>
                 <option value="720">720p</option>
                 <option value="480">480p</option>
@@ -8092,11 +8092,12 @@ function expHasDrawings(){
 function expHasFraming(){
   return selectedEvents().some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
 }
-function expNeedsReencode(){
-  return $('expTitle').checked || $('expWatermark').checked || parseInt($('expRes').value, 10) > 0
-    || $('expFormat').value === 'webm' || $('expQuality').value !== 'high' || expHasDrawings() || expHasFraming()
-    || selectedEvents().some(e => slowValido(e.slow));
-}
+/* Sempre corte exato. O corte "rapido" (sem regravar) so consegue comecar
+   num quadro-chave: o lance saia alguns segundos ANTES do ponto marcado
+   (5,5 s no caso testado) e diferente do mesmo lance exportado com desenhos.
+   Num editor esportivo o corte tem de ser exato — entao toda exportacao
+   e regravada quadro a quadro.                                          */
+function expNeedsReencode(){ return true; }
 
 function renderExportTab(){
   const box = $('expList');
@@ -8211,14 +8212,7 @@ function updateExpNote(){
   let txt = n + ' clip(s) selected. ';
   if (!n){ txt = TX('vid.msg.pickClip'); }
   else if (reenc){
-    const motivos = [];
-    if (expHasDrawings()) motivos.push(TX('vid.f.burnDrawings'));
-    if ($('expTitle').checked) motivos.push('title');
-    if ($('expWatermark').checked) motivos.push('marca d\'watermark');
-    if (parseInt($('expRes').value,10) > 0) motivos.push(TX('vid.f.changeRes'));
-    if ($('expFormat').value === 'webm') motivos.push('WebM');
-    if ($('expQuality').value !== 'high') motivos.push('qualidade reduzida');
-    txt += 'Re-encoded mode (required for: ' + motivos.join(', ') + '). ' +
+    txt += TX('vid.f.exactCut', 'Exact cut, frame by frame — the clips start and end exactly where they were marked. ') +
       TX('vid.f.realTime');
   } else {
     txt += 'Fast mode: cut without re-encoding (instant, original quality). ' +
@@ -9640,7 +9634,8 @@ async function exportEvents(events, outName, label, opts){
   const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
   /* trecho lento nao da para fazer so recortando o arquivo: precisa regravar */
   const needsSlow = events.some(e => slowValido(e.slow));
-  if (needsZoom || temDesenho || temFreeze || needsSlow){
+  /* sempre regravado: corte exato no quadro (ver expNeedsReencode) */
+  if (true || needsZoom || temDesenho || temFreeze || needsSlow){
     _expWithDraw = comDesenhos;
     await exportReencodedDirect(events, outName);
     return;
