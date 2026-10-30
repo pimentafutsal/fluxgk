@@ -8092,12 +8092,21 @@ function expHasDrawings(){
 function expHasFraming(){
   return selectedEvents().some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
 }
-/* Sempre corte exato. O corte "rapido" (sem regravar) so consegue comecar
-   num quadro-chave: o lance saia alguns segundos ANTES do ponto marcado
-   (5,5 s no caso testado) e diferente do mesmo lance exportado com desenhos.
-   Num editor esportivo o corte tem de ser exato — entao toda exportacao
-   e regravada quadro a quadro.                                          */
-function expNeedsReencode(){ return true; }
+/* Regrava (tempo real) so quando precisa: desenhos/freezes, zoom, camera
+   lenta, titulo, marca d'agua, resolucao, formato ou qualidade. Sem nada
+   disso, usa o corte rapido (quase instantaneo), que comeca no quadro-chave
+   anterior ao lance.                                                    */
+function expTemPausaOuDesenho(){
+  const evs = selectedEvents();
+  const comD = $('expDraw').checked;
+  const dentro = d => evs.some(e => d.t >= e.start - 0.06 && d.t <= e.end);
+  return (state.drawings || []).some(d => dentro(d) && (comD || !(d.shapes || []).length));
+}
+function expNeedsReencode(){
+  return $('expTitle').checked || $('expWatermark').checked || parseInt($('expRes').value, 10) > 0
+    || $('expFormat').value === 'webm' || $('expQuality').value !== 'high' || expTemPausaOuDesenho() || expHasFraming()
+    || selectedEvents().some(e => slowValido(e.slow));
+}
 
 function renderExportTab(){
   const box = $('expList');
@@ -8215,7 +8224,7 @@ function updateExpNote(){
     txt += TX('vid.f.exactCut', 'Exact cut, frame by frame — the clips start and end exactly where they were marked. ') +
       TX('vid.f.realTime');
   } else {
-    txt += 'Fast mode: cut without re-encoding (instant, original quality). ' +
+    txt += TX('vid.f.fastNote', 'Fast mode: cut without re-encoding (almost instant, original quality). The clip starts at the nearest key frame before the marked point — it may begin a few seconds earlier. ') +
       ($('expPerFile').checked ? TX('vid.f.onePerFile') : TX('vid.f.singleFile'));
   }
   note.textContent = txt;
@@ -9634,8 +9643,7 @@ async function exportEvents(events, outName, label, opts){
   const needsZoom = events.some(e => e.exportZoom && e.exportZoom.zoom > 1.001);
   /* trecho lento nao da para fazer so recortando o arquivo: precisa regravar */
   const needsSlow = events.some(e => slowValido(e.slow));
-  /* sempre regravado: corte exato no quadro (ver expNeedsReencode) */
-  if (true || needsZoom || temDesenho || temFreeze || needsSlow){
+  if (needsZoom || temDesenho || temFreeze || needsSlow){
     _expWithDraw = comDesenhos;
     await exportReencodedDirect(events, outName);
     return;
@@ -9654,7 +9662,20 @@ async function exportEvents(events, outName, label, opts){
     const ranges = events
       .map(e => ({ start: Math.max(0, e.start), end: Math.max(e.start + 0.5, e.end) }));
 
-    const buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label));
+    /* corte exato (sem tempo real) quando o navegador suporta; senao, o corte rapido antigo */
+    let buffer = null;
+    if (exatoSuportado()){
+      try {
+        buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label), { exato: true });
+        log(TX('vid.exp.exactOk', 'Corte exato: os lances começam e terminam exatamente onde foram marcados.'));
+      } catch (e) {
+        if (e && e.message === 'CANCELLED') throw e;
+        console.warn('[FluxGK] corte exato indisponivel', e);
+        log(TX('vid.exp.exactFallback', 'Corte exato indisponível neste navegador — usando o corte rápido.'), 'err');
+        buffer = null;
+      }
+    }
+    if (!buffer) buffer = await buildClips(state.file, ranges, (frac, phase) => setProgress(frac, phase + ' · ' + label));
     const blob = new Blob([buffer], { type: 'video/mp4' });
     const saved = await saveBlob(blob, outName, 'video/mp4');
     if (saved === null){ log(TX('vid.msg.noFileSaved')); return; }
@@ -9673,7 +9694,184 @@ async function exportEvents(events, outName, label, opts){
   }
 }
 
-function buildClips(file, ranges, progress){
+/* ══════════════════════════════════════════════════════════════
+   EXPORTACAO EXATA SEM REGRAVAR EM TEMPO REAL
+   O corte rapido copiava o video a partir do quadro-chave anterior ao
+   lance (em video de transmissao, ate ~10 s antes). Aqui o lance sai
+   EXATAMENTE como esta marcado:
+   - o video e decodificado a partir do quadro-chave, mas so os quadros
+     de dentro do lance sao recodificados (WebCodecs do navegador, sem
+     tocar o video na tela — bem mais rapido que o tempo real);
+   - o audio e copiado sem recodificar, cortado no mesmo ponto.
+   Vale so para o caminho sem desenhos/zoom/camera lenta. Navegador sem
+   suporte: volta ao corte rapido antigo.                             */
+function exatoSuportado(){
+  return typeof VideoDecoder !== 'undefined' && typeof VideoEncoder !== 'undefined' &&
+         typeof EncodedVideoChunk !== 'undefined' && typeof VideoFrame !== 'undefined';
+}
+async function montarExato(mp4, vInfo, aInfo, valid, file, progress){
+  const vts = vInfo.timescale;
+  const espera = (ms) => new Promise(r => setTimeout(r, ms));
+  const DS = (typeof DataStream !== 'undefined') ? DataStream : (MP4Box && MP4Box.DataStream) ? MP4Box.DataStream : null;
+
+  /* ---- decodificador: configuracao do proprio arquivo ---- */
+  const entry = mp4.getTrackById(vInfo.id).mdia.minf.stbl.stsd.entries[0];
+  const cfgBox = entry.avcC || entry.hvcC || entry.vpcC || entry.av1C;
+  let description;
+  if (cfgBox && DS){
+    const st = new DS(undefined, 0, DS.BIG_ENDIAN);
+    cfgBox.write(st);
+    description = new Uint8Array(st.buffer, 8);       /* sem o cabecalho do box */
+  }
+  const W = vInfo.video.width, H = vInfo.video.height;
+  const decCfg = { codec: vInfo.codec, codedWidth: W, codedHeight: H };
+  if (description) decCfg.description = description;
+  const decOk = await VideoDecoder.isConfigSupported(decCfg).catch(() => ({ supported: false }));
+  if (!decOk.supported) throw new Error('EXATO_SEM_SUPORTE');
+
+  /* ---- ritmo de quadros do arquivo ---- */
+  const durs = [];
+  valid.forEach(j => j.vSamples.slice(0, 60).forEach(s => { if (s.duration > 0) durs.push(s.duration); }));
+  durs.sort((a, b) => a - b);
+  const frameUs = durs.length ? Math.round(durs[Math.floor(durs.length / 2)] * 1e6 / vts) : 33333;
+  const fps = Math.max(1, Math.min(120, Math.round(1e6 / frameUs)));
+
+  /* ---- codificador: mesma resolucao; se o navegador nao aceitar, 1080p ---- */
+  const durVid = (video && video.duration) || 0;
+  const bitrate = durVid ? Math.max(3e6, Math.min(25e6, Math.round(file.size * 8 / durVid * 1.15))) : 10e6;
+  async function escolheCfg(w, h){
+    for (const codec of ['avc1.640033', 'avc1.640028', 'avc1.4d0033', 'avc1.4d0028', 'avc1.42e033', 'avc1.42e028']){
+      const cfg = { codec: codec, width: w, height: h, bitrate: bitrate, framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
+      const r = await VideoEncoder.isConfigSupported(cfg).catch(() => ({ supported: false }));
+      if (r.supported) return cfg;
+    }
+    return null;
+  }
+  let outW = W, outH = H, encCfg = await escolheCfg(W, H);
+  if (!encCfg && H > 1080){ outH = 1080; outW = Math.round(1080 * W / H / 2) * 2; encCfg = await escolheCfg(outW, outH); }
+  if (!encCfg) throw new Error('EXATO_SEM_SUPORTE');
+  const escala = (outW !== W || outH !== H);
+  let tela = null, tctx = null;
+  if (escala){ tela = new OffscreenCanvas(outW, outH); tctx = tela.getContext('2d'); }
+
+  const saida = []; let encDesc = null, encErr = null;
+  const enc = new VideoEncoder({
+    output: (chunk, meta) => {
+      if (!encDesc && meta && meta.decoderConfig && meta.decoderConfig.description) encDesc = meta.decoderConfig.description;
+      const d = new Uint8Array(chunk.byteLength); chunk.copyTo(d);
+      saida.push({ data: d, ts: chunk.timestamp, key: chunk.type === 'key' });
+    },
+    error: (e) => { encErr = e; }
+  });
+  enc.configure(encCfg);
+  const keyInt = Math.max(1, fps * 2);     /* quadro-chave a cada ~2 s no arquivo final */
+
+  let offUs = 0, nTot = 0;
+  const totalQ = valid.reduce((a, j) => a + j.vSamples.length, 0) || 1;
+  let feitos = 0;
+  for (let ci = 0; ci < valid.length; ci++){
+    const j = valid[ci];
+    const startUs = Math.round(j.start * 1e6), endUs = Math.round(j.end * 1e6);
+    const meio = frameUs / 2;
+    let decErr = null, primeiro = true, ultimoRel = -1, nClip = 0;
+    const dec = new VideoDecoder({
+      output: (frame) => {
+        const ts = frame.timestamp;
+        /* so o que esta DENTRO do lance marcado */
+        if (ts < startUs - meio || ts > endUs + meio){ frame.close(); return; }
+        const rel = ts - startUs < 0 ? 0 : ts - startUs;
+        let fonte = frame;
+        if (escala){ tctx.drawImage(frame, 0, 0, outW, outH); frame.close(); fonte = tela; }
+        const vf = new VideoFrame(fonte, { timestamp: offUs + rel, duration: frameUs });
+        if (fonte === frame) frame.close();
+        enc.encode(vf, { keyFrame: primeiro || (nTot % keyInt === 0) });
+        vf.close();
+        primeiro = false; nClip++; nTot++;
+        if (rel > ultimoRel) ultimoRel = rel;
+      },
+      error: (e) => { decErr = e; }
+    });
+    dec.configure(decCfg);
+    for (const s of j.vSamples){
+      if (cancelRequested){ try { dec.close(); enc.close(); } catch (e) {} throw new Error('CANCELLED'); }
+      if (decErr) throw decErr;
+      if (encErr) throw encErr;
+      dec.decode(new EncodedVideoChunk({
+        type: s.is_sync ? 'key' : 'delta',
+        timestamp: Math.round(s.cts * 1e6 / vts),
+        duration: Math.round(s.duration * 1e6 / vts),
+        data: s.data
+      }));
+      feitos++;
+      while (dec.decodeQueueSize > 12 || enc.encodeQueueSize > 12) await espera(2);
+      if (feitos % 30 === 0){
+        progress(Math.min(0.96, feitos / totalQ), TX('vid.exp.exactProg', 'Corte exato') + ' · ' + (ci + 1) + '/' + valid.length);
+        await microYield();
+      }
+    }
+    await dec.flush();
+    try { dec.close(); } catch (e) {}
+    if (decErr) throw decErr;
+    const durClip = (ultimoRel >= 0 ? ultimoRel + frameUs : Math.max(frameUs, endUs - startUs));
+    j.exOffUs = offUs; j.exDurUs = durClip;
+    offUs += durClip;
+    if (!nClip) log('⚠ ' + TX('vid.exp.exactEmpty', 'Lance sem quadros no trecho marcado') + ' (' + fmt(j.start, true) + ')', 'err');
+  }
+  await enc.flush();
+  try { enc.close(); } catch (e) {}
+  if (encErr) throw encErr;
+  if (!saida.length) throw new Error(TX('vid.msg.noFrames'));
+
+  /* ---- monta o MP4 ---- */
+  progress(0.98, 'Montando arquivo final');
+  const TS = 90000;
+  const out = MP4Box.createFile();
+  const vOpts = { timescale: TS, width: outW, height: outH, type: 'avc1', language: 'und' };
+  if (encDesc) vOpts.avcDecoderConfigRecord = (encDesc instanceof ArrayBuffer) ? encDesc : (encDesc.buffer ? encDesc.buffer.slice(encDesc.byteOffset || 0, (encDesc.byteOffset || 0) + encDesc.byteLength) : encDesc);
+  const vOutId = out.addTrack(vOpts);
+  saida.sort((a, b) => a.ts - b.ts);
+  for (let i = 0; i < saida.length; i++){
+    const c = saida[i];
+    const prox = saida[i + 1];
+    const durUs = prox ? Math.max(1, prox.ts - c.ts) : frameUs;
+    const t = Math.round(c.ts * TS / 1e6);
+    out.addSample(vOutId, c.data, { duration: Math.round(durUs * TS / 1e6), dts: t, cts: t, is_sync: c.key });
+  }
+
+  /* audio: copiado sem recodificar, cortado nos mesmos pontos */
+  if (aInfo){
+    try {
+      const ats = aInfo.timescale;
+      const srcAEntry = mp4.getTrackById(aInfo.id).mdia.minf.stbl.stsd.entries[0];
+      const aOutId = out.addTrack({
+        timescale: ats, type: srcAEntry.type, hdlr: 'soun', name: 'Audio',
+        samplerate: aInfo.audio.sample_rate, channel_count: aInfo.audio.channel_count,
+        samplesize: aInfo.audio.sample_size || 16, language: 'und',
+      });
+      out.getTrackById(aOutId).mdia.minf.stbl.stsd.entries = [srcAEntry];
+      for (const j of valid){
+        const a0 = j.start * ats, a1 = (j.start + j.exDurUs / 1e6) * ats;
+        const base = Math.round(j.exOffUs / 1e6 * ats);
+        (j.aRaw || []).filter(s => s.cts >= a0 && s.cts < a1).sort((x, y) => x.cts - y.cts).forEach(s => {
+          const rel = Math.round(s.cts - a0) + base;
+          out.addSample(aOutId, s.data, { duration: s.duration, dts: rel, cts: rel, is_sync: true });
+        });
+      }
+    } catch (e) { log(TX('vid.f.audioFail'), 'err'); }
+  }
+  valid.forEach(j => { j.vSamples = null; j.aRaw = null; });
+
+  let buffer = null;
+  if (typeof out.getBuffer === 'function'){ try { buffer = out.getBuffer(); } catch (e) { buffer = null; } }
+  if (!buffer){
+    if (!DS) throw new Error(TX('vid.f.mp4Fail'));
+    const ds = new DS(); ds.endianness = DS.BIG_ENDIAN; out.write(ds); buffer = ds.buffer;
+  }
+  return buffer;
+}
+
+function buildClips(file, ranges, progress, opts){
+  const exato = !!(opts && opts.exato);
   return new Promise((resolve, reject) => {
     (async () => {
       const mp4 = MP4Box.createFile();
@@ -9793,7 +9991,7 @@ function buildClips(file, ranges, progress){
                   j.videoStartSec = j.vSamples[0].cts / vts;
                 }
               } else {
-                if (t > j.end) j.vDone = true;
+                if (t > j.end + (exato ? 0.5 : 0)) j.vDone = true;   /* exato: margem p/ quadros B */
                 else j.vSamples.push(c);
               }
             }
@@ -9845,6 +10043,14 @@ function buildClips(file, ranges, progress){
       if (!valid.length) throw new Error(TX('vid.msg.noFrames'));
       const skipped = jobs.length - valid.length;
       if (skipped) log(skipped + ' clip(s) outside the video duration were ignored.', 'err');
+
+      /* ---- fase 3 (exato): recodifica so o que esta dentro do lance ---- */
+      if (exato){
+        const bufEx = await montarExato(mp4, vInfo, aInfo, valid, file, progress);
+        progress(1, TX('vid.msg.done'));
+        resolve(bufEx);
+        return;
+      }
 
       /* ---- fase 3: remontar o MP4 de saída ---- */
       progress(0.97, 'Montando arquivo final');
