@@ -3494,6 +3494,38 @@ function enforceClipBounds(){
    mostrava o quadro inteiro, mesmo com "Framed (195%)" escrito na barra.
    Aqui ele passa a valer tambem na tela — proporcional ao tamanho atual
    do palco, porque o pan foi gravado em pixels do palco de entao.      */
+
+/* ══ GEOMETRIA DO PALCO ═══════════════════════════════════════
+   Os traços e o enquadramento sao gravados em coordenadas do PALCO
+   (a area preta inteira do player), e o video fica centralizado nele
+   com faixas pretas dos lados. A exportacao tratava essas coordenadas
+   como se fossem do VIDEO: com faixas pretas na tela, o desenho saia
+   deslocado e esticado. Aqui convertemos palco -> video de verdade.  */
+function vidNoPalco(SW, SH, vw, vh){
+  if (!SW || !SH || !vw || !vh) return { w: SW || 0, h: SH || 0, x: 0, y: 0 };
+  const s = Math.min(SW / vw, SH / vh);
+  const w = vw * s, h = vh * s;
+  return { w: w, h: h, x: (SW - w) / 2, y: (SH - h) / 2 };
+}
+/* onde o palco do desenho cai na saida, sabendo que o video ocupa (ox,oy,dw,dh) */
+function caixaDoPalco(SW, SH, vw, vh, ox, oy, dw, dh){
+  if (!SW || !SH) return { x: ox, y: oy, w: dw, h: dh };
+  const v = vidNoPalco(SW, SH, vw, vh);
+  const k = dw / (v.w || dw);
+  return { x: ox - v.x * k, y: oy - v.y * k, w: SW * k, h: SH * k };
+}
+/* palco em que um desenho foi feito (os antigos nao guardavam: usa o atual) */
+function palcoDoDesenho(d){
+  if (d && d.sw && d.sh) return { w: d.sw, h: d.sh };
+  const r = stage.getBoundingClientRect();
+  return { w: r.width, h: r.height };
+}
+/* fator do deslocamento (pan) do enquadramento: pixels do palco -> pixels da saida */
+function fatorPan(ez, vw, vh, dw, outW){
+  if (!ez || !ez.stageW || !ez.stageH) return 1;
+  const v = vidNoPalco(ez.stageW, ez.stageH, vw, vh);
+  return v.w ? dw / v.w : outW / ez.stageW;
+}
 function aplicarEnquadramento(ev){
   const ez = ev && ev.exportZoom;
   if (!ez || !(ez.zoom > 1.001)) return false;
@@ -6685,8 +6717,16 @@ function redrawShapes(){
   dctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   dctx.restore();
   if (!r.width || !r.height) return;
-  const list = activeFreeze ? activeFreeze.shapes : shapes;
-  list.forEach(s => drawShape(dctx, s, r.width, r.height));
+  const list = activeFreeze ? (activeFreeze.shapes || []) : shapes;
+  if (activeFreeze && activeFreeze.sw && activeFreeze.sh &&
+      (Math.abs(activeFreeze.sw - r.width) > 2 || Math.abs(activeFreeze.sh - r.height) > 2)){
+    /* a janela mudou de tamanho desde o desenho: reposiciona sobre o video */
+    const v = vidNoPalco(r.width, r.height, video.videoWidth, video.videoHeight);
+    const bx = caixaDoPalco(activeFreeze.sw, activeFreeze.sh, video.videoWidth, video.videoHeight, v.x, v.y, v.w, v.h);
+    dctx.save(); dctx.translate(bx.x, bx.y);
+    list.forEach(s => drawShape(dctx, s, bx.w, bx.h));
+    dctx.restore();
+  } else list.forEach(s => drawShape(dctx, s, r.width, r.height));
   if (!activeFreeze && selectedShape && shapes.includes(selectedShape)){
     drawSelectionHighlight(dctx, selectedShape, r.width, r.height);
   }
@@ -7201,6 +7241,7 @@ $('drawSave').addEventListener('click', () => {
     const d = state.drawings.find(x => x.id === editingDrawingId);
     if (d){
       d.shapes = shapes.slice();
+      { const _pr = stage.getBoundingClientRect(); d.sw = Math.round(_pr.width); d.sh = Math.round(_pr.height); }
       d.freeze = f;
       // remove os outros desenhos do mesmo frame que foram reunidos (consolidação)
       if (editingDrawingIds.length > 1){
@@ -7213,7 +7254,8 @@ $('drawSave').addEventListener('click', () => {
   } else {
     /* grava no quadro que esta NA TELA (fr = tempo exato do quadro) */
     const tq = tempoQuadroVisto();
-    state.drawings.push({ id: Date.now(), t: tq, fr: 1, freeze: f, shapes: shapes.slice() });
+    const _pr = stage.getBoundingClientRect();
+    state.drawings.push({ id: Date.now(), t: tq, fr: 1, freeze: f, shapes: shapes.slice(), sw: Math.round(_pr.width), sh: Math.round(_pr.height) });
     log(TX('vid.f.drawingSaved')+' ' + fmt(tq, true) + ' '+TX('vid.f.freezesFor')+' ' + f + 's.', 'ok');
   }
   shapes = [];
@@ -8099,9 +8141,9 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       // aplica o MESMO enquadramento ao vídeo e ao desenho, em torno do centro do canvas
       const applyFraming = () => {
         if (!zoomed) return;
-        const refW = ez.stageW || outW, refH = ez.stageH || outH;
-        const px = ez.panX * (outW / refW);
-        const py = ez.panY * (outH / refH);
+        const kp = fatorPan(ez, video.videoWidth, video.videoHeight, dw, outW);
+        const px = (ez.panX || 0) * kp;
+        const py = (ez.panY || 0) * kp;
         cx.translate(outW / 2 + px, outH / 2 + py);
         cx.scale(ez.zoom, ez.zoom);
         cx.translate(-outW / 2, -outH / 2);
@@ -8121,8 +8163,10 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
       if (_expWithDraw && activeDraw){
         cx.save();
         applyFraming();
-        cx.translate(ox, oy);
-        (activeDraw.shapes || []).forEach(s => drawShape(cx, s, dw, dh));
+        const pal = palcoDoDesenho(activeDraw);
+        const bx = caixaDoPalco(pal.w, pal.h, video.videoWidth, video.videoHeight, ox, oy, dw, dh);
+        cx.translate(bx.x, bx.y);
+        (activeDraw.shapes || []).forEach(s => drawShape(cx, s, bx.w, bx.h));
         cx.restore();
       }
 
@@ -8429,6 +8473,7 @@ async function exportCombined(items, baseName){
     const stopped = new Promise(res => { rec.onstop = res; });
     rec.start(200);
 
+    let _pintandoDesenho = null;
     function paint(shapes, ev){
       const sc = Math.min(outW / tv.videoWidth, outH / tv.videoHeight);
       const dw = tv.videoWidth * sc, dh = tv.videoHeight * sc;
@@ -8440,8 +8485,8 @@ async function exportCombined(items, baseName){
       const zoomed = ez && ez.zoom > 1.001;
       const applyFraming = () => {
         if (!zoomed) return;
-        const refW = ez.stageW || outW, refH = ez.stageH || outH;
-        cx.translate(outW / 2 + ez.panX * (outW / refW), outH / 2 + ez.panY * (outH / refH));
+        const kp = fatorPan(ez, tv.videoWidth, tv.videoHeight, dw, outW);
+        cx.translate(outW / 2 + (ez.panX || 0) * kp, outH / 2 + (ez.panY || 0) * kp);
         cx.scale(ez.zoom, ez.zoom);
         cx.translate(-outW / 2, -outH / 2);
       };
@@ -8449,8 +8494,11 @@ async function exportCombined(items, baseName){
       try { cx.drawImage(tv, ox, oy, dw, dh); } catch (e) {}
       cx.restore();
       if (withDraw && shapes){
-        cx.save(); applyFraming(); cx.translate(ox, oy);
-        shapes.forEach(s => drawShape(cx, s, dw, dh));
+        cx.save(); applyFraming();
+        const pal = palcoDoDesenho(_pintandoDesenho);
+        const bx = caixaDoPalco(pal.w, pal.h, tv.videoWidth, tv.videoHeight, ox, oy, dw, dh);
+        cx.translate(bx.x, bx.y);
+        shapes.forEach(s => drawShape(cx, s, bx.w, bx.h));
         cx.restore();
       }
       if (withTitle && ev && ev.name){
@@ -8522,10 +8570,10 @@ async function exportCombined(items, baseName){
         function loop(){
           if (cancelRequested){ resolve(); return; }
           /* buscando o quadro do freeze: nao pinta o quadro errado com o desenho por cima */
-          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; paint(frozen.shapes, it); } requestAnimationFrame(loop); return; }
-          if (frozen){ paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
+          if (seeking){ if (!tv.seeking){ frozen = seeking; seeking = null; frozenUntil = performance.now() + Math.max(0.5, frozen.freeze || 3) * 1000; _pintandoDesenho = frozen; paint(frozen.shapes, it); } requestAnimationFrame(loop); return; }
+          if (frozen){ _pintandoDesenho = frozen; paint(frozen.shapes, it); if (performance.now() >= frozenUntil){ played.add(frozen.id); frozen = null; tv.play().catch(() => {}); } requestAnimationFrame(loop); return; }
           const d = activeAt(tv.currentTime);
-          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > (d.fr ? quadroDur() * 0.5 : 0.02)){ seeking = d; tv.currentTime = alvoDoQuadro(d); } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
+          if (d){ tv.pause(); if (Math.abs(tv.currentTime - d.t) > (d.fr ? quadroDur() * 0.5 : 0.02)){ seeking = d; tv.currentTime = alvoDoQuadro(d); } else { frozen = d; frozenUntil = performance.now() + Math.max(0.5, d.freeze || 3) * 1000; _pintandoDesenho = d; paint(d.shapes, it); } requestAnimationFrame(loop); return; }
           paint(null, it);
           { const r = slowTaxa(lento, tv.currentTime) || 1;
             if (Math.abs(tv.playbackRate - r) > 0.001) tv.playbackRate = r; }
