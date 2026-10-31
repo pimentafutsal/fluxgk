@@ -307,6 +307,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     .ms-opt:hover{background:var(--surface2);}
     .ms-opt input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0;cursor:pointer;}
     .ms-all{border-bottom:1px solid var(--border);font-weight:600;font-size:11px;color:var(--mute);letter-spacing:.06em;}
+    /* filtros do dashboard com caixas de selecao */
+    .dms{flex:0 0 auto;min-width:150px;max-width:230px}
+    .dms .ms-trigger{font-size:12px;padding:9px 12px;border-color:var(--border2);border-radius:7px}
+    .dms .ms-trigger.ativo{border-color:var(--ink);font-weight:600}
+    .dms .ms-dropdown{min-width:220px;right:auto;max-height:320px}
+    .dms .ms-opt .dms-nm{flex:1}
+    .dms .dms-so{display:none;border:none;background:var(--surface2,#f1f1ee);color:var(--mute);font:inherit;font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;width:auto}
+    .dms .ms-opt:hover .dms-so{display:inline-block}
+    .dms .dms-so:hover{color:var(--ink)}
     .rep-toggle-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
     .rep-toggle-label{font-size:13px;color:var(--ink);}
     .toggle-sw{position:relative;width:36px;height:20px;flex-shrink:0;}
@@ -1089,6 +1098,90 @@ function removeItem(key,idx){
 
 // ═══ SELECTS ══════════════════════════════════════════════════════
 function fillSelect(id,items,allLabel){
+  _fillSelectBase(id,items,allLabel);
+  if(DMS_IDS.indexOf(id)>-1) dmsBuild(id);
+}
+/* ══ FILTROS DO DASHBOARD COM CAIXAS DE SELECAO ═══════════════
+   Cada filtro (temporada, goleiro, adversario, competicao, local e
+   resultado) vira uma lista com caixas: marque quantos quiser.
+   Os <select> originais continuam escondidos como fonte das opcoes. */
+const DMS_IDS = ['dash-season','dash-gk','dash-opp','dash-comp','dash-ha','dash-out'];
+const DMS = {};                       /* id -> Set dos marcados; ausente = todos */
+function dmsSel(id){ return Object.prototype.hasOwnProperty.call(DMS, id) ? DMS[id] : null; }
+function dmsOk(id, v){ const s = dmsSel(id); return !s || s.has(v); }
+function dmsBuild(id){
+  const sel = document.getElementById(id); if (!sel) return;
+  sel.style.display = 'none';
+  let wrap = document.getElementById(id + '-ms');
+  if (!wrap){
+    wrap = document.createElement('div'); wrap.className = 'ms-wrap dms'; wrap.id = id + '-ms';
+    wrap.innerHTML = '<div class="ms-trigger"><span class="ms-label"></span><span class="ms-arrow">▼</span></div><div class="ms-dropdown"></div>';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.querySelector('.ms-trigger').addEventListener('click', function(e){
+      e.stopPropagation();
+      const dd = wrap.querySelector('.ms-dropdown'), tg = wrap.querySelector('.ms-trigger');
+      const abrir = !dd.classList.contains('open');
+      document.querySelectorAll('.ms-dropdown.open').forEach(x => x.classList.remove('open'));
+      document.querySelectorAll('.ms-trigger.open').forEach(x => x.classList.remove('open'));
+      if (abrir){ dd.classList.add('open'); tg.classList.add('open'); }
+    });
+  }
+  const opts = Array.from(sel.options);
+  const todosOpt = opts.find(o => o.value === '');
+  const itens = opts.filter(o => o.value !== '');
+  const todosLbl = todosOpt ? todosOpt.textContent : TX('st.dms.all', 'Todos');
+  /* tira da selecao o que nao existe mais */
+  if (DMS[id]){
+    const validos = new Set(itens.map(o => o.value));
+    Array.from(DMS[id]).forEach(v => { if (!validos.has(v)) DMS[id].delete(v); });
+    if (DMS[id].size === itens.length && itens.length) delete DMS[id];
+  }
+  const s = dmsSel(id);
+  const marcado = v => !s || s.has(v);
+  const dd = wrap.querySelector('.ms-dropdown');
+  dd.innerHTML = '';
+  const aplicar = () => { dmsBuild(id); try { renderDashboard(); } catch (e) {} };
+  /* "Todos": marca ou desmarca tudo */
+  const lt = document.createElement('label'); lt.className = 'ms-opt ms-all';
+  const ct = document.createElement('input'); ct.type = 'checkbox'; ct.checked = !s;
+  ct.indeterminate = !!s && s.size > 0;
+  ct.addEventListener('change', () => { if (ct.checked) delete DMS[id]; else DMS[id] = new Set(); aplicar(); });
+  const st = document.createElement('span'); st.textContent = todosLbl;
+  lt.appendChild(ct); lt.appendChild(st); dd.appendChild(lt);
+  itens.forEach(o => {
+    const l = document.createElement('label'); l.className = 'ms-opt';
+    const c = document.createElement('input'); c.type = 'checkbox'; c.checked = marcado(o.value);
+    c.addEventListener('change', () => {
+      const atual = s ? new Set(s) : new Set(itens.map(x => x.value));
+      if (c.checked) atual.add(o.value); else atual.delete(o.value);
+      if (atual.size === itens.length) delete DMS[id]; else DMS[id] = atual;
+      aplicar();
+    });
+    const sp = document.createElement('span'); sp.className = 'dms-nm'; sp.textContent = o.textContent;
+    /* "so": um clique deixa marcado apenas este */
+    const so = document.createElement('button'); so.type = 'button'; so.className = 'dms-so';
+    so.textContent = TX('st.dms.only', 'só');
+    so.title = TX('st.dms.onlyT', 'Selecionar só este');
+    so.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); DMS[id] = new Set([o.value]); aplicar(); });
+    l.appendChild(c); l.appendChild(sp); l.appendChild(so); dd.appendChild(l);
+  });
+  /* rotulo do botao */
+  const lab = wrap.querySelector('.ms-label');
+  if (!s) lab.textContent = todosLbl;
+  else if (!s.size) lab.textContent = TX('st.dms.none', 'Nenhum');
+  else {
+    const nomes = itens.filter(o => s.has(o.value)).map(o => o.textContent);
+    lab.textContent = nomes[0] + (nomes.length > 1 ? ' +' + (nomes.length - 1) : '');
+    lab.title = nomes.join(', ');
+  }
+  wrap.querySelector('.ms-trigger').classList.toggle('ativo', !!s);
+}
+function dmsBuildAll(){ DMS_IDS.forEach(dmsBuild); }
+/* monta ja e de novo depois que as traducoes forem aplicadas aos <option> */
+try { dmsBuildAll(); } catch (e) {}
+window.addEventListener('load', function(){ setTimeout(function(){ try { dmsBuildAll(); } catch (e) {} }, 0); });
+
+function _fillSelectBase(id,items,allLabel){
   const el=document.getElementById(id); if(!el) return;
   const cur=el.value;
   el.innerHTML=allLabel?`<option value="">${allLabel}</option>`:'';
@@ -2111,12 +2204,13 @@ function renderDrillDetail(shots, games){
 
 function renderDashboard(){
   const _v=id=>{const e=document.getElementById(id);return e?e.value:'';};
-  const f={season:_v('dash-season'),gk:_v('dash-gk'),opp:_v('dash-opp'),comp:_v('dash-comp'),ha:_v('dash-ha'),out:_v('dash-out')};
-  const games=ST.games.filter(g=>(!f.season||g.season===f.season)&&(!f.opp||g.opponent===f.opp)&&(!f.comp||g.competition===f.comp)
-    &&(!f.ha||(g.homeAway||'home')===f.ha)&&(!f.out||outcomeDe(g)===f.out));
+  /* filtros com varias opcoes marcadas (caixas de selecao) */
+  const games=ST.games.filter(g=>dmsOk('dash-season',g.season)&&dmsOk('dash-opp',g.opponent)&&dmsOk('dash-comp',g.competition)
+    &&dmsOk('dash-ha',(g.homeAway||'home'))&&dmsOk('dash-out',outcomeDe(g)));
   // filter shots by gk if selected
   let shots=games.flatMap(g=>g.shots);
-  if(f.gk) shots=shots.filter(s=>s.gk===f.gk);
+  const fGk=dmsSel('dash-gk');
+  if(fGk) shots=shots.filter(s=>fGk.has(s.gk));
   const _totShots=shots.length;
   shots=_drillAplica(shots,_drillS);     /* recorte feito clicando nos graficos */
   const s=calcStats(shots);
@@ -2127,7 +2221,7 @@ function renderDashboard(){
   document.getElementById('kpi-savepct').textContent=s.total?s.savePct+'%':'—';
   /* ── acoes ofensivas do goleiro (mesmos filtros do painel) ── */
   let offs=games.flatMap(g=>_asArr(g.offActions));
-  if(f.gk) offs=offs.filter(o=>o.gk===f.gk);
+  if(fGk) offs=offs.filter(o=>fGk.has(o.gk));
   const _totOffs=offs.length;
   offs=_drillAplica(offs,_drillO);
   const elOffs=document.getElementById('kpi-offs'); if(elOffs) elOffs.textContent=offs.length;

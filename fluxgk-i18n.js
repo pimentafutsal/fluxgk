@@ -599,6 +599,7 @@
     'st.winShort':'W','st.drawShort':'D','st.lossShort':'L',
     'st.allVenues':'Home and away','st.allOutcomes':'All results',
     'st.record':'Record','st.gf':'GF','st.ga':'GA',
+    'st.dms.all':'All','st.dms.only':'only','st.dms.onlyT':'Select only this one','st.dms.none':'None',
     'st.allSeasons':'All Seasons','st.allGks':'All GKs','st.allOpponents':'All Opponents',
     'st.allComps':'All Competitions','st.allGames':'All Games','st.all':'All',
     /* metricas */
@@ -1677,6 +1678,7 @@
     'st.winShort':'V','st.drawShort':'E','st.lossShort':'D',
     'st.allVenues':'Casa e fora','st.allOutcomes':'Todos os resultados',
     'st.record':'Retrospecto','st.gf':'GP','st.ga':'GC',
+    'st.dms.all':'Todos','st.dms.only':'só','st.dms.onlyT':'Selecionar só este','st.dms.none':'Nenhum',
     'st.allSeasons':'Todas as Temporadas','st.allGks':'Todos os Goleiros','st.allOpponents':'Todos os Adversários',
     'st.allComps':'Todas as Competições','st.allGames':'Todos os Jogos','st.all':'Todos',
     /* metricas */
