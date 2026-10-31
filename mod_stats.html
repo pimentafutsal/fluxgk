@@ -33,6 +33,8 @@
     _SPATH.results=d.dataPath+'/stats/results';
     _SPATH.hdists=d.dataPath+'/stats/hdists';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+    _SPATH.lcPlayers=d.dataPath+'/load/players';      /* elenco do Load Control */
+    _SPATH.minComps=d.dataPath+'/minutes/comps';      /* competicoes ja usadas nos Minutos */
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
     window._hubSeason=se.label||''; window._hubCoach=co.name||'';
@@ -119,7 +121,10 @@
       if(!window._uiBooted){window._uiBooted=true;bootUI();}
       else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
-    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
+    db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{autoGks();}catch(e){}try{populateAllSelects();}catch(e){}_repintarPagina();});
+    /* goleiros: vem do Load Control */
+    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){ST.lcGks=_gksDoLoadControl(snap.val());try{autoGks();}catch(e){}});
+    if(_SPATH.minComps) db.ref(_SPATH.minComps).on('value',function(snap){ST.compsOutros=_asArr(snap.val());try{populateRecordSelects();}catch(e){}});
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
     db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}_repintarPagina();});
     db.ref(_SPATH.moments).on('value',function(snap){var v=snap.val();if(v)ST.moments=_asArr(v);try{renderSkillMomentGroups();renderList('moments');}catch(e){}_repintarPagina();});
@@ -469,8 +474,8 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
       <div data-i18n="st.gameInfo" style="font-weight:700;font-size:15px;margin-bottom:18px;">Game Information</div>
       <div class="g2 mb16">
         <div><div data-i18n="st.date" class="label">Date *</div><input type="date" id="rec-date"></div>
-        <div><div data-i18n="st.opponent" class="label">Opponent *</div><select id="rec-opp"><option data-i18n="st.selectOpponent" value="">Select opponent…</option></select></div>
-        <div><div data-i18n="st.competition" class="label">Competition</div><select id="rec-comp"><option data-i18n="st.selectComp" value="">Select competition…</option></select></div>
+        <div><div data-i18n="st.opponent" class="label">Opponent *</div><input type="text" id="rec-opp" list="dl-rec-opp" autocomplete="off" placeholder="Type or pick…" data-i18n-placeholder="st.oppPh"><datalist id="dl-rec-opp"></datalist></div>
+        <div><div data-i18n="st.competition" class="label">Competition</div><input type="text" id="rec-comp" list="dl-rec-comp" autocomplete="off" placeholder="Type or pick…" data-i18n-placeholder="st.compPh"><datalist id="dl-rec-comp"></datalist></div>
         <div><div data-i18n="st.homeAway" class="label">Home / Away</div>
           <select id="rec-ha" onchange="recSyncMeta()">
             <option data-i18n="st.home" value="home">Home</option>
@@ -875,7 +880,7 @@ function persist(){
   /* adversarios: por clube (compartilhado com o xG) */
   var opp={};
   (ST.clubs||[]).forEach(function(name){
-    var id=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    var id=_idNome(name);
     opp[id]={id:id,name:name,badge:(ST.clubBadges&&ST.clubBadges[name])||''};
   });
   window.fbSet(_SPATH.opponents, opp).catch(e=>console.error('FB opponents:',e));
@@ -1187,6 +1192,55 @@ function _fillSelectBase(id,items,allLabel){
   el.innerHTML=allLabel?`<option value="">${allLabel}</option>`:'';
   items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
 }
+/* ══ CADASTROS AUTOMATICOS ════════════════════════════════════
+   Adversarios e competicoes entram sozinhos na lista quando voce
+   salva um jogo com um nome novo. Goleiros vem do Load Control
+   (elenco ativo do clube nesta temporada). A pagina Setup continua
+   existindo so para corrigir ou apagar algum nome.               */
+function _normNome(s){ return String(s == null ? '' : s).trim().replace(/\s+/g, ' '); }
+function _achaNome(lista, nome){
+  const n = _normNome(nome).toLowerCase();
+  return (lista || []).find(x => _normNome(x).toLowerCase() === n) || null;
+}
+/* id estavel para o Firebase, mesmo com acentos/cirilico (antes virava "-" e um apagava o outro) */
+function _idNome(name){
+  const base = String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (base) return base;
+  let h = 0; const s = String(name || '');
+  for (let i = 0; i < s.length; i++){ h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return 'c' + Math.abs(h).toString(36);
+}
+function _uniao(){
+  const out = [];
+  Array.from(arguments).forEach(l => (l || []).forEach(v => { const n = _normNome(v); if (n && !_achaNome(out, n)) out.push(n); }));
+  return out;
+}
+function _preencheLista(id, itens){
+  const dl = document.getElementById(id); if (!dl) return;
+  dl.innerHTML = '';
+  itens.slice().sort((a, b) => a.localeCompare(b)).forEach(v => { const o = document.createElement('option'); o.value = v; dl.appendChild(o); });
+}
+/* goleiros ativos do Load Control que ainda nao estao na lista */
+function _gksDoLoadControl(players){
+  return Object.values(players || {}).filter(p => p && p.name && (!p.status || p.status === 'ativo')).map(p => _normNome(p.name));
+}
+
+/* nome novo de adversario/competicao no jogo salvo -> entra na lista */
+function autoListas(){
+  let mudou = false;
+  const o = _normNome(CUR.opponent), c = _normNome(CUR.competition);
+  if (o){ const ja = _achaNome(ST.clubs, o); if (ja) CUR.opponent = ja; else { ST.clubs = (ST.clubs || []).concat([o]); CUR.opponent = o; mudou = true; } }
+  if (c){ const ja = _achaNome(ST.comps, c); if (ja) CUR.competition = ja; else { ST.comps = (ST.comps || []).concat([c]); CUR.competition = c; mudou = true; } }
+  if (mudou){ try { persist(); } catch (e) {} try { populateAllSelects(); } catch (e) {} }
+}
+/* goleiros ativos do Load Control entram na lista das Estatisticas */
+function autoGks(){
+  const novos = (ST.lcGks || []).filter(n => !_achaNome(ST.gks, n));
+  if (!novos.length) return;
+  ST.gks = (ST.gks || []).concat(novos);
+  if (window._SPATH && _SPATH.gks) window.fbSet(_SPATH.gks, ST.gks).catch(e => console.error('FB gks:', e));
+  try { populateAllSelects(); } catch (e) {}
+}
 function getSeasons(){return [...new Set(ST.games.map(g=>g.season))].sort().reverse();}
 function populateAllSelects(){
   const seasons=getSeasons();
@@ -1197,13 +1251,9 @@ function populateAllSelects(){
   populateRecordSelects();
 }
 function populateRecordSelects(){
-  ['rec-opp','rec-comp'].forEach(id=>{
-    const el=document.getElementById(id); if(!el) return;
-    const items={'rec-opp':ST.clubs,'rec-comp':ST.comps}[id];
-    const labels={'rec-opp':TX('st.selectOpponent'),'rec-comp':TX('st.selectComp')};
-    el.innerHTML=`<option value="">${labels[id]}</option>`;
-    items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});
-  });
+  /* adversario e competicao: digite um nome novo ou escolha um ja usado */
+  _preencheLista('dl-rec-opp', _uniao(ST.clubs, (ST.games||[]).map(g=>g.opponent)));
+  _preencheLista('dl-rec-comp', _uniao(ST.comps, ST.compsOutros, (ST.games||[]).map(g=>g.competition)));
   if(CUR.opponent) document.getElementById('rec-opp').value=CUR.opponent;
   if(CUR.competition) document.getElementById('rec-comp').value=CUR.competition;
   if(CUR.date) document.getElementById('rec-date').value=CUR.date;
@@ -1645,6 +1695,7 @@ function buildReview(){
 function saveGame(){
   recSyncMeta();
   if(!CUR.date||!CUR.opponent){alert(TX('st.msg.dateOppBack'));return;}
+  autoListas();
   if(editingGameId!==null){
     const gameToSave={...CUR,id:editingGameId};
     const idx=ST.games.findIndex(g=>g.id==editingGameId);

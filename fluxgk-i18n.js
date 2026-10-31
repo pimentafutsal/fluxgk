@@ -476,7 +476,7 @@
     'min.chartByGk':'MINUTES BY GK','min.chartBySeason':'BY SEASON',
     'min.chartByComp':'BY COMPETITION','min.chartByOpp':'BY OPPONENT',
     /* ajustes */
-    'min.setupSub':'Manage goalkeepers, opponents, competitions and seasons.',
+    'min.setupSub':'Opponents and competitions are saved automatically when you record a game; goalkeepers come from Load Control. Use this page only to fix or remove a name.','st.oppPh':'Type or pick…','st.compPh':'Type or pick…',
     'min.opponents':'Opponents / Clubs','min.competitions':'Competitions',
     'min.noItems':'No items yet.','min.noGks':'No GKs in settings.','min.myClub':'My Club',
     /* PDF */
@@ -649,7 +649,7 @@
     'st.alsoIndividual':'Also export each game individually in the same report',
     'st.noneSelected':'None selected','st.group':'Group','st.indivBreakdown':'Individual Game Breakdown',
     /* ajustes */
-    'st.setupSub':'Manage opponents, competitions and goalkeepers for this context.',
+    'st.setupSub':'Opponents and competitions are saved automatically when you record a game; goalkeepers come from Load Control. Use this page only to fix or remove a name.',
     'st.opponents':'Opponents / Clubs','st.competitions':'Competitions','st.goalkeepers':'Goalkeepers',
     'st.add':'Add','st.uploadBadge':'Upload badge','st.change':'Change','st.myClub':'My Club',
     'st.fbConn':'Firebase connection',
@@ -1555,7 +1555,7 @@
     'min.chartByGk':'MINUTOS POR GOLEIRO','min.chartBySeason':'POR TEMPORADA',
     'min.chartByComp':'POR COMPETIÇÃO','min.chartByOpp':'POR ADVERSÁRIO',
     /* ajustes */
-    'min.setupSub':'Gerencie goleiros, adversários, competições e temporadas.',
+    'min.setupSub':'Adversários e competições entram sozinhos quando você salva um jogo; os goleiros vêm do Load Control. Use esta página só para corrigir ou apagar um nome.','st.oppPh':'Digite ou escolha…','st.compPh':'Digite ou escolha…',
     'min.opponents':'Adversários / Clubes','min.competitions':'Competições',
     'min.noItems':'Nenhum item ainda.','min.noGks':'Nenhum goleiro nos ajustes.','min.myClub':'Meu Clube',
     /* PDF */
@@ -1728,7 +1728,7 @@
     'st.alsoIndividual':'Exportar também cada jogo individualmente no mesmo relatório',
     'st.noneSelected':'Nenhum selecionado','st.group':'Grupo','st.indivBreakdown':'Detalhamento por Jogo',
     /* ajustes */
-    'st.setupSub':'Gerencie adversários, competições e goleiros deste contexto.',
+    'st.setupSub':'Adversários e competições entram sozinhos quando você salva um jogo; os goleiros vêm do Load Control. Use esta página só para corrigir ou apagar um nome.',
     'st.opponents':'Adversários / Clubes','st.competitions':'Competições','st.goalkeepers':'Goleiros',
     'st.add':'Adicionar','st.uploadBadge':'Enviar escudo','st.change':'Alterar','st.myClub':'Meu Clube',
     'st.fbConn':'Conexão com o Firebase',

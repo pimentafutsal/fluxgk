@@ -27,6 +27,8 @@
     _MPATH.gks=d.dataPath+'/minutes/gks';
     _MPATH.comps=d.dataPath+'/minutes/comps';
     _MPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+    _MPATH.lcPlayers=d.dataPath+'/load/players';      /* elenco do Load Control */
+    _MPATH.statsComps=d.dataPath+'/stats/comps';      /* competicoes ja usadas nas Estatisticas */
     console.log('[FluxGK] minutes: jogos em',_MPATH.games);
     var c=d.club||{},se=d.season||{},co=d.coach||{};
     ST.accent=_mHexOk(c.color)?c.color.trim():ST.accent;
@@ -79,7 +81,10 @@
           var g=snap.val(); ST.games=g?Object.values(g):[];
           if(!window._uiBooted){window._uiBooted=true;bootUI();} else{try{refreshAll();}catch(e){}}
         });
-        db.ref(_MPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=v;try{refreshAll();}catch(e){}});
+        db.ref(_MPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=Array.isArray(v)?v.filter(Boolean):Object.values(v);try{autoGks();}catch(e){}try{refreshAll();}catch(e){}});
+        /* goleiros: vem do Load Control */
+        if(_MPATH.lcPlayers) db.ref(_MPATH.lcPlayers).on('value',function(snap){ST.lcGks=_gksDoLoadControl(snap.val());try{autoGks();}catch(e){}});
+        if(_MPATH.statsComps) db.ref(_MPATH.statsComps).on('value',function(snap){var v=snap.val();ST.compsOutros=v?(Array.isArray(v)?v.filter(Boolean):Object.values(v)):[];try{populateAllSelects();}catch(e){}});
         db.ref(_MPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{refreshAll();}catch(e){}});
         db.ref(_MPATH.opponents).on('value',function(snap){
           var v=snap.val();
@@ -269,8 +274,8 @@ tr:hover td{background:var(--surface2);}
     <div data-i18n="min.gameInfo" class="section-hdr">Game Information</div>
     <div class="g3 mb16">
       <div><div data-i18n="min.date" class="label">Date</div><input type="date" id="g-date"></div>
-      <div><div data-i18n="min.opponent" class="label">Opponent</div><select id="g-opp"><option data-i18n="min.selectOpponent" value="">Select opponent…</option></select></div>
-      <div><div data-i18n="min.competition" class="label">Competition</div><select id="g-comp"><option data-i18n="min.selectComp" value="">Select competition…</option></select></div>
+      <div><div data-i18n="min.opponent" class="label">Opponent</div><input type="text" id="g-opp" list="dl-g-opp" autocomplete="off" placeholder="Type or pick…" data-i18n-placeholder="st.oppPh"><datalist id="dl-g-opp"></datalist></div>
+      <div><div data-i18n="min.competition" class="label">Competition</div><input type="text" id="g-comp" list="dl-g-comp" autocomplete="off" placeholder="Type or pick…" data-i18n-placeholder="st.compPh"><datalist id="dl-g-comp"></datalist></div>
     </div>
     <div class="g3 mb16">
       <div><div data-i18n="min.totalGameMin" class="label">Total Game Minutes</div><input type="number" id="g-total-min" value="40" min="1" max="70" placeholder="e.g. 40 or 50 with OT" data-i18n-placeholder="min.ph.totalMin"></div>
@@ -498,6 +503,55 @@ function navTo(page){
   if(page==='report'){populateRepFilters();renderRepTable();}
 }
 
+/* ══ CADASTROS AUTOMATICOS ════════════════════════════════════
+   Adversarios e competicoes entram sozinhos na lista quando voce
+   salva um jogo com um nome novo. Goleiros vem do Load Control
+   (elenco ativo do clube nesta temporada). A pagina Setup continua
+   existindo so para corrigir ou apagar algum nome.               */
+function _normNome(s){ return String(s == null ? '' : s).trim().replace(/\s+/g, ' '); }
+function _achaNome(lista, nome){
+  const n = _normNome(nome).toLowerCase();
+  return (lista || []).find(x => _normNome(x).toLowerCase() === n) || null;
+}
+/* id estavel para o Firebase, mesmo com acentos/cirilico (antes virava "-" e um apagava o outro) */
+function _idNome(name){
+  const base = String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (base) return base;
+  let h = 0; const s = String(name || '');
+  for (let i = 0; i < s.length; i++){ h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return 'c' + Math.abs(h).toString(36);
+}
+function _uniao(){
+  const out = [];
+  Array.from(arguments).forEach(l => (l || []).forEach(v => { const n = _normNome(v); if (n && !_achaNome(out, n)) out.push(n); }));
+  return out;
+}
+function _preencheLista(id, itens){
+  const dl = document.getElementById(id); if (!dl) return;
+  dl.innerHTML = '';
+  itens.slice().sort((a, b) => a.localeCompare(b)).forEach(v => { const o = document.createElement('option'); o.value = v; dl.appendChild(o); });
+}
+/* goleiros ativos do Load Control que ainda nao estao na lista */
+function _gksDoLoadControl(players){
+  return Object.values(players || {}).filter(p => p && p.name && (!p.status || p.status === 'ativo')).map(p => _normNome(p.name));
+}
+
+/* nome novo de adversario/competicao no jogo salvo -> entra na lista */
+function autoListas(g){
+  let mudou = false;
+  const o = _normNome(g.opp), c = _normNome(g.comp);
+  if (o){ const ja = _achaNome(ST.clubs, o); if (ja) g.opp = ja; else { ST.clubs = (ST.clubs || []).concat([o]); g.opp = o; mudou = true; } }
+  if (c){ const ja = _achaNome(ST.comps, c); if (ja) g.comp = ja; else { ST.comps = (ST.comps || []).concat([c]); g.comp = c; mudou = true; } }
+  if (mudou){ try { persist(); } catch (e) {} try { populateAllSelects(); } catch (e) {} }
+}
+/* goleiros ativos do Load Control entram na lista dos Minutos */
+function autoGks(){
+  const novos = (ST.lcGks || []).filter(n => !_achaNome(ST.gks, n));
+  if (!novos.length) return;
+  ST.gks = (ST.gks || []).concat(novos);
+  if (window._MPATH && _MPATH.gks) window.fbSet(_MPATH.gks, ST.gks).catch(e => console.error('FB gks:', e));
+  try { refreshAll(); } catch (e) {}
+}
 // ── SETTINGS LISTS ────────────────────────────────────────────────
 function persist(){
   if(!window._MPATH||!_MPATH.games){console.warn('[FluxGK] minutes: sem contexto do hub');return;}
@@ -505,7 +559,7 @@ function persist(){
   window.fbSet(_MPATH.comps, ST.comps||[]).catch(e=>console.error('FB comps:',e));
   var opp={};
   (ST.clubs||[]).forEach(function(name){
-    var id=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    var id=_idNome(name);
     opp[id]={id:id,name:name};
   });
   window.fbSet(_MPATH.opponents, opp).catch(e=>console.error('FB opponents:',e));
@@ -542,8 +596,9 @@ function fillSelect(id,items,all){
   el.value=cur;
 }
 function populateAllSelects(){
-  fillSelect('g-opp',ST.clubs,TX('min.selectOpponent'));
-  fillSelect('g-comp',ST.comps,TX('min.selectComp'));
+  /* adversario e competicao: digite um nome novo ou escolha um ja usado */
+  _preencheLista('dl-g-opp', _uniao(ST.clubs, (ST.games||[]).map(g=>g.opp)));
+  _preencheLista('dl-g-comp', _uniao(ST.comps, ST.compsOutros, (ST.games||[]).map(g=>g.comp)));
   /* season filter removido — contexto define a temporada */
   /* season filter removido — contexto define a temporada */
   fillSelect('h-comp',ST.comps,'All');
@@ -797,6 +852,7 @@ function saveGame(){
   const g=collectGameData();
   if(!g.date){alert(TX('min.msg.enterDate'));return;}
   if(!g.opp){alert(TX('min.msg.pickOpponent'));return;}
+  autoListas(g);
   // If editing, use the original id
   if(ST.editingGameId){g.id=ST.editingGameId;}
   window.fbSet(_MPATH.games+'/'+g.id,g)
