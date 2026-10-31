@@ -600,6 +600,7 @@
     'st.allVenues':'Home and away','st.allOutcomes':'All results',
     'st.record':'Record','st.gf':'GF','st.ga':'GA',
     'st.dms.all':'All','st.dms.only':'only','st.dms.onlyT':'Select only this one','st.dms.none':'None',
+    'unif.title':'Names that look like the same goalkeeper','unif.sub':'Merging keeps the Load Control name and moves all games (Statistics and Minutes) to it.','unif.do':'Merge','unif.no':'Not the same','unif.confirm':'Merge "{a}" into "{n}"?\n\nAll Statistics and Minutes games recorded with "{a}" will use "{n}", and "{a}" leaves the lists.','unif.noCtx':'No database connection — try again in a moment.','unif.done':'"{a}" merged into "{n}": {s} game(s) in Statistics and {m} in Minutes updated.','unif.fail':'Could not merge now: ',
     'st.allSeasons':'All Seasons','st.allGks':'All GKs','st.allOpponents':'All Opponents',
     'st.allComps':'All Competitions','st.allGames':'All Games','st.all':'All',
     /* metricas */
@@ -1679,6 +1680,7 @@
     'st.allVenues':'Casa e fora','st.allOutcomes':'Todos os resultados',
     'st.record':'Retrospecto','st.gf':'GP','st.ga':'GC',
     'st.dms.all':'Todos','st.dms.only':'só','st.dms.onlyT':'Selecionar só este','st.dms.none':'Nenhum',
+    'unif.title':'Nomes que parecem ser o mesmo goleiro','unif.sub':'Unificar mantém o nome do Load Control e passa todos os jogos (Estatísticas e Minutos) para ele.','unif.do':'Unificar','unif.no':'Não é o mesmo','unif.confirm':'Unificar "{a}" em "{n}"?\n\nTodos os jogos das Estatísticas e dos Minutos registrados com "{a}" passam a "{n}", e "{a}" sai das listas.','unif.noCtx':'Sem conexão com o banco — tente de novo em instantes.','unif.done':'"{a}" unificado em "{n}": {s} jogo(s) nas Estatísticas e {m} nos Minutos atualizados.','unif.fail':'Não foi possível unificar agora: ',
     'st.allSeasons':'Todas as Temporadas','st.allGks':'Todos os Goleiros','st.allOpponents':'Todos os Adversários',
     'st.allComps':'Todas as Competições','st.allGames':'Todos os Jogos','st.all':'Todos',
     /* metricas */

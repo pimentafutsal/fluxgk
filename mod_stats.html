@@ -123,7 +123,7 @@
     });
     db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{autoGks();}catch(e){}try{populateAllSelects();}catch(e){}_repintarPagina();});
     /* goleiros: vem do Load Control */
-    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){ST.lcGks=_gksDoLoadControl(snap.val());try{autoGks();}catch(e){}});
+    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
     if(_SPATH.minComps) db.ref(_SPATH.minComps).on('value',function(snap){ST.compsOutros=_asArr(snap.val());try{populateRecordSelects();}catch(e){}});
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
     db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}_repintarPagina();});
@@ -178,6 +178,14 @@ body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height
 .page{display:none;}
 .page.active{display:block;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.unifBox{background:#fff8e6;border:1px solid #f0d58a;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.unif-t{font-weight:700;font-size:13px;margin-bottom:2px}
+.unif-s{font-size:12px;color:var(--mute);margin-bottom:10px}
+.unif-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #f3e3b5}
+.unif-nm{flex:1;min-width:200px;font-size:13px}
+.unif-arr{color:var(--mute);margin:0 4px}
+.unif-src{font-size:10px;font-family:var(--mono);color:var(--mute);margin-left:4px}
+
 .card-title{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;margin-bottom:12px;}
 .page-title{font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;color:var(--ink);}
 .page-sub{color:var(--mute);font-size:12px;margin-bottom:20px;}
@@ -452,6 +460,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 <div id="page-record" class="page">
   <div data-i18n="st.tab.record" class="page-title">Record Game</div>
   <div data-i18n="st.addShotsHint" class="page-sub">Add shots one by one, then save the full game.</div>
+  <div class="unifBox" style="display:none"></div>
   <!-- Edit mode banner -->
   <div id="rec-edit-banner" style="display:none;background:#1a1500;border:1px solid #3a3000;border-radius:8px;padding:10px 16px;margin-bottom:16px;justify-content:space-between;align-items:center;">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -726,6 +735,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 <div id="page-settings" class="page">
   <div data-i18n="st.tab.setup" class="page-title">Setup</div>
   <div data-i18n="st.setupSub" class="page-sub">Manage opponents, competitions and goalkeepers for this context.</div>
+  <div class="unifBox" style="display:none"></div>
   <div class="g2" style="gap:16px;">
 <div class="card">
       <div data-i18n="st.opponents" class="card-title">Opponents / Clubs</div>
@@ -1241,8 +1251,124 @@ function autoGks(){
   if (window._SPATH && _SPATH.gks) window.fbSet(_SPATH.gks, ST.gks).catch(e => console.error('FB gks:', e));
   try { populateAllSelects(); } catch (e) {}
 }
+/* ══ UNIFICAR NOMES DE GOLEIRO ════════════════════════════════
+   O mesmo goleiro podia estar com um nome no Setup ("Jaime") e outro
+   no Load Control ("Jaime Kneiss"). O sistema mostra os pares
+   parecidos (um nome contido no outro) e so unifica com a sua
+   confirmacao: o nome do Load Control fica, e TODOS os jogos das
+   Estatisticas e dos Minutos com o nome antigo passam para ele.  */
+const UNIF_IGN = 'fluxgk_unif_ignorar';
+function _tokNome(n){
+  return String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z0-9Ѐ-ӿ]+/).filter(Boolean);
+}
+function _ignorados(){ try { return JSON.parse(localStorage.getItem(UNIF_IGN) || '[]'); } catch (e) { return []; } }
+function _ignorar(par){ try { const l = _ignorados(); l.push(par); localStorage.setItem(UNIF_IGN, JSON.stringify(l)); } catch (e) {} }
+/* pares {antigo, novo}: nome da lista que nao esta no Load Control, mas
+   cujas palavras estao contidas num (e so um) nome do Load Control */
+function paresParaUnificar(){
+  const lc = ST.lcTodos || [];
+  if (!lc.length) return [];
+  const ign = _ignorados();
+  const out = [];
+  (ST.gks || []).forEach(antigo => {
+    if (_achaNome(lc, antigo)) return;                     /* ja e um nome do Load Control */
+    const ta = _tokNome(antigo); if (!ta.length) return;
+    const cands = lc.filter(n => {
+      const tn = _tokNome(n);
+      return ta.every(t => tn.includes(t)) || tn.every(t => ta.includes(t));
+    });
+    if (cands.length !== 1) return;
+    const par = antigo + '→' + cands[0];
+    if (ign.indexOf(par) > -1) return;
+    out.push({ antigo: antigo, novo: cands[0] });
+  });
+  return out;
+}
+function renderUnif(){
+  const pares = paresParaUnificar();
+  document.querySelectorAll('.unifBox').forEach(box => {
+    if (!pares.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = '';
+    box.innerHTML = '';
+    const t = document.createElement('div'); t.className = 'unif-t';
+    t.textContent = TX('unif.title', 'Nomes que parecem ser o mesmo goleiro');
+    const s = document.createElement('div'); s.className = 'unif-s';
+    s.textContent = TX('unif.sub', 'Unificar mantém o nome do Load Control e passa todos os jogos (Estatísticas e Minutos) para ele.');
+    box.appendChild(t); box.appendChild(s);
+    pares.forEach(p => {
+      const r = document.createElement('div'); r.className = 'unif-r';
+      const nm = document.createElement('span'); nm.className = 'unif-nm';
+      nm.innerHTML = '<b></b> <span class="unif-arr">→</span> <b></b> <span class="unif-src">Load Control</span>';
+      nm.querySelectorAll('b')[0].textContent = p.antigo; nm.querySelectorAll('b')[1].textContent = p.novo;
+      const bOk = document.createElement('button'); bOk.className = 'btn btn-accent btn-sm'; bOk.textContent = TX('unif.do', 'Unificar');
+      bOk.addEventListener('click', () => unificarGoleiro(p.antigo, p.novo, bOk));
+      const bNo = document.createElement('button'); bNo.className = 'btn btn-ghost btn-sm'; bNo.textContent = TX('unif.no', 'Não é o mesmo');
+      bNo.addEventListener('click', () => { _ignorar(p.antigo + '→' + p.novo); renderUnif(); });
+      r.appendChild(nm); r.appendChild(bOk); r.appendChild(bNo);
+      box.appendChild(r);
+    });
+  });
+}
+function _arr(v){ return Array.isArray(v) ? v.filter(x => x != null) : (v ? Object.values(v) : []); }
+/* junta os minutos de dois registros do mesmo goleiro no mesmo jogo */
+function _juntaMin(a, b){
+  if (!a) return b; if (!b) return a;
+  const o = { selected: !!(a.selected || b.selected) };
+  ['h1', 'h2', 'e1', 'e2'].forEach(p => {
+    o[p + 'Ivs'] = _arr(a[p + 'Ivs']).concat(_arr(b[p + 'Ivs']));
+    o[p + 'Secs'] = (a[p + 'Secs'] || 0) + (b[p + 'Secs'] || 0);
+  });
+  o.totalSecs = (a.totalSecs || 0) + (b.totalSecs || 0);
+  return o;
+}
+async function unificarGoleiro(antigo, novo, botao){
+  const msg = TX('unif.confirm', 'Unificar "{a}" em "{n}"?\n\nTodos os jogos das Estatísticas e dos Minutos registrados com "{a}" passam a "{n}", e "{a}" sai das listas.')
+    .split('{a}').join(antigo).split('{n}').join(novo);
+  if (!confirm(msg)) return;
+  const base = window._HUB && _HUB.dataPath;
+  if (!base || !window.fbGet){ alert(TX('unif.noCtx', 'Sem conexão com o banco — tente de novo em instantes.')); return; }
+  if (botao){ botao.disabled = true; botao.textContent = '…'; }
+  const P = { sg: base + '/stats/games', sk: base + '/stats/gks', mg: base + '/minutes/games', mk: base + '/minutes/gks' };
+  const grava = [];
+  let nS = 0, nM = 0;
+  try {
+    /* Estatisticas: goleiro do jogo, de cada finalizacao e de cada acao ofensiva */
+    const sg = (await fbGet(P.sg)).val() || {};
+    Object.keys(sg).forEach(k => {
+      const g = sg[k]; if (!g) return;
+      let mud = false;
+      if (g.gk === antigo){ g.gk = novo; mud = true; }
+      _arr(g.shots).forEach(s => { if (s && s.gk === antigo){ s.gk = novo; mud = true; } });
+      _arr(g.offActions).forEach(o => { if (o && o.gk === antigo){ o.gk = novo; mud = true; } });
+      if (mud){ nS++; grava.push(fbSet(P.sg + '/' + k, g)); }
+    });
+    /* Minutos: os tempos ficam guardados pelo nome do goleiro */
+    const mg = (await fbGet(P.mg)).val() || {};
+    Object.keys(mg).forEach(k => {
+      const g = mg[k]; if (!g || !g.gkData || !g.gkData[antigo]) return;
+      g.gkData[novo] = _juntaMin(g.gkData[novo], g.gkData[antigo]);
+      delete g.gkData[antigo];
+      nM++; grava.push(fbSet(P.mg + '/' + k, g));
+    });
+    /* listas de goleiros dos dois modulos */
+    for (const caminho of [P.sk, P.mk]){
+      const lista = _arr((await fbGet(caminho)).val()).filter(n => _normNome(n).toLowerCase() !== _normNome(antigo).toLowerCase());
+      if (!_achaNome(lista, novo)) lista.push(novo);
+      grava.push(fbSet(caminho, lista));
+    }
+    await Promise.all(grava);
+    alert(TX('unif.done', '"{a}" unificado em "{n}": {s} jogo(s) nas Estatísticas e {m} nos Minutos atualizados.')
+      .split('{a}').join(antigo).split('{n}').join(novo).split('{s}').join(nS).split('{m}').join(nM));
+  } catch (e) {
+    console.error('[FluxGK] unificar', e);
+    alert(TX('unif.fail', 'Não foi possível unificar agora: ') + (e && e.message || e));
+    if (botao){ botao.disabled = false; botao.textContent = TX('unif.do', 'Unificar'); }
+  }
+}
 function getSeasons(){return [...new Set(ST.games.map(g=>g.season))].sort().reverse();}
 function populateAllSelects(){
+  try{ renderUnif(); }catch(e){}   /* lista de goleiros mudou: revisa os nomes parecidos */
   const seasons=getSeasons();
   ['dash-season','hist-season','rep-season'].forEach(id=>fillSelect(id,seasons,TX('st.allSeasons')));
   ['dash-gk','hist-gk','rep-gk'].forEach(id=>fillSelect(id,ST.gks,TX('st.allGks')));
