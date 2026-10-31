@@ -123,7 +123,7 @@
     });
     db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{autoGks();}catch(e){}try{populateAllSelects();}catch(e){}_repintarPagina();});
     /* goleiros: vem do Load Control */
-    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
+    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});ST.lcStatus={};Object.values(v||{}).forEach(function(p){if(p&&p.name)ST.lcStatus[_normNome(p.name).toLowerCase()]=p.status||'ativo';});try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
     if(_SPATH.minComps) db.ref(_SPATH.minComps).on('value',function(snap){ST.compsOutros=_asArr(snap.val());try{populateRecordSelects();}catch(e){}});
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
     db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}_repintarPagina();});
@@ -1388,11 +1388,22 @@ function populateRecordSelects(){
   // populate sf-gk (per-shot GK selector)
   populateShotGkSelect();
 }
+
+/* Coleta mostra so quem esta disponivel: goleiro emprestado (ou com outra
+   situacao fora do elenco no Load Control) some da escalacao e dos
+   seletores. Continua na lista para historico, relatorios e filtros. */
+function _foraDoElenco(nome){
+  const s = (ST.lcStatus || {})[_normNome(nome).toLowerCase()];
+  return !!s && s !== 'ativo';
+}
+function gksColeta(atual){
+  return (ST.gks || []).filter(n => !_foraDoElenco(n) || n === atual);   /* mantem o ja escolhido */
+}
 function populateShotGkSelect(selectedGk){
   const el=document.getElementById('sf-gk'); if(!el) return;
   const cur=selectedGk||lastShotGk||SF.gk||'';
   el.innerHTML='<option value="">GK (optional)…</option>';
-  ST.gks.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
+  gksColeta(cur).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
   if(cur){ SF.gk=cur; }
 }
 function populateReportFilters(){
@@ -1687,7 +1698,7 @@ function populateOffGkSelect(selectedGk){
   const el=document.getElementById('off-gk'); if(!el) return;
   const cur=selectedGk||lastShotGk||OA.gk||'';
   el.innerHTML='<option value="">'+_txf('st.ph.gkOpt','GK (optional)…')+'</option>';
-  ST.gks.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
+  gksColeta(cur).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o);});
   if(cur){ OA.gk=cur; }
 }
 function updateOffNum(){
@@ -1949,7 +1960,7 @@ function showHistShotForm(gameId,idx){
     return lista.map(o=>`<button class="mc-btn${cur===o?' active':''}" onclick="histMcSel(this,'${field}','${String(o).replace(/'/g,"\\'")}')">${stLbl(o)}</button>`).join('');
   }
   function gkOpts(cur){
-    return `<option value="">GK (optional)…</option>`+ST.gks.map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
+    return `<option value="">GK (optional)…</option>`+gksColeta(cur).map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
   }
 
   const goalBtns=[1,2,3,4,5,6].map(z=>`<button class="goal-zone${s.goalZone===z?' active':''}" onclick="histSelGoal(this,${z},'${gameId}')"></button>`).join('');

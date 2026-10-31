@@ -83,7 +83,7 @@
         });
         db.ref(_MPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=Array.isArray(v)?v.filter(Boolean):Object.values(v);try{autoGks();}catch(e){}try{refreshAll();}catch(e){}});
         /* goleiros: vem do Load Control */
-        if(_MPATH.lcPlayers) db.ref(_MPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
+        if(_MPATH.lcPlayers) db.ref(_MPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});ST.lcStatus={};Object.values(v||{}).forEach(function(p){if(p&&p.name)ST.lcStatus[_normNome(p.name).toLowerCase()]=p.status||'ativo';});try{_coletaSeMudou();}catch(e){}try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
         if(_MPATH.statsComps) db.ref(_MPATH.statsComps).on('value',function(snap){var v=snap.val();ST.compsOutros=v?(Array.isArray(v)?v.filter(Boolean):Object.values(v)):[];try{populateAllSelects();}catch(e){}});
         db.ref(_MPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=v;try{refreshAll();}catch(e){}});
         db.ref(_MPATH.opponents).on('value',function(snap){
@@ -203,6 +203,13 @@ select:focus,input:focus{border-color:#999;}
 .gk-minute-row .gk-name{font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 .interval-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
 .time-input{width:88px;font-family:var(--mono);text-align:center;padding:7px 8px;}
+/* entrada/saida compactas (o input[type=text] global esticava para 100%) */
+.interval-row .time-input{width:88px}
+/* 1o tempo ao lado do 2o (e prorrogacoes lado a lado) */
+.halves{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.halves > .card{margin-bottom:20px}
+@media (max-width:900px){.halves{grid-template-columns:1fr}}
+.half-empty{color:var(--mute);font-size:13px;padding:6px 2px}
 .interval-del{background:none;border:none;color:var(--mute);cursor:pointer;font-size:16px;transition:color .15s;padding:4px;}
 .interval-del:hover{color:var(--red);}
 .interval-total{font-size:11px;font-family:var(--mono);color:var(--green);font-weight:600;margin-left:4px;}
@@ -320,7 +327,8 @@ tr:hover td{background:var(--surface2);}
     <div id="squad-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
-  <!-- Minutes per Half -->
+  <!-- Minutes per Half: 1o e 2o tempo lado a lado -->
+  <div class="halves">
   <div class="card mb20">
     <div data-i18n="min.pt1" class="section-hdr">Playing Time — 1st Half</div>
     <div id="gk-rows-h1" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -329,8 +337,10 @@ tr:hover td{background:var(--surface2);}
     <div data-i18n="min.pt2" class="section-hdr">Playing Time — 2nd Half</div>
     <div id="gk-rows-h2" style="display:flex;flex-direction:column;gap:12px;"></div>
   </div>
+  </div>
   <!-- Prorrogacao: so aparece quando g-has-ot esta marcado -->
   <div id="ot-sections" style="display:none;">
+    <div class="halves">
     <div class="card mb20">
       <div data-i18n="min.pt.et1" class="section-hdr">Playing Time — Extra Time 1</div>
       <div id="gk-rows-e1" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -338,6 +348,7 @@ tr:hover td{background:var(--surface2);}
     <div class="card mb20">
       <div data-i18n="min.pt.et2" class="section-hdr">Playing Time — Extra Time 2</div>
       <div id="gk-rows-e2" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
     </div>
   </div>
 
@@ -677,6 +688,30 @@ async function unificarGoleiro(antigo, novo, botao){
     if (botao){ botao.disabled = false; botao.textContent = TX('unif.do', 'Unificar'); }
   }
 }
+
+/* Coleta mostra so quem esta disponivel: goleiro emprestado (ou com outra
+   situacao fora do elenco no Load Control) some da escalacao e dos
+   seletores. Continua na lista para historico, relatorios e filtros. */
+function _foraDoElenco(nome){
+  const s = (ST.lcStatus || {})[_normNome(nome).toLowerCase()];
+  return !!s && s !== 'ativo';
+}
+function gksColeta(){
+  const g = ST.editingGameId ? (ST.games || []).find(x => String(x.id) === String(ST.editingGameId)) : null;
+  return (ST.gks || []).filter(n => {
+    if (!_foraDoElenco(n)) return true;
+    const d = g && g.gkData && g.gkData[n];               /* jogo antigo em que ele jogou: aparece para editar */
+    return !!(d && (d.selected || d.totalSecs));
+  });
+}
+/* refaz o formulario so se a lista de goleiros disponiveis mudou (nao apaga o que esta sendo digitado a toa) */
+var _ultColeta=null;
+function _coletaSeMudou(){
+  const k=gksColeta().join('|');
+  if(k===_ultColeta) return;
+  _ultColeta=k;
+  buildCollectForm();
+}
 // ── SETTINGS LISTS ────────────────────────────────────────────────
 function persist(){
   if(!window._MPATH||!_MPATH.games){console.warn('[FluxGK] minutes: sem contexto do hub');return;}
@@ -794,14 +829,16 @@ function buildCollectForm(){
 function buildSquadList(){
   const el=document.getElementById('squad-list');
   if(!el)return;
+  /* refazer a lista (dados chegando do banco) nao pode desmarcar quem ja foi escalado */
+  const marcados=new Set([...el.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.id));
   el.innerHTML='';
-  if(ST.gks.length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX('min.noGks')+'</div>';return;}
-  ST.gks.forEach(gk=>{
+  if(gksColeta().length===0){el.innerHTML='<div style="color:var(--mute);font-size:13px;">'+TX('min.noGks')+'</div>';return;}
+  gksColeta().forEach(gk=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
     row.innerHTML=`
       <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;">
-        <input type="checkbox" id="sel-${gk.replace(/\s/g,'_')}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="updateSummary()">
+        <input type="checkbox" id="sel-${gk.replace(/\s/g,'_')}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;" onchange="onSquadChange()">
         <span style="font-weight:600;font-size:13px;">${gk}</span>
       </label>
       <span class="badge badge-mute" id="squad-badge-${gk.replace(/\s/g,'_')}">${TX("min.notSelected")}</span>
@@ -810,6 +847,7 @@ function buildSquadList(){
     // update badge on change
     const cb=row.querySelector('input[type=checkbox]');
     const badge=row.querySelector('.badge');
+    if(marcados.has(cb.id)){cb.checked=true;badge.className='badge badge-green';badge.textContent=TX('min.selectedLbl');}
     cb.addEventListener('change',function(){
       badge.className='badge '+(this.checked?'badge-green':'badge-mute');
       badge.textContent=this.checked?TX('min.selectedLbl'):TX('min.notSelected');
@@ -817,6 +855,12 @@ function buildSquadList(){
   });
 }
 
+var _ivGuardados={h1:{},h2:{},e1:{},e2:{}};
+/* marcou/desmarcou goleiro na escalacao: os tempos mostram so os escalados */
+function onSquadChange(){
+  ['h1','h2','e1','e2'].forEach(buildHalfRows);
+  updateTotals();
+}
 function buildHalfRows(half){
   const el=document.getElementById('gk-rows-'+half);
   if(!el)return;
@@ -829,14 +873,18 @@ function buildHalfRows(half){
       ivs.push({entry:ir.querySelector('.iv-entry').value,exit:ir.querySelector('.iv-exit').value});
     });
     prev[gk]=ivs;
+    _ivGuardados[half][gk]=ivs;      /* guarda: se desmarcar e marcar de novo, volta como estava */
   });
   el.innerHTML='';
   const perMin=periodMin(half);
-  ST.gks.forEach(gk=>{
+  /* so os goleiros marcados na escalacao aparecem aqui */
+  const escalados=gksColeta().filter(gk=>{const cb=document.getElementById('sel-'+gk.replace(/\s/g,'_'));return cb&&cb.checked;});
+  if(!escalados.length){el.innerHTML='<div class="half-empty">'+TX('min.pickSquadFirst','Marque acima os goleiros do jogo.')+'</div>';return;}
+  escalados.forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     const row=document.createElement('div');
     row.className='gk-minute-row';row.dataset.gk=gk;
-    const initIvs=prev[gk]||[{entry:perMin+':00',exit:''}];
+    const initIvs=prev[gk]||_ivGuardados[half][gk]||[{entry:perMin+':00',exit:''}];
     row.innerHTML=`
       <div class="gk-name">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -878,7 +926,7 @@ function addInterval(half,gkId,entryVal,exitVal){
 }
 
 function updateTotals(){
-  ST.gks.forEach(gk=>{
+  gksColeta().forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     ['h1','h2','e1','e2'].forEach(half=>{
       const container=document.getElementById('intervals-'+half+'-'+gkId);
@@ -903,11 +951,11 @@ function updateSummary(){
   const card=document.getElementById('game-summary-card');
   const content=document.getElementById('game-summary-content');
   if(!card||!content)return;
-  if(ST.gks.length===0){card.style.display='none';return;}
+  if(gksColeta().length===0){card.style.display='none';return;}
   card.style.display='block';
   const totalGameMin=(parseInt(document.getElementById('g-total-min').value)||40)*60;
   let html='<div style="display:flex;flex-direction:column;gap:8px;">';
-  ST.gks.forEach(gk=>{
+  gksColeta().forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     const selCb=document.getElementById('sel-'+gkId);
     const selected=selCb&&selCb.checked;
@@ -950,7 +998,7 @@ function collectGameData(){
   const hasOT=otOn();
   const etMin=parseInt(document.getElementById('g-et-min').value)||5;
   const gkData={};
-  ST.gks.forEach(gk=>{
+  gksColeta().forEach(gk=>{
     const gkId=gk.replace(/\s/g,'_');
     const selCb=document.getElementById('sel-'+gkId);
     const selected=selCb&&selCb.checked;
@@ -971,6 +1019,11 @@ function collectGameData(){
       h1Secs:secOf.h1,h2Secs:secOf.h2,e1Secs:secOf.e1,e2Secs:secOf.e2,
       totalSecs};
   });
+  /* editando: goleiro que nao aparece no formulario mantem o que ja estava gravado */
+  if(ST.editingGameId){
+    const orig=(ST.games||[]).find(x=>String(x.id)===String(ST.editingGameId));
+    if(orig&&orig.gkData) Object.keys(orig.gkData).forEach(n=>{ if(!gkData[n]) gkData[n]=orig.gkData[n]; });
+  }
   return {date,opp,comp,season,totalMin,halfMin,hasOT,etMin,gkData,id:Date.now()};
 }
 
@@ -1001,6 +1054,10 @@ function resetGameForm(){
   document.getElementById('g-half-min').value='20';
   const otcb=document.getElementById('g-has-ot'); if(otcb)otcb.checked=false;
   const etm=document.getElementById('g-et-min'); if(etm)etm.value='5';
+  /* jogo novo: escalacao e tempos zerados de verdade */
+  _ivGuardados={h1:{},h2:{},e1:{},e2:{}};
+  const sq=document.getElementById('squad-list'); if(sq) sq.innerHTML='';
+  ['h1','h2','e1','e2'].forEach(h=>{const el=document.getElementById('gk-rows-'+h);if(el)el.innerHTML='';});
   buildCollectForm();
 }
 
@@ -1106,17 +1163,25 @@ function editGame(id){
   buildCollectForm();
   // After form is built, populate squad selection and intervals
   setTimeout(()=>{
-    ST.gks.forEach(gk=>{
+    /* 1) escalacao; 2) linhas de tempo so dos escalados; 3) intervalos gravados */
+    gksColeta().forEach(gk=>{
       const gkId=gk.replace(/\s/g,'_');
       const d=g.gkData&&g.gkData[gk];
       if(!d)return;
-      // Squad selection
       const selCb=document.getElementById('sel-'+gkId);
       if(selCb){
-        selCb.checked=!!d.selected;
+        selCb.checked=!!(d.selected||d.totalSecs);
+        const on=selCb.checked;
         const badge=selCb.closest('label').parentElement.querySelector('.badge');
-        if(badge){badge.className='badge '+(d.selected?'badge-green':'badge-mute');badge.textContent=d.selected?TX('min.selectedLbl'):TX('min.notSelected');}
+        if(badge){badge.className='badge '+(on?'badge-green':'badge-mute');badge.textContent=on?TX('min.selectedLbl'):TX('min.notSelected');}
       }
+    });
+    _ivGuardados={h1:{},h2:{},e1:{},e2:{}};
+    ['h1','h2','e1','e2'].forEach(h=>{const el=document.getElementById('gk-rows-'+h);if(el)el.innerHTML='';buildHalfRows(h);});
+    gksColeta().forEach(gk=>{
+      const gkId=gk.replace(/\s/g,'_');
+      const d=g.gkData&&g.gkData[gk];
+      if(!d)return;
       // Intervals per period (h1/h2 sempre; e1/e2 se houve prorrogacao)
       ['h1','h2','e1','e2'].forEach(half=>{
         const container=document.getElementById('intervals-'+half+'-'+gkId);

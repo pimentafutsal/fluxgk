@@ -476,7 +476,7 @@
     'min.chartByGk':'MINUTES BY GK','min.chartBySeason':'BY SEASON',
     'min.chartByComp':'BY COMPETITION','min.chartByOpp':'BY OPPONENT',
     /* ajustes */
-    'min.setupSub':'Opponents and competitions are saved automatically when you record a game; goalkeepers come from Load Control. Use this page only to fix or remove a name.','st.oppPh':'Type or pick…','st.compPh':'Type or pick…',
+    'min.pickSquadFirst':'Tick the game\'s goalkeepers above.','min.setupSub':'Opponents and competitions are saved automatically when you record a game; goalkeepers come from Load Control. Use this page only to fix or remove a name.','st.oppPh':'Type or pick…','st.compPh':'Type or pick…',
     'min.opponents':'Opponents / Clubs','min.competitions':'Competitions',
     'min.noItems':'No items yet.','min.noGks':'No GKs in settings.','min.myClub':'My Club',
     /* PDF */
@@ -1556,7 +1556,7 @@
     'min.chartByGk':'MINUTOS POR GOLEIRO','min.chartBySeason':'POR TEMPORADA',
     'min.chartByComp':'POR COMPETIÇÃO','min.chartByOpp':'POR ADVERSÁRIO',
     /* ajustes */
-    'min.setupSub':'Adversários e competições entram sozinhos quando você salva um jogo; os goleiros vêm do Load Control. Use esta página só para corrigir ou apagar um nome.','st.oppPh':'Digite ou escolha…','st.compPh':'Digite ou escolha…',
+    'min.pickSquadFirst':'Marque acima os goleiros do jogo.','min.setupSub':'Adversários e competições entram sozinhos quando você salva um jogo; os goleiros vêm do Load Control. Use esta página só para corrigir ou apagar um nome.','st.oppPh':'Digite ou escolha…','st.compPh':'Digite ou escolha…',
     'min.opponents':'Adversários / Clubes','min.competitions':'Competições',
     'min.noItems':'Nenhum item ainda.','min.noGks':'Nenhum goleiro nos ajustes.','min.myClub':'Meu Clube',
     /* PDF */
