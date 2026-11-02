@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FluxGK · Exportar dados (homologação)</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafaf7;color:#0a0a0a;padding:28px 16px 60px}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:13px;color:#737373;margin-bottom:20px;line-height:1.6}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.7}
+.warn{background:#FAEEDA;border-color:#EF9F27}
+button{font-family:inherit;font-size:14px;padding:10px 18px;border-radius:8px;border:1px solid #0a0a0a;background:#0a0a0a;color:#fff;cursor:pointer;font-weight:600}
+button.sec{background:#fff;color:#0a0a0a;border-color:#d4d4d4}
+button:disabled{opacity:.4;cursor:default}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+label{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f4f4f2;padding:1px 5px;border-radius:4px}
+#log{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;color:#404040}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #f0f0f0;font-size:12px}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#737373}
+td.n{text-align:right;font-family:ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Exportar dados para homologação</h1>
+  <p class="sub">Lê <b>todos os dados da sua conta</b> no Firebase (somente leitura — nada é alterado) e gera um
+  arquivo <b>.md estruturado</b> (índice + uma tabela por coleção + JSON completo) e um <b>.json</b> pronto para importar.</p>
+
+  <div class="card warn">
+    Abra esta página pelo <b>mesmo endereço do sistema</b> (<code>fluxgk.com/exportar-dados.html</code>) e com o FluxGK
+    já logado neste navegador — ela usa a mesma sessão. Os arquivos contêm dados dos atletas: guarde e envie com cuidado.
+  </div>
+
+  <div class="card">
+    <div id="quem">Verificando sessão…</div>
+    <label><input type="checkbox" id="imgs" checked> Incluir imagens (escudos e fotos em base64) no JSON</label>
+    <div class="acoes">
+      <button id="btnLer" disabled>1. Ler dados</button>
+      <button id="btnMd" class="sec" disabled>⤓ Baixar .md</button>
+      <button id="btnJson" class="sec" disabled>⤓ Baixar .json</button>
+    </div>
+  </div>
+
+  <div class="card" id="resumo" style="display:none"></div>
+  <div class="card"><div id="log">—</div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* mesma configuracao do hub (index.html) */
+var FBC={
+  apiKey:"AIzaSyAJcwMEwbpUvf2mrY9ej1xz6e0Ma_z65yY",
+  authDomain:"fluxgksystem.firebaseapp.com",
+  databaseURL:"https://fluxgksystem-default-rtdb.firebaseio.com",
+  projectId:"fluxgksystem",
+  storageBucket:"fluxgksystem.firebasestorage.app",
+  messagingSenderId:"663122789948",
+  appId:"1:663122789948:web:f5a8f9b19fc33870df6539"
+};
+var $=function(id){return document.getElementById(id);};
+function log(m){ var el=$('log'); el.textContent=(el.textContent==='—'?'':el.textContent+'\n')+m; }
+var USER=null, DADOS=null, MD='', JSON_TXT='';
+
+firebase.initializeApp(FBC);
+firebase.auth().onAuthStateChanged(function(u){
+  if(!u){ $('quem').innerHTML='<b>Sem sessão.</b> Abra o FluxGK neste navegador, faça login e depois recarregue esta página.'; return; }
+  USER=u;
+  $('quem').innerHTML='Conta: <b>'+(u.email||u.uid)+'</b> · uid <code>'+u.uid+'</code>';
+  $('btnLer').disabled=false;
+});
+
+/* ── utilidades ── */
+function ehObj(v){ return v!==null && typeof v==='object'; }
+function ehEscalar(v){ return v===null || ['string','number','boolean'].indexOf(typeof v)>-1; }
+function ehImagem(v){ return typeof v==='string' && v.slice(0,5)==='data:'; }
+function kb(s){ return Math.round(s.length*0.75/1024); }
+function semImagens(v){
+  if(ehImagem(v)) return '[imagem removida da exportação]';
+  if(Array.isArray(v)) return v.map(semImagens);
+  if(ehObj(v)){ var o={}; Object.keys(v).forEach(function(k){ o[k]=semImagens(v[k]); }); return o; }
+  return v;
+}
+/* chave com cara de identificador (gerada pelo sistema) */
+function pareceId(k){
+  return /^\d+$/.test(k) || /^-[A-Za-z0-9_-]{10,}$/.test(k) || (/\d{5,}/.test(k)) || /^[A-Za-z0-9_-]{20,}$/.test(k);
+}
+function campos(o){ return ehObj(o) ? Object.keys(o) : []; }
+/* Um no e "colecao" (os filhos sao registros, as chaves sao ids) quando:
+   - e uma lista; ou
+   - o nome dele e de uma colecao conhecida do FluxGK (clubes, temporadas,
+     adversarios, minutos por goleiro...) ou e o nivel de temporada em data/{clube}; ou
+   - todas as chaves tem cara de id gerado pelo sistema.                  */
+var COLECOES_NOMEADAS=['clubs','seasons','opponents','gkData','data','players','sessions','games','shots','offActions','drawings','events','items','playlists','projects'];
+function ehColecao(node, chave, modelo){
+  if(!ehObj(node)) return false;
+  var ent=Object.keys(node).filter(function(k){ return node[k]!=null; });
+  if(!ent.length) return false;
+  if(!ent.every(function(k){ return ehObj(node[k]); })) return false;
+  if(Array.isArray(node)) return true;
+  if(COLECOES_NOMEADAS.indexOf(chave)>-1) return true;
+  if(modelo.length===2 && modelo[0]==='data') return true;         /* data/{clube}/{temporada} */
+  if(modelo.length>=2 && modelo[modelo.length-2]==='sessions' && modelo[modelo.length-1]==='{id}') return true;   /* sessions/{goleiro}/{sessao} */
+  return ent.every(pareceId);
+}
+function celula(v){
+  if(v===null || v===undefined) return '';
+  if(ehImagem(v)) return '(imagem base64, '+kb(v)+' KB)';
+  if(Array.isArray(v) && v.every(ehEscalar)) v=v.join('; ');
+  else if(ehObj(v)) v=JSON.stringify(v);
+  return String(v).replace(/\|/g,'\\|').replace(/\r?\n/g,' ⏎ ');
+}
+
+/* percorre a arvore e agrupa registros em tabelas por "caminho-modelo" */
+function extrair(raiz){
+  var tabelas={};   /* modelo -> {colunas:[], linhas:[]} */
+  function anota(modelo, caminho, reg){
+    var t=tabelas[modelo]||(tabelas[modelo]={colunas:['_caminho'],linhas:[]});
+    var linha={_caminho:caminho};
+    Object.keys(reg).forEach(function(k){
+      var v=reg[k];
+      if(ehEscalar(v) || (Array.isArray(v) && v.every(ehEscalar))){
+        if(t.colunas.indexOf(k)<0) t.colunas.push(k);
+        linha[k]=v;
+      }
+    });
+    t.linhas.push(linha);
+  }
+  function anda(node, modelo, caminho){
+    if(!ehObj(node)) return;
+    if(ehColecao(node, caminho[caminho.length-1], modelo)){
+      Object.keys(node).forEach(function(k){ if(node[k]!=null) anda(node[k], modelo.concat(['{id}']), caminho.concat([k])); });
+      return;
+    }
+    var temEscalar=Object.keys(node).some(function(k){ var v=node[k]; return ehEscalar(v) || (Array.isArray(v)&&v.length&&v.every(ehEscalar)); });
+    if(temEscalar) anota(modelo.join('/')||'(raiz)', caminho.join('/'), node);
+    Object.keys(node).forEach(function(k){
+      var v=node[k];
+      if(ehObj(v) && !(Array.isArray(v) && v.every(ehEscalar))) anda(v, modelo.concat([k]), caminho.concat([k]));
+    });
+  }
+  anda(raiz, [], []);
+  return tabelas;
+}
+
+function gerarMd(raiz, uid, email){
+  var tabelas=extrair(raiz);
+  var nomes=Object.keys(tabelas).sort();
+  var total=nomes.reduce(function(a,n){ return a+tabelas[n].linhas.length; },0);
+  var agora=new Date();
+  var L=[];
+  L.push('# FluxGK — Exportação de dados para homologação');
+  L.push('');
+  L.push('| Campo | Valor |');
+  L.push('|---|---|');
+  L.push('| Gerado em | '+agora.toISOString()+' |');
+  L.push('| Projeto Firebase (origem) | '+FBC.projectId+' |');
+  L.push('| Banco (origem) | '+FBC.databaseURL+' |');
+  L.push('| Conta | '+celula(email||'')+' |');
+  L.push('| Nó exportado | `users/'+uid+'` |');
+  L.push('| Tabelas | '+nomes.length+' |');
+  L.push('| Registros (linhas) | '+total+' |');
+  L.push('| Imagens no JSON | '+($('imgs').checked?'incluídas':'removidas')+' |');
+  L.push('');
+  L.push('## Como fazer a ingestão');
+  L.push('');
+  L.push('1. **Fonte de verdade:** o JSON do Apêndice A (idêntico ao arquivo `.json` baixado junto). As tabelas abaixo são a mesma informação organizada para conferência.');
+  L.push('2. **Destino:** importar o JSON no nó `users/{uid-de-homologação}` do Realtime Database de homologação (Console do Firebase → Realtime Database → ⋮ → *Importar JSON*, posicionado nesse nó).');
+  L.push('3. **Usuário:** se o usuário de homologação tiver outro uid, o conteúdo continua válido — os caminhos internos são relativos a `users/{uid}`.');
+  L.push('4. **Conferência:** depois de importar, compare a contagem de registros por tabela com o Índice abaixo.');
+  L.push('');
+  L.push('**Convenções:** `{id}` no nome da tabela = chave gerada pelo sistema (cada registro tem a sua). `_caminho` = caminho exato do registro dentro de `users/{uid}`. Campos que são listas de valores aparecem separados por `; `; estruturas internas aparecem como JSON na célula ou em tabela própria (o caminho mostra a quem pertencem).');
+  L.push('');
+  L.push('## Índice');
+  L.push('');
+  L.push('| # | Tabela (caminho dentro de `users/{uid}`) | Registros | Colunas |');
+  L.push('|---|---|---:|---:|');
+  nomes.forEach(function(n,i){ L.push('| '+(i+1)+' | `'+n+'` | '+tabelas[n].linhas.length+' | '+(tabelas[n].colunas.length-1)+' |'); });
+  L.push('');
+  L.push('## Tabelas');
+  nomes.forEach(function(n,i){
+    var t=tabelas[n];
+    L.push('');
+    L.push('### '+(i+1)+'. `'+n+'`');
+    L.push('');
+    L.push(t.linhas.length+' registro(s).');
+    L.push('');
+    L.push('| '+t.colunas.map(celula).join(' | ')+' |');
+    L.push('|'+t.colunas.map(function(){ return '---'; }).join('|')+'|');
+    t.linhas.forEach(function(l){ L.push('| '+t.colunas.map(function(c){ return celula(l[c]); }).join(' | ')+' |'); });
+  });
+  L.push('');
+  L.push('## Apêndice A — JSON completo (`users/'+uid+'`)');
+  L.push('');
+  L.push('```json');
+  L.push(JSON_TXT);
+  L.push('```');
+  L.push('');
+  return { md: L.join('\n'), tabelas: tabelas, nomes: nomes, total: total };
+}
+
+function baixar(txt, nome, tipo){
+  var b=new Blob([txt],{type:tipo});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=nome; a.click();
+}
+function carimbo(){ return new Date().toISOString().slice(0,16).replace(/[:T]/g,'-'); }
+
+$('btnLer').addEventListener('click', function(){
+  if(!USER) return;
+  $('btnLer').disabled=true; $('log').textContent='—';
+  log('Lendo users/'+USER.uid+' …');
+  firebase.database().ref('users/'+USER.uid).get().then(function(snap){
+    var v=snap.val()||{};
+    DADOS=$('imgs').checked ? v : semImagens(v);
+    JSON_TXT=JSON.stringify(DADOS, null, 2);
+    log('Dados lidos: '+(JSON_TXT.length/1048576).toFixed(2)+' MB de JSON.');
+    var r=gerarMd(DADOS, USER.uid, USER.email);
+    MD=r.md;
+    log(r.nomes.length+' tabelas · '+r.total+' registros. Pronto para baixar.');
+    var h='<b>Resumo</b><table><tr><th>Tabela</th><th style="text-align:right">Registros</th></tr>';
+    r.nomes.forEach(function(n){ h+='<tr><td><code>'+n.replace(/</g,'&lt;')+'</code></td><td class="n">'+r.tabelas[n].linhas.length+'</td></tr>'; });
+    $('resumo').innerHTML=h+'</table>'; $('resumo').style.display='';
+    $('btnMd').disabled=false; $('btnJson').disabled=false; $('btnLer').disabled=false;
+  }).catch(function(e){
+    log('Erro ao ler: '+(e&&e.message||e));
+    $('btnLer').disabled=false;
+  });
+});
+$('btnMd').addEventListener('click', function(){ baixar(MD, 'fluxgk-homologacao-'+carimbo()+'.md', 'text/markdown'); });
+$('btnJson').addEventListener('click', function(){ baixar(JSON_TXT, 'fluxgk-homologacao-'+carimbo()+'.json', 'application/json'); });
+</script>
+</body>
+</html>
