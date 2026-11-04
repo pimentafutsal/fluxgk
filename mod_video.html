@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK · Video Lab — Teste de Exportação</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -163,6 +164,13 @@
   #drawRail .dtool{border:none;background:rgba(255,255,255,.1);color:#fff;font-size:15px;width:34px;height:32px;padding:0;border-radius:5px;cursor:pointer}
   #drawRail .dtool:hover{background:rgba(255,255,255,.24)}
   #drawRail .dtool.active{background:var(--blue)}
+  #drawRail .dsair{border:none;background:#C8102E;color:#fff;font-size:14px;width:34px;padding:5px 0 4px;border-radius:5px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:1px;margin-bottom:6px;font-weight:700}
+  #drawRail .dsair span{font-size:9px;letter-spacing:.04em;text-transform:uppercase}
+  #drawRail .dsair:hover{filter:brightness(1.1)}
+  .vstatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px}
+  .vstatus:empty{display:none}
+  .vmiss{font-size:11.5px;color:#b45309;font-weight:600}
   #drawbar.fora{position:static;max-width:none;border-radius:0;background:#111;padding:7px 10px;gap:7px}
   #drawbar.fora #drawProps{order:99}
   #drawbar .dgroup{display:inline-flex;align-items:center;gap:5px}
@@ -1826,11 +1834,10 @@ async function projLinkFolder(){
   }
 }
 async function projResolveFile(p, srcName){
+  /* atalho do proprio arquivo → pasta pelo nome → pasta pelo tamanho (renomeado) */
   try{
-    const dir = await projGetFolder(p); if (!dir) return null;
-    if (!(await ensurePerm(dir))) return null;
-    const fh = await dir.getFileHandle(srcName);
-    return await fh.getFile();
+    const v = (p && p.videos || []).find(x => x.srcName === srcName) || { srcName: srcName, srcKey: null };
+    return await acharVideoDoProjeto(p, v, true);
   }catch(e){ return null; }
 }
 /* Extensoes aceitas. Antes so mp4/m4v/mov: um arquivo .mkv ou .mts da camera
@@ -1862,9 +1869,168 @@ async function projOpenVideo(srcName){
   const p = currentProject(); if (!p) return;
   state.projectMode = true;
   const file = await projResolveFile(p, srcName);
-  if (file){ switchTab('analise'); updateProjBar(); loadFile(file); }
-  else { log(TX('vid.proj.notFound') + srcName, 'err'); switchTab('analise'); updateProjBar(); openFilePicker(); }
+  if (file){ switchTab('analise'); updateProjBar(); loadFile(file); return; }
+  /* nao achou: renomeado ou mudou de pasta — localizar e religar os cortes */
+  const v = (p.videos || []).find(x => x.srcName === srcName);
+  if (!v){ log(TX('vid.proj.notFound') + srcName, 'err'); switchTab('analise'); updateProjBar(); openFilePicker(); return; }
+  const ok = await askConfirm(TX('vid.rl.t', 'Vídeo não encontrado'),
+    TX('vid.rl.q', 'Não encontrei "{a}". Ele pode ter sido renomeado ou mudado de pasta. Localize o arquivo: os cortes, desenhos e playlists dele serão religados ao vídeo escolhido.').replace('{a}', srcName),
+    TX('vid.rl.go', 'Localizar vídeo'));
+  if (ok) await localizarVideo(p, v);
 }
+/* ══ VIDEO RENOMEADO OU MOVIDO DE PASTA ═══════════════════════
+   Os cortes de um jogo ficam guardados pela chave "nome|tamanho" do
+   arquivo. Renomear o video (ou leva-lo para outra pasta) fazia o
+   projeto nao acha-lo mais, e abrir o arquivo com o nome novo mostrava
+   a analise vazia — os cortes pareciam ter sumido.
+   Agora:
+   1) cada video aberto pelo projeto guarda o "atalho" do proprio arquivo
+      (vale mesmo se ele mudar de pasta);
+   2) renomeado na MESMA pasta: o sistema acha pelo tamanho e religa sozinho;
+   3) nao achou: botao "Localizar video" — voce escolhe o arquivo onde ele
+      estiver e tudo (cortes, desenhos, playlists) e religado a ele;
+   4) abriu pela bancada um arquivo de mesmo tamanho de um jogo ja cortado:
+      o sistema pergunta se e o mesmo video e traz os cortes.            */
+function tamanhoDaChave(k){ const m = /\|(\d+)$/.exec(k || ''); return m ? Number(m[1]) : null; }
+function nomeDaChave(k){ return String(k || '').replace(/\|\d+$/, ''); }
+const mbTxt = (b) => (b / 1048576).toFixed(0) + ' MB';
+
+async function arquivoPeloAtalho(chave, pedirPermissao){
+  const h = await idbGet('vfile:' + chave); if (!h) return null;
+  try {
+    const op = { mode: 'read' };
+    if (h.queryPermission && (await h.queryPermission(op)) !== 'granted'){
+      if (!pedirPermissao || !h.requestPermission || (await h.requestPermission(op)) !== 'granted') return null;
+    }
+    return await h.getFile();
+  } catch (e) { return null; }      /* arquivo apagado ou movido para fora do alcance */
+}
+/* arquivos de video da pasta do projeto, com tamanho (para achar renomeados) */
+async function arquivosDaPasta(p){
+  const dir = await projGetFolder(p); if (!dir || !(await ensurePerm(dir))) return [];
+  const out = [];
+  try {
+    for await (const e of dir.values()){
+      if (e.kind !== 'file' || !VIDEO_EXT.test(e.name)) continue;
+      try { const f = await e.getFile(); out.push({ nome: e.name, tamanho: f.size, handle: e, file: f }); } catch (x) {}
+    }
+  } catch (x) {}
+  return out;
+}
+/* religa tudo o que apontava para a chave antiga ao arquivo novo */
+function relinkVideo(antiga, file, handle){
+  const nova = file.name + '|' + file.size;
+  if (!antiga || nova === antiga){ if (handle) idbSet('vfile:' + nova, handle); return nova; }
+  const lib = libAll();
+  const velha = lib[antiga];
+  if (velha){
+    const dest = lib[nova];
+    const destTem = dest && ((dest.events || []).length || (dest.drawings || []).length);
+    if (!destTem) lib[nova] = Object.assign({}, velha, { name: file.name, size: file.size, savedAt: Date.now(), renomeadoDe: nomeDaChave(antiga) });
+    /* a antiga fica guardada (por seguranca), so escondida da biblioteca */
+    lib[antiga] = Object.assign({}, velha, { movedTo: nova, savedAt: Date.now() });
+    libWrite(lib);
+  }
+  (state.projects || []).forEach(p => {
+    (p.videos || []).forEach(v => { if (v.srcKey === antiga){ v.srcKey = nova; v.srcName = file.name; } });
+    const vistos = {};
+    p.videos = (p.videos || []).filter(v => { if (vistos[v.srcKey]) return false; vistos[v.srcKey] = 1; return true; });
+    projPlaylistsOf(p).forEach(pl => plFlat(pl).forEach(it => { if (it && it.srcKey === antiga){ it.srcKey = nova; it.srcName = file.name; } }));
+  });
+  projPersist();
+  if (handle) idbSet('vfile:' + nova, handle);
+  log(TX('vid.rl.feito', 'Vídeo religado: ') + nomeDaChave(antiga) + ' → ' + file.name, 'ok');
+  return nova;
+}
+/* procura o video de um projeto: atalho do arquivo → pasta pelo nome → pasta pelo tamanho */
+async function acharVideoDoProjeto(p, v, pedirPermissao){
+  if (!v) return null;
+  if (v.srcKey){
+    const f = await arquivoPeloAtalho(v.srcKey, pedirPermissao);
+    if (f && f.size === tamanhoDaChave(v.srcKey)){
+      if (f.name !== v.srcName) relinkVideo(v.srcKey, f, null);     /* renomeado, o atalho continua valendo */
+      return f;
+    }
+  }
+  try {
+    const dir = await projGetFolder(p);
+    if (dir && (await ensurePerm(dir))){
+      try { const fh = await dir.getFileHandle(v.srcName); const f = await fh.getFile(); idbSet('vfile:' + (v.srcKey || (f.name + '|' + f.size)), fh); return f; } catch (e) {}
+      /* nao esta com o nome antigo: renomeado na mesma pasta? (mesmo tamanho, exato) */
+      const tam = tamanhoDaChave(v.srcKey);
+      if (tam){
+        const registrados = (p.videos || []).map(x => x.srcName);
+        const iguais = (await arquivosDaPasta(p)).filter(a => a.tamanho === tam && !registrados.includes(a.nome));
+        if (iguais.length === 1){ relinkVideo(v.srcKey, iguais[0].file, iguais[0].handle); return iguais[0].file; }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+/* "Localizar video": escolher o arquivo onde ele estiver */
+async function localizarVideo(p, v){
+  let file = null, handle = null;
+  if (window.showOpenFilePicker){
+    try {
+      const [h] = await window.showOpenFilePicker({ id: 'fluxgk-video', multiple: false,
+        types: [{ description: 'Vídeo', accept: { 'video/*': ['.mp4', '.m4v', '.mov', '.mkv', '.webm', '.avi', '.mts', '.m2ts', '.mpg', '.mpeg', '.wmv'] } }] });
+      handle = h; file = await h.getFile();
+    } catch (e) { if (e && e.name === 'AbortError') return false; }
+  }
+  if (!file){ openFilePicker(); return false; }   /* navegador sem o seletor moderno: a bancada pergunta pelo tamanho */
+  const tam = tamanhoDaChave(v.srcKey);
+  if (tam && file.size !== tam){
+    const seg = await askConfirm(TX('vid.rl.tamT', 'Tamanho diferente'),
+      TX('vid.rl.tamQ', 'O arquivo escolhido ({n}) tem tamanho diferente do original ({o}). Se ele foi recortado ou convertido, os tempos dos cortes podem não bater. Religar mesmo assim?')
+        .replace('{n}', mbTxt(file.size)).replace('{o}', mbTxt(tam)),
+      TX('vid.rl.mesmo', 'Religar'));
+    if (!seg) return false;
+  }
+  relinkVideo(v.srcKey, file, handle);
+  state.projectMode = true;
+  switchTab('analise'); updateProjBar(); loadFile(file);
+  return true;
+}
+/* abriu um arquivo pela bancada: se ele tem o tamanho de um jogo ja cortado
+   com outro nome, pergunta se e o mesmo video e traz os cortes */
+async function verificarRenomeado(file){
+  if (!file || (state.events || []).length || (state.drawings || []).length) return;
+  const chave = file.name + '|' + file.size;
+  const cand = Object.entries(libAll()).filter(([k, s]) => k !== chave && !s.movedTo && s.size === file.size &&
+    (((s.events || []).length) || ((s.drawings || []).length)));
+  if (cand.length !== 1) return;
+  const [antiga, s] = cand[0];
+  const ok = await askConfirm(TX('vid.rl.mesmoT', 'É o mesmo vídeo?'),
+    TX('vid.rl.mesmoQ', 'Este arquivo tem exatamente o mesmo tamanho de "{a}", que já tem {c} corte(s). Ele foi renomeado ou mudou de pasta? Se sim, os cortes, desenhos e playlists voltam para ele.')
+      .replace('{a}', s.name || nomeDaChave(antiga)).replace('{c}', (s.events || []).length),
+    TX('vid.rl.trazer', 'Sim, trazer os cortes'));
+  if (!ok) return;
+  relinkVideo(antiga, file, null);
+  restoreSession();
+  if (state.projectMode){ try { projRegisterCurrentVideo(); updateProjBar(); } catch (e) {} }
+}
+/* na aba Projeto: marca os jogos cujo arquivo nao foi encontrado */
+async function marcarVideosAusentes(p){
+  const linhas = Array.from(document.querySelectorAll('#projView .librow[data-vkey]'));
+  if (!linhas.length) return;
+  let mudou = false;
+  for (const row of linhas){
+    const v = (p.videos || []).find(x => x.srcKey === row.dataset.vkey); if (!v) continue;
+    const antesNome = v.srcName;
+    const f = await acharVideoDoProjeto(p, v, false);
+    if (f && f.name !== antesNome) mudou = true;
+    const st = row.querySelector('.vstatus'); if (!st) continue;
+    if (f){ st.textContent = ''; continue; }
+    st.innerHTML = '';
+    const aviso = document.createElement('span'); aviso.className = 'vmiss';
+    aviso.textContent = '⚠ ' + TX('vid.rl.ausente', 'arquivo não encontrado (renomeado ou mudou de pasta?)');
+    const b = document.createElement('button'); b.className = 'mini primary'; b.textContent = TX('vid.rl.go', 'Localizar vídeo');
+    b.addEventListener('click', (e) => { e.stopPropagation(); localizarVideo(p, v); });
+    st.appendChild(aviso); st.appendChild(b);
+  }
+  if (mudou) renderProjectTab();
+}
+
 
 /* barra de contexto do projeto na aba Análise */
 function updateProjBar(){
@@ -2361,13 +2527,15 @@ function playlistAnalise(p, pl){
 /* ---- linha de um jogo (video do projeto) ---- */
 function videoRow(p, v){
   const row = document.createElement('div'); row.className = 'librow';
+  row.dataset.vkey = v.srcKey || '';
   const info = document.createElement('div'); info.style.flex = '1';
   info.innerHTML = '<div class="lname">🎬 ' + escapeHtml(v.srcName || '—') + '</div>';
-  const nClips = projAllClips(p).filter(c => c.srcName === v.srcName).length;
+  const nClips = projAllClips(p).filter(c => c.srcKey === v.srcKey).length;
   const sub = document.createElement('div'); sub.className = 'lsub';
   sub.style.cssText = 'font-size:11px;color:var(--muted)';
   sub.textContent = nClips + ' ' + TX('vid.f.clips');
   info.appendChild(sub);
+  const st = document.createElement('div'); st.className = 'vstatus'; info.appendChild(st);
   row.appendChild(info);
   /* em qual analise este jogo entra */
   const sel = document.createElement('select'); sel.className = 'pfsel'; sel.title = TX('vid.an.pick');
@@ -2665,6 +2833,11 @@ function playlistCard(p, pl){
 }
 
 function renderProjectTab(){
+  _renderProjectTab();
+  const p = currentProject();
+  if (p){ clearTimeout(renderProjectTab._t); renderProjectTab._t = setTimeout(() => { marcarVideosAusentes(p).catch(() => {}); }, 60); }
+}
+function _renderProjectTab(){
   const box = $('projView'); if (!box) return;
   const newWrap = $('projNewWrap');
   const p = currentProject();
@@ -3127,6 +3300,8 @@ function loadFile(file){
   restoreSession();
   if (state.projectMode){ projRegisterCurrentVideo(); updateProjBar(); }
   log(TX('vid.f.videoLoadedSp') + file.name, 'ok');
+  /* arquivo sem cortes mas do mesmo tamanho de um jogo ja cortado: renomeado? */
+  setTimeout(() => { verificarRenomeado(file).catch(() => {}); }, 80);
 }
 
 let _wasAppFsBeforePick = false;
@@ -3146,6 +3321,7 @@ function flushSaveSession(){
     name: state.file.name, size: state.file.size, savedAt: Date.now(),
     events: state.events, nextEventId: state.nextEventId, drawings: state.drawings,
     measureScale: state.measureScale, namedPlaylists: state.namedPlaylists,
+    gkAtual: state.gkAtual || '',
   };
   libWrite(all);
 }
@@ -3160,7 +3336,7 @@ async function startNewEdit(){
   state.file = null; state.url = null;
   try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
   state.events = []; state.nextEventId = 1; state.drawings = [];
-  state.namedPlaylists = []; state.measureScale = null; state.clip = null;
+  state.namedPlaylists = []; state.measureScale = null; state.clip = null; state.gkAtual = '';
   try { exitClip(); } catch (e) {}
   try { cancelFreeze(); } catch (e) {}
   $('videoWrap').classList.remove('on');
@@ -4114,6 +4290,12 @@ $('dashEditGo').addEventListener('click', () => {
   switchTab('dash');
 });
 
+/* o lance marcado por ultimo (maior id) — so mudar o goleiro DELE muda o goleiro em campo;
+   corrigir um lance antigo nao mexe no que vem a seguir */
+function ehUltimoLance(ev){
+  if (!ev || !state.events.length) return false;
+  return ev.id === Math.max.apply(null, state.events.map(e => e.id));
+}
 function addEvent(tag){
   if (!state.file) return;
   if ($('nameModal').classList.contains('on')) return; // já há um lance aguardando nome
@@ -4135,6 +4317,8 @@ function addEvent(tag){
     start: Math.max(0, t - pre),
     end: Math.min(state.duration || (t + post), t + post),
   };
+  /* goleiro em campo: o ultimo escolhido na coleta vem marcado no lance novo */
+  if (state.gkAtual) ev.gk = state.gkAtual;
   state.events.push(ev);
   saveSession();
   updateBadge();
@@ -4226,6 +4410,8 @@ function commitName(){
     namingEv.name = $('nameInput').value.trim() || namingEv.name;
     namingEv.note = $('noteInput').value.trim();
     namingEv.gk = $('gkSelect') ? ($('gkSelect').value || '') : (namingEv.gk || '');
+    /* trocou o goleiro no lance mais recente: ele passa a valer para os proximos */
+    if (ehUltimoLance(namingEv)) state.gkAtual = namingEv.gk || '';
     namingEv.spec = $('specSelect') ? ($('specSelect').value || '') : (namingEv.spec || '');
     namingEv.outcome = namingOutcome;
     saveSession();
@@ -6040,9 +6226,9 @@ function openCtxMenu(x, y){
 
   // atribuir/editar GOLEIRO do(s) lance(s)
   const gkSubs = [];
-  gkSubs.push(ctxItem(TX('vid.gkNone'), () => { sel.forEach(ev => ev.gk = ''); saveSession(); renderPlaylists(); if (currentTab === 'project') renderProjectTab(); }));
+  gkSubs.push(ctxItem(TX('vid.gkNone'), () => { sel.forEach(ev => ev.gk = ''); if (sel.some(ehUltimoLance)) state.gkAtual = ''; saveSession(); renderPlaylists(); if (currentTab === 'project') renderProjectTab(); }));
   gkList().forEach(g => gkSubs.push(ctxItem(g, () => {
-    sel.forEach(ev => ev.gk = g); saveSession(); renderPlaylists();
+    sel.forEach(ev => ev.gk = g); if (sel.some(ehUltimoLance)) state.gkAtual = g; saveSession(); renderPlaylists();
     log(n + TX('vid.gkAssigned') + g + '".', 'ok');
     if (currentTab === 'project') renderProjectTab();
   })));
@@ -6050,7 +6236,7 @@ function openCtxMenu(x, y){
   gkSubs.push(ctxItem(TX('vid.gkNewOpt'), async () => {
     const nm = await askText(TX('vid.gkNewPrompt')); if (!nm || !nm.trim()) return;
     const gg = gkAdd(nm.trim()); if (!gg) return;
-    sel.forEach(ev => ev.gk = gg); saveSession(); renderPlaylists();
+    sel.forEach(ev => ev.gk = gg); if (sel.some(ehUltimoLance)) state.gkAtual = gg; saveSession(); renderPlaylists();
     if (currentTab === 'project') renderProjectTab();
   }));
   menu.appendChild(ctxItem(TX('vid.gkAssign') + plural, null, { sub: gkSubs }));
@@ -7264,7 +7450,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ($('ctxMenu').classList.contains('on')){ closeCtxMenu(); return; }
   if (pending){ pending = null; redrawShapes(); }
-  else if (drawMode) setDrawMode(false);
+  else if (drawMode) sairDoDesenho();      /* Esc sai do desenho (pergunta se houver algo nao salvo) */
 });
 
 /* ---------------- desenhos salvos no tempo (freeze frame) ---------------- */
@@ -7553,6 +7739,12 @@ window.addEventListener('resize', () => setTimeout(pintaMarcas, 50));
   stage.parentNode.insertBefore(row, stage);
   const rail = document.createElement('div'); rail.id = 'drawRail';
   row.appendChild(rail); row.appendChild(stage);
+  /* saida sempre visivel, no topo da coluna de ferramentas */
+  const sair = document.createElement('button'); sair.type = 'button'; sair.className = 'dsair';
+  sair.innerHTML = '✕<span>' + TX('vid.dr.sair', 'Sair') + '</span>';
+  sair.title = TX('vid.dr.sairT', 'Sair do desenho (Esc)');
+  sair.addEventListener('click', () => sairDoDesenho());
+  rail.appendChild(sair);
   bar.querySelectorAll('.dtool').forEach(b => rail.appendChild(b));
   /* barra de propriedades logo abaixo do video */
   row.parentNode.insertBefore(bar, row.nextSibling);
@@ -9436,6 +9628,7 @@ function saveSession(){
       drawings: state.drawings,
       measureScale: state.measureScale,
       namedPlaylists: state.namedPlaylists,
+      gkAtual: state.gkAtual || '',
     };
     libWrite(all);
   }, 250);
@@ -9452,6 +9645,7 @@ function restoreSession(){
     state.drawings = (s.drawings || []).filter(Boolean).map(d => { if (!Array.isArray(d.shapes)) d.shapes = []; return d; });
     state.measureScale = (typeof s.measureScale === 'number') ? s.measureScale : null;
     state.namedPlaylists = s.namedPlaylists || [];
+    state.gkAtual = s.gkAtual || '';
     log('Session restored from the library: ' + state.events.length + ' '+TX('vid.f.clips')+', ' + state.drawings.length + ' '+TX('vid.f.drawings')+'.', 'ok');
   } else {
     state.events = [];
@@ -9459,6 +9653,7 @@ function restoreSession(){
     state.drawings = [];
     state.measureScale = null;
     state.namedPlaylists = [];
+    state.gkAtual = '';                 /* coleta nova comeca sem goleiro */
   }
   exitClip();
   cancelFreeze();
@@ -9472,7 +9667,7 @@ function updateBadge(){ $('plCount').textContent = state.events.length; }
 function renderLibrary(){
   const box = $('library');
   box.innerHTML = '';
-  const entries = Object.entries(libAll()).map(([key, v]) => Object.assign({ key: key }, v)).sort((a, b) => b.savedAt - a.savedAt);
+  const entries = Object.entries(libAll()).filter(([, v]) => v && !v.movedTo).map(([key, v]) => Object.assign({ key: key }, v)).sort((a, b) => b.savedAt - a.savedAt);
   if (!entries.length){
     box.innerHTML = '<div class="empty">No matches saved yet. Each loaded video and its tagged clips are stored here automatically.</div>';
     return;
