@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -291,6 +292,13 @@ textarea{width:100%;resize:vertical;min-height:110px}
 .chart-pair{display:grid;grid-template-columns:1fr 1fr;gap:9pt;margin-bottom:9pt}
 .chart-box{border:0.5pt solid #e0ddd8;border-radius:4pt;padding:9pt;background:#fff;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
 .chart-box.full{grid-column:1/-1}
+.wbm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8pt 14pt}
+.wbm-cel{break-inside:avoid;page-break-inside:avoid}
+.wbm-h{display:flex;align-items:center;gap:4pt;font-size:7.5pt;margin-bottom:2pt;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+.wbm-dot{width:6pt;height:6pt;border-radius:1.5pt;flex-shrink:0}
+.wbm-n{font-weight:700;color:#222}
+.wbm-d{color:#999;font-size:6.5pt}
+.wbm-m{margin-left:auto;color:#555;font-size:6.5pt}
 .chart-box h4{font-size:7.5pt;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7pt}
 
 .rpt-table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:11pt;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
@@ -1083,9 +1091,10 @@ function save(){
 }
 
 // ── RTDB WRITE HELPERS ────────────────────────────────────
-function _set(path,data){if(!_db||!_rf||!_uid)return;dotY();_rf.set(_rf.ref(_db,path),data).then(dotG).catch(e=>{console.warn("set:",e);dotR();});}
-function _upd(path,data){if(!_db||!_rf||!_uid)return;dotY();_rf.update(_rf.ref(_db,path),data).then(dotG).catch(e=>{console.warn("upd:",e);dotR();});}
-function _del(path){if(!_db||!_rf||!_uid)return;_rf.remove(_rf.ref(_db,path)).catch(()=>{});}
+function _fa(op,path,data){try{if(window.FluxAudit)FluxAudit.registrar(op,path,data);}catch(e){}}
+function _set(path,data){if(!_db||!_rf||!_uid)return;_fa("set",path,data);dotY();_rf.set(_rf.ref(_db,path),data).then(dotG).catch(e=>{console.warn("set:",e);dotR();});}
+function _upd(path,data){if(!_db||!_rf||!_uid)return;_fa("update",path,data);dotY();_rf.update(_rf.ref(_db,path),data).then(dotG).catch(e=>{console.warn("upd:",e);dotR();});}
+function _del(path){if(!_db||!_rf||!_uid)return;_fa("remove",path,null);_rf.remove(_rf.ref(_db,path)).catch(()=>{});}
 
 function rtSaveSession(s){const d={...s};delete d._pk;_set(uPath("sessions/"+s._pk+"/"+s.id),d);}
 function rtDeleteSession(s){_del(uPath("sessions/"+s._pk+"/"+s.id));}
@@ -1120,6 +1129,7 @@ async function rtPushAll(){
   if(Array.isArray(ST.trainingTypes)&&ST.trainingTypes.length) upd[uPath("trainingTypes")]=ST.trainingTypes;
   if(!Object.keys(upd).length){dotG();return;}
   dotY();
+  try{Object.keys(upd).forEach(function(k){_fa("update",k,upd[k]);});}catch(e){}
   try{await _rf.update(_rf.ref(_db,"/"),upd);dotG();}
   catch(e){console.warn("pushAll:",e);dotR();}
 }
@@ -2111,6 +2121,7 @@ window.addTrainingType=function(){
   showToast('"'+t+'" added!');
   // Sync to Firebase (scoped to the active club+season)
   if(_db&&_rf&&_uid){
+    _fa("set",uPath("trainingTypes"),ST.trainingTypes);
     _rf.set(_rf.ref(_db,uPath("trainingTypes")),ST.trainingTypes).catch(function(){});
   }
 };
@@ -2402,6 +2413,47 @@ function mkUAChart(id,post,w,h,clubColor){
   div.innerHTML=svg;
   container.parentNode.replaceChild(div,container);
 }
+/* ── Bem-estar no relatorio: um grafico pequeno por variavel ──
+   Mesmo criterio da tela (aba "Separadas"): cada variavel na propria
+   escala, com a sua cor e a indicacao se maior e melhor ou pior.     */
+function wellMiniSvg(pre,f){
+  const W=260,H=96,pl=22,pr=6,pt=6,pb=22;
+  const gw=W-pl-pr,gh=H-pt-pb;
+  const n=pre.length, labs=pre.map(s=>fd(s.date));
+  const lo=Number(f.min),hi=Number(f.max), amp=Math.max(1,hi-lo);
+  const xc=i=>pl+gw/(n>1?n-1:1)*i;
+  const yv=v=>pt+gh*(1-(v-lo)/amp);
+  const cor=f.color||"#185FA5";
+  let g="";
+  const passo=wbAxisStep(hi);
+  for(let v=lo;v<=hi;v+=passo){const y=yv(v);
+    g+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="rgba(0,0,0,.07)" stroke-width="0.5"/>'
+     +'<text x="'+(pl-3)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="6.5" fill="#888" font-family="sans-serif">'+v+'</text>';}
+  const vals=pre.map(s=>s[f.key]);
+  const pts=vals.map((v,i)=>v==null?null:(xc(i).toFixed(1)+","+yv(v).toFixed(1))).filter(Boolean);
+  let area="";
+  if(pts.length>1){const a=pts[0].split(","),b=pts[pts.length-1].split(",");
+    area='<polygon points="'+a[0]+','+(pt+gh)+' '+pts.join(" ")+' '+b[0]+','+(pt+gh)+'" fill="'+cor+'" fill-opacity=".08"/>';}
+  const linha=pts.length?'<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+cor+'" stroke-width="1.5" stroke-linejoin="round"/>':"";
+  let dots="";vals.forEach((v,i)=>{if(v!=null)dots+='<circle cx="'+xc(i).toFixed(1)+'" cy="'+yv(v).toFixed(1)+'" r="2" fill="'+cor+'"/>';});
+  const step=Math.max(1,Math.ceil(n/6));let xl="";
+  labs.forEach((l,i)=>{if(i%step!==0&&i!==n-1)return;xl+='<text x="'+xc(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="6" fill="#888" font-family="sans-serif">'+l+'</text>';});
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;overflow:visible">'
+    +g+area+linha+dots
+    +'<line x1="'+pl+'" y1="'+(pt+gh)+'" x2="'+(W-pr)+'" y2="'+(pt+gh)+'" stroke="rgba(0,0,0,.12)" stroke-width="0.5"/>'
+    +xl+'</svg>';
+}
+function wellSeparadosHtml(pre,titulo){
+  const flds=activeWb(); if(!flds.length||!pre.length) return "";
+  const cel=flds.map(f=>{
+    const vals=pre.map(s=>s[f.key]).filter(v=>v!=null);
+    const med=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):"—";
+    return '<div class="wbm-cel"><div class="wbm-h"><span class="wbm-dot" style="background:'+(f.color||"#185FA5")+'"></span>'
+      +'<span class="wbm-n">'+_esc(f.label)+'</span><span class="wbm-d">'+_esc(dirSub(f))+'</span><span class="wbm-m">'+TX("data.wb.media","média")+' '+med+'</span></div>'
+      +wellMiniSvg(pre,f)+'</div>';
+  }).join("");
+  return '<div class="chart-box full no-break" style="margin-bottom:12pt"><h4>'+titulo+'</h4><div class="wbm-grid">'+cel+'</div></div>';
+}
 function mkWellChart(id,pre){
   const container=document.getElementById(id);
   if(!container||!container.parentNode||!pre.length)return;
@@ -2571,10 +2623,9 @@ function buildPeriodBlock(player,period,pi,cfg,secNum,P){
   if(!ss.length){html+=`<div style="padding:14pt;text-align:center;color:#888;font-size:9.5pt;background:#f8f8f6;border-radius:4pt">${TX("data.pdf.noSessions")}</div>`;html+=`</div>`;return html;}
   if(cfg.ua&&m.post.length){const cid=uid+"_ua";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.pdf.chartUA")} · ${period.label}</h4><canvas id="${cid}" width="560" height="180"></canvas></div></div>`;chartQueue.push(function(){mkUAChart(cid,m.post,0,0,P);});}
   const hw=cfg.well&&m.pre.length,ha=cfg.acwr&&m.post.length>=4;
-  if(hw||ha){html+=`<div class="chart-pair no-break">`;
-    if(hw){const cid=uid+"_well";html+=`<div class="chart-box ${ha?"":"full"}"><h4>${TX("data.series.wellbeing")} · ${period.label}</h4><canvas id="${cid}" width="${ha?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkWellChart(cid,m.pre);});}
-    if(ha){const cid=uid+"_acwr";html+=`<div class="chart-box ${hw?"":"full"}"><h4>${TX("data.acwr")} · ${period.label}</h4><canvas id="${cid}" width="${hw?265:560}" height="150"></canvas></div>`;chartQueue.push(function(){mkACWRChart(cid,m.post);});}
-    html+=`</div>`;}
+  /* ACWR em largura cheia; bem-estar em graficos separados por variavel */
+  if(ha){const cid=uid+"_acwr";html+=`<div class="chart-pair no-break"><div class="chart-box full"><h4>${TX("data.acwr")} · ${period.label}</h4><canvas id="${cid}" width="560" height="150"></canvas></div></div>`;chartQueue.push(function(){mkACWRChart(cid,m.post);});}
+  if(hw){html+=wellSeparadosHtml(m.pre,TX("data.series.wellbeing")+" · "+period.label);}
   // ── Attendance section ──
   if(m.pre.length||m.absences.length||(m.rests||[]).length){
     const allDates=[...new Set([...m.pre.map(s=>s.date),...m.post.map(s=>s.date),...m.absences.map(s=>s.date),...(m.rests||[]).map(s=>s.date)])].sort();
@@ -2787,6 +2838,8 @@ function today2(){return new Date().toISOString().split("T")[0];}
         if(!u){console.error("[FluxGK] Load Control: sem sessao. Abra pelo hub.");dbBadge(false);return;}
         if(_listening)return;
         console.log("[FluxGK] Load Control: autenticado como",u.uid);
+        /* historico de alteracoes: o Load Control usa o Firebase modular, entao informa como gravar */
+        try{if(window.FluxAudit)FluxAudit.configurar({uid:u.uid,gravador:function(c,v){return _rf.set(_rf.ref(_db,c),v);}});}catch(e){}
         dbBadge(true);
         loadUserState();
         rtPushAll().then(function(){rtListen();});
