@@ -324,6 +324,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
 .sq-avatar{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:700;color:#fff}
 .sq-info{padding:9px 10px 6px;cursor:pointer}
 .sq-name{font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sq-orig{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:4px;background:#0E7490;color:#fff;vertical-align:middle;margin-left:4px}
 .sq-meta{font-size:11px;color:var(--mt);margin-top:2px}
 .sq-btns{display:flex;gap:4px;padding:0 8px 9px}
 .sq-btn{flex:1;padding:5px 0;border:0.5px solid var(--bd2);border-radius:var(--rm);background:transparent;color:var(--mt);cursor:pointer;font-size:11px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:3px;transition:all .1s}
@@ -361,6 +362,18 @@ textarea{width:100%;resize:vertical;min-height:110px}
 .st-fld input,.st-fld textarea{width:100%;padding:9px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);
   background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit}
 .st-fld textarea{min-height:64px;resize:vertical;font-size:13px}
+.st-hint{gap:7px;align-items:flex-start;font-size:12px;line-height:1.45;padding:8px 10px;border:0.5px solid;border-left-width:3px;border-radius:var(--rm);background:var(--bg2);margin:-4px 0 10px}
+.sr-st{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;color:#fff;letter-spacing:.02em}
+.st-hist{border-top:0.5px solid var(--bd);margin:4px 0 12px;padding-top:10px}
+.st-hist-h{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:7px}
+.st-hist-add{font-size:11.5px;padding:4px 9px;border:0.5px solid var(--p);border-radius:var(--rm);background:var(--pl);color:var(--pd);cursor:pointer;font-family:inherit}
+.st-per{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:5px;align-items:center;padding:7px;border:0.5px solid var(--bd2);border-left:3px solid var(--bd2);border-radius:var(--rm);margin-bottom:6px}
+.st-per select,.st-per input{width:100%;padding:6px 7px;border:0.5px solid var(--bd2);border-radius:6px;background:var(--bg2);color:var(--tx);font-size:12px;font-family:inherit;box-sizing:border-box}
+.st-per .st-per-n{grid-column:1/4}
+.st-per .st-per-d{font-size:11px;color:var(--mt);text-align:right}
+.st-per .st-per-x{border:none;background:none;color:var(--sig-risk,#B91C1C);cursor:pointer;font-size:15px;padding:2px 4px}
+.st-per-open{font-size:11px;color:var(--mt);padding:6px 2px}
+.st-hist-tip{font-size:11px;color:var(--mt);line-height:1.45;margin-top:4px}
 .st-keep{font-size:11.5px;color:var(--mt);display:flex;align-items:center;gap:5px;margin-bottom:12px}
 /* player profile modal */
 .pm-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:350;display:none;align-items:flex-end;justify-content:center}
@@ -440,7 +453,8 @@ textarea{width:100%;resize:vertical;min-height:110px}
 <div class="section active" id="sec-pre">
   <div class="sec-header"><div class="dot" style="background:var(--p)"></div><h2 data-i18n="data.pre.title" id="preFormTitle">Pre-training questionnaire</h2></div>
   <div class="card"><h3 data-i18n="data.pre.sessionInfo">Session info</h3>
-    <div class="field"><label><i class="ti ti-calendar"></i> <span data-i18n="data.pre.date">Training date</span></label><input type="date" id="preDate"></div>
+    <div class="field"><label><i class="ti ti-calendar"></i> <span data-i18n="data.pre.date">Training date</span></label><input type="date" id="preDate" onchange="avisoSituacaoData()"></div>
+    <div id="preStHint" class="st-hint" style="display:none"></div>
     <div class="field"><label><i class="ti ti-clock"></i> <span data-i18n="data.pre.time">Training time</span></label>
       <div style="display:flex;gap:6px;align-items:center">
         <select id="preTimeHour" style="flex:1;padding:8px 11px;border:0.5px solid var(--bd2);border-radius:var(--rm);background:var(--bg2);color:var(--tx);font-size:14px;font-family:inherit">
@@ -650,6 +664,7 @@ textarea{width:100%;resize:vertical;min-height:110px}
       <div class="toggle-item"><span><i class="ti ti-activity" style="font-size:14px"></i> <span data-i18n="data.rpt.secWell">Well-being charts</span></span><label class="tog"><input type="checkbox" id="togWell" checked><span class="togslider"></span></label></div>
       <div class="toggle-item"><span><i class="ti ti-trending-up" style="font-size:14px"></i> <span data-i18n="data.rpt.secAcwr">ACWR chart</span></span><label class="tog"><input type="checkbox" id="togACWR" checked><span class="togslider"></span></label></div>
       <div class="toggle-item"><span><i class="ti ti-table" style="font-size:14px"></i> <span data-i18n="data.rpt.secTables">Session tables</span></span><label class="tog"><input type="checkbox" id="togTable" checked><span class="togslider"></span></label></div>
+      <div class="toggle-item"><span><i class="ti ti-timeline" style="font-size:14px"></i> <span data-i18n="data.rpt.secAvail">Time with the club</span></span><label class="tog"><input type="checkbox" id="togAvail" checked><span class="togslider"></span></label></div>
     </div>
   </div>
 
@@ -759,6 +774,11 @@ textarea{width:100%;resize:vertical;min-height:110px}
     </div>
     <div id="stWho" style="font-size:13px;color:var(--mt);margin-bottom:13px"></div>
     <div class="st-opts" id="stOpts"></div>
+    <!-- goleiro que veio da base (ex.: U-19): aparece no hub como "1 da U-19" -->
+    <div class="st-fld" style="margin-top:10px">
+      <label data-i18n="data.st.origem">Comes from the academy (category)</label>
+      <input type="text" id="stOrig" maxlength="20" data-i18n-placeholder="data.st.origemPh" placeholder="e.g. U-19 — leave empty if not">
+    </div>
     <div id="stExtra" style="display:none">
       <div class="st-fld">
         <label data-i18n="data.st.since">Since</label>
@@ -768,6 +788,18 @@ textarea{width:100%;resize:vertical;min-height:110px}
         <label data-i18n="data.st.note">Note</label>
         <textarea id="stNote" data-i18n-placeholder="data.st.notePh" placeholder="Destination club, expected return, details…"></textarea>
       </div>
+    </div>
+    <!-- volta ao clube: fecha o periodo fora do clube na vespera desta data -->
+    <div class="st-fld" id="stRetBox" style="display:none">
+      <label data-i18n="data.st.retorno">Back with the club on</label>
+      <input type="date" id="stRet">
+    </div>
+    <!-- linha do tempo: base do relatorio "Tempo no clube" -->
+    <div class="st-hist">
+      <div class="st-hist-h"><span><i class="ti ti-timeline"></i> <span data-i18n="data.st.hist">Status history</span></span>
+        <button type="button" class="st-hist-add" onclick="stPerAdd()"><i class="ti ti-plus"></i> <span data-i18n="data.st.histAdd">Add period</span></button></div>
+      <div id="stPerList"></div>
+      <p class="st-hist-tip" data-i18n="data.st.histTip">Each change of status is recorded here automatically. Add past periods (e.g. a national team call-up before this version) so the "Time with the club" report is complete.</p>
     </div>
     <div class="st-keep"><i class="ti ti-database" style="font-size:13px"></i> <span data-i18n="data.st.histKept">History kept — nothing was deleted.</span></div>
     <button class="btn-primary" onclick="stOK()"><i class="ti ti-check"></i> <span data-i18n="common.save">Save</span></button>
@@ -1076,6 +1108,8 @@ function save(){
     Object.keys(ST.players||{}).forEach(function(k){
       const p = ST.players[k]||{};
       enxuto.players[k] = { id:p.id, name:p.name };   /* a foto fica so na nuvem */
+      if(p.origem) enxuto.players[k].origem = p.origem;
+      if(p.periodos) enxuto.players[k].periodos = p.periodos;
       if(p.status){ enxuto.players[k].status=p.status; enxuto.players[k].statusDesde=p.statusDesde||''; enxuto.players[k].statusNota=p.statusNota||''; }
     });
     enxuto.sessions = (ST.sessions||[]).slice(-150);
@@ -1101,7 +1135,8 @@ function rtDeleteSession(s){_del(uPath("sessions/"+s._pk+"/"+s.id));}
 function rtSavePlayer(p){_upd(uPath("players/"+p.id),{name:p.name,id:p.id});}
 /* status vazio vira null para o Firebase APAGAR o campo na reativacao */
 function rtSaveStatus(p){_upd(uPath("players/"+p.id),{
-  status:p.status||null, statusDesde:p.statusDesde||null, statusNota:p.statusNota||null});}
+  status:p.status||null, statusDesde:p.statusDesde||null, statusNota:p.statusNota||null, origem:p.origem||null});}
+function rtSavePeriodos(p){_set(uPath("players/"+p.id+"/periodos"),p.periodos&&Object.keys(p.periodos).length?p.periodos:null);}
 function rtSavePhoto(id,ph){setTimeout(()=>_upd(uPath("players/"+id),{photo:ph}),1000);}
 function rtDeletePlayer(id){_del(uPath("players/"+id));_del(uPath("sessions/"+id));}
 function rtSaveBrand(b){_set(uPath("config/branding"),b);}
@@ -1113,6 +1148,8 @@ async function rtPushAll(){
   Object.values(ST.players).forEach(p=>{
     upd[uPath("players/"+p.id)]={name:p.name,id:p.id};
     if(p.photo)upd[uPath("players/"+p.id+"/photo")]=p.photo;
+    if(p.origem)upd[uPath("players/"+p.id+"/origem")]=p.origem;
+    if(p.periodos)upd[uPath("players/"+p.id+"/periodos")]=p.periodos;
     if(p.status){
       upd[uPath("players/"+p.id+"/status")]=p.status;
       upd[uPath("players/"+p.id+"/statusDesde")]=p.statusDesde||"";
@@ -1172,11 +1209,15 @@ function rtListen(){
         if(!p||!p.id)return;
         if(!ST.players[id]){
           ST.players[id]={name:p.name,id:p.id,photo:p.photo||null};
+          if(p.origem)ST.players[id].origem=p.origem;
+          if(p.periodos)ST.players[id].periodos=p.periodos;
           if(p.status){ST.players[id].status=p.status;ST.players[id].statusDesde=p.statusDesde||"";ST.players[id].statusNota=p.statusNota||"";}
           changed=true;
         } else {
           const lc=ST.players[id];
           if(p.photo&&!lc.photo){lc.photo=p.photo;changed=true;}
+          if((p.origem||"")!==(lc.origem||"")){ if(p.origem) lc.origem=p.origem; else delete lc.origem; changed=true; }
+          if(JSON.stringify(p.periodos||null)!==JSON.stringify(lc.periodos||null)){ if(p.periodos) lc.periodos=p.periodos; else delete lc.periodos; changed=true; }
           /* a situacao vem do servidor: quem afastou num aparelho afasta em todos */
           if((p.status||"ativo")!==plSt(lc)){
             if(p.status){lc.status=p.status;lc.statusDesde=p.statusDesde||"";lc.statusNota=p.statusNota||"";}
@@ -1239,13 +1280,73 @@ const STATUS=[
   {k:"emprestado",i:"ti-arrow-right-bar",  c:"#B45309", t:"data.st.loan"},
   {k:"lesao",     i:"ti-first-aid-kit",    c:"#B91C1C", t:"data.st.injury"},
   {k:"convocado", i:"ti-flag",             c:"#1D4ED8", t:"data.st.callup"},
-  {k:"saida",     i:"ti-logout",           c:"#57534E", t:"data.st.left"}
+  {k:"saida",     i:"ti-logout",           c:"#57534E", t:"data.st.left"},
+  {k:"base",      i:"ti-school",           c:"#0E7490", t:"data.st.base"}    /* voltou para a categoria de base */
 ];
 function stDef(k){ return STATUS.find(x=>x.k===k)||STATUS[0]; }
 function plSt(p){ return (p&&p.status)||"ativo"; }
 function plAtivo(p){ return plSt(p)==="ativo"; }
 function plsAtivos(){ return Object.values(ST.players).filter(plAtivo); }
 function stLabel(p){ return TX(stDef(plSt(p)).t); }
+/* convocado segue coletando: os relatorios da selecao entram no controle de carga.
+   O que decide se a sessao e "clube" ou "selecao" e a DATA cair no periodo da situacao. */
+/* etiqueta para sessoes em dia fora do clube (ex.: SELECAO) */
+function stTagSessao(pk,d){
+  const k=stNoDia(ST.players[pk],d); if(k==="ativo") return "";
+  const x=stDef(k);
+  return `<span class="sr-st" style="background:${x.c}" title="${_esc(TX("data.st.dayAway","Counts as work away from the club"))}">${_esc(TX(x.t)).toUpperCase()}</span>`;
+}
+/* aviso no pre-treino: a data cai num periodo fora do clube */
+function avisoSituacaoData(){
+  const el=document.getElementById("preStHint"); if(!el) return;
+  const p=ST.players[ST.currentPlayer], d=(document.getElementById("preDate")||{}).value;
+  const k=(p&&d)?stNoDia(p,d):"ativo";
+  if(k==="ativo"){ el.style.display="none"; el.innerHTML=""; return; }
+  const x=stDef(k);
+  el.style.display="flex"; el.style.borderColor=x.c;
+  el.innerHTML=`<i class="ti ${x.i}" style="color:${x.c}"></i><span>${_esc(TX("data.st.hintA","This date falls in a period of"))} <strong style="color:${x.c}">${_esc(TX(x.t))}</strong> — ${_esc(TX("data.st.hintB","the session counts as work away from the club, not with the club."))}</span>`;
+}
+window.avisoSituacaoData=avisoSituacaoData;
+function plColeta(p){ return plAtivo(p)||plSt(p)==="convocado"; }
+
+/* ══ LINHA DO TEMPO DE SITUACOES ══════════════════════════
+   p.periodos = { id: {s, ini:"AAAA-MM-DD", fim:"AAAA-MM-DD"|"" (em aberto), nota} }
+   So guarda o que e FORA do clube; o resto dos dias e "com o clube".
+   A situacao manda sobre a coleta: uma sessao numa data de Selecao conta
+   como trabalho na Selecao, mesmo que tenha sido lancada depois. */
+function _dAdd(d,n){ const x=new Date(d+"T12:00:00"); x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); }
+function _hoje(){ return new Date().toISOString().slice(0,10); }
+function plPeriodos(p){
+  if(!p) return [];
+  const arr=Object.entries(p.periodos||{}).filter(([,v])=>v&&v.s&&v.ini).map(([id,v])=>({id,s:v.s,ini:v.ini,fim:v.fim||"",nota:v.nota||""}));
+  /* situacao atual ainda sem periodo gravado (marcada antes desta versao) */
+  if(!plAtivo(p)&&!arr.some(x=>!x.fim&&x.s===plSt(p)))
+    arr.push({id:"_atual",s:plSt(p),ini:p.statusDesde||_hoje(),fim:"",nota:p.statusNota||"",_virt:true});
+  return arr.sort((a,b)=>a.ini.localeCompare(b.ini));
+}
+/* situacao do goleiro num dia: o periodo que comecou por ultimo vence sobreposicoes */
+function stNoDia(p,d){
+  let k="ativo",ini="";
+  plPeriodos(p).forEach(x=>{ if(x.ini<=d&&(!x.fim||d<=x.fim)&&x.ini>=ini){k=x.s;ini=x.ini;} });
+  return k;
+}
+function _novoPid(){ return "q"+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+/* mudanca de situacao: fecha o periodo aberto (vespera da nova data) e abre o novo */
+function trocaPeriodo(p,novo,data,nota){
+  p.periodos=p.periodos||{};
+  /* materializa a situacao atual se ela ainda nao tinha periodo */
+  const virt=plPeriodos(p).find(x=>x._virt);
+  if(virt) p.periodos[_novoPid()]={s:virt.s,ini:virt.ini,fim:"",nota:virt.nota};
+  const abertoId=Object.keys(p.periodos).filter(id=>p.periodos[id]&&!p.periodos[id].fim)
+    .sort((a,b)=>(p.periodos[b].ini||"").localeCompare(p.periodos[a].ini||""))[0];
+  const aberto=abertoId?p.periodos[abertoId]:null;
+  if(aberto&&aberto.s===novo){ aberto.ini=data; aberto.nota=nota||""; }      /* mesma situacao: so corrige */
+  else{
+    if(aberto){ const f=_dAdd(data,-1); aberto.fim=f<aberto.ini?aberto.ini:f; }
+    if(novo!=="ativo") p.periodos[_novoPid()]={s:novo,ini:data,fim:"",nota:nota||""};
+  }
+  if(!Object.keys(p.periodos).length) delete p.periodos;
+}
 
 function squadCard(p){
   const ss=ST.sessions.filter(s=>s._pk===p.id);
@@ -1267,15 +1368,17 @@ function squadCard(p){
       <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> <span data-i18n="data.nav.post">Post</span></button>
       <button class="sq-btn" onclick="openST('${p.id}')" title="${_esc(TX("data.st.setStatus"))}"><i class="ti ti-user-exclamation" style="font-size:12px"></i></button>
       <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>`
-    :`<button class="sq-btn sq-back" onclick="reativar('${p.id}')"><i class="ti ti-rotate" style="font-size:12px"></i> <span data-i18n="data.st.reactivate">Reactivate</span></button>
+    :`${plColeta(p)?`<button class="sq-btn" onclick="selGo('${p.id}','pre')"><i class="ti ti-sun" style="font-size:12px"></i> <span data-i18n="data.nav.pre">Pre</span></button>
+      <button class="sq-btn" onclick="selGo('${p.id}','post')"><i class="ti ti-moon" style="font-size:12px"></i> <span data-i18n="data.nav.post">Post</span></button>`:""}
+      <button class="sq-btn sq-back" onclick="reativar('${p.id}')"><i class="ti ti-rotate" style="font-size:12px"></i> <span data-i18n="data.st.reactivate">Reactivate</span></button>
       <button class="sq-btn" onclick="openST('${p.id}')"><i class="ti ti-user-exclamation" style="font-size:12px"></i></button>
       <button class="sq-btn sq-del" onclick="delPl('${p.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>`;
   return `<div class="sq-card${ativo?"":" out"}">
     ${banda}
     <div class="sq-photo" onclick="openPM('${p.id}')">${ph}</div>
     <div class="sq-info" onclick="openPM('${p.id}')">
-      <div class="sq-name">${p.name}</div>
-      <div class="sq-meta">${post.length} ${TX("data.pdf.thSessions").toLowerCase()} · ${tAU} AU${ativo?"":" · "+TX("data.st.collectionStopped")}</div>
+      <div class="sq-name">${p.name}${p.origem?` <span class="sq-orig" title="${_esc(TX("data.st.origemT","Veio da categoria de base"))}">${_esc(p.origem)}</span>`:""}</div>
+      <div class="sq-meta">${post.length} ${TX("data.pdf.thSessions").toLowerCase()} · ${tAU} AU${ativo?"":" · "+(plColeta(p)?TX("data.st.collectOpen","collection open (national team)"):TX("data.st.collectionStopped"))}</div>
     </div>
     ${nota}
     <div class="sq-btns">${botoes}</div>
@@ -1347,14 +1450,19 @@ window.apOK=function(){
 };
 
 // ── STATUS MODAL ──────────────────────────────────────────
-let _stId=null,_stSel="ativo";
+let _stId=null,_stSel="ativo",_stPer={},_stIni="ativo";
 window.openST=function(id){
   const p=ST.players[id];if(!p)return;
   _stId=id;_stSel=plSt(p);
   document.getElementById("stWho").textContent=p.name;
   document.getElementById("stDate").value=p.statusDesde||new Date().toISOString().slice(0,10);
   document.getElementById("stNote").value=p.statusNota||"";
-  stPaint();
+  const _o=document.getElementById("stOrig"); if(_o) _o.value=p.origem||"";
+  document.getElementById("stRet").value=_hoje();
+  /* copia de trabalho da linha do tempo (so grava no Salvar) */
+  _stPer={}; plPeriodos(p).forEach(x=>{ _stPer[x._virt?_novoPid():x.id]={s:x.s,ini:x.ini,fim:x.fim,nota:x.nota}; });
+  _stIni=plSt(p);
+  stPaint(); stPerPaint();
   document.getElementById("stOv").classList.add("open");
 };
 window.closeST=function(){document.getElementById("stOv").classList.remove("open");};
@@ -1365,30 +1473,93 @@ function stPaint(){
      </button>`).join("");
   /* data e observacao só fazem sentido quando ha afastamento */
   document.getElementById("stExtra").style.display=_stSel==="ativo"?"none":"block";
+  /* voltando ao clube: pergunta a data do retorno */
+  document.getElementById("stRetBox").style.display=(_stSel==="ativo"&&_stIni!=="ativo")?"block":"none";
 }
-window.stPick=function(k){_stSel=k;stPaint();};
+function _diasEntre(a,b){ return Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/864e5)+1; }
+function stPerPaint(){
+  const el=document.getElementById("stPerList"); if(!el) return;
+  const ids=Object.keys(_stPer).sort((a,b)=>(_stPer[b].ini||"").localeCompare(_stPer[a].ini||""));
+  if(!ids.length){ el.innerHTML=`<div class="st-per-open">${TX("data.st.histEmpty","No periods away from the club.")}</div>`; return; }
+  const opts=k=>STATUS.filter(d=>d.k!=="ativo").map(d=>`<option value="${d.k}"${d.k===k?" selected":""}>${TX(d.t)}</option>`).join("");
+  el.innerHTML=ids.map(id=>{
+    const v=_stPer[id], d=stDef(v.s);
+    /* o periodo aberto da situacao atual so fecha mudando a situacao */
+    const atual=!v.fim&&v.s===_stIni;
+    const dias=v.ini?_diasEntre(v.ini,v.fim||_hoje()):0;
+    return `<div class="st-per" style="border-left-color:${d.c}">
+      <select onchange="stPerSet('${id}','s',this.value)">${opts(v.s)}</select>
+      <input type="date" value="${v.ini||""}" onchange="stPerSet('${id}','ini',this.value)" title="${_esc(TX("data.from","From"))}">
+      ${atual?`<span class="st-per-open">${TX("data.st.histOpen","ongoing (current status)")}</span>`
+             :`<input type="date" value="${v.fim||""}" onchange="stPerSet('${id}','fim',this.value)" title="${_esc(TX("data.to","To"))}">`}
+      <button type="button" class="st-per-x" onclick="stPerDel('${id}')" title="${_esc(TX("data.act.delete","Delete"))}"><i class="ti ti-trash"></i></button>
+      <input class="st-per-n" type="text" value="${_esc(v.nota||"")}" maxlength="120" placeholder="${_esc(TX("data.st.note","Note"))}" onchange="stPerSet('${id}','nota',this.value)">
+      <span class="st-per-d">${dias} ${TX("data.st.days","days")}</span>
+    </div>`;
+  }).join("");
+}
+window.stPerSet=function(id,k,v){ if(!_stPer[id])return; _stPer[id][k]=v; if(k!=="nota")stPerPaint(); };
+window.stPerDel=function(id){ delete _stPer[id]; stPerPaint(); };
+window.stPerAdd=function(){
+  const f=_dAdd(_hoje(),-1);
+  _stPer[_novoPid()]={s:"convocado",ini:_dAdd(f,-6),fim:f,nota:""};
+  stPerPaint();
+};
+/* valida a copia de trabalho: inicio obrigatorio, fim nunca antes do inicio */
+function _stPerLimpo(){
+  const out={};
+  for(const id of Object.keys(_stPer)){
+    const v=_stPer[id];
+    if(!v||!v.s||!v.ini) continue;
+    if(v.fim&&v.fim<v.ini){ showToast(TX("data.rpt.fromBeforeTo","Start date must be before end date."),"err"); return null; }
+    out[id]={s:v.s,ini:v.ini,fim:v.fim||"",nota:(v.nota||"").trim()};
+  }
+  return out;
+}
+window.stPick=function(k){
+  _stSel=k;
+  /* situacao nova comeca hoje; voltando a atual, a data original volta */
+  const p=ST.players[_stId];
+  document.getElementById("stDate").value=(k===_stIni&&p&&p.statusDesde)?p.statusDesde:_hoje();
+  stPaint();
+};
 window.stOK=function(){
   const p=ST.players[_stId];if(!p)return;
-  if(_stSel==="ativo"){ delete p.status;delete p.statusDesde;delete p.statusNota; }
+  const per=_stPerLimpo(); if(per===null) return;
+  p.periodos=per; if(!Object.keys(per).length) delete p.periodos;
+  const _antes=plSt(p), _desdeAntes=p.statusDesde||"";
+  const _o=document.getElementById("stOrig");
+  if(_o){ const v=_o.value.trim().slice(0,20); if(v) p.origem=v; else delete p.origem; }
+  if(_stSel==="ativo"){
+    if(_antes!=="ativo") trocaPeriodo(p,"ativo",document.getElementById("stRet").value||_hoje(),"");
+    delete p.status;delete p.statusDesde;delete p.statusNota;
+  }
   else{
-    p.status=_stSel;
-    p.statusDesde=document.getElementById("stDate").value||new Date().toISOString().slice(0,10);
-    p.statusNota=document.getElementById("stNote").value.trim();
-    /* quem esta fora nao pode seguir selecionado para coleta */
-    if(ST.currentPlayer===_stId)ST.currentPlayer="";
+    let desde=document.getElementById("stDate").value||_hoje();
+    const nota=document.getElementById("stNote").value.trim();
+    if(_antes===_stSel&&desde===_desdeAntes){
+      /* mesma situacao e data intocada: vale o que foi editado na linha do tempo */
+      const ab=plPeriodos(p).find(x=>!x.fim&&x.s===_stSel&&!x._virt);
+      if(ab) desde=ab.ini;
+    }
+    trocaPeriodo(p,_stSel,desde,nota);
+    p.status=_stSel; p.statusDesde=desde; p.statusNota=nota;
+    /* quem esta fora nao segue selecionado para coleta — exceto a Selecao */
+    if(ST.currentPlayer===_stId&&!plColeta(p))ST.currentPlayer="";
   }
   save();closeST();renderSquad();renderPSelect();
   if(typeof renderReportBuilder==="function")renderReportBuilder();
   renderAll();
-  rtSaveStatus(p);
+  rtSaveStatus(p); rtSavePeriodos(p);
   showToast(_stSel==="ativo"?p.name+" "+TX("data.st.backActive"):TX("data.st.saved"));
 };
 window.reativar=function(id){
   const p=ST.players[id];if(!p)return;
+  if(!plAtivo(p)) trocaPeriodo(p,"ativo",_hoje(),"");     /* volta hoje: o periodo fora fecha ontem */
   delete p.status;delete p.statusDesde;delete p.statusNota;
   save();renderSquad();renderPSelect();
   if(typeof renderReportBuilder==="function")renderReportBuilder();
-  rtSaveStatus(p);
+  rtSaveStatus(p); rtSavePeriodos(p);
   showToast(p.name+" "+TX("data.st.backActive"));
 };
 
@@ -1430,7 +1601,7 @@ window.openPM=function(id){
       if(s.type==="pre")
         return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type pre">PRE</span><span class="sr-detail">${wbSummary(s)}</span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
       const zc=s.ua>=600?"zone-high":s.ua>=300?"zone-med":"zone-low";
-      return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type post">POST</span><span class="sr-detail">RPE ${s.pse} · ${s.duration}min</span><span style="margin:0 3px"><span class="zone-badge ${zc}">${s.ua} AU</span></span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
+      return`<div class="session-row"><span class="sr-date">${fd(s.date)}</span><span class="sr-type post">POST</span>${stTagSessao(s._pk,s.date)}<span class="sr-detail">RPE ${s.pse} · ${s.duration}min</span><span style="margin:0 3px"><span class="zone-badge ${zc}">${s.ua} AU</span></span><span class="sr-actions"><button class="act-btn e" onclick="editSession('${s.id}')"><i class="ti ti-pencil"></i></button><button class="act-btn d" onclick="deleteSession('${s.id}')"><i class="ti ti-trash"></i></button></span></div>`;
     }).join("");
   }
   // Charts
@@ -1508,15 +1679,16 @@ document.addEventListener("click",e=>{
 
 // ── PLAYERS (standard context bar) ───────────────────────
 window.addPlayer=window.apOK;
-window.switchPlayer=function(){ST.currentPlayer=document.getElementById("playerSelect").value;renderAll();};
+window.switchPlayer=function(){ST.currentPlayer=document.getElementById("playerSelect").value;renderAll();try{avisoSituacaoData();}catch(e){}};
 function renderPSelect(){
   const sel=document.getElementById("playerSelect"),cur=ST.currentPlayer||sel.value;
   sel.innerHTML='<option data-i18n="data.selectDots" value="">Select…</option>';
-  /* afastado nao aparece aqui: e assim que a coleta para de verdade */
-  plsAtivos().forEach(p=>{
-    const o=document.createElement("option");o.value=p.id;o.textContent=p.name;sel.appendChild(o);
+  /* afastado nao aparece aqui: e assim que a coleta para de verdade.
+     Excecao: convocado segue, para lancar os relatorios da selecao */
+  Object.values(ST.players).filter(plColeta).forEach(p=>{
+    const o=document.createElement("option");o.value=p.id;o.textContent=p.name+(plAtivo(p)?"":" · "+stLabel(p));sel.appendChild(o);
   });
-  if(cur&&ST.players[cur]&&plAtivo(ST.players[cur]))sel.value=cur;
+  if(cur&&ST.players[cur]&&plColeta(ST.players[cur]))sel.value=cur;
   else if(cur){ST.currentPlayer="";sel.value="";}
 }
 
@@ -1725,7 +1897,7 @@ window.editSession=function(id){
       s.type==="absence"?TX("data.msg.editAbsence")
       :s.type==="rest"?TX("data.msg.editRest","Editar descanso")
       :TX("data.msg.editPre");
-    document.getElementById("preDate").value=s.date;
+    document.getElementById("preDate").value=s.date;try{avisoSituacaoData();}catch(e){}
     if(s.time)setAmPmTime("pre",s.time);
     if(s.trainingType)document.getElementById("preType").value=s.trainingType;
     if(s.type==="pre"){ buildPreFields(); fillFields(activeWb(),s); }
@@ -2029,7 +2201,7 @@ function renderHistory(){
     const wb=pre.sleep?(" · "+wbSummary(pre)):"";
     return'<div class="session-row">'
       +'<span class="sr-date">'+dt+'</span>'
-      +'<span class="sr-type post">SESSION</span>'
+      +'<span class="sr-type post">SESSION</span>'+stTagSessao(s._pk,s.date)
       +'<span class="sr-detail">'+(type?type+" · ":"")+"RPE "+s.pse+" · "+s.duration+"min"+wb+'</span>'
       +'<span style="margin:0 3px"><span class="zone-badge '+zc+'">'+s.ua+' AU</span></span>'
       +'<span class="sr-actions">'
@@ -2258,7 +2430,7 @@ function renderAll(){
     const activeSec=document.querySelector(".section.active");
     const activeId=activeSec?activeSec.id.replace("sec-",""):"pre";
     if(cb&&activeId!=="squad") cb.style.display="flex";
-  }renderTypeSelects();renderOpenPreSessions();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();}
+  }renderTypeSelects();renderOpenPreSessions();renderAttendanceList();renderDashboard();renderHistory();renderSquad();renderTypeChart();try{avisoSituacaoData();}catch(e){}}
 
 // ── STATUS/TOAST ──
 function showStatus(m,t){const e=document.getElementById("statusBar");e.textContent=m;e.className="status-bar show "+(t||"");}
@@ -2607,11 +2779,100 @@ function mkGroupTimeSeries(id,seriesData,clubColor){
 }
 
 // ── BUILD PERIOD BLOCK HTML ──
+/* ══ TEMPO NO CLUBE ═══════════════════════════════════════
+   Dias por situacao no recorte + o que aconteceu em cada um:
+   treinos do Load Control e jogos do modulo Minutos.
+   A situacao manda: o dia e classificado pela linha do tempo,
+   nunca pela existencia de coleta. */
+let _jogosMin=[];
+async function lerJogosMinutos(){
+  if(!_db||!_rf||!_base) return [];
+  try{
+    const snap=await Promise.race([_rf.get(_rf.ref(_db,_base+"/minutes/games")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),6000))]);
+    const v=snap&&snap.val(); return v?Object.values(v).filter(g=>g&&g.date):[];
+  }catch(e){ console.warn("minutos:",e); return []; }
+}
+function _nNome(x){ return String(x==null?"":x).trim().replace(/\s+/g," ").toLowerCase(); }
+function _gkDoJogo(g,nome){
+  const gd=g.gkData||{}, n=_nNome(nome);
+  const k=Object.keys(gd).find(x=>_nNome(x)===n); return k?gd[k]:null;
+}
+function availCalc(p,period,jogos){
+  const ss=ST.sessions.filter(s=>s._pk===p.id);
+  const meus=(jogos||[]).filter(g=>{const d=_gkDoJogo(g,p.name);return d&&(d.selected||d.totalSecs>0);});
+  let from=period.from;
+  if(!from){
+    const cands=[...ss.map(s=>s.date),...plPeriodos(p).map(x=>x.ini),...meus.map(g=>g.date)].filter(Boolean).sort();
+    from=cands[0]||_hoje();
+  }
+  const to=period.to||_hoje();
+  if(from>to) return null;
+  const linhas={}; const L=k=>(linhas[k]=linhas[k]||{dias:0,sess:0,ua:0,rel:0,atu:0,seg:0});
+  const segs=[]; let total=0;
+  for(let d=from; d<=to; d=_dAdd(d,1)){
+    const k=stNoDia(p,d); L(k).dias++; total++;
+    const u=segs[segs.length-1];
+    if(u&&u.k===k){u.fim=d;u.n++;} else segs.push({k,ini:d,fim:d,n:1});
+    if(total>800) break;                                   /* trava de seguranca */
+  }
+  ss.filter(s=>s.type==="post"&&s.date>=from&&s.date<=to).forEach(s=>{const r=L(stNoDia(p,s.date));r.sess++;r.ua+=(+s.ua||0);});
+  const conflitos=[];
+  meus.filter(g=>g.date>=from&&g.date<=to).forEach(g=>{
+    const d=_gkDoJogo(g,p.name), k=stNoDia(p,g.date), r=L(k);
+    if(d.selected) r.rel++;
+    if(d.totalSecs>0){ r.atu++; r.seg+=d.totalSecs; }
+    if(k!=="ativo") conflitos.push({g,k});
+  });
+  const pers=plPeriodos(p).filter(x=>x.ini<=to&&(!x.fim||x.fim>=from)).map(x=>{
+    const a=x.ini<from?from:x.ini, b=(!x.fim||x.fim>to)?to:x.fim;
+    return Object.assign({},x,{dRec:_diasEntre(a,b)});
+  });
+  return {from,to,total,linhas,segs,conflitos,pers};
+}
+function _stCor(k,P){ return k==="ativo"?(P||"#15803D"):stDef(k).c; }
+function _stNome(k){ return k==="ativo"?TX("data.st.withClub","With the club"):TX(stDef(k).t); }
+function buildAvailBlock(p,period,P){
+  const a=availCalc(p,period,_jogosMin); if(!a) return "";
+  const pct=n=>a.total?Math.round(n/a.total*100):0;
+  const ord=["ativo"].concat(STATUS.map(x=>x.k).filter(k=>k!=="ativo")).filter(k=>a.linhas[k]);
+  const clube=(a.linhas.ativo||{dias:0}).dias;
+  /* barra do tempo: um segmento por mudanca de situacao */
+  const W=560,H=40,bh=14; let x=0,bars="",labs="",lastLx=-99;
+  a.segs.forEach((sg,i)=>{
+    const w=W*sg.n/a.total;
+    bars+=`<rect x="${x.toFixed(1)}" y="4" width="${Math.max(w,0.8).toFixed(1)}" height="${bh}" fill="${_stCor(sg.k,P)}"${sg.k==="ativo"?' fill-opacity=".85"':""}/>`;
+    if(x-lastLx>=34||i===0){ labs+=`<text x="${(x+1).toFixed(1)}" y="${bh+15}" font-size="7" fill="#666" font-family="sans-serif">${fd(sg.ini)}</text>`; lastLx=x; }
+    x+=w;
+  });
+  labs+=`<text x="${W}" y="${bh+15}" font-size="7" fill="#666" text-anchor="end" font-family="sans-serif">${fd(a.to)}</text>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">${bars}${labs}</svg>`;
+  const leg=ord.map(k=>`<span style="display:inline-flex;align-items:center;gap:3pt;margin-right:9pt"><span style="width:7pt;height:7pt;border-radius:1.5pt;background:${_stCor(k,P)}"></span>${_esc(_stNome(k))}</span>`).join("");
+  const mins=sg=>Math.round(sg/60);
+  const linhasTab=ord.map(k=>{const r=a.linhas[k];return `<tr><td><span style="display:inline-block;width:6pt;height:6pt;border-radius:1.5pt;background:${_stCor(k,P)};margin-right:4pt"></span>${_esc(_stNome(k))}</td><td>${r.dias}</td><td>${pct(r.dias)}%</td><td>${r.sess||"—"}</td><td>${r.ua||"—"}</td><td>${r.rel||"—"}</td><td>${r.atu||"—"}</td><td>${r.seg?mins(r.seg):"—"}</td></tr>`;}).join("");
+  const perTab=a.pers.length?`<table class="rpt-table"><thead><tr><th>${TX("data.st.col","Status")}</th><th>${TX("data.from","From")}</th><th>${TX("data.to","To")}</th><th>${TX("data.st.daysInRange","Days in range")}</th><th>${TX("data.st.note","Note")}</th></tr></thead><tbody>${
+    a.pers.map(x=>`<tr><td><span style="display:inline-block;width:6pt;height:6pt;border-radius:1.5pt;background:${_stCor(x.s,P)};margin-right:4pt"></span>${_esc(_stNome(x.s))}</td><td>${fdfull(x.ini)}</td><td>${x.fim?fdfull(x.fim):TX("data.st.ongoing","ongoing")}</td><td>${x.dRec}</td><td>${_esc(x.nota||"")}</td></tr>`).join("")}</tbody></table>`:"";
+  const conf=a.conflitos.length?`<div style="margin:0 0 10pt;padding:7pt 10pt;border-left:3pt solid #B45309;background:#FFF7ED;font-size:8pt;color:#7C2D12;font-family:sans-serif"><strong>${TX("data.st.confT","Check:")}</strong> ${TX("data.st.confB","club games recorded in Minutes on days away from the club — they were counted under the status of the day:")} ${a.conflitos.map(c=>`${fd(c.g.date)}${c.g.opp?" ("+_esc(c.g.opp)+")":""} · ${_esc(_stNome(c.k))}`).join("; ")}.</div>`:"";
+  const fora=a.total-clube;
+  return `<div class="no-break" style="margin-bottom:12pt">
+    <h4 style="font-size:9.5pt;margin:0 0 6pt;font-family:sans-serif;display:flex;align-items:center;gap:5pt">${TX("data.rpt.secAvail","Time with the club")} <span style="font-weight:400;color:#888;font-size:7.5pt">${fdfull(a.from)} – ${fdfull(a.to)}</span></h4>
+    <div class="rpt-metrics">
+      <div class="rpt-m"><div class="ml">${TX("data.st.daysRange","Days in the period")}</div><div class="mv">${a.total}</div><div class="ms">${TX("data.st.calendar","calendar days")}</div></div>
+      <div class="rpt-m"><div class="ml">${_esc(_stNome("ativo"))}</div><div class="mv" style="color:${_stCor("ativo",P)}">${clube}</div><div class="ms">${pct(clube)}% ${TX("data.st.ofPeriod","of the period")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.st.away","Away from the club")}</div><div class="mv">${fora}</div><div class="ms">${pct(fora)}% ${TX("data.st.ofPeriod","of the period")}</div></div>
+      <div class="rpt-m"><div class="ml">${TX("data.st.clubWork","Work with the club")}</div><div class="mv">${(a.linhas.ativo||{}).sess||0}</div><div class="ms">${TX("data.st.sessU","sessions")} · ${(a.linhas.ativo||{}).ua||0} AU · ${(a.linhas.ativo||{}).atu||0} ${TX("data.st.gamesPlayed","games played")}</div></div>
+    </div>
+    <div class="chart-box full" style="margin-bottom:8pt">${svg}<div style="font-size:7pt;color:#555;margin-top:3pt;font-family:sans-serif">${leg}</div></div>
+    <table class="rpt-table"><thead><tr><th>${TX("data.st.col","Status")}</th><th>${TX("data.st.days","days")}</th><th>%</th><th>${TX("data.pdf.thSessions")}</th><th>${TX("data.pdf.thTotalAU")}</th><th>${TX("data.st.squadGames","Squad (games)")}</th><th>${TX("data.st.played","Played")}</th><th>${TX("data.st.minPlayed","Minutes")}</th></tr></thead><tbody>${linhasTab}</tbody></table>
+    ${perTab}${conf}
+    <div style="font-size:7pt;color:#888;margin-top:-5pt;font-family:sans-serif">${TX("data.st.rule","The status decides: a session or game is counted under the status of its date (national team sessions count in the total load and ACWR, and appear here under National team).")}</div>
+  </div>`;
+}
 function buildPeriodBlock(player,period,pi,cfg,secNum,P){
   const ss=filterS(player.id,period),m=calcM(ss);
   const uid=`r${secNum}_p${pi}_${Date.now()}`;
   let html=`<div class="rpt-period-block">
     <div class="period-hdr"><div><div class="ph-lbl">${TX("data.pdf.periodN")} ${pi+1}</div><div class="ph-title">${period.label}</div></div><div class="ph-range">${periodRange(period)}</div></div>
+    ${cfg.avail?buildAvailBlock(player,period,P):""}
     <div class="rpt-metrics">
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thSessions")}</div><div class="mv">${m.post.length+m.absences.length+(m.rests||[]).length}</div><div class="ms">${m.post.length} ${TX("data.m.present")} · ${(m.rests||[]).length} ${TX("data.m.rest","desc.")} · ${m.absences.length} ${TX("data.m.absent")}</div></div>
       <div class="rpt-m"><div class="ml">${TX("data.pdf.thTotalAU")}</div><div class="mv">${m.tUA||"—"}</div><div class="ms">${TX("data.pdf.accumulated")}</div></div>
@@ -2659,7 +2920,9 @@ window.generateReport=async function(){
   const periods=getActivePeriods();
   if(!periods.length){showToast(TX("data.rpt.pickPeriod"),"err");return;}
 
-  const cfg={ua:document.getElementById("togUA").checked,well:document.getElementById("togWell").checked,acwr:document.getElementById("togACWR").checked,table:document.getElementById("togTable").checked,group:document.getElementById("togGroup").checked};
+  const cfg={ua:document.getElementById("togUA").checked,well:document.getElementById("togWell").checked,acwr:document.getElementById("togACWR").checked,table:document.getElementById("togTable").checked,group:document.getElementById("togGroup").checked,avail:!!(document.getElementById("togAvail")||{}).checked};
+  /* "Tempo no clube" cruza com os jogos do modulo Minutos */
+  _jogosMin=cfg.avail?await lerJogosMinutos():[];
   const brand=ST.brand,P=brand.color||"#16A34A";
   let players=[];
 
@@ -2740,7 +3003,7 @@ window.generateReport=async function(){
     if(!plAtivo(player)){
       const d=stDef(plSt(player));
       html+=`<div style="margin:0 0 10pt;padding:8pt 11pt;border-left:3pt solid ${d.c};background:#f8f8f6;font-size:9pt;color:#333">
-        <strong style="color:${d.c}">${stLabel(player)}</strong>${player.statusDesde?` — ${TX("data.st.rptBadge")} ${fdfull(player.statusDesde)}`:""}${player.statusNota?`<div style="margin-top:3pt;color:#666;font-size:8.5pt">${_esc(player.statusNota)}</div>`:""}
+        <strong style="color:${d.c}">${stLabel(player)}</strong>${player.statusDesde?` — ${plColeta(player)?TX("data.st.since"):TX("data.st.rptBadge")} ${fdfull(player.statusDesde)}`:""}${player.statusNota?`<div style="margin-top:3pt;color:#666;font-size:8.5pt">${_esc(player.statusNota)}</div>`:""}
       </div>`;
     }
     periods.forEach((period,pidx)=>{

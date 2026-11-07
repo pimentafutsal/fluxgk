@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#0a0a0a">
 <title>FluxGK</title>
@@ -544,23 +545,33 @@ function _fdBR(iso){
 var HUB_ST={emprestado:{c:'#B45309',t:'hub.st.loan',d:'On loan',p:'hub.st.loanP',dp:'on loan',p2:'hub.st.loanP2',dp2:'on loan'},
             lesao:{c:'#B91C1C',t:'hub.st.injury',d:'Injured',p:'hub.st.injuryP',dp:'injured',p2:'hub.st.injuryP2',dp2:'injured'},
             convocado:{c:'#1D4ED8',t:'hub.st.callup',d:'National team',p:'hub.st.callupP',dp:'on national team',p2:'hub.st.callupP2',dp2:'on national team'},
-            saida:{c:'#57534E',t:'hub.st.left',d:'Left the club',p:'hub.st.leftP',dp:'left the club',p2:'hub.st.leftP2',dp2:'left the club'}};
-var HUB_ST_ORD=['emprestado','lesao','convocado','saida'];
+            saida:{c:'#57534E',t:'hub.st.left',d:'Left the club',p:'hub.st.leftP',dp:'left the club',p2:'hub.st.leftP2',dp2:'left the club'},
+            base:{c:'#0E7490',t:'hub.st.base',d:'Back to academy',p:'hub.st.baseP',dp:'back at the academy',p2:'hub.st.baseP2',dp2:'back at the academy'}};
+var HUB_ST_ORD=['emprestado','lesao','convocado','saida','base'];
 /* o rodape do card diz o motivo, nao um generico: "1 emprestado · 1 lesionado" */
 function _gkResumoFora(pl){
+  /* ativos que vieram da base: "1 da U-19" (contam como ativos, so recebem a nota) */
+  var daBase={};
+  Object.keys(pl).forEach(function(k){
+    var g=pl[k]; if(g&&_gkAtivo(g)&&g.origem){ daBase[g.origem]=(daBase[g.origem]||0)+1; }
+  });
+  var partesBase=Object.keys(daBase).sort().map(function(o){ return daBase[o]+' '+TX('hub.st.from','from')+' '+o; });
   var cont={};
   Object.keys(pl).forEach(function(k){
     var st=pl[k]&&pl[k].status;
     if(st&&st!=='ativo'&&HUB_ST[st]) cont[st]=(cont[st]||0)+1;
   });
-  return HUB_ST_ORD.filter(function(k){return cont[k];})
+  return partesBase.concat(HUB_ST_ORD.filter(function(k){return cont[k];})
     .map(function(k){ var d=HUB_ST[k];
-      return cont[k]+' '+(cont[k]>1?TX(d.p2,d.dp2):TX(d.p,d.dp)); })
+      return cont[k]+' '+(cont[k]>1?TX(d.p2,d.dp2):TX(d.p,d.dp)); }))
     .join(' · ');
 }
 function _gkAtivo(g){ return !g || !g.status || g.status==='ativo'; }
 function _gkTag(g){
-  var d=HUB_ST[g&&g.status]; if(!d) return '';
+  var d=HUB_ST[g&&g.status];
+  if(!d){ /* ativo vindo da base: etiqueta com a categoria */
+    return (g&&g.origem)?'<span style="font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;background:#0E7490;color:#fff;white-space:nowrap">'+String(g.origem).replace(/[<>&"]/g,'').toUpperCase()+'</span>':'';
+  }
   return '<span style="font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;'
     + 'background:'+d.c+';color:#fff;white-space:nowrap">'+TX(d.t,d.d).toUpperCase()+'</span>';
 }

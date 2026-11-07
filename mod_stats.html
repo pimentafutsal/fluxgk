@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK — GK Statistics</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -1366,12 +1367,23 @@ async function unificarGoleiro(antigo, novo, botao){
     if (botao){ botao.disabled = false; botao.textContent = TX('unif.do', 'Unificar'); }
   }
 }
+/* Goleiros para filtros e relatorios: a lista do Setup MAIS quem aparece
+   nos jogos. Tirar alguem do Setup nao esconde os numeros dele. */
+function gksComHistorico(){
+  const out=(ST.gks||[]).slice();
+  (ST.games||[]).forEach(g=>{
+    if(g.gk&&!_achaNome(out,g.gk)) out.push(g.gk);
+    _asArr(g.shots).forEach(s=>{ if(s&&s.gk&&!_achaNome(out,s.gk)) out.push(s.gk); });
+    _asArr(g.offActions).forEach(o=>{ if(o&&o.gk&&!_achaNome(out,o.gk)) out.push(o.gk); });
+  });
+  return out;
+}
 function getSeasons(){return [...new Set(ST.games.map(g=>g.season))].sort().reverse();}
 function populateAllSelects(){
   try{ renderUnif(); }catch(e){}   /* lista de goleiros mudou: revisa os nomes parecidos */
   const seasons=getSeasons();
   ['dash-season','hist-season','rep-season'].forEach(id=>fillSelect(id,seasons,TX('st.allSeasons')));
-  ['dash-gk','hist-gk','rep-gk'].forEach(id=>fillSelect(id,ST.gks,TX('st.allGks')));
+  ['dash-gk','hist-gk','rep-gk'].forEach(id=>fillSelect(id,gksComHistorico(),TX('st.allGks')));
   ['dash-opp','hist-opp','rep-opp'].forEach(id=>fillSelect(id,ST.clubs,TX('st.allOpponents')));
   ['dash-comp','hist-comp','rep-comp'].forEach(id=>fillSelect(id,ST.comps,TX('st.allComps')));
   populateRecordSelects();
@@ -1409,7 +1421,7 @@ function populateShotGkSelect(selectedGk){
 function populateReportFilters(){
   msFill('opp', ST.clubs);
   msFill('comp', ST.comps);
-  msFill('gk', ST.gks);
+  msFill('gk', gksComHistorico());
   msFill('game', ST.games.map(g=>({val:String(g.id),label:`${g.date} vs ${g.opponent||'?'} (${g.shots.length}sh)`})));
 }
 // ── MULTI-SELECT ENGINE ────────────────────────────────────────────

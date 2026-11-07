@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FluxGK — GK Minutes</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -712,6 +713,17 @@ function _coletaSeMudou(){
   _ultColeta=k;
   buildCollectForm();
 }
+/* Goleiros para historico, relatorios e filtros: a lista do Setup MAIS
+   quem tem minutos em algum jogo. Assim, tirar do Setup um goleiro que
+   saiu (ex.: voltou para a base) so o tira da escalacao dos proximos
+   jogos — os jogos em que ele ja esteve continuam aparecendo. */
+function gksComHistorico(){
+  const out=(ST.gks||[]).slice();
+  (ST.games||[]).forEach(g=>Object.entries(g.gkData||{}).forEach(([n,d])=>{
+    if(d&&(d.selected||d.totalSecs)&&!_achaNome(out,n)) out.push(n);
+  }));
+  return out;
+}
 // ── SETTINGS LISTS ────────────────────────────────────────────────
 function persist(){
   if(!window._MPATH||!_MPATH.games){console.warn('[FluxGK] minutes: sem contexto do hub');return;}
@@ -764,11 +776,11 @@ function populateAllSelects(){
   /* season filter removido — contexto define a temporada */
   fillSelect('h-comp',ST.comps,'All');
   fillSelect('h-opp',ST.clubs,'All');
-  fillSelect('h-gk',ST.gks,'All');
+  fillSelect('h-gk',gksComHistorico(),'All');
   /* season filter removido — contexto define a temporada */
   fillSelect('r-comp',ST.comps,'All');
   fillSelect('r-opp',ST.clubs,'All');
-  fillSelect('r-gk',ST.gks,'All');
+  fillSelect('r-gk',gksComHistorico(),'All');
   ['gks','clubs','comps'].forEach(renderList);
 }
 
@@ -1083,7 +1095,7 @@ function renderHistory(){
   // KPIs
   const totalGames=games.length;
   const totalClubMin=games.reduce((s,g)=>s+(g.totalMin||0),0);
-  const allGks=ST.gks;
+  const allGks=gksComHistorico();
   const kpiEl=document.getElementById('hist-kpis');
   kpiEl.innerHTML=`
     <div class="kpi"><div class="kpi-n">${totalGames}</div><div class="kpi-l">${TX("min.games")}</div></div>
@@ -1324,7 +1336,7 @@ function renderRepTable(){
     return true;
   });
   const totalClubSecs=games.reduce((s,g)=>s+(g.totalMin||40)*60,0);
-  const gks=gkFilter?[gkFilter]:ST.gks;
+  const gks=gkFilter?[gkFilter]:gksComHistorico();
 
   // KPIs
   document.getElementById('rep-kpis').innerHTML=`
@@ -1371,7 +1383,7 @@ function exportReport(){
     return true;
   });
   if(games.length===0){alert(TX('min.msg.noData'));return;}
-  const gks=gkFilter?[gkFilter]:ST.gks;
+  const gks=gkFilter?[gkFilter]:gksComHistorico();
   buildMinutesPDF(games,gks,{scope:'report',showCharts:true});
 }
 
@@ -1379,7 +1391,7 @@ function exportReport(){
 function exportGameReport(id){
   const g=ST.games.find(x=>String(x.id)===String(id));
   if(!g){alert(TX('min.msg.gameNotFound'));return;}
-  buildMinutesPDF([g],ST.gks,{scope:'game',showCharts:false});
+  buildMinutesPDF([g],gksComHistorico(),{scope:'game',showCharts:false});
 }
 
 // Motor de PDF compartilhado: relatorio agregado (varios jogos) e jogo unico.
