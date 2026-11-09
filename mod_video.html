@@ -631,6 +631,46 @@
   #cineSide .cfold.cdropin{background:#e7edff;box-shadow:inset 0 0 0 2px var(--blue)}
   #cineSide .cirow .cib button{padding:0 5px;font-size:10px;line-height:1.6;border-radius:4px}
   #cineOv label{font-size:12px;display:inline-flex;align-items:center;gap:5px;opacity:.9}
+  #cineInk{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+  #cineOv.apr.inkon #cineInk{pointer-events:auto;cursor:crosshair}
+  #cineLoc{position:absolute;z-index:3;margin-top:46px}
+  #cineInkBar{display:none;flex:none;align-items:center;gap:6px;margin-top:8px;color:#fff;flex-wrap:wrap;
+    background:rgba(255,212,0,.08);border:1px solid rgba(255,212,0,.25);border-radius:7px;padding:6px 10px}
+  #cineOv.apr #cineInkBar{display:flex}
+  #cineInkBar .ctlbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;opacity:.65}
+  #cineInkBar .ctsep{width:1px;height:18px;background:rgba(255,255,255,.18);margin:0 3px}
+  #cineInkBar [data-ink],#cineInkBar #cineInkUndo{min-width:30px;font-size:14px;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3)}
+  #cineInkBar [data-ink].on{background:#FFD400;color:#111;border-color:#FFD400}
+  #cineInkBar .inkcor{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;padding:0}
+  #cineInkBar .inkcor.on{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+  #cineInkBar button:disabled{opacity:.4;cursor:default}
+  #cineInkInfo{font-size:11.5px;opacity:.8;margin-left:4px}
+  .aprcard .aprfold{display:flex;align-items:center;gap:7px;padding:6px 10px;background:var(--paper);border-bottom:1px solid var(--line);border-left:3px solid var(--ink);font-size:12px;font-weight:600;flex-wrap:wrap}
+  .aprcard .aprfold.solta{border-left-color:var(--line);color:var(--muted);font-weight:400;font-style:italic}
+  .aprcard .aprfold input{font-weight:600;min-width:120px;max-width:260px}
+  .aprcard .aprlink{font-size:11px;font-weight:400;color:var(--blue)}
+  .aprcard .aprlink.off{color:#b45309}
+  .aprcard .aprrow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:12.5px;min-width:0}
+  .aprcard .aprrow.emfolder{padding-left:22px}
+  .aprcard .aprrow.falta{opacity:.5}
+  .aprcard .aprrow .n{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);min-width:22px;text-align:right}
+  .aprcard .aprrow .dot,.aprpit .dot{width:8px;height:8px;border-radius:2px;flex:none}
+  .aprcard .aprrow .t{flex:1;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .aprcard .aprrow .o{color:var(--muted);font-size:11px;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aprcard .aprrow .aj{font-size:10px;padding:1px 6px;border-radius:9px;background:#fff4d6;color:#8a5a00}
+  .aprcard .aprrow .d{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:42px;text-align:right}
+  .aprcard .aprrow .b{display:flex;gap:2px;flex:none}
+  .aprcard .aprrow .b button,.aprcard .aprfold button{padding:0 6px;font-size:10.5px;line-height:1.7}
+  .aprpsec{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 6px}
+  .aprpgrp{border:1px solid var(--line);border-radius:7px;margin-bottom:6px;padding:4px 9px}
+  .aprpgrp>summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}
+  .aprpl{border-top:1px solid var(--line);padding:6px 0 4px}
+  .aprplh{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer}
+  .aprplh .er,.aprpit .er{font-size:11px;color:var(--muted)}
+  .aprpits{margin:3px 0 0 24px}
+  .aprpits>summary{cursor:pointer;font-size:11.5px;color:var(--blue)}
+  .aprpit{display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0;cursor:pointer}
+  .aprpit .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #cineTrim{flex:none;display:flex;align-items:center;gap:6px;margin-top:8px;color:#fff;flex-wrap:wrap;
     background:rgba(255,255,255,.07);border-radius:7px;padding:7px 10px}
   #cineTrim .ctlbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;opacity:.65}
@@ -876,6 +916,7 @@
     <button data-i18n="vid.exportWord" class="tabbtn" data-tab="export">Export</button>
     <button data-i18n="vid.nav.library" class="tabbtn" data-tab="library">Library</button>
     <button data-i18n="vid.nav.project" class="tabbtn" data-tab="project">Project</button>
+    <button data-i18n="vid.nav.apr" class="tabbtn" data-tab="apr">Presentations</button>
   </nav>
   <div class="spacer"></div>
   <button class="mini" id="togglePanel" title="Show/hide the tags panel" data-i18n-title="vid.tt.tagsPanel">Tags</button>
@@ -908,6 +949,11 @@
         <div class="vltile-ic">🗂️</div>
         <div class="vltile-nm" data-i18n="vid.home.project">Project</div>
         <div class="vltile-ds" data-i18n="vid.home.projectD">Themed playlists across several matches.</div>
+      </button>
+      <button class="vltile" data-go="apr">
+        <div class="vltile-ic">📽️</div>
+        <div class="vltile-nm" data-i18n="vid.home.apr">Presentation</div>
+        <div class="vltile-ds" data-i18n="vid.home.aprD">Mix clips from different projects into one sequence to show the goalkeepers.</div>
       </button>
       <button class="vltile" data-go="library">
         <div class="vltile-ic">🎞️</div>
@@ -1218,6 +1264,19 @@
       </div>
     </div>
   </section>
+
+  <!-- ================= ABA: APRESENTACOES ================= -->
+  <section id="tab-apr" class="tabpane">
+    <div class="card">
+      <h2 data-i18n="vid.apr.title">Presentations — sequences to show the goalkeepers</h2>
+      <div data-i18n="vid.apr.sub" class="empty" style="text-align:left;margin:2px 0 12px">Mix clips from different projects and videos in one sequence. Your projects stay organized as they are: a presentation only points to their clips and follows every change made there.</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" id="aprNewName" maxlength="60" placeholder="New presentation (e.g. GK session 10/11)" data-i18n-placeholder="vid.apr.ph" style="flex:1;min-width:160px">
+        <button class="primary" id="aprNewBtn" data-i18n="vid.apr.new">+ New presentation</button>
+      </div>
+      <div class="body" id="aprView"></div>
+    </div>
+  </section>
 </main>
 
 <!-- ================= PAINÉIS FLUTUANTES ================= -->
@@ -1280,6 +1339,25 @@
   </div>
 </div>
 
+<!-- APRESENTACAO: escolher playlists e lances de qualquer projeto ou video -->
+<div class="st-ov" id="aprPickOv" style="z-index:170">
+  <div class="st-sh" style="max-width:680px">
+    <div class="modal-hdr" style="margin-bottom:4px">
+      <h2 style="font-size:15px;font-weight:600" id="aprPickTitle">—</h2>
+      <button class="modal-close" id="aprPickX">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px" data-i18n="vid.apr.pickHint">Tick a whole playlist to bring it as a synced block (new clips added to it appear here too), or open it and tick single clips.</div>
+    <div id="aprPickList"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);flex-wrap:wrap">
+      <span style="font-size:12.5px" data-i18n="vid.apr.pickDest">Single clips go to:</span>
+      <select id="aprPickDest" style="min-width:160px"></select>
+      <span style="flex:1"></span>
+      <button class="mini ghost" id="aprPickCancel" data-i18n="vid.cancel">Cancel</button>
+      <button class="mini primary" id="aprPickOk" style="padding:7px 16px" data-i18n="vid.apr.addBtn">Add</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXPORTAR TODAS AS PLAYLISTS NUM VIDEO SO -->
 <div class="st-ov" id="exAllOv" style="z-index:170">
   <div class="st-sh" style="max-width:620px">
@@ -1313,7 +1391,10 @@
   <div id="cineBody">
     <div id="cineStage">
       <video id="cineVid" playsinline></video>
+      <!-- apresentacao: desenho salvo no quadro + desenho ao vivo (nunca vai para o video original) -->
+      <canvas id="cineInk"></canvas>
       <div id="cineMsg"></div>
+      <button class="mini primary" id="cineLoc" style="display:none" data-i18n="vid.apr.locate">Locate video…</button>
     </div>
     <div id="cineSide"></div>
   </div>
@@ -1331,6 +1412,27 @@
     <label><input type="checkbox" id="cineAuto" checked> <span data-i18n="vid.cine.autoplay">Auto-advance</span></label>
     <label><input type="checkbox" id="cineLoop"> <span data-i18n="vid.cine.loop">Repeat</span></label>
     <span id="cineKeys" data-i18n="vid.cine.keys">→ next · ← previous · space play</span>
+  </div>
+  <!-- so na apresentacao: desenhar por cima, apagar, apagar e seguir -->
+  <div id="cineInkBar">
+    <span class="ctlbl" data-i18n="vid.apr.draw">DRAW</span>
+    <button class="mini ghost" data-ink="pen" data-i18n-title="vid.tt.pen" title="Freehand pen">✎</button>
+    <button class="mini ghost" data-ink="arrow" data-i18n-title="vid.tt.arrow" title="Arrow">➔</button>
+    <button class="mini ghost" data-ink="line" data-i18n-title="vid.tt.line" title="Line">╱</button>
+    <button class="mini ghost" data-ink="ellipse" data-i18n-title="vid.tt.ellipse" title="Ellipse">◯</button>
+    <button class="mini ghost" data-ink="spot" data-i18n-title="vid.tt.spotlight" title="Spotlight">▼</button>
+    <span class="ctsep"></span>
+    <button class="inkcor on" data-cor="#FFD400" style="background:#FFD400" title="#FFD400"></button>
+    <button class="inkcor" data-cor="#FF3B30" style="background:#FF3B30" title="#FF3B30"></button>
+    <button class="inkcor" data-cor="#FFFFFF" style="background:#FFFFFF" title="#FFFFFF"></button>
+    <button class="inkcor" data-cor="#1E9BFF" style="background:#1E9BFF" title="#1E9BFF"></button>
+    <span class="ctsep"></span>
+    <button class="mini ghost" id="cineInkUndo" data-i18n-title="vid.apr.undoT" title="Undo the last stroke (Ctrl+Z)">↶</button>
+    <button class="mini" id="cineInkClr" data-i18n-title="vid.apr.clearT" title="Erase everything on the screen (Backspace)">🗑 <span data-i18n="vid.apr.clear">Erase</span></button>
+    <button class="mini primary" id="cineInkGo" data-i18n-title="vid.apr.clearGoT" title="Erase everything and continue the video (Enter)">⏵ <span data-i18n="vid.apr.clearGo">Erase &amp; continue</span></button>
+    <span class="ctsep"></span>
+    <label><input type="checkbox" id="cineDes" checked> <span data-i18n="vid.apr.showDraw">Video drawings</span></label>
+    <span id="cineInkInfo"></span>
   </div>
   <!-- corte do lance sem sair do player: os tempos valem para esta playlist -->
   <div id="cineTrim">
@@ -1605,6 +1707,8 @@ function projList(){ if (!Array.isArray(state.projects)) state.projects = []; re
 function currentProject(){ return projList().find(p => p.id === state.currentProjectId) || null; }
 function projPersist(){
   try{ localStorage.setItem(PROJ_KEY, JSON.stringify({ projects: state.projects, currentId: state.currentProjectId })); }catch(e){}
+  /* as apresentacoes usam as mesmas funcoes de pasta/ordem do player: salvam juntas */
+  try{ if (typeof aprSalvaLocal === 'function') aprSalvaLocal(); }catch(e){}
   if (typeof pushToCloud === 'function') pushToCloud();
 }
 function loadProjects(){
@@ -2614,7 +2718,17 @@ function playlistCard(p, pl){
           if (!(await askConfirm(TX('vid.proj.delList'), TX('vid.proj.delListQ') + pl.name + '"?', TX('vid.delete')))) return;
           p.playlists = projPlaylistsOf(p).filter(x => x.id !== pl.id); projPersist(); renderProjectTab();
         });
-        head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bExp); head.appendChild(bDel);
+        /* manda a playlist inteira para uma apresentacao (bloco sincronizado) */
+        const bApr = document.createElement('button'); bApr.className = 'mini ghost'; bApr.textContent = '📽 ' + TX('vid.apr.short', 'Presentation');
+        bApr.title = TX('vid.apr.sendPlT', 'Add this whole playlist to a presentation (stays synced)');
+        bApr.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const r = bApr.getBoundingClientRect();
+          aprMenuDestino(r.left, r.bottom + 4, TX('vid.apr.sendPlT', 'Add this whole playlist to a presentation (stays synced)'), (ap) => {
+            if (aprAdicionaPlaylist(ap, { k: 'pp', projId: p.id, plId: pl.id }, p.name + ' · ' + pl.name)) log(TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".', 'ok');
+          });
+        });
+        head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bApr); head.appendChild(bExp); head.appendChild(bDel);
         card.appendChild(head);
         /* o corpo inteiro some quando a playlist esta recolhida */
         const corpoPl = document.createElement('div'); corpoPl.className = 'plbody';
@@ -3818,6 +3932,7 @@ function _slowOrig(it, all){
 }
 function slowDoLance(it){
   if (!it) return null;
+  if (it.overSlow && typeof _cine !== 'undefined' && _cine && _cine.apr) return slowValido(it.overSlow) ? it.overSlow : null;
   try{
     const orig = _slowOrig(it, libAll());
     if (orig){
@@ -3961,7 +4076,9 @@ function cineSlowPinta(){
     ini: () => { const it = cineItem(); return it ? (it.start || 0) : 0; },
     fim: () => { const it = cineItem(); return it ? (it.end != null ? it.end : (it.start || 0) + 8) : 0; },
     get: () => _cine ? _cine.slow : null,
-    set: (sl) => { const it = cineItem(); if (!it) return; _cine.slow = sl; slowGravarItem(it, sl); },
+    set: (sl) => { const it = cineItem(); if (!it) return; _cine.slow = sl;
+      if (_cine.apr){ it.overSlow = sl ? Object.assign({}, sl) : { rate: 1 }; it.slow = sl ? Object.assign({}, sl) : null; projPersist(); return; }
+      slowGravarItem(it, sl); },
     play: () => { if (!_cine) return; _cine.tocando = true; _cine.fim = false; try { $('cineVid').play(); } catch (e) {} cineSyncBtn(); },
     repinta: () => { cineSlowPinta(); cinePinta(); },
     dica: false
@@ -5154,8 +5271,12 @@ function cineClose(){
   try { v.pause(); } catch (e) {}
   v.removeAttribute('src'); try { v.load(); } catch (e) {}
   if (_cine && _cine.url){ try { URL.revokeObjectURL(_cine.url); } catch (e) {} }
+  const _eraApr = !!(_cine && _cine.apr);
   _cine = null;
-  $('cineOv').classList.remove('on');
+  $('cineOv').classList.remove('on', 'apr', 'inkon');
+  aprInk.tool = null; aprInk.cur = null; aprMostraLocalizar(false);
+  try { aprInkPinta(); } catch (e) {}
+  if (_eraApr){ try { aprRender(); } catch (e) {} }
   $('cineMsg').textContent = '';
   /* a aba do projeto tem de refletir a nova ordem e os novos tempos */
   try { renderProjectTab(); } catch (e) {}
@@ -5303,7 +5424,7 @@ function cineRenderList(){
 let _ciDrag = null, _cfDrag = null;
 function cineResync(idAtual){
   if (!_cine) return;
-  _cine.items = plFlat(_cine.pl).filter(it => it && it.srcKey);
+  _cine.items = plFlat(_cine.pl).filter(it => it && it.srcKey && !it.falta);
   const i = _cine.items.findIndex(x => x.id === idAtual);
   if (i >= 0) _cine.i = i;
   cineRenderList(); cineCount();
@@ -5350,6 +5471,12 @@ async function cineRename(it){
   const nv = await askText(TX('vid.cine.renameT'), it.name || it.tagName || '');
   if (nv === null) return;
   const nome = nv.trim().slice(0, 80);
+  if (_cine && _cine.apr){
+    if (nome) it.overName = nome; else delete it.overName;
+    const src = aprFonte(it.ref);
+    it.name = nome || (src ? src.name : '');
+    projPersist(); cineRenderList(); return;
+  }
   it.name = nome; projPersist();
   /* o nome vale para os dois lados: aqui e no corte original do jogo */
   if (libRenameEvent(it, nome)) log(TX('vid.cine.renamedAll'));
@@ -5393,8 +5520,25 @@ function cineItemMenu(x, y, it){
      abaixo, com o nome da analise, para nao misturar jogos sem querer. */
   /* Durante a apresentacao so faz sentido o subprojeto aberto: as playlists
      dos outros jogos ficam para a aba Projetos, onde da para duplicar. */
-  const minha = playlistAnalise(_cine.proj, _cine.pl);
-  const outras = projPlaylistsOf(_cine.proj)
+  if (_cine.apr){
+    /* na apresentacao: de onde veio e voltar ao original */
+    if (it.origem){ const o = document.createElement('div'); o.className = 'ctxhead'; o.style.fontWeight = '400'; o.textContent = '↳ ' + it.origem; menu.insertBefore(o, menu.children[1]); }
+    if (aprTemAjuste(it)) menu.appendChild(ctxItem(TX('vid.apr.restore', 'Back to the original (undo adjustments made here)'), () => {
+      aprRestauraItem(_cine.apr, it); if (_cine.orig) delete _cine.orig[it.id];
+      cineGo(_cine.items.indexOf(it), 'pause');
+    }));
+  } else {
+    /* fora da apresentacao: mandar este lance para uma */
+    menu.appendChild(ctxItem(TX('vid.apr.sendTo', 'Add to a presentation…'), () => {
+      const r = { k: 'pp', projId: _cine.proj.id, plId: _cine.pl.id, itemId: it.id };
+      setTimeout(() => aprMenuDestino(x, y, TX('vid.apr.sendTo', 'Add to a presentation…'), (ap) => {
+        const n = aprAdicionaLances(ap, [r], '');
+        log(n ? TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".' : TX('vid.apr.dup', 'This clip is already in') + ' "' + ap.name + '".', n ? 'ok' : 'err');
+      }), 0);
+    }));
+  }
+  const minha = _cine.apr ? null : playlistAnalise(_cine.proj, _cine.pl);
+  const outras = _cine.apr ? [] : projPlaylistsOf(_cine.proj)
     .filter(x => x.id !== _cine.pl.id && playlistAnalise(_cine.proj, x) === minha)
     .sort((x, y) => (x.name || '').localeCompare(y.name || ''));
   if (outras.length){
@@ -5413,7 +5557,7 @@ function cineItemMenu(x, y, it){
       projMoveItem(_cine.pl.id, pl2.id, it.id);
       log(TX('vid.cine.movedTo') + pl2.name + '".');
       /* sumiu daqui: reaproveita a mesma logica de quando se remove */
-      _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey);
+      _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey && !x.falta);
       if (!_cine.items.length){ cineClose(); return; }
       if (seguia){ const i2 = _cine.items.findIndex(x => x.id === atual); if (i2 >= 0) _cine.i = i2; cineRenderList(); cineCount(); cineTrimPaint(); }
       else { const pos = Math.min(_cine.i, _cine.items.length - 1); _cine.i = -1; cineGo(pos, 'pause'); }
@@ -5481,10 +5625,11 @@ function cineRemove(itId){
   const pos = _cine.items.indexOf(alvo);
   const tocandoEsse = pos === _cine.i;
   const atual = (_cine.items[_cine.i] || {}).id;
-  _cine.pl.items = (_cine.pl.items || []).filter(x => x.id !== itId);
+  if (_cine.apr) aprTiraItem(_cine.apr, itId);
+  else _cine.pl.items = (_cine.pl.items || []).filter(x => x.id !== itId);
   projPersist();
   if (_cine.orig) delete _cine.orig[itId];
-  _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey);
+  _cine.items = plFlat(_cine.pl).filter(x => x && x.srcKey && !x.falta);
   log(TX('vid.cine.removed') + (alvo && (alvo.name || alvo.tagName) || ''));
   if (!_cine.items.length){ log(TX('vid.cine.emptyNow')); cineClose(); return; }
   if (tocandoEsse){
@@ -5512,6 +5657,7 @@ function cineDrop(dragId, alvoId, depois){
    sair igual ao que voce viu no player. */
 function zoomDoLance(it){
   if (!it) return null;
+  if (it.overZoom && typeof _cine !== 'undefined' && _cine && _cine.apr) return it.overZoom.zoom > 1.001 ? it.overZoom : null;
   try{
     const ses = libAll()[it.srcKey];
     if (ses && Array.isArray(ses.events)){
@@ -5553,11 +5699,13 @@ function cineFraming(it){
 async function cineFile(it){
   if (!_cine) return null;
   const nm = it.srcName || it.srcKey;
-  if (_cine.files[nm] !== undefined) return _cine.files[nm];
+  /* na apresentacao os videos vem de projetos diferentes: a chave e nome|tamanho */
+  const ck = _cine.apr ? (it.srcKey || nm) : nm;
+  if (_cine.files[ck] !== undefined && (!_cine.apr || _cine.files[ck] !== null)) return _cine.files[ck];
   $('cineMsg').textContent = TX('vid.cine.loading');
   let f = null;
-  try { f = await projResolveFile(_cine.proj, nm); } catch (e) { f = null; }
-  _cine.files[nm] = f;
+  try { f = _cine.apr ? await aprArquivo(it) : await projResolveFile(_cine.proj, nm); } catch (e) { f = null; }
+  if (_cine) _cine.files[ck] = f;
   return f;
 }
 
@@ -5586,13 +5734,16 @@ async function cineGo(i, modo){
   if (!_cine || _cine.i !== i) return;           /* o usuario pulou enquanto carregava */
   if (!f){
     $('cineMsg').textContent = TX('vid.cine.missing') + ' ' + (it.srcName || '');
+    if (_cine.apr){ aprMostraLocalizar(true); try { $('cineVid').pause(); } catch (e) {} _cine.tocando = false; cineSyncBtn(); aprNoLance(it); }
     return;
   }
+  if (_cine.apr) aprMostraLocalizar(false);
   /* troca de fonte só quando o lance vem de outro vídeo */
-  if (_cine.srcAtual !== it.srcName){
+  const _chaveFonte = _cine.apr ? it.srcKey : it.srcName;
+  if (_cine.srcAtual !== _chaveFonte){
     if (_cine.url){ try { URL.revokeObjectURL(_cine.url); } catch (e) {} }
     _cine.url = URL.createObjectURL(f);
-    _cine.srcAtual = it.srcName;
+    _cine.srcAtual = _chaveFonte;
     v.src = _cine.url;
     await new Promise(res => {
       const on = () => { v.removeEventListener('loadedmetadata', on); res(); };
@@ -5607,6 +5758,7 @@ async function cineGo(i, modo){
   cineFraming(it);
   _cine.slow = slowDoLance(it);
   cineTrimPaint(); cinePinta(); cineZoomPaint(); cineSlowPinta();
+  if (_cine.apr) aprNoLance(it);
   if (_cine.tocando){ try { await v.play(); } catch (e) {} }
   else { try { v.pause(); } catch (e) {} }
   cineSyncBtn();
@@ -5640,7 +5792,9 @@ function cineSetIn(valor, irPara){
   const novo = Math.max(0, Math.min(valor, fim - CINE_MIN));
   if (Math.abs(novo - (it.start || 0)) < 0.001) return;
   cineGuardaOrig(it);
-  it.start = novo; projPersist();
+  it.start = novo;
+  if (_cine.apr) it.over = { start: it.start, end: it.end != null ? it.end : null };
+  projPersist();
   cineTrimPaint(); cineRenderList();
   if (irPara !== false){ try { $('cineVid').currentTime = novo; } catch (e) {} }
 }
@@ -5650,7 +5804,9 @@ function cineSetOut(valor){
   const novo = Math.max(ini + CINE_MIN, valor);
   if (Math.abs(novo - (it.end != null ? it.end : 0)) < 0.001) return;
   cineGuardaOrig(it);
-  it.end = novo; projPersist();
+  it.end = novo;
+  if (_cine.apr) it.over = { start: it.start || 0, end: it.end };
+  projPersist();
   cineTrimPaint(); cineRenderList();
 }
 function cineRevert(){
@@ -5658,6 +5814,11 @@ function cineRevert(){
   const o = _cine.orig[it.id];
   it.start = o.start; it.end = o.end;
   delete _cine.orig[it.id];
+  if (_cine.apr){
+    const src = aprFonte(it.ref);
+    if (src && Math.abs((src.start || 0) - (it.start || 0)) < 0.001 && Math.abs((src.end || 0) - (it.end || 0)) < 0.001) delete it.over;
+    else it.over = { start: it.start || 0, end: it.end != null ? it.end : null };
+  }
   projPersist(); cineTrimPaint(); cineRenderList();
   try { $('cineVid').currentTime = it.start || 0; } catch (e) {}
 }
@@ -5806,6 +5967,12 @@ function cineZoomSalvar(it, z){
   const limpar = !z || z.zoom <= 1.001;
   const ez = limpar ? null : { zoom: z.zoom, panX: z.panX, panY: z.panY, stageW: z.stageW, stageH: z.stageH };
   it.exportZoom = ez ? Object.assign({}, ez) : null;
+  if (_cine && _cine.apr){
+    it.overZoom = ez ? Object.assign({}, ez) : { zoom: 1 };   /* zoom 1 = sem enquadramento, so aqui */
+    try { projPersist(); } catch (e) {}
+    cineZoomPaint(); cineFramingDireto(it, ez);
+    return;
+  }
   try { projPersist(); } catch (e) {}
   try {
     const all = libAll();
@@ -5831,12 +5998,13 @@ function cineZoomSalvar(it, z){
 /* aplica sem reconsultar a biblioteca (durante o arraste seria lento) */
 function cineFramingDireto(it, ez){
   const v = $('cineVid');
-  if (!ez || !(ez.zoom > 1.001)){ v.style.transform = 'none'; $('cineStage').classList.remove('pan'); return; }
+  if (!ez || !(ez.zoom > 1.001)){ v.style.transform = 'none'; $('cineStage').classList.remove('pan'); if (_cine && _cine.apr) aprInkPinta(); return; }
   const w = v.clientWidth || 1, h = v.clientHeight || 1;
   const tx = (ez.panX || 0) * (w / (ez.stageW || w));
   const ty = (ez.panY || 0) * (h / (ez.stageH || h));
   v.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + ez.zoom + ')';
   $('cineStage').classList.add('pan');
+  if (_cine && _cine.apr) aprInkPinta();
 }
 function cineZoomPaint(){
   const it = cineItem();
@@ -5896,6 +6064,7 @@ function cineLigarPan(){
   let ini = null;
   stage.addEventListener('mousedown', (e) => {
     const it = cineItem(); if (!it) return;
+    if (_cine && _cine.apr && aprInk.tool) return;      /* desenhando, nao arrasta a imagem */
     const z = cineVista() || cineZoomAtual(it);
     if (!(z.zoom > 1.001)) return;      /* sem zoom, clicar continua sendo play/pause */
     e.preventDefault();
@@ -5931,12 +6100,15 @@ function cineWire(){
     if (!_cine) return;
     const it = _cine.items[_cine.i]; if (!it) return;
     cinePinta();
+    /* apresentacao: chegou num desenho salvo, para e espera o play */
+    if (_cine.apr && aprVigia(v.currentTime)) return;
     /* arrastando a trilha ou parado: nunca emenda sozinho */
     if (_cine.arrastando || !_cine.tocando) return;
     const fim = (it.end != null ? it.end : (it.start || 0) + 8);
     if (v.currentTime >= fim - 0.03){
       /* repetir tem prioridade: o lance roda em loop enquanto voce fala */
       if ($('cineLoop') && $('cineLoop').checked){
+        if (_cine.apr){ _cine.prevT = (it.start || 0) - 1; _cine.parada = null; aprInkPinta(); }
         try { v.currentTime = it.start || 0; if (_cine.tocando) v.play(); } catch (e) {}
         return;
       }
@@ -5977,7 +6149,9 @@ function cineWire(){
       /* lance no fim: play mostra de novo, sem precisar voltar na mao */
       if (it && (_cine.fim || v.currentTime >= fim - 0.05 || v.ended)){
         try { v.currentTime = it.start || 0; } catch (e) {}
+        if (_cine.apr) _cine.prevT = (it.start || 0) - 1;
       }
+      if (_cine.apr) aprAntesDoPlay();
       _cine.fim = false;
       _cine.tocando = true; try { v.play(); } catch (e) {}
     }
@@ -6003,6 +6177,11 @@ function cineWire(){
   });
   $('cineStage').addEventListener('click', (e) => {
     if ($('cineStage').classList.contains('panning')) return;   /* foi arraste, nao clique */
+    /* apresentacao: com caneta na mao, clicar e desenhar; parado num desenho, so play/espaco seguem */
+    if (_cine && _cine.apr){
+      if (aprInk.tool || e.target === $('cineLoc')) return;
+      if (!_cine.tocando && (_cine.parada || (_cine.tinta || []).length)) return;
+    }
     $('cinePlay').click();
   });
   $('cineInM').addEventListener('click', () => { const it = cineItem(); if (it) cineSetIn((it.start || 0) - CINE_PASSO); });
@@ -6034,6 +6213,14 @@ function cineWire(){
     if (document.querySelector('#askModal.on, #nameModal.on')) return;
     /* com o menu aberto, Esc fecha so o menu */
     if (e.key === 'Escape' && $('ctxMenu').classList.contains('on')){ e.stopPropagation(); closeCtxMenu(); return; }
+    if (_cine.apr){
+      /* apresentacao: Enter apaga e segue · Backspace apaga · Ctrl+Z desfaz · D caneta · Esc larga a caneta */
+      if (e.key === 'Escape' && aprInk.tool){ e.stopPropagation(); aprFerramenta(aprInk.tool); return; }
+      if (e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); aprApagarESeguir(); return; }
+      if (e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); e.stopPropagation(); aprApagar(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')){ e.preventDefault(); e.stopPropagation(); aprDesfazer(); return; }
+      if (!e.ctrlKey && !e.metaKey && (e.key === 'd' || e.key === 'D')){ e.stopPropagation(); aprFerramenta('pen'); return; }
+    }
     if (e.key === 'Escape'){ e.stopPropagation(); cineClose(); }
     else if (e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i + 1); }
     else if (e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i - 1); }
@@ -6045,6 +6232,678 @@ function cineWire(){
   }, true);
 }
 cineWire();
+
+/* ══════════════════════════════════════════════════════════════
+   APRESENTACOES — sequencias para mostrar aos goleiros
+   Uma apresentacao NAO copia nada: aponta para lances que vivem
+   nos projetos (playlists de projeto) ou nos jogos (playlists do
+   video). Cada vez que abre, le o estado atual da origem — corte,
+   nome, enquadramento, camera lenta. Os ajustes feitos dentro da
+   apresentacao (corte, zoom, nome, camera lenta) ficam SO nela.
+   Formato:
+     { id, name, createdAt, fechada?,
+       folders: [{ id, name, fechada?, fonte?, fora:[refKey] }],   <- blocos
+       items:   [{ id, folderId?, ref, over?, overZoom?, overSlow?, overName?, ...copia da origem }] }
+     ref = { k:'pp', projId, plId, itemId }   lance de playlist de projeto
+         | { k:'ve', srcKey, evId }           lance de playlist do video
+     fonte (bloco ligado a uma playlist inteira, acompanha os lances novos):
+         = { k:'pp', projId, plId } | { k:'vp', srcKey, plId }
+   ══════════════════════════════════════════════════════════════ */
+const APR_KEY = 'fluxgk_videolab_apresentacoes_v1';
+function aprList(){ if (!Array.isArray(state.apresentacoes)) state.apresentacoes = []; return state.apresentacoes; }
+function aprSalvaLocal(){ try { localStorage.setItem(APR_KEY, JSON.stringify(aprList())); } catch (e) {} }
+function aprPersist(){ aprSalvaLocal(); if (typeof pushToCloud === 'function') pushToCloud(); }
+function aprLoad(){
+  try { const d = JSON.parse(localStorage.getItem(APR_KEY) || 'null'); if (Array.isArray(d)) state.apresentacoes = d; } catch (e) {}
+  aprList().forEach(aprNorm);
+}
+function aprNovoId(px){ return px + Math.random().toString(36).slice(2, 9); }
+/* a nuvem devolve sem os vetores vazios: recompõe */
+function aprNorm(ap){
+  if (!ap) return ap;
+  if (!Array.isArray(ap.items)) ap.items = ap.items && typeof ap.items === 'object' ? Object.values(ap.items) : [];
+  if (!Array.isArray(ap.folders)) ap.folders = ap.folders && typeof ap.folders === 'object' ? Object.values(ap.folders) : [];
+  ap.items = ap.items.filter(it => it && it.ref);
+  ap.folders.forEach(f => { if (!Array.isArray(f.fora)) f.fora = f.fora && typeof f.fora === 'object' ? Object.values(f.fora) : []; });
+  return ap;
+}
+function aprCriar(nome){
+  const ap = { id: aprNovoId('ap'), name: String(nome || TX('vid.apr.default', 'Presentation')).slice(0, 60), createdAt: Date.now(), items: [], folders: [] };
+  aprList().unshift(ap); aprPersist(); return ap;
+}
+function aprPorId(id){ return aprList().find(a => a.id === id) || null; }
+function aprRefKey(r){
+  if (!r) return '';
+  return r.k === 'pp' ? 'pp:' + r.projId + ':' + r.plId + ':' + r.itemId : 've:' + r.srcKey + ':' + r.evId;
+}
+function aprFonteKey(f){ return f ? (f.k === 'pp' ? 'pp:' + f.projId + ':' + f.plId : 'vp:' + f.srcKey + ':' + f.plId) : ''; }
+
+/* sessao de um video (lances, desenhos e playlists do jogo); a aberta agora e a mais fresca */
+function aprSessao(srcKey){
+  if (state.file && sessionKey() === srcKey)
+    return { name: state.file.name, events: state.events || [], drawings: state.drawings || [], namedPlaylists: state.namedPlaylists || [] };
+  return libAll()[srcKey] || null;
+}
+function aprNomeVideo(srcKey, ses){
+  const s = ses || aprSessao(srcKey);
+  return (s && s.name) || String(srcKey || '').replace(/\|\d+$/, '');
+}
+/* estado ATUAL do lance na origem (null = nao existe mais) */
+function aprFonte(r){
+  if (!r) return null;
+  if (r.k === 'pp'){
+    const p = projList().find(x => x.id === r.projId); if (!p) return null;
+    const pl = projPlaylistsOf(p).find(x => x.id === r.plId); if (!pl) return null;
+    const it = (pl.items || []).find(x => x.id === r.itemId); if (!it || !it.srcKey) return null;
+    return {
+      srcKey: it.srcKey, srcName: it.srcName || '', tagId: it.tagId || '', tagName: it.tagName || '', color: it.color || '#888',
+      name: it.name || '', note: it.note || '', spec: it.spec || '',
+      t: it.t != null ? it.t : null, start: it.start || 0, end: it.end != null ? it.end : null,
+      exportZoom: it.exportZoom || null, slow: it.slow || null, gk: it.gk || '', outcome: it.outcome || '',
+      origem: p.name + ' · ' + pl.name
+    };
+  }
+  if (r.k === 've'){
+    const ses = aprSessao(r.srcKey); if (!ses) return null;
+    const ev = (ses.events || []).find(e => String(e.id) === String(r.evId)); if (!ev) return null;
+    const tag = findTag(ev.tagId);
+    return {
+      srcKey: r.srcKey, srcName: aprNomeVideo(r.srcKey, ses), tagId: ev.tagId || '', tagName: tag ? tag.name : '', color: tag ? tag.color : '#888',
+      name: ev.name || '', note: ev.note || '', spec: ev.spec || '',
+      t: ev.t != null ? ev.t : null, start: ev.start || 0, end: ev.end != null ? ev.end : null,
+      exportZoom: ev.exportZoom || null, slow: ev.slow || null, gk: ev.gk || '', outcome: ev.outcome || '',
+      origem: aprNomeVideo(r.srcKey, ses)
+    };
+  }
+  return null;
+}
+/* lances atuais de uma playlist inteira (null = a playlist nao existe mais) */
+function aprRefsDaFonte(f){
+  if (!f) return null;
+  if (f.k === 'pp'){
+    const p = projList().find(x => x.id === f.projId); if (!p) return null;
+    const pl = projPlaylistsOf(p).find(x => x.id === f.plId); if (!pl) return null;
+    return plFlat(pl).filter(it => it && it.srcKey).map(it => ({ k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }));
+  }
+  if (f.k === 'vp'){
+    const ses = aprSessao(f.srcKey); if (!ses) return null;
+    const npl = (ses.namedPlaylists || []).find(x => String(x.id) === String(f.plId)); if (!npl) return null;
+    const ids = new Set((ses.events || []).map(e => String(e.id)));
+    return (npl.evIds || []).filter(id => ids.has(String(id))).map(id => ({ k: 've', srcKey: f.srcKey, evId: id }));
+  }
+  return null;
+}
+function aprNomeFonte(f){
+  if (!f) return '';
+  if (f.k === 'pp'){
+    const p = projList().find(x => x.id === f.projId);
+    const pl = p ? projPlaylistsOf(p).find(x => x.id === f.plId) : null;
+    return p && pl ? p.name + ' · ' + pl.name : '';
+  }
+  const ses = aprSessao(f.srcKey);
+  const npl = ses ? (ses.namedPlaylists || []).find(x => String(x.id) === String(f.plId)) : null;
+  return ses && npl ? aprNomeVideo(f.srcKey, ses) + ' · ' + npl.name : '';
+}
+/* le tudo da origem de novo (sincronia). Blocos ligados a uma playlist
+   recebem os lances novos dela e perdem os que ela apagou. */
+function aprHidrata(ap){
+  aprNorm(ap);
+  let mudou = false;
+  const tem = new Set(ap.items.map(it => aprRefKey(it.ref)));
+  ap.folders.forEach(f => {
+    if (!f.fonte) return;
+    const refs = aprRefsDaFonte(f.fonte); if (!refs) return;
+    /* a origem apagou o lance: sai do bloco ligado tambem */
+    const antes = ap.items.length;
+    ap.items = ap.items.filter(it => !(it.folderId === f.id && !aprFonte(it.ref)));
+    if (ap.items.length !== antes) mudou = true;
+    refs.forEach(r => {
+      const k = aprRefKey(r);
+      if (tem.has(k) || f.fora.indexOf(k) >= 0) return;
+      ap.items.push({ id: aprNovoId('ai'), ref: r, folderId: f.id }); tem.add(k); mudou = true;
+    });
+  });
+  ap.items.forEach(it => {
+    const s = aprFonte(it.ref);
+    if (!s){ if (!it.falta){ it.falta = true; mudou = true; } return; }
+    if (it.falta){ delete it.falta; mudou = true; }
+    it.srcKey = s.srcKey; it.srcName = s.srcName; it.tagId = s.tagId; it.tagName = s.tagName; it.color = s.color;
+    it.note = s.note; it.spec = s.spec; it.t = s.t; it.gk = s.gk; it.outcome = s.outcome; it.origem = s.origem;
+    it.name = it.overName || s.name;
+    if (it.over){ it.start = it.over.start != null ? it.over.start : s.start; it.end = it.over.end != null ? it.over.end : s.end; }
+    else { it.start = s.start; it.end = s.end; }
+    it.exportZoom = it.overZoom ? (it.overZoom.zoom > 1.001 ? it.overZoom : null) : s.exportZoom;
+    it.slow = it.overSlow ? (slowValido(it.overSlow) ? it.overSlow : null) : s.slow;
+  });
+  plNormaliza(ap);
+  if (mudou) aprPersist();
+  return ap;
+}
+/* playlist inteira vira um bloco ligado a ela */
+function aprAdicionaPlaylist(ap, fonte, nome){
+  aprNorm(ap);
+  const fk = aprFonteKey(fonte);
+  if (ap.folders.some(f => f.fonte && aprFonteKey(f.fonte) === fk)){ log(TX('vid.apr.already', 'This playlist is already in the presentation: ') + nome, 'err'); return null; }
+  const f = { id: aprNovoId('f'), name: String(nome || 'Playlist').slice(0, 60), fonte: Object.assign({}, fonte), fora: [] };
+  ap.folders.push(f);
+  aprHidrata(ap); aprPersist();
+  return f;
+}
+/* lances soltos (sem ligacao com a playlist inteira) */
+function aprAdicionaLances(ap, refs, folderId){
+  aprNorm(ap);
+  const tem = new Set(ap.items.map(it => aprRefKey(it.ref)));
+  let n = 0;
+  (refs || []).forEach(r => {
+    const k = aprRefKey(r); if (!k || tem.has(k)) return;
+    const it = { id: aprNovoId('ai'), ref: Object.assign({}, r) };
+    if (folderId) it.folderId = folderId;
+    ap.items.push(it); tem.add(k); n++;
+  });
+  aprHidrata(ap); aprPersist();
+  return n;
+}
+/* tirar da apresentacao: no bloco ligado, fica anotado para nao voltar */
+function aprTiraItem(ap, itId){
+  const it = ap.items.find(x => x.id === itId); if (!it) return;
+  const f = it.folderId ? ap.folders.find(x => x.id === it.folderId) : null;
+  if (f && f.fonte){ const k = aprRefKey(it.ref); if (f.fora.indexOf(k) < 0) f.fora.push(k); }
+  ap.items = ap.items.filter(x => x.id !== itId);
+  aprPersist();
+}
+function aprTiraBloco(ap, fid, comLances){
+  if (comLances) ap.items = ap.items.filter(it => it.folderId !== fid);
+  else ap.items.forEach(it => { if (it.folderId === fid) delete it.folderId; });
+  ap.folders = ap.folders.filter(f => f.id !== fid);
+  plNormaliza(ap); aprPersist();
+}
+/* volta o lance ao que esta na origem (desfaz os ajustes da apresentacao) */
+function aprRestauraItem(ap, it){
+  delete it.over; delete it.overZoom; delete it.overSlow; delete it.overName;
+  aprHidrata(ap); aprPersist();
+}
+function aprTemAjuste(it){ return !!(it && (it.over || it.overZoom || it.overSlow || it.overName)); }
+
+/* acha o arquivo do lance: aberto agora > atalho salvo > pasta do projeto que tem o video */
+async function aprArquivo(it){
+  const key = it.srcKey;
+  if (state.file && sessionKey() === key) return state.file;
+  let f = null;
+  try { f = await arquivoPeloAtalho(key, true); } catch (e) { f = null; }
+  if (f && f.size === tamanhoDaChave(key)) return f;
+  const r = it.ref || {};
+  const cands = [];
+  if (r.k === 'pp'){ const p = projList().find(x => x.id === r.projId); if (p) cands.push(p); }
+  projList().forEach(p => { if (cands.indexOf(p) < 0 && (p.videos || []).some(v => v.srcKey === key || v.srcName === it.srcName)) cands.push(p); });
+  for (const p of cands){
+    const v = (p.videos || []).find(x => x.srcKey === key) || (p.videos || []).find(x => x.srcName === it.srcName) || { srcName: it.srcName, srcKey: key };
+    try { f = await acharVideoDoProjeto(p, v, true); } catch (e) { f = null; }
+    if (f) return f;
+  }
+  return null;
+}
+/* "Localizar video" dentro do player: escolhe o arquivo e guarda o atalho */
+async function aprLocalizar(){
+  const it = cineItem(); if (!it || !_cine) return;
+  let file = null, handle = null;
+  if (window.showOpenFilePicker){
+    try {
+      const [h] = await window.showOpenFilePicker({ id: 'fluxgk-video', multiple: false,
+        types: [{ description: 'Vídeo', accept: { 'video/*': ['.mp4', '.m4v', '.mov', '.mkv', '.webm', '.avi', '.mts', '.m2ts', '.mpg', '.mpeg', '.wmv'] } }] });
+      handle = h; file = await h.getFile();
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  if (!file){
+    file = await new Promise(res => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'video/*';
+      inp.onchange = () => res(inp.files && inp.files[0] ? inp.files[0] : null);
+      inp.click();
+    });
+  }
+  if (!file || !_cine) return;
+  const tam = tamanhoDaChave(it.srcKey);
+  if (tam && file.size !== tam){
+    const seg = await askConfirm(TX('vid.rl.tamT', 'Tamanho diferente'),
+      TX('vid.rl.tamQ', 'O arquivo escolhido ({n}) tem tamanho diferente do original ({o}). Se ele foi recortado ou convertido, os tempos dos cortes podem não bater. Religar mesmo assim?')
+        .replace('{n}', mbTxt(file.size)).replace('{o}', mbTxt(tam)), TX('vid.rl.mesmo', 'Religar'));
+    if (!seg) return;
+  }
+  if (handle) idbSet('vfile:' + it.srcKey, handle);
+  _cine.files[it.srcKey] = file;
+  _cine.srcAtual = null;
+  cineGo(_cine.i, 'pause');
+}
+function aprMostraLocalizar(on){
+  const b = $('cineLoc'); if (b) b.style.display = on ? '' : 'none';
+}
+
+/* ══ PLAYER EM MODO APRESENTACAO ══════════════════════════════
+   E o mesmo player das playlists, com tres diferencas:
+   - os lances vem de projetos e jogos diferentes;
+   - corte, zoom, nome e camera lenta mexidos aqui ficam SO na apresentacao;
+   - desenho: o desenho salvo no video PARA o lance no quadro dele e so
+     segue com play (botao ou espaco). Desenhar por cima tambem para.
+     O desenho feito aqui nunca vai para o video original.        */
+const aprInk = { tool: null, color: '#FFD400', cur: null };
+function cineApr(){ return !!(_cine && _cine.apr); }
+function aprPlay(ap, desdeItemId){
+  if (!ap) return;
+  if (state.file) { try { flushSaveSession(); } catch (e) {} }
+  aprHidrata(ap);
+  const items = plFlat(ap).filter(it => it && it.srcKey && !it.falta);
+  if (!items.length){ log(TX('vid.apr.empty', 'This presentation has no clips yet.'), 'err'); return; }
+  _cine = { proj: null, apr: ap, pl: ap, items: items, i: -1, files: {}, url: null, tocando: true, tinta: [], parada: null, paradas: [], prevT: null };
+  aprInk.tool = null; aprInk.cur = null;
+  const ov = $('cineOv');
+  ov.classList.add('apr'); ov.classList.remove('inkon');
+  $('cineTitle').textContent = '▶ ' + ap.name;
+  ov.classList.add('on');
+  aprInkBarPinta();
+  cineRenderList();
+  let i0 = 0;
+  if (desdeItemId){ const k = items.findIndex(x => x.id === desdeItemId); if (k >= 0) i0 = k; }
+  cineGo(i0);
+}
+/* a cada lance: tinta limpa e a lista dos desenhos salvos dentro do corte */
+function aprNoLance(it){
+  if (!cineApr()) return;
+  _cine.tinta = []; _cine.parada = null; aprInk.cur = null;
+  const ses = aprSessao(it.srcKey);
+  const a = (it.start || 0) - 0.06, b = (it.end != null ? it.end : (it.start || 0) + 8) + 0.02;
+  _cine.paradas = ((ses && ses.drawings) || []).filter(d => d && typeof d.t === 'number' && d.t >= a && d.t <= b).sort((x, y) => x.t - y.t);
+  _cine.prevT = (it.start || 0) - 1;
+  aprLoopQuadros();
+  aprInkPinta(); aprInkBarPinta();
+}
+/* vigia quadro a quadro (requestVideoFrameCallback) — o timeupdate passa so 4x por segundo */
+function aprLoopQuadros(){
+  const v = $('cineVid'); if (!v || !v.requestVideoFrameCallback || !_cine) return;
+  const tok = _cine._rvfc = (_cine._rvfc || 0) + 1;
+  const cb = (now, meta) => {
+    if (!_cine || !_cine.apr || _cine._rvfc !== tok) return;
+    aprVigia(meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : v.currentTime);
+    v.requestVideoFrameCallback(cb);
+  };
+  v.requestVideoFrameCallback(cb);
+}
+/* passou pelo quadro de um desenho salvo tocando: para nele */
+function aprVigia(t){
+  if (!cineApr()) return false;
+  const v = $('cineVid');
+  if (v.seeking) return false;
+  const prev = _cine.prevT; _cine.prevT = t;
+  if (prev == null || !_cine.tocando || _cine.arrastando) return false;
+  if (!$('cineDes') || !$('cineDes').checked) return false;
+  const meio = quadroDur() * 0.5;
+  const d = (_cine.paradas || []).find(x => prev < x.t - meio && t >= x.t - meio && t - x.t < 1.5);
+  if (!d) return false;
+  aprParaNoDesenho(d);
+  return true;
+}
+function aprParaNoDesenho(d){
+  const v = $('cineVid');
+  try { v.pause(); } catch (e) {}
+  _cine.tocando = false; _cine.parada = d;
+  if (Math.abs((v.currentTime || 0) - d.t) > quadroDur() * 0.5){ try { v.currentTime = alvoDoQuadro(d); } catch (e) {} }
+  _cine.prevT = d.t + quadroDur();
+  cineSyncBtn(); aprInkPinta(); aprInkBarPinta();
+}
+/* play (botao/espaco): o desenho salvo sai junto com o quadro; a tinta fica */
+function aprAntesDoPlay(){
+  if (!cineApr()) return;
+  _cine.parada = null;
+  aprInkPinta(); aprInkBarPinta();
+}
+function aprApagar(){
+  if (!cineApr()) return;
+  _cine.tinta = []; _cine.parada = null; aprInk.cur = null;
+  aprInkPinta(); aprInkBarPinta();
+}
+function aprApagarESeguir(){
+  if (!cineApr()) return;
+  aprApagar();
+  if (!_cine.tocando) $('cinePlay').click();
+}
+function aprDesfazer(){
+  if (!cineApr() || !(_cine.tinta || []).length) return;
+  _cine.tinta.pop(); aprInkPinta(); aprInkBarPinta();
+}
+function aprFerramenta(tool){
+  aprInk.tool = (aprInk.tool === tool) ? null : tool;
+  $('cineOv').classList.toggle('inkon', !!aprInk.tool);
+  aprInkBarPinta();
+}
+
+/* pinta a camada: desenho salvo (com o mesmo enquadramento do video) + tinta ao vivo */
+function aprInkPinta(){
+  const cv = $('cineInk'), st = $('cineStage'); if (!cv || !st) return;
+  const W = st.clientWidth, H = st.clientHeight, dpr = window.devicePixelRatio || 1;
+  const cw = Math.max(1, Math.round(W * dpr)), ch = Math.max(1, Math.round(H * dpr));
+  if (cv.width !== cw || cv.height !== ch){ cv.width = cw; cv.height = ch; }
+  const ctx = cv.getContext('2d'); if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  if (!cineApr() || !W || !H) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (_cine.parada && $('cineDes') && $('cineDes').checked && (_cine.parada.shapes || []).length) aprPintaSalvo(ctx, _cine.parada);
+  (_cine.tinta || []).forEach(s => drawShape(ctx, s, W, H));
+  if (aprInk.cur) drawShape(ctx, aprInk.cur, W, H);
+}
+function aprPintaSalvo(ctx, d){
+  const v = $('cineVid'); const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return;
+  const bw = v.offsetWidth, bh = v.offsetHeight, bl = v.offsetLeft, bt = v.offsetTop;
+  const c = vidNoPalco(bw, bh, vw, vh);
+  const ox = bl + c.x, oy = bt + c.y, dw = c.w, dh = c.h;
+  ctx.save();
+  /* mesma conta do transform de CSS do video (origem no centro, desloca, escala) */
+  const ez = cineVista();
+  if (ez && ez.zoom > 1.001){
+    const w = v.clientWidth || 1, h = v.clientHeight || 1;
+    const tx = (ez.panX || 0) * (w / (ez.stageW || w)), ty = (ez.panY || 0) * (h / (ez.stageH || h));
+    const cx = bl + bw / 2, cy = bt + bh / 2;
+    ctx.translate(cx + tx, cy + ty); ctx.scale(ez.zoom, ez.zoom); ctx.translate(-cx, -cy);
+  }
+  const pal = palcoDoDesenho(d);
+  const bx = caixaDoPalco(pal.w, pal.h, vw, vh, ox, oy, dw, dh);
+  ctx.translate(bx.x, bx.y);
+  /* a lupa le o video da bancada: aqui nao se aplica */
+  (d.shapes || []).filter(s => s && s.tool !== 'lens').forEach(s => drawShape(ctx, s, bx.w, bx.h));
+  ctx.restore();
+}
+function aprInkBarPinta(){
+  const bar = $('cineInkBar'); if (!bar) return;
+  bar.querySelectorAll('[data-ink]').forEach(b => b.classList.toggle('on', b.dataset.ink === aprInk.tool));
+  bar.querySelectorAll('[data-cor]').forEach(b => b.classList.toggle('on', b.dataset.cor === aprInk.color));
+  const tem = cineApr() && ((_cine.tinta || []).length || _cine.parada);
+  ['cineInkClr', 'cineInkGo'].forEach(id => { const b = $(id); if (b) b.disabled = !tem; });
+  const u = $('cineInkUndo'); if (u) u.disabled = !(cineApr() && (_cine.tinta || []).length);
+  const info = $('cineInkInfo');
+  if (info){
+    const n = cineApr() ? (_cine.paradas || []).filter(d => (d.shapes || []).length).length : 0;
+    info.textContent = _cine && _cine.parada ? TX('vid.apr.stopped', '⏸ stopped on a drawing — play (button or space) to continue')
+      : (n ? n + ' ' + TX('vid.apr.nDraw', 'drawing(s) in this clip') : '');
+  }
+}
+function aprPonto(e){
+  const r = $('cineInk').getBoundingClientRect();
+  return { x: (e.clientX - r.left) / (r.width || 1), y: (e.clientY - r.top) / (r.height || 1) };
+}
+function aprInkWire(){
+  const cv = $('cineInk'); if (!cv) return;
+  cv.addEventListener('pointerdown', (e) => {
+    if (!cineApr() || !aprInk.tool) return;
+    e.preventDefault(); e.stopPropagation();
+    /* desenhar para o video na hora; so volta com play */
+    if (_cine.tocando){ try { $('cineVid').pause(); } catch (err) {} _cine.tocando = false; cineSyncBtn(); }
+    aprInk.cur = { tool: aprInk.tool, color: aprInk.color, opacity: 1, width: 1, points: [aprPonto(e)] };
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    aprInkPinta();
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!aprInk.cur) return;
+    const p = aprPonto(e);
+    if (aprInk.cur.tool === 'pen') aprInk.cur.points.push(p); else aprInk.cur.points[1] = p;
+    aprInkPinta();
+  });
+  const fim = () => {
+    const s = aprInk.cur; if (!s) return;
+    aprInk.cur = null;
+    const pts = s.points || [];
+    const ok = s.tool === 'pen' ? pts.length > 1
+      : (pts.length > 1 && Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) > 0.004);
+    if (ok && _cine) _cine.tinta.push(s);
+    aprInkPinta(); aprInkBarPinta();
+  };
+  cv.addEventListener('pointerup', fim);
+  cv.addEventListener('pointercancel', fim);
+  /* o clique que fecha o traco nao pode virar play/pause do palco */
+  cv.addEventListener('click', (e) => { if (cineApr() && aprInk.tool) e.stopPropagation(); });
+  const bar = $('cineInkBar');
+  if (bar){
+    bar.querySelectorAll('[data-ink]').forEach(b => b.addEventListener('click', () => { aprFerramenta(b.dataset.ink); try { b.blur(); } catch (e) {} }));
+    bar.querySelectorAll('[data-cor]').forEach(b => b.addEventListener('click', () => {
+      aprInk.color = b.dataset.cor; if (!aprInk.tool) aprFerramenta('pen'); else aprInkBarPinta(); try { b.blur(); } catch (e) {}
+    }));
+  }
+  if ($('cineInkUndo')) $('cineInkUndo').addEventListener('click', aprDesfazer);
+  if ($('cineInkClr')) $('cineInkClr').addEventListener('click', aprApagar);
+  if ($('cineInkGo')) $('cineInkGo').addEventListener('click', aprApagarESeguir);
+  if ($('cineDes')) $('cineDes').addEventListener('change', () => { aprInkPinta(); try { $('cineDes').blur(); } catch (e) {} });
+  if ($('cineLoc')) $('cineLoc').addEventListener('click', aprLocalizar);
+  window.addEventListener('resize', () => { if (cineApr()) aprInkPinta(); });
+  const v = $('cineVid');
+  ['seeked', 'loadeddata', 'playing'].forEach(ev => v.addEventListener(ev, () => { if (cineApr()) aprInkPinta(); }));
+}
+
+/* ══ ABA APRESENTACOES ════════════════════════════════════════ */
+function aprEl(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function aprBtn(txt, cls, fn, title){
+  const b = aprEl('button', 'mini' + (cls ? ' ' + cls : ''), txt);
+  if (title) b.title = title;
+  b.addEventListener('click', (e) => { e.stopPropagation(); fn(e, b); });
+  return b;
+}
+function aprDur(it){ return Math.max(0, ((it.end != null ? it.end : (it.start || 0) + 8) - (it.start || 0))); }
+function aprRender(){
+  const box = $('aprView'); if (!box) return;
+  box.innerHTML = '';
+  const lista = aprList();
+  if (!lista.length){ box.appendChild(aprEl('div', 'empty', TX('vid.apr.none', 'No presentations yet. Create one above and add clips from your projects and videos.'))); return; }
+  lista.forEach(ap => {
+    aprHidrata(ap);
+    const aberta = !ap.fechada;
+    const card = aprEl('div', 'expgrp plcard aprcard' + (aberta ? ' open' : ''));
+    const head = aprEl('div', 'ghead'); head.style.gap = '8px'; head.style.flexWrap = 'wrap';
+    const car = aprEl('button', 'plcar', '▸');
+    car.addEventListener('click', () => { if (ap.fechada) delete ap.fechada; else ap.fechada = true; aprPersist(); aprRender(); });
+    const nm = aprEl('input'); nm.value = ap.name; nm.maxLength = 60; nm.style.cssText = 'flex:1;min-width:140px;font-weight:700';
+    nm.addEventListener('change', () => { const v = nm.value.trim(); if (v){ ap.name = v.slice(0, 60); aprPersist(); } });
+    const vivos = ap.items.filter(it => !it.falta);
+    const tot = vivos.reduce((a, it) => a + aprDur(it), 0);
+    const cnt = aprEl('span', 'er', vivos.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + Math.round(tot) + 's');
+    head.appendChild(car); head.appendChild(nm); head.appendChild(cnt);
+    head.appendChild(aprBtn('+ ' + TX('vid.apr.addClips', 'Add clips'), '', () => aprPickAbre(ap)));
+    head.appendChild(aprBtn(TX('vid.fold.new', '+ Folder'), 'ghost', async () => {
+      const n = await askText(TX('vid.apr.blockName', 'Block name'));
+      if (!n || !n.trim()) return;
+      plFolderCreate(ap, n); aprPersist(); aprRender();
+    }, TX('vid.apr.blockT', 'Group clips into a block (e.g. "1. Shot stopping")')));
+    head.appendChild(aprBtn('▶ ' + TX('vid.apr.present', 'Present'), 'primary', () => aprPlay(ap)));
+    head.appendChild(aprBtn(TX('vid.delete', 'Delete'), 'ghost danger', async () => {
+      if (!(await askConfirm(TX('vid.apr.del', 'Delete presentation'), TX('vid.apr.delQ', 'Delete the presentation "{n}"? The clips stay in their projects and videos.').replace('{n}', ap.name), TX('vid.delete', 'Delete')))) return;
+      state.apresentacoes = aprList().filter(x => x.id !== ap.id); aprPersist(); aprRender();
+    }));
+    card.appendChild(head);
+    const corpo = aprEl('div', 'plbody'); card.appendChild(corpo);
+    if (!ap.items.length && !ap.folders.length){
+      corpo.appendChild(aprEl('div', 'empty', TX('vid.apr.emptyHint', 'Empty. Use "+ Add clips" to bring playlists or single clips from any project or video.')));
+    } else {
+      const grupos = plGrupos(ap);
+      let ord = 0;
+      grupos.forEach(g => {
+        if (g.folder || grupos.length > 1){
+          const fh = aprEl('div', 'pfold aprfold' + (g.folder ? '' : ' solta'));
+          if (g.folder){
+            const fi = ap.folders.indexOf(g.folder);
+            const fn = aprEl('input'); fn.value = g.folder.name; fn.maxLength = 60;
+            fn.addEventListener('change', () => { const v = fn.value.trim(); if (v){ g.folder.name = v.slice(0, 60); aprPersist(); } });
+            fh.appendChild(aprEl('span', '', '📁')); fh.appendChild(fn);
+            if (g.folder.fonte){
+              const nf = aprNomeFonte(g.folder.fonte);
+              fh.appendChild(aprEl('span', 'aprlink' + (nf ? '' : ' off'), nf ? '🔗 ' + TX('vid.apr.linked', 'synced with') + ' ' + nf : '⚠ ' + TX('vid.apr.srcGone', 'source playlist not found')));
+            }
+            fh.appendChild(aprEl('span', 'er', g.items.length + ''));
+            const sp = aprEl('span'); sp.style.flex = '1'; fh.appendChild(sp);
+            const up = aprBtn('▲', 'ghost', () => { ap.folders.splice(fi, 1); ap.folders.splice(fi - 1, 0, g.folder); plNormaliza(ap); aprPersist(); aprRender(); }, TX('vid.proj.itemUp'));
+            up.disabled = fi === 0;
+            const dn = aprBtn('▼', 'ghost', () => { ap.folders.splice(fi, 1); ap.folders.splice(fi + 1, 0, g.folder); plNormaliza(ap); aprPersist(); aprRender(); }, TX('vid.proj.itemDown'));
+            dn.disabled = fi === ap.folders.length - 1;
+            fh.appendChild(up); fh.appendChild(dn);
+            fh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = g.items.find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from this block')));
+            fh.appendChild(aprBtn('✕', 'ghost danger', async () => {
+              const q = TX('vid.apr.delBlockQ', 'Remove the block "{n}"? Its clips stay in the presentation, without a block.').replace('{n}', g.folder.name);
+              if (!(await askConfirm(TX('vid.apr.delBlock', 'Remove block'), q, TX('vid.delete', 'Delete')))) return;
+              aprTiraBloco(ap, g.folder.id, false); aprRender();
+            }, TX('vid.apr.delBlock', 'Remove block')));
+          } else {
+            fh.appendChild(aprEl('span', '', TX('vid.fold.none', 'No folder')));
+          }
+          corpo.appendChild(fh);
+        }
+        g.items.forEach(it => {
+          ord++;
+          const row = aprEl('div', 'aprrow' + (it.falta ? ' falta' : '') + (g.folder ? ' emfolder' : ''));
+          row.appendChild(aprEl('span', 'n', ord + '.'));
+          const dot = aprEl('span', 'dot'); dot.style.background = it.color || '#888'; row.appendChild(dot);
+          const t = aprEl('span', 't', it.name || it.tagName || TX('vid.f.clip', 'clip')); row.appendChild(t);
+          row.appendChild(aprEl('span', 'o', it.falta ? TX('vid.apr.missing', 'not found at the source') : (it.origem || '')));
+          if (aprTemAjuste(it)) row.appendChild(aprEl('span', 'aj', TX('vid.apr.adjusted', 'adjusted here')));
+          row.appendChild(aprEl('span', 'd', it.falta ? '' : aprDur(it).toFixed(1) + 's'));
+          const b = aprEl('span', 'b');
+          const flat = plFlat(ap); const pos = flat.indexOf(it);
+          const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
+          const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
+          b.appendChild(up); b.appendChild(dn);
+          if (!it.falta) b.appendChild(aprBtn('▶', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')));
+          b.appendChild(aprBtn('✕', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')));
+          row.appendChild(b);
+          row.addEventListener('contextmenu', (e) => { e.preventDefault(); aprRowMenu(e.clientX, e.clientY, ap, it); });
+          row.addEventListener('dblclick', () => { if (!it.falta) aprPlay(ap, it.id); });
+          corpo.appendChild(row);
+        });
+      });
+    }
+    box.appendChild(card);
+  });
+}
+function aprRowMenu(x, y, ap, it){
+  const menu = $('ctxMenu'); menu.innerHTML = '';
+  const h = aprEl('div', 'ctxhead', (it.name || it.tagName || '') + (it.origem ? ' · ' + it.origem : '')); menu.appendChild(h);
+  if (!it.falta) menu.appendChild(ctxItem(TX('vid.apr.playFromClip', 'Present from this clip'), () => aprPlay(ap, it.id)));
+  const subs = [];
+  ap.folders.forEach(f => { if (f.id !== it.folderId) subs.push(ctxItem('📁 ' + f.name, () => { plItemToFolder(ap, it.id, f.id); aprPersist(); aprRender(); })); });
+  if (it.folderId) subs.push(ctxItem(TX('vid.fold.none', 'No folder'), () => { plItemToFolder(ap, it.id, ''); aprPersist(); aprRender(); }));
+  if (subs.length) menu.appendChild(ctxItem(TX('vid.cine.moveTo', 'Move to'), null, { sub: subs }));
+  if (aprTemAjuste(it)) menu.appendChild(ctxItem(TX('vid.apr.restore', 'Back to the original (undo adjustments made here)'), () => { aprRestauraItem(ap, it); aprRender(); }));
+  menu.appendChild(aprEl('div', 'ctxsep'));
+  menu.appendChild(ctxItem(TX('vid.apr.remove', 'Remove from the presentation'), () => { aprTiraItem(ap, it.id); aprRender(); }, { danger: true }));
+  cinePos(menu, x, y);
+}
+
+/* ══ ADICIONAR LANCES (playlists de projeto e playlists dos videos) ══ */
+let _aprPick = null;
+function aprPickAbre(ap){
+  if (!ap) return;
+  if (state.file){ try { flushSaveSession(); } catch (e) {} }
+  _aprPick = { ap: ap };
+  $('aprPickTitle').textContent = TX('vid.apr.addTo', 'Add to') + ' "' + ap.name + '"';
+  const sel = $('aprPickDest'); sel.innerHTML = '';
+  const op = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+  op('', TX('vid.fold.none', 'No folder'));
+  aprNorm(ap).folders.forEach(f => op(f.id, '📁 ' + f.name));
+  op('__novo', TX('vid.apr.newBlock', '+ New block…'));
+  const box = $('aprPickList'); box.innerHTML = '';
+  let algo = false;
+  /* 1) playlists de projeto (atravessam videos) */
+  const projs = projList().filter(p => projPlaylistsOf(p).some(pl => (pl.items || []).length));
+  if (projs.length){
+    box.appendChild(aprEl('div', 'aprpsec', '🗂 ' + TX('vid.apr.fromProjects', 'Project playlists')));
+    projs.forEach(p => {
+      const dp = aprEl('details', 'aprpgrp'); dp.appendChild(aprEl('summary', '', p.name));
+      projPlaylistsOf(p).filter(pl => (pl.items || []).length).forEach(pl => {
+        const its = plFlat(pl).filter(it => it && it.srcKey);
+        dp.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, p.name + ' · ' + pl.name,
+          its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'), sub: (it.srcName || '') + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color }))));
+      });
+      box.appendChild(dp); algo = true;
+    });
+  }
+  /* 2) playlists de cada video (dentro de um jogo) */
+  const lib = libAll();
+  const chaves = Object.keys(lib);
+  if (state.file && chaves.indexOf(sessionKey()) < 0) chaves.unshift(sessionKey());
+  const vids = chaves.map(k => ({ k: k, s: aprSessao(k) })).filter(x => x.s && (x.s.namedPlaylists || []).some(pl => (pl.evIds || []).length));
+  if (vids.length){
+    box.appendChild(aprEl('div', 'aprpsec', '🎞 ' + TX('vid.apr.fromVideos', 'Playlists inside each video')));
+    vids.forEach(({ k, s }) => {
+      const dv = aprEl('details', 'aprpgrp'); dv.appendChild(aprEl('summary', '', aprNomeVideo(k, s)));
+      (s.namedPlaylists || []).filter(pl => (pl.evIds || []).length).forEach(pl => {
+        const evs = (pl.evIds || []).map(id => (s.events || []).find(e => String(e.id) === String(id))).filter(Boolean);
+        dv.appendChild(aprPickPlaylist(pl.name, { k: 'vp', srcKey: k, plId: pl.id }, aprNomeVideo(k, s) + ' · ' + pl.name,
+          evs.map(ev => { const tg = findTag(ev.tagId); return { ref: { k: 've', srcKey: k, evId: ev.id }, nome: ev.name || (tg ? tg.name : '') || TX('vid.f.clip', 'clip'), sub: fmt(ev.start, true) + ' · ' + Math.max(0, (ev.end || 0) - (ev.start || 0)).toFixed(1) + 's', cor: tg ? tg.color : '#888' }; })));
+      });
+      box.appendChild(dv); algo = true;
+    });
+  }
+  if (!algo) box.appendChild(aprEl('div', 'empty', TX('vid.apr.nothing', 'No playlists with clips yet — create playlists in a project or inside a video first.')));
+  $('aprPickOv').classList.add('on');
+}
+/* uma playlist no seletor: marcar a playlist inteira (bloco sincronizado) ou lances */
+function aprPickPlaylist(nome, fonte, rotulo, lances){
+  const w = aprEl('div', 'aprpl');
+  const top = aprEl('label', 'aprplh');
+  const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'aprpk-pl';
+  cb._fonte = fonte; cb._rotulo = rotulo;
+  top.appendChild(cb);
+  top.appendChild(aprEl('b', '', nome));
+  top.appendChild(aprEl('span', 'er', lances.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + TX('vid.apr.wholeSync', 'whole playlist, synced')));
+  w.appendChild(top);
+  const d = aprEl('details', 'aprpits'); d.appendChild(aprEl('summary', '', TX('vid.apr.pickClips', 'or pick clips')));
+  lances.forEach(l => {
+    const r = aprEl('label', 'aprpit');
+    const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'aprpk-it'; c._ref = l.ref; c._fonte = fonte;
+    const dot = aprEl('span', 'dot'); dot.style.background = l.cor || '#888';
+    r.appendChild(c); r.appendChild(dot); r.appendChild(aprEl('span', 't', l.nome)); r.appendChild(aprEl('span', 'er', l.sub));
+    d.appendChild(r);
+  });
+  /* marcou a playlist inteira: os lances dela ja vem juntos */
+  cb.addEventListener('change', () => { d.querySelectorAll('input').forEach(x => { x.disabled = cb.checked; if (cb.checked) x.checked = false; }); });
+  w.appendChild(d);
+  return w;
+}
+function aprPickFecha(){ $('aprPickOv').classList.remove('on'); _aprPick = null; }
+async function aprPickOk(){
+  if (!_aprPick) return;
+  const ap = _aprPick.ap;
+  const pls = [...document.querySelectorAll('#aprPickList .aprpk-pl:checked')];
+  const its = [...document.querySelectorAll('#aprPickList .aprpk-it:checked')].filter(c => !c.disabled);
+  if (!pls.length && !its.length){ log(TX('vid.apr.pickNone', 'Tick a playlist or some clips.'), 'err'); return; }
+  let dest = $('aprPickDest').value;
+  if (dest === '__novo' && its.length){
+    const n = await askText(TX('vid.apr.blockName', 'Block name'));
+    if (!n || !n.trim()) return;
+    const f = plFolderCreate(ap, n); dest = f ? f.id : '';
+  } else if (dest === '__novo') dest = '';
+  let nb = 0, nl = 0;
+  pls.forEach(c => { if (aprAdicionaPlaylist(ap, c._fonte, c._rotulo)) nb++; });
+  if (its.length) nl = aprAdicionaLances(ap, its.map(c => c._ref), dest);
+  aprPickFecha();
+  log(TX('vid.apr.added', 'Added to the presentation:') + ' ' + nb + ' ' + TX('vid.apr.blocks', 'block(s)') + ', ' + nl + ' ' + TX('vid.f.clips', 'clips') + '.', 'ok');
+  aprRender();
+}
+/* atalho a partir de outros lugares: escolher em qual apresentacao */
+function aprMenuDestino(x, y, titulo, acao){
+  const menu = $('ctxMenu'); menu.innerHTML = '';
+  menu.appendChild(aprEl('div', 'ctxhead', titulo));
+  aprList().forEach(ap => menu.appendChild(ctxItem('▶ ' + ap.name, () => acao(ap))));
+  menu.appendChild(ctxItem(TX('vid.apr.newDots', 'New presentation…'), async () => {
+    const n = await askText(TX('vid.apr.newName', 'Name of the presentation'), TX('vid.apr.session', 'GK session') + ' ' + new Date().toLocaleDateString());
+    if (!n || !n.trim()) return;
+    acao(aprCriar(n.trim()));
+  }));
+  cinePos(menu, x, y);
+}
+function aprWireTab(){
+  if ($('aprNewBtn')) $('aprNewBtn').addEventListener('click', () => {
+    const i = $('aprNewName'); const n = (i.value || '').trim() || (TX('vid.apr.session', 'GK session') + ' ' + new Date().toLocaleDateString());
+    const ap = aprCriar(n); i.value = ''; aprRender(); aprPickAbre(ap);
+  });
+  if ($('aprPickOk')) $('aprPickOk').addEventListener('click', aprPickOk);
+  if ($('aprPickX')) $('aprPickX').addEventListener('click', aprPickFecha);
+  if ($('aprPickCancel')) $('aprPickCancel').addEventListener('click', aprPickFecha);
+}
+
+aprInkWire();
+aprWireTab();
 
 /* menu do botao direito sobre um lance da playlist */
 function openPlaylistItemMenu(x, y, pl, ev, tag){
@@ -6352,6 +7211,7 @@ function switchTab(name){
   if (name === 'dash') renderDashTab();
   if (name === 'export') renderExportTab();
   if (name === 'project') renderProjectTab();
+  if (name === 'apr') aprRender();
   if (name === 'analise') updateProjBar();
 }
 document.querySelectorAll('.tabbtn').forEach(b => b.addEventListener('click', () => { if (b.dataset.tab) switchTab(b.dataset.tab); }));
@@ -9516,7 +10376,8 @@ function bkCollect(){
     currentDashId: state.currentDashId || null,
     projects: state.projects || [],
     currentProjectId: state.currentProjectId || null,
-    gks: state.gks || []
+    gks: state.gks || [],
+    presentations: aprList()
   };
 }
 function bkStatsText(){
@@ -9591,6 +10452,7 @@ function bkImport(data){
   state.dashboards = bkMergeById(state.dashboards, data.dashboards);
   state.projects   = bkMergeById(state.projects,   data.projects);
   state.gks        = bkMergeById(state.gks,        data.gks);
+  state.apresentacoes = bkMergeById(aprList(), data.presentations); aprList().forEach(aprNorm); aprSalvaLocal();
   try { persistDashboards(); } catch (e) {}
   try { localStorage.setItem(PROJ_KEY, JSON.stringify({ projects: state.projects, currentId: state.currentProjectId })); } catch (e) {}
   try { localStorage.setItem(GKS_KEY, JSON.stringify(state.gks)); } catch (e) {}
@@ -10488,6 +11350,7 @@ function pushToCloud(){
         dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
         projects: { list: state.projects || [], currentId: state.currentProjectId || null },
         gks: state.gks || [],
+        presentations: aprList(),
         updatedAt: Date.now(),
       };
       if (!_videoDataPath) return;   /* sem contexto do hub: nao grava fora de users/{uid} */
@@ -10525,6 +11388,7 @@ function pushToCloudNow(){
       dashboards: { dashboards: state.dashboards, currentId: state.currentDashId },
       projects: { list: state.projects || [], currentId: state.currentProjectId || null },
       gks: state.gks || [],
+      presentations: aprList(),
       updatedAt: Date.now(),
     };
     return fbDB.ref(_videoDataPath).set(payload).then(() => true).catch(() => false);
@@ -10567,6 +11431,11 @@ function pullFromCloud(){
           if (typeof renderProjectTab === 'function') renderProjectTab();
           if (typeof updateProjBar === 'function') updateProjBar();
         }
+        if (data.presentations && typeof data.presentations === 'object'){
+          state.apresentacoes = (Array.isArray(data.presentations) ? data.presentations : Object.values(data.presentations)).filter(Boolean);
+          aprList().forEach(aprNorm); aprSalvaLocal();
+          try { aprRender(); } catch (e) {}
+        }
         if (Array.isArray(data.gks)){
           state.gks = data.gks;
           try { localStorage.setItem(GKS_KEY, JSON.stringify(state.gks)); } catch (e) {}
@@ -10587,6 +11456,7 @@ function pullFromCloud(){
 /* ---------------- init ---------------- */
 loadDashboards();
 loadProjects();
+aprLoad();
 loadGks();
 state.projectMode = false;   /* abre neutro; o lançador/Projeto decide entrar no modo */
 renderDashboards();
