@@ -665,6 +665,9 @@
   .aprpgrp{border:1px solid var(--line);border-radius:7px;margin-bottom:6px;padding:4px 9px}
   .aprpgrp>summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}
   .aprpl{border-top:1px solid var(--line);padding:6px 0 4px}
+  .aprpjogo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:5px 8px;background:var(--paper);border-left:3px solid var(--ink);border-radius:4px;font-size:12.5px}
+  .aprpjogo .er{font-size:11px;color:var(--muted)}
+  .aprpvid{margin:2px 0 0 24px;font-size:11px;color:var(--muted)}
   .aprplh{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer}
   .aprplh .er,.aprpit .er{font-size:11px;color:var(--muted)}
   .aprpits{margin:3px 0 0 24px}
@@ -2725,7 +2728,7 @@ function playlistCard(p, pl){
           e.stopPropagation();
           const r = bApr.getBoundingClientRect();
           aprMenuDestino(r.left, r.bottom + 4, TX('vid.apr.sendPlT', 'Add this whole playlist to a presentation (stays synced)'), (ap) => {
-            if (aprAdicionaPlaylist(ap, { k: 'pp', projId: p.id, plId: pl.id }, p.name + ' · ' + pl.name)) log(TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".', 'ok');
+            if (aprAdicionaPlaylist(ap, { k: 'pp', projId: p.id, plId: pl.id }, aprRotuloPl(p, pl))) log(TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".', 'ok');
           });
         });
         head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bApr); head.appendChild(bExp); head.appendChild(bDel);
@@ -6300,7 +6303,7 @@ function aprFonte(r){
       name: it.name || '', note: it.note || '', spec: it.spec || '',
       t: it.t != null ? it.t : null, start: it.start || 0, end: it.end != null ? it.end : null,
       exportZoom: it.exportZoom || null, slow: it.slow || null, gk: it.gk || '', outcome: it.outcome || '',
-      origem: p.name + ' · ' + pl.name
+      origem: aprRotuloPl(p, pl) + (it.srcName ? ' · ' + it.srcName : '')
     };
   }
   if (r.k === 've'){
@@ -6333,12 +6336,25 @@ function aprRefsDaFonte(f){
   }
   return null;
 }
+/* jogo (analise) a que a playlist do projeto pertence */
+function aprJogoDaPl(p, pl){
+  try { const id = playlistAnalise(p, pl); const a = id ? analisePorId(p, id) : null; return a ? a.name : ''; } catch (e) { return ''; }
+}
+/* videos de onde vem os lances, na ordem em que aparecem */
+function aprVideosDe(nomes){
+  const out = []; (nomes || []).forEach(n => { n = String(n || '').trim(); if (n && out.indexOf(n) < 0) out.push(n); });
+  return out;
+}
+function aprRotuloPl(p, pl){
+  const j = aprJogoDaPl(p, pl);
+  return p.name + (j ? ' · ' + j : '') + ' · ' + pl.name;
+}
 function aprNomeFonte(f){
   if (!f) return '';
   if (f.k === 'pp'){
     const p = projList().find(x => x.id === f.projId);
     const pl = p ? projPlaylistsOf(p).find(x => x.id === f.plId) : null;
-    return p && pl ? p.name + ' · ' + pl.name : '';
+    return p && pl ? aprRotuloPl(p, pl) : '';
   }
   const ses = aprSessao(f.srcKey);
   const npl = ses ? (ses.namedPlaylists || []).find(x => String(x.id) === String(f.plId)) : null;
@@ -6809,10 +6825,24 @@ function aprPickAbre(ap){
     box.appendChild(aprEl('div', 'aprpsec', '🗂 ' + TX('vid.apr.fromProjects', 'Project playlists')));
     projs.forEach(p => {
       const dp = aprEl('details', 'aprpgrp'); dp.appendChild(aprEl('summary', '', p.name));
-      projPlaylistsOf(p).filter(pl => (pl.items || []).length).forEach(pl => {
-        const its = plFlat(pl).filter(it => it && it.srcKey);
-        dp.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, p.name + ' · ' + pl.name,
-          its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'), sub: (it.srcName || '') + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color }))));
+      /* playlists agrupadas pelo jogo (analise), na ordem dos jogos do projeto */
+      const pls = projPlaylistsOf(p).filter(pl => (pl.items || []).length);
+      const jogos = projAnalises(p).map(a => ({ id: a.id, nome: a.name })).concat([{ id: '', nome: TX('vid.an.loose', 'Outside any analysis') }]);
+      jogos.forEach(j => {
+        const doJogo = pls.filter(pl => (playlistAnalise(p, pl) || '') === j.id);
+        if (!doJogo.length) return;
+        const vidsJogo = aprVideosDe([].concat(...doJogo.map(pl => (pl.items || []).map(it => it.srcName))));
+        const hj = aprEl('div', 'aprpjogo');
+        hj.appendChild(aprEl('b', '', '🗂 ' + j.nome));
+        if (vidsJogo.length) hj.appendChild(aprEl('span', 'er', '🎬 ' + vidsJogo.join(' · ')));
+        dp.appendChild(hj);
+        doJogo.forEach(pl => {
+          const its = plFlat(pl).filter(it => it && it.srcKey);
+          const vids = aprVideosDe(its.map(it => it.srcName));
+          dp.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, aprRotuloPl(p, pl),
+            its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'), sub: (it.srcName || '') + ' · ' + fmt(it.start, true) + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color })),
+            vids));
+        });
       });
       box.appendChild(dp); algo = true;
     });
@@ -6838,7 +6868,7 @@ function aprPickAbre(ap){
   $('aprPickOv').classList.add('on');
 }
 /* uma playlist no seletor: marcar a playlist inteira (bloco sincronizado) ou lances */
-function aprPickPlaylist(nome, fonte, rotulo, lances){
+function aprPickPlaylist(nome, fonte, rotulo, lances, videos){
   const w = aprEl('div', 'aprpl');
   const top = aprEl('label', 'aprplh');
   const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'aprpk-pl';
@@ -6847,6 +6877,8 @@ function aprPickPlaylist(nome, fonte, rotulo, lances){
   top.appendChild(aprEl('b', '', nome));
   top.appendChild(aprEl('span', 'er', lances.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + TX('vid.apr.wholeSync', 'whole playlist, synced')));
   w.appendChild(top);
+  /* de qual video (ou videos) vem cada playlist */
+  if (videos && videos.length) w.appendChild(aprEl('div', 'aprpvid', '🎬 ' + videos.join(' · ')));
   const d = aprEl('details', 'aprpits'); d.appendChild(aprEl('summary', '', TX('vid.apr.pickClips', 'or pick clips')));
   lances.forEach(l => {
     const r = aprEl('label', 'aprpit');
