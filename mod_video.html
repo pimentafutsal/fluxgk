@@ -668,6 +668,12 @@
   .aprpjogo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:5px 8px;background:var(--paper);border-left:3px solid var(--ink);border-radius:4px;font-size:12.5px}
   .aprpjogo .er{font-size:11px;color:var(--muted)}
   .aprpvid{margin:2px 0 0 24px;font-size:11px;color:var(--muted)}
+  .aprpsub{font-size:11px;font-weight:600;color:var(--ink);margin:5px 0 1px}
+  .aprcard .aprjogo{font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;background:#e7edff;color:var(--blue)}
+  .aprcard .aprsub{padding:4px 10px 4px 22px;font-size:11.5px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(0,0,0,.02)}
+  .aprcard .aprrow.emsub{padding-left:34px}
+  #cineSide .csub{padding:4px 9px 4px 20px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(0,0,0,.025)}
+  #cineSide .cjogo{margin-left:6px;font-size:10px;font-weight:600;padding:0 5px;border-radius:7px;background:#e7edff;color:var(--blue)}
   .aprplh{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer}
   .aprplh .er,.aprpit .er{font-size:11px;color:var(--muted)}
   .aprpits{margin:3px 0 0 24px}
@@ -5336,6 +5342,10 @@ function cineRenderList(){
       fh.appendChild(car);
     }
     const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
+    if (_cine.apr && grupo.folder && grupo.folder.fonte){
+      const jg = aprJogoDaFonte(grupo.folder.fonte);
+      if (jg){ nm.title = jg; nm.textContent += '  ·  🗂 ' + jg; }
+    }
     const ct = document.createElement('span'); ct.className = 'cfct'; ct.textContent = grupo.items.length;
     fh.appendChild(nm); fh.appendChild(ct);
     if (grupo.folder){
@@ -5359,9 +5369,15 @@ function cineRenderList(){
     box.appendChild(fh);
   }
   const fechada = grupo.folder && !plFoldAberta(grupo.folder);
+  let _subAnt = null;
   grupo.items.forEach((it) => {
     const i = ++_i;
     if (fechada) return;
+    /* apresentacao: a pasta da playlist de origem aparece como subtitulo */
+    if (_cine.apr && grupo.folder && grupo.folder.fonte && it.pasta && it.pasta !== _subAnt){
+      const sh = document.createElement('div'); sh.className = 'csub'; sh.textContent = '📁 ' + it.pasta; box.appendChild(sh);
+    }
+    if (_cine.apr) _subAnt = it.pasta || '';
     const row = document.createElement('div');
     row.className = 'cirow' + (i === _cine.i ? ' on' : '') + (grupo.folder ? ' emfolder' : '');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
@@ -5370,9 +5386,12 @@ function cineRenderList(){
     d.style.cssText = 'width:8px;height:8px;border-radius:2px;flex:none;background:' + (it.color || '#888');
     const t = document.createElement('span'); t.className = 't';
     t.textContent = it.name || it.tagName || TX('vid.f.clip', 'clip');
+    if (_cine.apr && it.jogo && !(grupo.folder && grupo.folder.fonte && (aprJogoDaFonte(grupo.folder.fonte) === it.jogo))){
+      const jg = document.createElement('span'); jg.className = 'cjogo'; jg.textContent = it.jogo; t.appendChild(jg);
+    }
     /* clicar no nome so toca o lance — renomear fica no botao direito */
     /* o corte fica visivel ao passar o mouse, sem espremer a linha */
-    row.title = (it.name || it.tagName || '') + (it.spec ? '\n' + it.spec : '') + '\n' + (it.srcName || '')
+    row.title = (it.name || it.tagName || '') + (it.spec ? '\n' + it.spec : '') + (it.origem ? '\n' + it.origem : '') + '\n' + (it.srcName || '')
       + '\n' + fmt(it.start, true) + ' → ' + fmt(it.end, true)
       + '  (' + ((it.end || 0) - (it.start || 0)).toFixed(1) + 's)';
     /* mudar a ordem sem sair do player */
@@ -6303,7 +6322,9 @@ function aprFonte(r){
       name: it.name || '', note: it.note || '', spec: it.spec || '',
       t: it.t != null ? it.t : null, start: it.start || 0, end: it.end != null ? it.end : null,
       exportZoom: it.exportZoom || null, slow: it.slow || null, gk: it.gk || '', outcome: it.outcome || '',
-      origem: aprRotuloPl(p, pl) + (it.srcName ? ' · ' + it.srcName : '')
+      jogo: aprJogoDoVideo(p, it.srcKey, it.srcName),
+      pasta: (it.folderId && plFolder(pl, it.folderId)) ? plFolder(pl, it.folderId).name : '',
+      origem: [p.name, aprJogoDoVideo(p, it.srcKey, it.srcName), pl.name].filter(Boolean).join(' · ') + (it.srcName ? ' · ' + it.srcName : '')
     };
   }
   if (r.k === 've'){
@@ -6315,6 +6336,7 @@ function aprFonte(r){
       name: ev.name || '', note: ev.note || '', spec: ev.spec || '',
       t: ev.t != null ? ev.t : null, start: ev.start || 0, end: ev.end != null ? ev.end : null,
       exportZoom: ev.exportZoom || null, slow: ev.slow || null, gk: ev.gk || '', outcome: ev.outcome || '',
+      jogo: '', pasta: '',
       origem: aprNomeVideo(r.srcKey, ses)
     };
   }
@@ -6345,9 +6367,41 @@ function aprVideosDe(nomes){
   const out = []; (nomes || []).forEach(n => { n = String(n || '').trim(); if (n && out.indexOf(n) < 0) out.push(n); });
   return out;
 }
+/* jogos (analises) de onde vem os lances da playlist, pela ordem do projeto */
+function aprJogosDaPl(p, pl){
+  const ids = [];
+  (pl.items || []).forEach(it => {
+    const v = (p.videos || []).find(x => x.srcKey === it.srcKey || x.srcName === it.srcName);
+    const id = videoAnaliseId(p, v);
+    if (id && ids.indexOf(id) < 0) ids.push(id);
+  });
+  if (!ids.length && pl.analiseId && analisePorId(p, pl.analiseId)) ids.push(pl.analiseId);
+  return projAnalises(p).filter(a => ids.indexOf(a.id) >= 0).map(a => a.name);
+}
+/* "R6 - vs Ayat" quando e de um jogo so; "3 jogos: R1, R2, R3" quando atravessa varios */
+function aprJogosTxt(nomes){
+  if (!nomes || !nomes.length) return '';
+  if (nomes.length === 1) return nomes[0];
+  return nomes.length + ' ' + TX('vid.apr.games', 'games') + ': ' + nomes.join(', ');
+}
+function aprJogoDoVideo(p, srcKey, srcName){
+  const v = (p.videos || []).find(x => x.srcKey === srcKey || x.srcName === srcName);
+  const id = videoAnaliseId(p, v); const a = id ? analisePorId(p, id) : null;
+  return a ? a.name : '';
+}
 function aprRotuloPl(p, pl){
-  const j = aprJogoDaPl(p, pl);
-  return p.name + (j ? ' · ' + j : '') + ' · ' + pl.name;
+  const js = aprJogosDaPl(p, pl);
+  return p.name + (js.length === 1 ? ' · ' + js[0] : '') + ' · ' + pl.name;
+}
+/* jogo(s) de um bloco ligado, para deixar claro na apresentacao */
+function aprJogoDaFonte(f){
+  if (!f) return '';
+  if (f.k === 'pp'){
+    const p = projList().find(x => x.id === f.projId);
+    const pl = p ? projPlaylistsOf(p).find(x => x.id === f.plId) : null;
+    return p && pl ? aprJogosTxt(aprJogosDaPl(p, pl)) : '';
+  }
+  return aprNomeVideo(f.srcKey);
 }
 function aprNomeFonte(f){
   if (!f) return '';
@@ -6385,11 +6439,24 @@ function aprHidrata(ap){
     if (it.falta){ delete it.falta; mudou = true; }
     it.srcKey = s.srcKey; it.srcName = s.srcName; it.tagId = s.tagId; it.tagName = s.tagName; it.color = s.color;
     it.note = s.note; it.spec = s.spec; it.t = s.t; it.gk = s.gk; it.outcome = s.outcome; it.origem = s.origem;
+    it.jogo = s.jogo || ''; it.pasta = s.pasta || '';
     it.name = it.overName || s.name;
     if (it.over){ it.start = it.over.start != null ? it.over.start : s.start; it.end = it.over.end != null ? it.over.end : s.end; }
     else { it.start = s.start; it.end = s.end; }
     it.exportZoom = it.overZoom ? (it.overZoom.zoom > 1.001 ? it.overZoom : null) : s.exportZoom;
     it.slow = it.overSlow ? (slowValido(it.overSlow) ? it.overSlow : null) : s.slow;
+  });
+  /* bloco ligado: a ordem e a da playlist de origem, com as pastas dela */
+  ap.folders.forEach(f => {
+    if (!f.fonte) return;
+    const refs = aprRefsDaFonte(f.fonte); if (!refs) return;
+    const pos = {}; refs.forEach((r, i) => { pos[aprRefKey(r)] = i; });
+    /* so os lances que vieram desta playlist seguem a ordem dela; um lance de
+       outro jogo que voce encaixou no meio do bloco fica onde voce pos */
+    const idx = []; ap.items.forEach((it, i) => { if (it.folderId === f.id && pos[aprRefKey(it.ref)] != null) idx.push(i); });
+    const meus = idx.map(i => ap.items[i]);
+    const ord = meus.slice().sort((a, b) => pos[aprRefKey(a.ref)] - pos[aprRefKey(b.ref)]);
+    if (ord.some((x, k) => x !== meus[k])){ idx.forEach((i, k) => { ap.items[i] = ord[k]; }); mudou = true; }
   });
   plNormaliza(ap);
   if (mudou) aprPersist();
@@ -6744,6 +6811,8 @@ function aprRender(){
             fn.addEventListener('change', () => { const v = fn.value.trim(); if (v){ g.folder.name = v.slice(0, 60); aprPersist(); } });
             fh.appendChild(aprEl('span', '', '📁')); fh.appendChild(fn);
             if (g.folder.fonte){
+              const jg = aprJogoDaFonte(g.folder.fonte);
+              if (jg) fh.appendChild(aprEl('span', 'aprjogo', '🗂 ' + jg));
               const nf = aprNomeFonte(g.folder.fonte);
               fh.appendChild(aprEl('span', 'aprlink' + (nf ? '' : ' off'), nf ? '🔗 ' + TX('vid.apr.linked', 'synced with') + ' ' + nf : '⚠ ' + TX('vid.apr.srcGone', 'source playlist not found')));
             }
@@ -6765,20 +6834,30 @@ function aprRender(){
           }
           corpo.appendChild(fh);
         }
+        let _pastaAnt = null;
+        const _ligado = !!(g.folder && g.folder.fonte);
+        const _daFonte = _ligado ? new Set((aprRefsDaFonte(g.folder.fonte) || []).map(aprRefKey)) : null;
         g.items.forEach(it => {
           ord++;
-          const row = aprEl('div', 'aprrow' + (it.falta ? ' falta' : '') + (g.folder ? ' emfolder' : ''));
+          const _daOrigem = !!(_daFonte && _daFonte.has(aprRefKey(it.ref)));
+          /* pasta da playlist de origem vira subtitulo dentro do bloco */
+          if (_ligado && (it.pasta || '') !== (_pastaAnt || '') && it.pasta){ corpo.appendChild(aprEl('div', 'aprsub', '📁 ' + it.pasta)); }
+          if (_ligado) _pastaAnt = it.pasta || '';
+          const row = aprEl('div', 'aprrow' + (it.falta ? ' falta' : '') + (g.folder ? ' emfolder' : '') + (_ligado && it.pasta ? ' emsub' : ''));
           row.appendChild(aprEl('span', 'n', ord + '.'));
           const dot = aprEl('span', 'dot'); dot.style.background = it.color || '#888'; row.appendChild(dot);
           const t = aprEl('span', 't', it.name || it.tagName || TX('vid.f.clip', 'clip')); row.appendChild(t);
-          row.appendChild(aprEl('span', 'o', it.falta ? TX('vid.apr.missing', 'not found at the source') : (it.origem || '')));
+          row.appendChild(aprEl('span', 'o', it.falta ? TX('vid.apr.missing', 'not found at the source') : (_daOrigem ? [it.jogo, it.srcName].filter(Boolean).join(' · ') : (it.origem || ''))));
           if (aprTemAjuste(it)) row.appendChild(aprEl('span', 'aj', TX('vid.apr.adjusted', 'adjusted here')));
           row.appendChild(aprEl('span', 'd', it.falta ? '' : aprDur(it).toFixed(1) + 's'));
           const b = aprEl('span', 'b');
           const flat = plFlat(ap); const pos = flat.indexOf(it);
-          const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
-          const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
-          b.appendChild(up); b.appendChild(dn);
+          /* lance da playlist ligada segue a ordem dela; os demais voce move */
+          if (!_daOrigem){
+            const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
+            const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
+            b.appendChild(up); b.appendChild(dn);
+          }
           if (!it.falta) b.appendChild(aprBtn('▶', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')));
           b.appendChild(aprBtn('✕', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')));
           row.appendChild(b);
@@ -6828,8 +6907,11 @@ function aprPickAbre(ap){
       /* playlists agrupadas pelo jogo (analise), na ordem dos jogos do projeto */
       const pls = projPlaylistsOf(p).filter(pl => (pl.items || []).length);
       const jogos = projAnalises(p).map(a => ({ id: a.id, nome: a.name })).concat([{ id: '', nome: TX('vid.an.loose', 'Outside any analysis') }]);
+      const varios = pls.filter(pl => aprJogosDaPl(p, pl).length > 1);
+      const umJogo = pls.filter(pl => varios.indexOf(pl) < 0);
+      if (varios.length) jogos.splice(jogos.length - 1, 0, { id: '__varios', nome: TX('vid.apr.multiGames', 'Across several games') });   /* depois dos jogos, antes de 'fora de analise' */
       jogos.forEach(j => {
-        const doJogo = pls.filter(pl => (playlistAnalise(p, pl) || '') === j.id);
+        const doJogo = j.id === '__varios' ? varios : umJogo.filter(pl => (playlistAnalise(p, pl) || '') === j.id);
         if (!doJogo.length) return;
         const vidsJogo = aprVideosDe([].concat(...doJogo.map(pl => (pl.items || []).map(it => it.srcName))));
         const hj = aprEl('div', 'aprpjogo');
@@ -6839,9 +6921,12 @@ function aprPickAbre(ap){
         doJogo.forEach(pl => {
           const its = plFlat(pl).filter(it => it && it.srcKey);
           const vids = aprVideosDe(its.map(it => it.srcName));
+          const js = aprJogosDaPl(p, pl);
           dp.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, aprRotuloPl(p, pl),
-            its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'), sub: (it.srcName || '') + ' · ' + fmt(it.start, true) + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color })),
-            vids));
+            its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'),
+              sub: (it.srcName || '') + ' · ' + fmt(it.start, true) + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color,
+              pasta: (it.folderId && plFolder(pl, it.folderId)) ? plFolder(pl, it.folderId).name : '' })),
+            vids, js.length > 1 ? aprJogosTxt(js) : ''));
         });
       });
       box.appendChild(dp); algo = true;
@@ -6868,7 +6953,7 @@ function aprPickAbre(ap){
   $('aprPickOv').classList.add('on');
 }
 /* uma playlist no seletor: marcar a playlist inteira (bloco sincronizado) ou lances */
-function aprPickPlaylist(nome, fonte, rotulo, lances, videos){
+function aprPickPlaylist(nome, fonte, rotulo, lances, videos, variosJogos){
   const w = aprEl('div', 'aprpl');
   const top = aprEl('label', 'aprplh');
   const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'aprpk-pl';
@@ -6878,9 +6963,13 @@ function aprPickPlaylist(nome, fonte, rotulo, lances, videos){
   top.appendChild(aprEl('span', 'er', lances.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + TX('vid.apr.wholeSync', 'whole playlist, synced')));
   w.appendChild(top);
   /* de qual video (ou videos) vem cada playlist */
+  if (variosJogos) w.appendChild(aprEl('div', 'aprpvid', '🗂 ' + variosJogos));
   if (videos && videos.length) w.appendChild(aprEl('div', 'aprpvid', '🎬 ' + videos.join(' · ')));
   const d = aprEl('details', 'aprpits'); d.appendChild(aprEl('summary', '', TX('vid.apr.pickClips', 'or pick clips')));
+  let _pa = null;
   lances.forEach(l => {
+    if (l.pasta && l.pasta !== _pa) d.appendChild(aprEl('div', 'aprpsub', '📁 ' + l.pasta));
+    _pa = l.pasta || '';
     const r = aprEl('label', 'aprpit');
     const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'aprpk-it'; c._ref = l.ref; c._fonte = fonte;
     const dot = aprEl('span', 'dot'); dot.style.background = l.cor || '#888';
