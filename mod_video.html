@@ -669,6 +669,38 @@
   .aprpjogo .er{font-size:11px;color:var(--muted)}
   .aprpvid{margin:2px 0 0 24px;font-size:11px;color:var(--muted)}
   .aprpsub{font-size:11px;font-weight:600;color:var(--ink);margin:5px 0 1px}
+  .aprpgrande{border-top:1px solid var(--line);padding:3px 0 3px 8px}
+  .aprpgrande>summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;list-style:none}
+  .aprpgrande>summary::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .15s}
+  .aprpgrande[open]>summary::before{transform:rotate(90deg)}
+  .aprpgrande>summary .er{font-size:11px;color:var(--muted);font-weight:400}
+  .aprpgrande>.aprpl{margin-left:18px}
+  .aprppasta{margin:2px 0 2px 6px}
+  .aprppasta>summary{cursor:pointer;font-size:11.5px;font-weight:600}
+  .aprcard .aprgrp{display:flex;align-items:center;gap:7px;padding:8px 10px;background:#eef1f8;border-bottom:1px solid var(--line);border-left:4px solid var(--blue);font-size:13px;font-weight:700;cursor:pointer}
+  .aprcard .aprgrp input{font-weight:700;min-width:140px;max-width:300px;background:transparent}
+  .aprcard .aprgrp .er,.aprcard .aprfold .er{font-size:11px;font-weight:400;color:var(--muted)}
+  .aprcard .aprgrp button,.aprcard .aprfold button{padding:0 6px;font-size:10.5px;line-height:1.7}
+  .aprcard .aprgrp .plcar,.aprcard .aprfold .plcar{transition:transform .15s}
+  .aprcard .aprgrp.open>.plcar,.aprcard .aprfold.open>.plcar{transform:rotate(90deg)}
+  .aprcard .aprgrpbody .aprfold{padding-left:26px}
+  .aprcard .aprgrpbody .aprsub{padding-left:46px}
+  .aprcard .aprgrpbody .aprrow.emfolder{padding-left:44px}
+  .aprcard .aprgrpbody .aprrow.emsub{padding-left:62px}
+  .aprcard .aprfold{cursor:pointer}
+  .aprcard .aprgrp,.aprcard .aprfold{flex-wrap:nowrap}
+  .aprcard .aprgrp input,.aprcard .aprfold input{flex:0 1 auto;min-width:80px;width:auto;border:1px solid transparent;background:transparent;padding:2px 5px;border-radius:5px;box-shadow:none}
+  .aprcard .aprgrp input:hover,.aprcard .aprfold input:hover{border-color:var(--line)}
+  .aprcard .aprgrp input:focus,.aprcard .aprfold input:focus{border-color:var(--blue);background:#fff}
+  .aprcard .aprgrp .er,.aprcard .aprfold .er{white-space:nowrap}
+  .aprcard .aprsub{cursor:pointer;display:flex;align-items:center;gap:6px}
+  .aprcard .aprsub .sc{font-size:9px;transition:transform .15s}
+  .aprcard .aprsub.open .sc{transform:rotate(90deg)}
+  #cineSide .cgrp{display:flex;align-items:center;gap:6px;padding:7px 9px;background:#eef1f8;border-bottom:1px solid var(--line);border-left:4px solid var(--blue);font-size:12px;font-weight:700;cursor:pointer}
+  #cineSide .cgrp .cgc{font-size:9px;transition:transform .15s}
+  #cineSide .cgrp.open .cgc{transform:rotate(90deg)}
+  #cineSide .cgrp .cgn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #cineSide .csub{cursor:pointer}
   .aprcard .aprjogo{font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;background:#e7edff;color:var(--blue)}
   .aprcard .aprsub{padding:4px 10px 4px 22px;font-size:11.5px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(0,0,0,.02)}
   .aprcard .aprrow.emsub{padding-left:34px}
@@ -2734,7 +2766,7 @@ function playlistCard(p, pl){
           e.stopPropagation();
           const r = bApr.getBoundingClientRect();
           aprMenuDestino(r.left, r.bottom + 4, TX('vid.apr.sendPlT', 'Add this whole playlist to a presentation (stays synced)'), (ap) => {
-            if (aprAdicionaPlaylist(ap, { k: 'pp', projId: p.id, plId: pl.id }, aprRotuloPl(p, pl))) log(TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".', 'ok');
+            if (aprAdicionaPlaylist(ap, { k: 'pp', projId: p.id, plId: pl.id })) log(TX('vid.apr.sent', 'Added to') + ' "' + ap.name + '".', 'ok');
           });
         });
         head.appendChild(nmInp); head.appendChild(cnt); head.appendChild(bFold); head.appendChild(bPlay); head.appendChild(bApr); head.appendChild(bExp); head.appendChild(bDel);
@@ -5296,7 +5328,22 @@ function cineRenderList(){
   box.innerHTML = '';
   const grupos = plGrupos(_cine.pl);
   let _i = -1;
+  let _gAnt = null;
   grupos.forEach(grupo => {
+  /* apresentacao: cabecalho da pasta grande (jogo / playlist de varios jogos) */
+  const _gr = (_cine.apr && grupo.folder) ? aprGrupo(_cine.apr, grupo.folder.grupoId) : null;
+  if (_cine.apr && _gr && _gr !== _gAnt){
+    const gh = document.createElement('div'); gh.className = 'cgrp' + (_gr.fechado ? '' : ' open');
+    const gc = document.createElement('span'); gc.className = 'cgc'; gc.textContent = '▸';
+    const gn = document.createElement('span'); gn.className = 'cgn'; gn.textContent = '🗂 ' + _gr.name;
+    const nItens = grupos.filter(x => x.folder && x.folder.grupoId === _gr.id).reduce((a, x) => a + x.items.length, 0);
+    const gq = document.createElement('span'); gq.className = 'cfct'; gq.textContent = nItens;
+    gh.appendChild(gc); gh.appendChild(gn); gh.appendChild(gq);
+    gh.addEventListener('click', () => { if (_gr.fechado) delete _gr.fechado; else _gr.fechado = true; aprPersist(); cineRenderList(); });
+    box.appendChild(gh);
+  }
+  if (_cine.apr) _gAnt = _gr;
+  const _grFechado = !!(_gr && _gr.fechado);
   if (grupo.folder || grupos.length > 1){
     const fh = document.createElement('div'); fh.className = 'cfold' + (grupo.folder ? '' : ' solta');
     const _cfid = grupo.folder ? grupo.folder.id : '';
@@ -5342,7 +5389,7 @@ function cineRenderList(){
       fh.appendChild(car);
     }
     const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
-    if (_cine.apr && grupo.folder && grupo.folder.fonte){
+    if (_cine.apr && grupo.folder && grupo.folder.fonte && !_gr){
       const jg = aprJogoDaFonte(grupo.folder.fonte);
       if (jg){ nm.title = jg; nm.textContent += '  ·  🗂 ' + jg; }
     }
@@ -5366,18 +5413,26 @@ function cineRenderList(){
       if (e.target.closest('button')) return;
       plFoldToggle(_cine.pl, grupo.folder); cineRenderList();
     });
-    box.appendChild(fh);
+    if (!_grFechado) box.appendChild(fh);
   }
-  const fechada = grupo.folder && !plFoldAberta(grupo.folder);
-  let _subAnt = null;
+  const fechada = (grupo.folder && !plFoldAberta(grupo.folder)) || _grFechado;
+  let _subAnt = null, _subFech = false;
   grupo.items.forEach((it) => {
     const i = ++_i;
     if (fechada) return;
-    /* apresentacao: a pasta da playlist de origem aparece como subtitulo */
-    if (_cine.apr && grupo.folder && grupo.folder.fonte && it.pasta && it.pasta !== _subAnt){
-      const sh = document.createElement('div'); sh.className = 'csub'; sh.textContent = '📁 ' + it.pasta; box.appendChild(sh);
+    /* apresentacao: a pasta da playlist de origem e uma subpasta que recolhe */
+    if (_cine.apr && grupo.folder && grupo.folder.fonte && (it.pasta || '') !== (_subAnt || '')){
+      _subFech = !!(it.pasta && Array.isArray(grupo.folder.subFech) && grupo.folder.subFech.indexOf(it.pasta) >= 0);
+      if (it.pasta){
+        const sh = document.createElement('div'); sh.className = 'csub' + (_subFech ? '' : ' open');
+        sh.textContent = '▸ 📁 ' + it.pasta;
+        const _f = grupo.folder, _sp = it.pasta;
+        sh.addEventListener('click', () => { aprSubToggle(_cine.apr, _f, _sp); cineRenderList(); });
+        box.appendChild(sh);
+      }
     }
     if (_cine.apr) _subAnt = it.pasta || '';
+    if (_subFech) return;
     const row = document.createElement('div');
     row.className = 'cirow' + (i === _cine.i ? ' on' : '') + (grupo.folder ? ' emfolder' : '');
     const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
@@ -5751,6 +5806,7 @@ async function cineGo(i, modo){
     const f = plFolder(_cine.pl, it.folderId);
     if (f && f.fechada){ delete f.fechada; projPersist(); }
   }
+  if (_cine.apr) aprAbreCaminho(_cine.apr, it);
   cineRenderList(); cineCount();
   const f = await cineFile(it);
   if (!_cine || _cine.i !== i) return;           /* o usuario pulou enquanto carregava */
@@ -6446,6 +6502,9 @@ function aprHidrata(ap){
     it.exportZoom = it.overZoom ? (it.overZoom.zoom > 1.001 ? it.overZoom : null) : s.exportZoom;
     it.slow = it.overSlow ? (slowValido(it.overSlow) ? it.overSlow : null) : s.slow;
   });
+  aprGrupos(ap);
+  if (aprMigraGrupos(ap)) mudou = true;
+  if (aprOrdenaFolders(ap)) mudou = true;
   /* bloco ligado: a ordem e a da playlist de origem, com as pastas dela */
   ap.folders.forEach(f => {
     if (!f.fonte) return;
@@ -6463,11 +6522,13 @@ function aprHidrata(ap){
   return ap;
 }
 /* playlist inteira vira um bloco ligado a ela */
-function aprAdicionaPlaylist(ap, fonte, nome){
+function aprAdicionaPlaylist(ap, fonte, nome, grupoNome){
   aprNorm(ap);
   const fk = aprFonteKey(fonte);
   if (ap.folders.some(f => f.fonte && aprFonteKey(f.fonte) === fk)){ log(TX('vid.apr.already', 'This playlist is already in the presentation: ') + nome, 'err'); return null; }
-  const f = { id: aprNovoId('f'), name: String(nome || 'Playlist').slice(0, 60), fonte: Object.assign({}, fonte), fora: [] };
+  if (!grupoNome || !nome){ const gd = aprGrupoDaFonte(fonte); if (gd){ grupoNome = grupoNome || gd.grupo; nome = nome || gd.bloco; } }
+  const f = { id: aprNovoId('f'), name: String(nome || 'Playlist').slice(0, 60), fonte: Object.assign({}, fonte), fora: [], subFech: [], fechada: true };
+  const g = aprGrupoAcha(ap, grupoNome); if (g) f.grupoId = g.id;
   ap.folders.push(f);
   aprHidrata(ap); aprPersist();
   return f;
@@ -6766,6 +6827,122 @@ function aprBtn(txt, cls, fn, title){
   return b;
 }
 function aprDur(it){ return Math.max(0, ((it.end != null ? it.end : (it.start || 0) + 8) - (it.start || 0))); }
+
+/* ══ PASTAS GRANDES (jogo / playlist de varios jogos) ══════════
+   ap.grupos = [{ id, name, fechado? }] ; bloco.grupoId aponta para uma.
+   A ordem de apresentacao e: pasta grande → playlists → pastas da
+   playlist → lances. Os blocos de uma mesma pasta grande ficam sempre
+   juntos em ap.folders.                                          */
+function aprGrupos(ap){ if (!Array.isArray(ap.grupos)) ap.grupos = ap.grupos && typeof ap.grupos === 'object' ? Object.values(ap.grupos).filter(Boolean) : []; return ap.grupos; }
+function aprGrupo(ap, id){ return id ? aprGrupos(ap).find(g => g.id === id) || null : null; }
+function aprGrupoAcha(ap, nome){
+  const n = String(nome || '').trim().slice(0, 60); if (!n) return null;
+  let g = aprGrupos(ap).find(x => (x.name || '').toLowerCase() === n.toLowerCase());
+  if (!g){ g = { id: aprNovoId('g'), name: n }; aprGrupos(ap).push(g); }
+  return g;
+}
+/* em qual pasta grande uma playlist inteira entra, e com que nome o bloco fica */
+function aprGrupoDaFonte(f){
+  if (!f) return null;
+  if (f.k === 'pp'){
+    const p = projList().find(x => x.id === f.projId);
+    const pl = p ? projPlaylistsOf(p).find(x => x.id === f.plId) : null;
+    if (!p || !pl) return null;
+    const js = aprJogosDaPl(p, pl);
+    if (js.length === 1) return { grupo: js[0], bloco: pl.name };
+    return { grupo: js.length > 1 ? pl.name : p.name, bloco: pl.name };    /* varios jogos: a playlist e a pasta grande */
+  }
+  const ses = aprSessao(f.srcKey);
+  const npl = ses ? (ses.namedPlaylists || []).find(x => String(x.id) === String(f.plId)) : null;
+  return { grupo: aprNomeVideo(f.srcKey, ses), bloco: npl ? npl.name : 'Playlist' };
+}
+/* unidades na ordem de apresentacao: [{grupo|null, blocos:[{folder, items}]}] */
+function aprUnidades(ap){
+  const out = [];
+  plGrupos(ap).forEach(b => {
+    const g = b.folder ? aprGrupo(ap, b.folder.grupoId) : null;
+    const u = out[out.length - 1];
+    if (g && u && u.grupo === g) u.blocos.push(b);
+    else out.push({ grupo: g, blocos: [b] });
+  });
+  return out;
+}
+/* deixa os blocos de cada pasta grande juntos (na ordem em que a pasta aparece primeiro) */
+function aprOrdenaFolders(ap){
+  const fs = ap.folders || [];
+  const unidades = [], porGrupo = {};
+  fs.forEach(f => {
+    const gid = f.grupoId && aprGrupo(ap, f.grupoId) ? f.grupoId : null;
+    if (gid && porGrupo[gid]) porGrupo[gid].push(f);
+    else { const u = [f]; unidades.push(u); if (gid) porGrupo[gid] = u; }
+  });
+  const novo = [].concat(...unidades);
+  const mudou = novo.some((f, i) => f !== fs[i]);
+  ap.folders = novo;
+  return mudou;
+}
+function aprMoveUnidade(ap, ui, delta){
+  const us = aprUnidades(ap).filter(u => u.blocos.some(b => b.folder));
+  const de = ui, para = ui + delta;
+  if (de < 0 || para < 0 || para >= us.length) return;
+  const m = us.splice(de, 1)[0]; us.splice(para, 0, m);
+  ap.folders = [].concat(...us.map(u => u.blocos.map(b => b.folder).filter(Boolean)));
+  plNormaliza(ap); aprPersist();
+}
+function aprMoveBloco(ap, f, delta){
+  const irmaos = ap.folders.filter(x => (x.grupoId || '') === (f.grupoId || '') && (f.grupoId || x === f));
+  const k = irmaos.indexOf(f), alvo = irmaos[k + delta]; if (!alvo) return;
+  const i = ap.folders.indexOf(f), j = ap.folders.indexOf(alvo);
+  ap.folders[i] = alvo; ap.folders[j] = f;
+  plNormaliza(ap); aprPersist();
+}
+function aprTiraGrupo(ap, gid){
+  const ids = ap.folders.filter(f => f.grupoId === gid).map(f => f.id);
+  ap.items = ap.items.filter(it => ids.indexOf(it.folderId) < 0);
+  ap.folders = ap.folders.filter(f => f.grupoId !== gid);
+  ap.grupos = aprGrupos(ap).filter(g => g.id !== gid);
+  plNormaliza(ap); aprPersist();
+}
+function aprSubToggle(ap, f, sub){
+  if (!Array.isArray(f.subFech)) f.subFech = [];
+  const k = f.subFech.indexOf(sub);
+  if (k >= 0) f.subFech.splice(k, 1); else f.subFech.push(sub);
+  aprPersist();
+}
+function aprRecolheTudo(ap, fechar){
+  aprGrupos(ap).forEach(g => { if (fechar) g.fechado = true; else delete g.fechado; });
+  ap.folders.forEach(f => {
+    if (fechar){ f.fechada = true; } else { delete f.fechada; f.subFech = []; }
+  });
+  aprPersist();
+}
+/* o lance da vez nunca fica escondido no player: abre a pasta grande, o bloco e a subpasta */
+function aprAbreCaminho(ap, it){
+  if (!ap || !it) return;
+  const f = it.folderId ? ap.folders.find(x => x.id === it.folderId) : null;
+  let mudou = false;
+  if (f){
+    if (f.fechada){ delete f.fechada; mudou = true; }
+    const g = aprGrupo(ap, f.grupoId); if (g && g.fechado){ delete g.fechado; mudou = true; }
+    if (it.pasta && Array.isArray(f.subFech) && f.subFech.indexOf(it.pasta) >= 0){ f.subFech.splice(f.subFech.indexOf(it.pasta), 1); mudou = true; }
+  }
+  if (mudou) aprPersist();
+}
+/* apresentacoes antigas: cada bloco sincronizado ganha a sua pasta grande */
+function aprMigraGrupos(ap){
+  let mudou = false;
+  (ap.folders || []).forEach(f => {
+    if (!Array.isArray(f.subFech)) f.subFech = f.subFech && typeof f.subFech === 'object' ? Object.values(f.subFech) : [];
+    if (!f.fonte || (f.grupoId && aprGrupo(ap, f.grupoId))) return;
+    const gd = aprGrupoDaFonte(f.fonte); if (!gd) return;
+    const g = aprGrupoAcha(ap, gd.grupo);
+    f.grupoId = g.id;
+    if (/ · /.test(f.name || '')) f.name = gd.bloco;      /* nome antigo "Projeto · Jogo · Playlist" */
+    mudou = true;
+  });
+  return mudou;
+}
+
 function aprRender(){
   const box = $('aprView'); if (!box) return;
   box.innerHTML = '';
@@ -6785,11 +6962,8 @@ function aprRender(){
     const cnt = aprEl('span', 'er', vivos.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + Math.round(tot) + 's');
     head.appendChild(car); head.appendChild(nm); head.appendChild(cnt);
     head.appendChild(aprBtn('+ ' + TX('vid.apr.addClips', 'Add clips'), '', () => aprPickAbre(ap)));
-    head.appendChild(aprBtn(TX('vid.fold.new', '+ Folder'), 'ghost', async () => {
-      const n = await askText(TX('vid.apr.blockName', 'Block name'));
-      if (!n || !n.trim()) return;
-      plFolderCreate(ap, n); aprPersist(); aprRender();
-    }, TX('vid.apr.blockT', 'Group clips into a block (e.g. "1. Shot stopping")')));
+    head.appendChild(aprBtn('⊟', 'ghost', () => { aprRecolheTudo(ap, true); aprRender(); }, TX('vid.apr.collapseAll', 'Collapse everything')));
+    head.appendChild(aprBtn('⊞', 'ghost', () => { aprRecolheTudo(ap, false); aprRender(); }, TX('vid.apr.expandAll', 'Expand everything')));
     head.appendChild(aprBtn('▶ ' + TX('vid.apr.present', 'Present'), 'primary', () => aprPlay(ap)));
     head.appendChild(aprBtn(TX('vid.delete', 'Delete'), 'ghost danger', async () => {
       if (!(await askConfirm(TX('vid.apr.del', 'Delete presentation'), TX('vid.apr.delQ', 'Delete the presentation "{n}"? The clips stay in their projects and videos.').replace('{n}', ap.name), TX('vid.delete', 'Delete')))) return;
@@ -6800,74 +6974,137 @@ function aprRender(){
     if (!ap.items.length && !ap.folders.length){
       corpo.appendChild(aprEl('div', 'empty', TX('vid.apr.emptyHint', 'Empty. Use "+ Add clips" to bring playlists or single clips from any project or video.')));
     } else {
-      const grupos = plGrupos(ap);
-      let ord = 0;
-      grupos.forEach(g => {
-        if (g.folder || grupos.length > 1){
-          const fh = aprEl('div', 'pfold aprfold' + (g.folder ? '' : ' solta'));
-          if (g.folder){
-            const fi = ap.folders.indexOf(g.folder);
-            const fn = aprEl('input'); fn.value = g.folder.name; fn.maxLength = 60;
-            fn.addEventListener('change', () => { const v = fn.value.trim(); if (v){ g.folder.name = v.slice(0, 60); aprPersist(); } });
-            fh.appendChild(aprEl('span', '', '📁')); fh.appendChild(fn);
-            if (g.folder.fonte){
-              const jg = aprJogoDaFonte(g.folder.fonte);
-              if (jg) fh.appendChild(aprEl('span', 'aprjogo', '🗂 ' + jg));
-              const nf = aprNomeFonte(g.folder.fonte);
-              fh.appendChild(aprEl('span', 'aprlink' + (nf ? '' : ' off'), nf ? '🔗 ' + TX('vid.apr.linked', 'synced with') + ' ' + nf : '⚠ ' + TX('vid.apr.srcGone', 'source playlist not found')));
-            }
-            fh.appendChild(aprEl('span', 'er', g.items.length + ''));
-            const sp = aprEl('span'); sp.style.flex = '1'; fh.appendChild(sp);
-            const up = aprBtn('▲', 'ghost', () => { ap.folders.splice(fi, 1); ap.folders.splice(fi - 1, 0, g.folder); plNormaliza(ap); aprPersist(); aprRender(); }, TX('vid.proj.itemUp'));
-            up.disabled = fi === 0;
-            const dn = aprBtn('▼', 'ghost', () => { ap.folders.splice(fi, 1); ap.folders.splice(fi + 1, 0, g.folder); plNormaliza(ap); aprPersist(); aprRender(); }, TX('vid.proj.itemDown'));
-            dn.disabled = fi === ap.folders.length - 1;
-            fh.appendChild(up); fh.appendChild(dn);
-            fh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = g.items.find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from this block')));
-            fh.appendChild(aprBtn('✕', 'ghost danger', async () => {
-              const q = TX('vid.apr.delBlockQ', 'Remove the block "{n}"? Its clips stay in the presentation, without a block.').replace('{n}', g.folder.name);
-              if (!(await askConfirm(TX('vid.apr.delBlock', 'Remove block'), q, TX('vid.delete', 'Delete')))) return;
-              aprTiraBloco(ap, g.folder.id, false); aprRender();
-            }, TX('vid.apr.delBlock', 'Remove block')));
-          } else {
-            fh.appendChild(aprEl('span', '', TX('vid.fold.none', 'No folder')));
-          }
-          corpo.appendChild(fh);
+      const flat = plFlat(ap);
+      const num = {}; flat.forEach((it, k) => { num[it.id] = k + 1; });
+      const unidades = aprUnidades(ap);
+      unidades.forEach((u, ui) => {
+        u._ui = ui; u._n = unidades.filter(x => x.blocos.some(b => b.folder)).length;
+        let alvo = corpo;
+        /* ── pasta grande (jogo, ou playlist de varios jogos) ── */
+        if (u.grupo){
+          const g = u.grupo;
+          const n = u.blocos.reduce((a, b) => a + b.items.filter(x => !x.falta).length, 0);
+          const gh = aprEl('div', 'aprgrp' + (g.fechado ? '' : ' open'));
+          const gc = aprEl('button', 'plcar', '▸');
+          const tog = () => { if (g.fechado) delete g.fechado; else g.fechado = true; aprPersist(); aprRender(); };
+          gc.addEventListener('click', (e) => { e.stopPropagation(); tog(); });
+          gh.appendChild(gc);
+          gh.appendChild(aprEl('span', 'gi', '🗂'));
+          const gn = aprEl('input'); gn.value = g.name; gn.maxLength = 60;
+          gn.addEventListener('click', (e) => e.stopPropagation());
+          gn.addEventListener('change', () => { const v = gn.value.trim(); if (v){ g.name = v.slice(0, 60); aprPersist(); } });
+          gh.appendChild(gn);
+          gh.appendChild(aprEl('span', 'er', u.blocos.length + ' ' + TX('vid.apr.lists', 'playlist(s)') + ' · ' + n + ' ' + TX('vid.f.clips', 'clips')));
+          const sp = aprEl('span'); sp.style.flex = '1'; gh.appendChild(sp);
+          const up = aprBtn('▲', 'ghost', () => { aprMoveUnidade(ap, ui, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = ui === 0;
+          const dn = aprBtn('▼', 'ghost', () => { aprMoveUnidade(ap, ui, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = ui === unidades.length - 1;
+          gh.appendChild(up); gh.appendChild(dn);
+          gh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = [].concat(...u.blocos.map(b => b.items)).find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')));
+          gh.appendChild(aprBtn('✕', 'ghost danger', async () => {
+            const q = TX('vid.apr.delGrpQ', 'Remove "{n}" and its playlists from the presentation? Nothing is deleted from the projects.').replace('{n}', g.name);
+            if (!(await askConfirm(TX('vid.apr.delGrp', 'Remove folder'), q, TX('vid.delete', 'Delete')))) return;
+            aprTiraGrupo(ap, g.id); aprRender();
+          }, TX('vid.apr.delGrp', 'Remove folder')));
+          gh.addEventListener('click', (e) => { if (!e.target.closest('button,input')) tog(); });
+          corpo.appendChild(gh);
+          if (g.fechado) return;
+          alvo = aprEl('div', 'aprgrpbody'); corpo.appendChild(alvo);
         }
-        let _pastaAnt = null;
-        const _ligado = !!(g.folder && g.folder.fonte);
-        const _daFonte = _ligado ? new Set((aprRefsDaFonte(g.folder.fonte) || []).map(aprRefKey)) : null;
-        g.items.forEach(it => {
-          ord++;
-          const _daOrigem = !!(_daFonte && _daFonte.has(aprRefKey(it.ref)));
-          /* pasta da playlist de origem vira subtitulo dentro do bloco */
-          if (_ligado && (it.pasta || '') !== (_pastaAnt || '') && it.pasta){ corpo.appendChild(aprEl('div', 'aprsub', '📁 ' + it.pasta)); }
-          if (_ligado) _pastaAnt = it.pasta || '';
-          const row = aprEl('div', 'aprrow' + (it.falta ? ' falta' : '') + (g.folder ? ' emfolder' : '') + (_ligado && it.pasta ? ' emsub' : ''));
-          row.appendChild(aprEl('span', 'n', ord + '.'));
-          const dot = aprEl('span', 'dot'); dot.style.background = it.color || '#888'; row.appendChild(dot);
-          const t = aprEl('span', 't', it.name || it.tagName || TX('vid.f.clip', 'clip')); row.appendChild(t);
-          row.appendChild(aprEl('span', 'o', it.falta ? TX('vid.apr.missing', 'not found at the source') : (_daOrigem ? [it.jogo, it.srcName].filter(Boolean).join(' · ') : (it.origem || ''))));
-          if (aprTemAjuste(it)) row.appendChild(aprEl('span', 'aj', TX('vid.apr.adjusted', 'adjusted here')));
-          row.appendChild(aprEl('span', 'd', it.falta ? '' : aprDur(it).toFixed(1) + 's'));
-          const b = aprEl('span', 'b');
-          const flat = plFlat(ap); const pos = flat.indexOf(it);
-          /* lance da playlist ligada segue a ordem dela; os demais voce move */
-          if (!_daOrigem){
-            const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
-            const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
-            b.appendChild(up); b.appendChild(dn);
-          }
-          if (!it.falta) b.appendChild(aprBtn('▶', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')));
-          b.appendChild(aprBtn('✕', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')));
-          row.appendChild(b);
-          row.addEventListener('contextmenu', (e) => { e.preventDefault(); aprRowMenu(e.clientX, e.clientY, ap, it); });
-          row.addEventListener('dblclick', () => { if (!it.falta) aprPlay(ap, it.id); });
-          corpo.appendChild(row);
-        });
+        u.blocos.forEach(b => aprRenderBloco(ap, b, alvo, num, u));
       });
     }
     box.appendChild(card);
+  });
+}
+/* um bloco (playlist) dentro da pasta grande: recolhe; as pastas da playlist recolhem tambem */
+function aprRenderBloco(ap, b, alvo, num, u){
+  const f = b.folder;
+  const ligado = !!(f && f.fonte);
+  if (f){
+    const fh = aprEl('div', 'aprfold' + (plFoldAberta(f) ? ' open' : ''));
+    const tog = () => { plFoldToggle(ap, f); aprRender(); };
+    const fc = aprEl('button', 'plcar', '▸'); fc.addEventListener('click', (e) => { e.stopPropagation(); tog(); });
+    fh.appendChild(fc);
+    const fn = aprEl('input'); fn.value = f.name; fn.maxLength = 60;
+    fn.addEventListener('click', (e) => e.stopPropagation());
+    fn.addEventListener('change', () => { const v = fn.value.trim(); if (v){ f.name = v.slice(0, 60); aprPersist(); } });
+    fh.appendChild(fn);
+    fh.appendChild(aprEl('span', 'er', b.items.filter(x => !x.falta).length + ' ' + TX('vid.f.clips', 'clips')));
+    if (ligado){
+      const nf = aprNomeFonte(f.fonte);
+      const lk = aprEl('span', 'aprlink' + (nf ? '' : ' off'), nf ? '🔗' : '⚠');
+      lk.title = nf ? TX('vid.apr.linked', 'synced with') + ' ' + nf : TX('vid.apr.srcGone', 'source playlist not found');
+      fh.appendChild(lk);
+      /* playlist de um jogo so, fora da pasta daquele jogo: o jogo aparece aqui */
+      const jg = aprJogoDaFonte(f.fonte);
+      if (jg && !(u && u.grupo && u.grupo.name === jg)) fh.appendChild(aprEl('span', 'aprjogo', '🗂 ' + jg));
+    }
+    const sp = aprEl('span'); sp.style.flex = '1'; fh.appendChild(sp);
+    const irmaos = u ? u.blocos.map(x => x.folder).filter(Boolean) : [];
+    const k = irmaos.indexOf(f);
+    if (u && !u.grupo){
+      /* bloco solto (criado a mao): sobe e desce entre as pastas grandes */
+      const up = aprBtn('▲', 'ghost', () => { aprMoveUnidade(ap, u._ui, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = u._ui <= 0;
+      const dn = aprBtn('▼', 'ghost', () => { aprMoveUnidade(ap, u._ui, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = u._ui >= u._n - 1;
+      fh.appendChild(up); fh.appendChild(dn);
+    } else if (irmaos.length > 1){
+      const up = aprBtn('▲', 'ghost', () => { aprMoveBloco(ap, f, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = k <= 0;
+      const dn = aprBtn('▼', 'ghost', () => { aprMoveBloco(ap, f, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = k >= irmaos.length - 1;
+      fh.appendChild(up); fh.appendChild(dn);
+    }
+    fh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = b.items.find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')));
+    fh.appendChild(aprBtn('✕', 'ghost danger', async () => {
+      const q = TX('vid.apr.delBlockQ2', 'Remove "{n}" from the presentation? Nothing is deleted from the project.').replace('{n}', f.name);
+      if (!(await askConfirm(TX('vid.apr.delBlock', 'Remove block'), q, TX('vid.delete', 'Delete')))) return;
+      aprTiraBloco(ap, f.id, true); aprRender();
+    }, TX('vid.apr.delBlock', 'Remove block')));
+    fh.addEventListener('click', (e) => { if (!e.target.closest('button,input')) tog(); });
+    alvo.appendChild(fh);
+    if (!plFoldAberta(f)) return;
+  } else if (b.items.length){
+    alvo.appendChild(aprEl('div', 'aprfold solta', TX('vid.apr.loose', 'Loose clips')));
+  }
+  const daFonte = ligado ? new Set((aprRefsDaFonte(f.fonte) || []).map(aprRefKey)) : null;
+  let subAnt = null, subFechada = false;
+  b.items.forEach(it => {
+    const daOrigem = !!(daFonte && daFonte.has(aprRefKey(it.ref)));
+    /* pasta da playlist de origem: subpasta que recolhe */
+    const sub = (ligado && it.pasta) ? it.pasta : '';
+    if (sub !== subAnt){
+      subAnt = sub;
+      subFechada = !!(sub && f.subFech && f.subFech.indexOf(sub) >= 0);
+      if (sub){
+        const qtd = b.items.filter(x => (x.pasta || '') === sub).length;
+        const sh = aprEl('div', 'aprsub' + (subFechada ? '' : ' open'));
+        sh.appendChild(aprEl('span', 'sc', '▸'));
+        sh.appendChild(aprEl('span', '', '📁 ' + sub));
+        sh.appendChild(aprEl('span', 'er', qtd + ''));
+        sh.addEventListener('click', () => { aprSubToggle(ap, f, sub); aprRender(); });
+        alvo.appendChild(sh);
+      }
+    }
+    if (subFechada) return;
+    const row = aprEl('div', 'aprrow' + (it.falta ? ' falta' : '') + (f ? ' emfolder' : '') + (sub ? ' emsub' : ''));
+    row.appendChild(aprEl('span', 'n', (num[it.id] || '') + '.'));
+    const dot = aprEl('span', 'dot'); dot.style.background = it.color || '#888'; row.appendChild(dot);
+    row.appendChild(aprEl('span', 't', it.name || it.tagName || TX('vid.f.clip', 'clip')));
+    row.appendChild(aprEl('span', 'o', it.falta ? TX('vid.apr.missing', 'not found at the source') : (daOrigem ? (it.srcName || '') : (it.origem || ''))));
+    if (aprTemAjuste(it)) row.appendChild(aprEl('span', 'aj', TX('vid.apr.adjusted', 'adjusted here')));
+    row.appendChild(aprEl('span', 'd', it.falta ? '' : aprDur(it).toFixed(1) + 's'));
+    const bx = aprEl('span', 'b');
+    /* lance da playlist ligada segue a ordem dela; os demais voce move */
+    if (!daOrigem){
+      const flat = plFlat(ap); const pos = flat.indexOf(it);
+      const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
+      const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
+      bx.appendChild(up); bx.appendChild(dn);
+    }
+    if (!it.falta) bx.appendChild(aprBtn('▶', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')));
+    bx.appendChild(aprBtn('✕', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')));
+    row.appendChild(bx);
+    row.addEventListener('contextmenu', (e) => { e.preventDefault(); aprRowMenu(e.clientX, e.clientY, ap, it); });
+    row.addEventListener('dblclick', () => { if (!it.falta) aprPlay(ap, it.id); });
+    alvo.appendChild(row);
   });
 }
 function aprRowMenu(x, y, ap, it){
@@ -6890,49 +7127,58 @@ function aprPickAbre(ap){
   if (!ap) return;
   if (state.file){ try { flushSaveSession(); } catch (e) {} }
   _aprPick = { ap: ap };
+  aprHidrata(ap);
   $('aprPickTitle').textContent = TX('vid.apr.addTo', 'Add to') + ' "' + ap.name + '"';
   const sel = $('aprPickDest'); sel.innerHTML = '';
   const op = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
-  op('', TX('vid.fold.none', 'No folder'));
-  aprNorm(ap).folders.forEach(f => op(f.id, '📁 ' + f.name));
+  op('', TX('vid.apr.loose', 'Loose clips'));
+  aprUnidades(ap).forEach(u => u.blocos.forEach(b => { if (b.folder) op(b.folder.id, (u.grupo ? u.grupo.name + ' › ' : '') + b.folder.name); }));
   op('__novo', TX('vid.apr.newBlock', '+ New block…'));
   const box = $('aprPickList'); box.innerHTML = '';
   let algo = false;
-  /* 1) playlists de projeto (atravessam videos) */
+  /* ── projetos: projeto → pasta grande (jogo) → playlist → pastas da playlist → lances ── */
   const projs = projList().filter(p => projPlaylistsOf(p).some(pl => (pl.items || []).length));
   if (projs.length){
     box.appendChild(aprEl('div', 'aprpsec', '🗂 ' + TX('vid.apr.fromProjects', 'Project playlists')));
     projs.forEach(p => {
       const dp = aprEl('details', 'aprpgrp'); dp.appendChild(aprEl('summary', '', p.name));
-      /* playlists agrupadas pelo jogo (analise), na ordem dos jogos do projeto */
       const pls = projPlaylistsOf(p).filter(pl => (pl.items || []).length);
-      const jogos = projAnalises(p).map(a => ({ id: a.id, nome: a.name })).concat([{ id: '', nome: TX('vid.an.loose', 'Outside any analysis') }]);
-      const varios = pls.filter(pl => aprJogosDaPl(p, pl).length > 1);
-      const umJogo = pls.filter(pl => varios.indexOf(pl) < 0);
-      if (varios.length) jogos.splice(jogos.length - 1, 0, { id: '__varios', nome: TX('vid.apr.multiGames', 'Across several games') });   /* depois dos jogos, antes de 'fora de analise' */
-      jogos.forEach(j => {
-        const doJogo = j.id === '__varios' ? varios : umJogo.filter(pl => (playlistAnalise(p, pl) || '') === j.id);
-        if (!doJogo.length) return;
-        const vidsJogo = aprVideosDe([].concat(...doJogo.map(pl => (pl.items || []).map(it => it.srcName))));
-        const hj = aprEl('div', 'aprpjogo');
-        hj.appendChild(aprEl('b', '', '🗂 ' + j.nome));
-        if (vidsJogo.length) hj.appendChild(aprEl('span', 'er', '🎬 ' + vidsJogo.join(' · ')));
-        dp.appendChild(hj);
-        doJogo.forEach(pl => {
+      const grandes = [];
+      const acha = (nome) => { let g = grandes.find(x => x.nome === nome); if (!g){ g = { nome: nome, pls: [] }; grandes.push(g); } return g; };
+      /* jogos na ordem do projeto; depois as playlists de varios jogos (cada uma e a sua pasta); por fim as sem jogo */
+      projAnalises(p).forEach(a => pls.filter(pl => { const js = aprJogosDaPl(p, pl); return js.length === 1 && js[0] === a.name; }).forEach(pl => acha(a.name).pls.push(pl)));
+      pls.filter(pl => aprJogosDaPl(p, pl).length > 1).forEach(pl => { const g = acha(pl.name); g.varios = aprJogosDaPl(p, pl); g.pls.push(pl); });
+      pls.filter(pl => aprJogosDaPl(p, pl).length === 0).forEach(pl => acha(TX('vid.an.loose', 'Outside any analysis')).pls.push(pl));
+      grandes.forEach(g => {
+        const dg = aprEl('details', 'aprpgrande');
+        const sm = aprEl('summary', '');
+        const cg = document.createElement('input'); cg.type = 'checkbox'; cg.className = 'aprpk-grp';
+        cg.title = TX('vid.apr.allOfFolder', 'Tick every playlist in this folder');
+        cg.addEventListener('click', (e) => e.stopPropagation());
+        sm.appendChild(cg);
+        sm.appendChild(aprEl('b', '', '🗂 ' + g.nome));
+        const nl = g.pls.reduce((a, pl) => a + (pl.items || []).length, 0);
+        sm.appendChild(aprEl('span', 'er', g.pls.length + ' ' + TX('vid.apr.lists', 'playlist(s)') + ' · ' + nl + ' ' + TX('vid.f.clips', 'clips')));
+        dg.appendChild(sm);
+        const vids = aprVideosDe([].concat(...g.pls.map(pl => (pl.items || []).map(it => it.srcName))));
+        if (g.varios) dg.appendChild(aprEl('div', 'aprpvid', '🗂 ' + aprJogosTxt(g.varios)));
+        if (vids.length) dg.appendChild(aprEl('div', 'aprpvid', '🎬 ' + vids.join(' · ')));
+        g.pls.forEach(pl => {
           const its = plFlat(pl).filter(it => it && it.srcKey);
-          const vids = aprVideosDe(its.map(it => it.srcName));
-          const js = aprJogosDaPl(p, pl);
-          dp.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, aprRotuloPl(p, pl),
+          dg.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, pl.name, g.nome,
             its.map(it => ({ ref: { k: 'pp', projId: p.id, plId: pl.id, itemId: it.id }, nome: it.name || it.tagName || TX('vid.f.clip', 'clip'),
               sub: (it.srcName || '') + ' · ' + fmt(it.start, true) + ' · ' + aprDur(it).toFixed(1) + 's', cor: it.color,
-              pasta: (it.folderId && plFolder(pl, it.folderId)) ? plFolder(pl, it.folderId).name : '' })),
-            vids, js.length > 1 ? aprJogosTxt(js) : ''));
+              pasta: (it.folderId && plFolder(pl, it.folderId)) ? plFolder(pl, it.folderId).name : '' }))));
         });
+        cg.addEventListener('change', () => {
+          dg.querySelectorAll('.aprpk-pl').forEach(c => { c.checked = cg.checked; c.dispatchEvent(new Event('change')); });
+        });
+        dp.appendChild(dg);
       });
       box.appendChild(dp); algo = true;
     });
   }
-  /* 2) playlists de cada video (dentro de um jogo) */
+  /* ── videos: video (pasta grande) → playlist → lances ── */
   const lib = libAll();
   const chaves = Object.keys(lib);
   if (state.file && chaves.indexOf(sessionKey()) < 0) chaves.unshift(sessionKey());
@@ -6943,7 +7189,7 @@ function aprPickAbre(ap){
       const dv = aprEl('details', 'aprpgrp'); dv.appendChild(aprEl('summary', '', aprNomeVideo(k, s)));
       (s.namedPlaylists || []).filter(pl => (pl.evIds || []).length).forEach(pl => {
         const evs = (pl.evIds || []).map(id => (s.events || []).find(e => String(e.id) === String(id))).filter(Boolean);
-        dv.appendChild(aprPickPlaylist(pl.name, { k: 'vp', srcKey: k, plId: pl.id }, aprNomeVideo(k, s) + ' · ' + pl.name,
+        dv.appendChild(aprPickPlaylist(pl.name, { k: 'vp', srcKey: k, plId: pl.id }, pl.name, aprNomeVideo(k, s),
           evs.map(ev => { const tg = findTag(ev.tagId); return { ref: { k: 've', srcKey: k, evId: ev.id }, nome: ev.name || (tg ? tg.name : '') || TX('vid.f.clip', 'clip'), sub: fmt(ev.start, true) + ' · ' + Math.max(0, (ev.end || 0) - (ev.start || 0)).toFixed(1) + 's', cor: tg ? tg.color : '#888' }; })));
       });
       box.appendChild(dv); algo = true;
@@ -6952,29 +7198,30 @@ function aprPickAbre(ap){
   if (!algo) box.appendChild(aprEl('div', 'empty', TX('vid.apr.nothing', 'No playlists with clips yet — create playlists in a project or inside a video first.')));
   $('aprPickOv').classList.add('on');
 }
-/* uma playlist no seletor: marcar a playlist inteira (bloco sincronizado) ou lances */
-function aprPickPlaylist(nome, fonte, rotulo, lances, videos, variosJogos){
+/* uma playlist no seletor: marcar inteira (bloco sincronizado) ou abrir e escolher lances */
+function aprPickPlaylist(nome, fonte, bloco, grupo, lances){
   const w = aprEl('div', 'aprpl');
   const top = aprEl('label', 'aprplh');
   const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'aprpk-pl';
-  cb._fonte = fonte; cb._rotulo = rotulo;
+  cb._fonte = fonte; cb._bloco = bloco; cb._grupo = grupo;
   top.appendChild(cb);
   top.appendChild(aprEl('b', '', nome));
-  top.appendChild(aprEl('span', 'er', lances.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + TX('vid.apr.wholeSync', 'whole playlist, synced')));
+  top.appendChild(aprEl('span', 'er', lances.length + ' ' + TX('vid.f.clips', 'clips')));
   w.appendChild(top);
-  /* de qual video (ou videos) vem cada playlist */
-  if (variosJogos) w.appendChild(aprEl('div', 'aprpvid', '🗂 ' + variosJogos));
-  if (videos && videos.length) w.appendChild(aprEl('div', 'aprpvid', '🎬 ' + videos.join(' · ')));
   const d = aprEl('details', 'aprpits'); d.appendChild(aprEl('summary', '', TX('vid.apr.pickClips', 'or pick clips')));
-  let _pa = null;
+  /* as pastas da playlist tambem recolhem */
+  let alvo = d, _pa = null;
   lances.forEach(l => {
-    if (l.pasta && l.pasta !== _pa) d.appendChild(aprEl('div', 'aprpsub', '📁 ' + l.pasta));
-    _pa = l.pasta || '';
+    if ((l.pasta || '') !== _pa){
+      _pa = l.pasta || '';
+      if (l.pasta){ alvo = aprEl('details', 'aprppasta'); alvo.appendChild(aprEl('summary', '', '📁 ' + l.pasta + ' (' + lances.filter(x => x.pasta === l.pasta).length + ')')); d.appendChild(alvo); }
+      else alvo = d;
+    }
     const r = aprEl('label', 'aprpit');
     const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'aprpk-it'; c._ref = l.ref; c._fonte = fonte;
     const dot = aprEl('span', 'dot'); dot.style.background = l.cor || '#888';
     r.appendChild(c); r.appendChild(dot); r.appendChild(aprEl('span', 't', l.nome)); r.appendChild(aprEl('span', 'er', l.sub));
-    d.appendChild(r);
+    alvo.appendChild(r);
   });
   /* marcou a playlist inteira: os lances dela ja vem juntos */
   cb.addEventListener('change', () => { d.querySelectorAll('input').forEach(x => { x.disabled = cb.checked; if (cb.checked) x.checked = false; }); });
@@ -6995,7 +7242,7 @@ async function aprPickOk(){
     const f = plFolderCreate(ap, n); dest = f ? f.id : '';
   } else if (dest === '__novo') dest = '';
   let nb = 0, nl = 0;
-  pls.forEach(c => { if (aprAdicionaPlaylist(ap, c._fonte, c._rotulo)) nb++; });
+  pls.forEach(c => { if (aprAdicionaPlaylist(ap, c._fonte, c._bloco, c._grupo)) nb++; });
   if (its.length) nl = aprAdicionaLances(ap, its.map(c => c._ref), dest);
   aprPickFecha();
   log(TX('vid.apr.added', 'Added to the presentation:') + ' ' + nb + ' ' + TX('vid.apr.blocks', 'block(s)') + ', ' + nl + ' ' + TX('vid.f.clips', 'clips') + '.', 'ok');
