@@ -6649,8 +6649,21 @@ function aprPlay(ap, desdeItemId){
   cineGo(i0);
 }
 /* a cada lance: tinta limpa e a lista dos desenhos salvos dentro do corte */
+/* ══ DESENHO AO VIVO PRESO AO MOMENTO ═════════════════════════
+   O que voce desenha fica preso ao quadro em que desenhou: no play
+   ele some junto com o quadro; se o video passar por ali de novo
+   (voltar, repetir, reabrir o lance), para e o desenho reaparece.
+   Vale enquanto a apresentacao esta aberta e nunca vai para o video
+   original. Apagar tira de vez.                                   */
+function aprVivos(itId){ if (!_cine.vivos) _cine.vivos = {}; if (!_cine.vivos[itId]) _cine.vivos[itId] = []; return _cine.vivos[itId]; }
+function aprAncora(){
+  if (!cineApr() || !(_cine.tinta || []).length || !_cine.tintaItem) { if (_cine) { _cine.tinta = []; _cine.tintaItem = null; } return; }
+  aprVivos(_cine.tintaItem).push({ t: _cine.tintaT || 0, shapes: _cine.tinta.slice(), vivo: true });
+  _cine.tinta = []; _cine.tintaItem = null;
+}
 function aprNoLance(it){
   if (!cineApr()) return;
+  aprAncora();
   _cine.tinta = []; _cine.parada = null; aprInk.cur = null;
   const ses = aprSessao(it.srcKey);
   const a = (it.start || 0) - 0.06, b = (it.end != null ? it.end : (it.start || 0) + 8) + 0.02;
@@ -6665,6 +6678,7 @@ function aprLoopQuadros(){
   const tok = _cine._rvfc = (_cine._rvfc || 0) + 1;
   const cb = (now, meta) => {
     if (!_cine || !_cine.apr || _cine._rvfc !== tok) return;
+    if (meta && typeof meta.mediaTime === 'number') _cine._quadroT = meta.mediaTime;
     aprVigia(meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : v.currentTime);
     v.requestVideoFrameCallback(cb);
   };
@@ -6677,9 +6691,11 @@ function aprVigia(t){
   if (v.seeking) return false;
   const prev = _cine.prevT; _cine.prevT = t;
   if (prev == null || !_cine.tocando || _cine.arrastando) return false;
-  if (!$('cineDes') || !$('cineDes').checked) return false;
   const meio = quadroDur() * 0.5;
-  const d = (_cine.paradas || []).find(x => prev < x.t - meio && t >= x.t - meio && t - x.t < 1.5);
+  const it = cineItem();
+  const salvos = ($('cineDes') && $('cineDes').checked) ? (_cine.paradas || []) : [];
+  const vivos = it ? aprVivos(it.id) : [];
+  const d = salvos.concat(vivos).sort((x, y) => x.t - y.t).find(x => prev < x.t - meio && t >= x.t - meio && t - x.t < 1.5);
   if (!d) return false;
   aprParaNoDesenho(d);
   return true;
@@ -6687,7 +6703,20 @@ function aprVigia(t){
 function aprParaNoDesenho(d){
   const v = $('cineVid');
   try { v.pause(); } catch (e) {}
-  _cine.tocando = false; _cine.parada = d;
+  _cine.tocando = false;
+  /* no mesmo quadro podem estar o desenho salvo e o feito aqui: os dois voltam */
+  const it = cineItem(), perto = quadroDur() * 1.5;
+  const salvos = ($('cineDes') && $('cineDes').checked) ? (_cine.paradas || []) : [];
+  _cine.parada = d.vivo ? (salvos.find(x => Math.abs(x.t - d.t) <= perto) || null) : d;
+  if (it){
+    const lista = aprVivos(it.id);
+    const meus = lista.filter(x => Math.abs(x.t - d.t) <= perto);
+    if (meus.length){
+      /* volta para a tela como tinta editavel; no proximo play prende de novo */
+      _cine.vivos[it.id] = lista.filter(x => meus.indexOf(x) < 0);
+      _cine.tinta = [].concat(...meus.map(x => x.shapes)); _cine.tintaT = meus[0].t; _cine.tintaItem = it.id;
+    }
+  }
   if (Math.abs((v.currentTime || 0) - d.t) > quadroDur() * 0.5){ try { v.currentTime = alvoDoQuadro(d); } catch (e) {} }
   _cine.prevT = d.t + quadroDur();
   cineSyncBtn(); aprInkPinta(); aprInkBarPinta();
@@ -6696,11 +6725,12 @@ function aprParaNoDesenho(d){
 function aprAntesDoPlay(){
   if (!cineApr()) return;
   _cine.parada = null;
+  aprAncora();          /* o desenho fica no quadro em que foi feito; o video segue limpo */
   aprInkPinta(); aprInkBarPinta();
 }
 function aprApagar(){
   if (!cineApr()) return;
-  _cine.tinta = []; _cine.parada = null; aprInk.cur = null;
+  _cine.tinta = []; _cine.tintaItem = null; _cine.parada = null; aprInk.cur = null;
   aprInkPinta(); aprInkBarPinta();
 }
 function aprApagarESeguir(){
@@ -6778,6 +6808,11 @@ function aprInkWire(){
     e.preventDefault(); e.stopPropagation();
     /* desenhar para o video na hora; so volta com play */
     if (_cine.tocando){ try { $('cineVid').pause(); } catch (err) {} _cine.tocando = false; cineSyncBtn(); }
+    /* primeiro traco: guarda o quadro e o lance a que o desenho pertence */
+    if (!(_cine.tinta || []).length || !_cine.tintaItem){
+      const it0 = cineItem(); _cine.tintaItem = it0 ? it0.id : null;
+      _cine.tintaT = (typeof _cine._quadroT === 'number' && Math.abs(_cine._quadroT - $('cineVid').currentTime) < 0.5) ? _cine._quadroT : $('cineVid').currentTime;
+    }
     aprInk.cur = { tool: aprInk.tool, color: aprInk.color, opacity: 1, width: 1, points: [aprPonto(e)] };
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     aprInkPinta();
