@@ -1442,7 +1442,7 @@
   <div id="cineBar">
     <button class="mini" id="cinePrev" data-i18n-title="vid.cine.prev" title="Previous">⏮</button>
     <button class="mini primary" id="cinePlay">⏸</button>
-    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next (→)">⏭</button>
+    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next clip (Shift+→)">⏭</button>
     <span id="cineCount">—</span>
     <button class="mini ghost" id="cineFrB" data-i18n-title="vid.cine.frameBack" title="One frame back">,</button>
     <div id="cineProg" data-i18n-title="vid.cine.scrub" title="Drag to move through the clip">
@@ -1452,7 +1452,7 @@
     <span id="cineNow">0.0s / 0.0s</span>
     <label><input type="checkbox" id="cineAuto" checked> <span data-i18n="vid.cine.autoplay">Auto-advance</span></label>
     <label><input type="checkbox" id="cineLoop"> <span data-i18n="vid.cine.loop">Repeat</span></label>
-    <span id="cineKeys" data-i18n="vid.cine.keys">→ next · ← previous · space play</span>
+    <span id="cineKeys" data-i18n="vid.cine.keys">← → frame · Shift+← → clip · space play</span>
   </div>
   <!-- so na apresentacao: desenhar por cima, apagar, apagar e seguir -->
   <div id="cineInkBar">
@@ -5945,6 +5945,53 @@ function cinePintaEm(tForcado){
   /* relogio do lance: quanto ja correu do corte e quanto ele dura */
   if (agora) agora.textContent = Math.max(0, t - ini).toFixed(1) + 's / ' + (fim - ini).toFixed(1) + 's';
 }
+/* ══ QUADRO A QUADRO NO PLAYER ═════════════════════════════════
+   As setas andam UM quadro (segurar a tecla anda devagar, quadro a
+   quadro). Trocar de lance passou para Shift + seta.
+   O passo usa o fps real deste video, medido nos quadros exibidos,
+   e a posicao do quadro que esta NA TELA (nao o currentTime, que
+   costuma estar alguns quadros a frente).                        */
+var _cineFps = { amostras: [], ult: null, quadroT: null, dur: 0 };
+function cineQuadroDur(){ return _cineFps.dur || quadroDur(); }
+function cineMedeQuadros(){
+  const v = $('cineVid'); if (!v || !v.requestVideoFrameCallback) return;
+  const cb = (now, meta) => {
+    if (meta){
+      _cineFps.quadroT = meta.mediaTime;
+      const u = _cineFps.ult;
+      if (u && !v.paused && v.playbackRate === 1 && meta.presentedFrames - u.pf === 1){
+        const d = meta.mediaTime - u.mt;
+        if (d > 0.008 && d < 0.1){
+          _cineFps.amostras.push(d); if (_cineFps.amostras.length > 40) _cineFps.amostras.shift();
+          const o = _cineFps.amostras.slice().sort((a, b) => a - b);
+          _cineFps.dur = o[Math.floor(o.length / 2)];
+        }
+      }
+      _cineFps.ult = { mt: meta.mediaTime, pf: meta.presentedFrames };
+    }
+    v.requestVideoFrameCallback(cb);
+  };
+  v.requestVideoFrameCallback(cb);
+  /* video novo: o fps pode ser outro */
+  v.addEventListener('loadedmetadata', () => { _cineFps.amostras = []; _cineFps.dur = 0; _cineFps.ult = null; _cineFps.quadroT = null; });
+}
+function cinePassoQuadro(d){
+  if (!_cine) return;
+  const v = $('cineVid');
+  /* andar quadro a quadro sempre para o video */
+  if (_cine.tocando || !v.paused){ try { v.pause(); } catch (e) {} _cine.tocando = false; cineSyncBtn(); }
+  const dur = cineQuadroDur();
+  /* tecla segurada: enquanto o video busca, acumula os passos */
+  if (v.seeking){ _cine.passoPend = (_cine.passoPend || 0) + d; return; }
+  const visto = (_cineFps.quadroT != null && Math.abs(_cineFps.quadroT - v.currentTime) < dur * 3) ? _cineFps.quadroT : v.currentTime;
+  const j = cineJanela();
+  /* mira um pouco depois do inicio do quadro, para o navegador nao arredondar para o anterior */
+  const alvo = Math.max(j.a, Math.min(j.b, visto + d * dur + dur * 0.3));
+  try { v.currentTime = alvo; } catch (e) {}
+  _cineFps.quadroT = null;
+  _cine.fim = false;
+  cinePintaEm(alvo); cineSyncBtn();
+}
 function cineSeek(t){
   const v = $('cineVid');
   const j = cineJanela();
@@ -6270,8 +6317,15 @@ function cineWire(){
   $('cineOutP').addEventListener('click', () => { const it = cineItem(); if (it) cineSetOut((it.end || 0) + CINE_PASSO); });
   $('cineOutHere').addEventListener('click', () => cineSetOut(v.currentTime));
   $('cineRevert').addEventListener('click', cineRevert);
-  $('cineFrB').addEventListener('click', () => cineSeek(v.currentTime - quadroDur()));
-  $('cineFrF').addEventListener('click', () => cineSeek(v.currentTime + quadroDur()));
+  $('cineFrB').addEventListener('click', () => cinePassoQuadro(-1));
+  $('cineFrF').addEventListener('click', () => cinePassoQuadro(1));
+  /* passos acumulados com a tecla segurada saem um a um, sem pular */
+  v.addEventListener('seeked', () => {
+    if (!_cine || !_cine.passoPend) return;
+    const d = _cine.passoPend > 0 ? 1 : -1; _cine.passoPend -= d;
+    requestAnimationFrame(() => cinePassoQuadro(d));
+  });
+  cineMedeQuadros();
   $('cineZmM').addEventListener('click', () => cineZoomPasso(-CINE_ZPASSO));
   $('cineZmP').addEventListener('click', () => cineZoomPasso(CINE_ZPASSO));
   $('cineZmS').addEventListener('click', cineZoomFixar);
@@ -6301,13 +6355,15 @@ function cineWire(){
       if (!e.ctrlKey && !e.metaKey && (e.key === 'd' || e.key === 'D')){ e.stopPropagation(); aprFerramenta('pen'); return; }
     }
     if (e.key === 'Escape'){ e.stopPropagation(); cineClose(); }
-    else if (e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i + 1); }
-    else if (e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i - 1); }
+    else if (e.key === 'ArrowRight' && e.shiftKey){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i + 1); }
+    else if (e.key === 'ArrowLeft' && e.shiftKey){ e.preventDefault(); e.stopPropagation(); cineGo(_cine.i - 1); }
+    else if (e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); cinePassoQuadro(1); }
+    else if (e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); cinePassoQuadro(-1); }
     else if (e.key === ' '){ e.preventDefault(); e.stopPropagation(); $('cinePlay').click(); }
     else if (e.key === 'i' || e.key === 'I'){ e.stopPropagation(); cineSetIn($('cineVid').currentTime, false); }
     else if (e.key === 'o' || e.key === 'O'){ e.stopPropagation(); cineSetOut($('cineVid').currentTime); }
-    else if (e.key === ','){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime - quadroDur()); }
-    else if (e.key === '.'){ e.preventDefault(); e.stopPropagation(); cineSeek($('cineVid').currentTime + quadroDur()); }
+    else if (e.key === ','){ e.preventDefault(); e.stopPropagation(); cinePassoQuadro(-1); }
+    else if (e.key === '.'){ e.preventDefault(); e.stopPropagation(); cinePassoQuadro(1); }
   }, true);
 }
 cineWire();
