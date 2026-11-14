@@ -665,6 +665,17 @@
   .aprpgrp{border:1px solid var(--line);border-radius:7px;margin-bottom:6px;padding:4px 9px}
   .aprpgrp>summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}
   .aprpl{border-top:1px solid var(--line);padding:6px 0 4px}
+  .reurow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .reulbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:80px}
+  .reuproj{font-size:12.5px;cursor:pointer}
+  .reuproj .er,.reujogo .er,.reuit .er{font-size:11px;color:var(--muted)}
+  #reuLista{max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:7px;padding:4px 9px;margin-top:6px}
+  .reujogo{border-bottom:1px solid var(--line);padding:3px 0}
+  .reujogo:last-child{border-bottom:none}
+  .reujogo>summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0}
+  .reuit{display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0 3px 26px;cursor:pointer}
+  .reuit .dot{width:8px;height:8px;border-radius:2px;flex:none}
+  .reuit .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .aprpjogo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px;padding:5px 8px;background:var(--paper);border-left:3px solid var(--ink);border-radius:4px;font-size:12.5px}
   .aprpjogo .er{font-size:11px;color:var(--muted)}
   .aprpvid{margin:2px 0 0 24px;font-size:11px;color:var(--muted)}
@@ -1299,6 +1310,7 @@
       <div id="projNewWrap" style="display:flex;gap:8px;margin-bottom:14px">
         <input type="text" id="projNewName" placeholder="New project (e.g. Scouting Semey 25/26)" data-i18n-placeholder="vid.proj.ph.newProject" maxlength="60" style="flex:1;min-width:160px">
         <button class="primary" id="projNewBtn" data-i18n="vid.proj.newProject">+ New project</button>
+        <button id="reuBtn" data-i18n-title="vid.reu.btnT" title="Gather every clip of a tag (e.g. Goals conceded) from all the projects of the season and export them in one video">🎯 <span data-i18n="vid.reu.btn">Gather &amp; export</span></button>
       </div>
       <div class="body" id="projView">
         <div data-i18n="vid.proj.noProjects" class="empty">No projects yet.</div>
@@ -1377,6 +1389,31 @@
     <button class="mini primary" style="margin-top:12px;padding:8px 18px" onclick="relGerar()">
       <span data-i18n="vid.rel.gen">Generate report</span>
     </button>
+  </div>
+</div>
+
+<!-- REUNIR E EXPORTAR: todos os lances de uma etiqueta na temporada -->
+<div class="st-ov" id="reuOv" style="z-index:170">
+  <div class="st-sh" style="max-width:700px">
+    <div class="modal-hdr" style="margin-bottom:4px">
+      <h2 style="font-size:15px;font-weight:600" id="reuTitle">—</h2>
+      <button class="modal-close" id="reuX">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px" data-i18n="vid.reu.hint">Every clip of the tag, from every project of the season, in one video — in order of game, with a title screen per game. Untick what should stay out.</div>
+    <div class="reurow"><span class="reulbl" data-i18n="vid.reu.tag">Tag</span><select id="reuTag" style="min-width:200px"></select></div>
+    <div class="reurow" style="align-items:flex-start"><span class="reulbl" data-i18n="vid.reu.projs">Projects</span><div id="reuProjs" style="display:flex;flex-wrap:wrap;gap:4px 14px"></div></div>
+    <div class="reurow"><span class="reulbl"></span><label style="font-size:12px"><input type="checkbox" id="reuAvulsos"> <span data-i18n="vid.reu.loose">Also videos outside any project</span></label></div>
+    <div id="reuLista"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);flex-wrap:wrap">
+      <label style="font-size:12.5px"><input type="checkbox" id="reuCards" checked> <span data-i18n="vid.reu.cards">Title screen per game</span></label>
+      <input type="number" id="reuDur" value="2.5" min="0.5" max="10" step="0.5" style="width:62px">
+      <span style="font-size:12px;color:var(--muted)" data-i18n="vid.ex.cardsSec">seconds</span>
+      <span id="reuTotal" style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="mini primary" id="reuGo" style="padding:8px 18px">⬇ <span data-i18n="vid.reu.export">Export one video</span></button>
+      <button class="mini" id="reuApr" style="padding:8px 14px">📽 <span data-i18n="vid.reu.apr">Send to a new presentation</span></button>
+    </div>
   </div>
 </div>
 
@@ -7365,6 +7402,212 @@ function aprWireTab(){
 aprInkWire();
 aprWireTab();
 
+/* ══ REUNIR E EXPORTAR POR ETIQUETA (temporada) ════════════════
+   Junta, de todos os projetos da temporada aberta no hub, os lances
+   de uma etiqueta (ex.: "Gols sofridos") e exporta num video so,
+   com uma cartela por jogo — ou manda para uma Apresentacao.
+   Ordem: projeto → jogo (analise) → video → tempo do lance.
+   As etiquetas sao comparadas pelo NOME (painéis diferentes podem
+   ter a mesma etiqueta com ids diferentes).                    */
+let _reu = null;
+function reuNorm(s){ return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+/* chave da biblioteca de um video do projeto (antigos guardavam so o nome) */
+function reuChaveVideo(v){
+  if (v && v.srcKey) return v.srcKey;
+  const lib = libAll();
+  return Object.keys(lib).find(k => (lib[k] || {}).name === (v && v.srcName)) || null;
+}
+/* videos da temporada: os dos projetos (com jogo) e, se pedir, os avulsos da biblioteca */
+function reuVideos(projIds, comAvulsos){
+  const out = [], vistos = new Set();
+  projList().forEach(p => {
+    const ordAn = projAnalises(p).map(a => a.id);
+    const vs = (p.videos || []).map((v, i) => ({ v: v, i: i, an: videoAnaliseId(p, v) }))
+      .sort((a, b) => {
+        const ia = a.an ? ordAn.indexOf(a.an) : 1e6, ib = b.an ? ordAn.indexOf(b.an) : 1e6;
+        return ia - ib || a.i - b.i;
+      });
+    vs.forEach(({ v, an }) => {
+      const k = reuChaveVideo(v); if (!k || vistos.has(k)) return;
+      vistos.add(k);
+      if (projIds && projIds.indexOf(p.id) < 0) return;
+      const a = an ? analisePorId(p, an) : null;
+      out.push({ k: k, nome: v.srcName || aprNomeVideo(k), proj: p, jogo: a ? a.name : (v.srcName || aprNomeVideo(k)) });
+    });
+  });
+  if (comAvulsos){
+    const lib = libAll();
+    const chaves = Object.keys(lib);
+    if (state.file && chaves.indexOf(sessionKey()) < 0) chaves.push(sessionKey());
+    chaves.forEach(k => { if (vistos.has(k)) return; vistos.add(k); out.push({ k: k, nome: aprNomeVideo(k), proj: null, jogo: aprNomeVideo(k) }); });
+  }
+  return out;
+}
+/* todas as etiquetas usadas nos videos da temporada, com contagem */
+function reuEtiquetas(videos){
+  const cont = {};
+  videos.forEach(vd => {
+    const s = aprSessao(vd.k); if (!s) return;
+    (s.events || []).forEach(ev => {
+      const t = findTag(ev.tagId); const n = t && t.name; if (!n) return;
+      const k = reuNorm(n);
+      if (!cont[k]) cont[k] = { nome: n, n: 0 };
+      cont[k].n++;
+    });
+  });
+  return Object.values(cont).sort((a, b) => a.nome.localeCompare(b.nome));
+}
+/* lances da etiqueta, agrupados por jogo, na ordem da temporada */
+function reuLances(videos, etiqueta){
+  const alvo = reuNorm(etiqueta);
+  const jogos = [];
+  videos.forEach(vd => {
+    const s = aprSessao(vd.k); if (!s) return;
+    const evs = (s.events || []).filter(ev => { const t = findTag(ev.tagId); return t && reuNorm(t.name) === alvo; })
+      .sort((a, b) => (a.start || 0) - (b.start || 0));
+    if (!evs.length) return;
+    const chaveJogo = (vd.proj ? vd.proj.id : '-') + '|' + vd.jogo;
+    let j = jogos.find(x => x.chave === chaveJogo);
+    if (!j){ j = { chave: chaveJogo, nome: vd.jogo, proj: vd.proj, itens: [] }; jogos.push(j); }
+    evs.forEach(ev => {
+      const tag = findTag(ev.tagId);
+      j.itens.push({
+        id: 'r' + vd.k + ':' + ev.id, evId: ev.id, on: true,
+        srcKey: vd.k, srcName: vd.nome, tagId: ev.tagId, tagName: tag ? tag.name : '', color: tag ? tag.color : '#888',
+        name: ev.name || '', note: ev.note || '', spec: ev.spec || '',
+        t: ev.t != null ? ev.t : null, start: ev.start || 0, end: ev.end != null ? ev.end : (ev.start || 0) + 8,
+        exportZoom: ev.exportZoom ? Object.assign({}, ev.exportZoom) : null,
+        slow: slowValido(ev.slow) ? Object.assign({}, ev.slow) : null, gk: ev.gk || '', outcome: ev.outcome || ''
+      });
+    });
+  });
+  return jogos;
+}
+function reuAbre(){
+  if (state.file){ try { flushSaveSession(); } catch (e) {} }
+  const projs = projList();
+  _reu = { projIds: projs.map(p => p.id), avulsos: false, etiqueta: '', jogos: [] };
+  const todos = reuVideos(null, true);
+  const tags = reuEtiquetas(todos);
+  const padrao = tags.find(t => /gols?\s*sofridos?/.test(reuNorm(t.nome))) || tags[0];
+  _reu.etiqueta = padrao ? padrao.nome : '';
+  const sel = $('reuTag'); sel.innerHTML = '';
+  tags.forEach(t => { const o = document.createElement('option'); o.value = t.nome; o.textContent = t.nome; if (t.nome === _reu.etiqueta) o.selected = true; sel.appendChild(o); });
+  $('reuTitle').textContent = TX('vid.reu.title', 'Gather & export by tag') + (window._fluxgkSeason ? ' · ' + window._fluxgkSeason : '');
+  reuPinta();
+  $('reuOv').classList.add('on');
+}
+function reuFecha(){ $('reuOv').classList.remove('on'); _reu = null; }
+function reuPinta(){
+  if (!_reu) return;
+  /* projetos da temporada, com quantos lances da etiqueta cada um tem */
+  const pbox = $('reuProjs'); pbox.innerHTML = '';
+  projList().forEach(p => {
+    const n = reuLances(reuVideos([p.id], false), _reu.etiqueta).reduce((a, j) => a + j.itens.length, 0);
+    const l = document.createElement('label'); l.className = 'reuproj';
+    const c = document.createElement('input'); c.type = 'checkbox'; c.checked = _reu.projIds.indexOf(p.id) >= 0;
+    c.addEventListener('change', () => {
+      _reu.projIds = c.checked ? _reu.projIds.concat([p.id]) : _reu.projIds.filter(x => x !== p.id);
+      reuPinta();
+    });
+    l.appendChild(c); l.appendChild(document.createTextNode(' ' + p.name + ' '));
+    const s = document.createElement('span'); s.className = 'er'; s.textContent = '(' + n + ')'; l.appendChild(s);
+    pbox.appendChild(l);
+  });
+  $('reuAvulsos').checked = !!_reu.avulsos;
+  /* lances, por jogo; desmarcar tira da exportacao */
+  const antes = {}; (_reu.jogos || []).forEach(j => j.itens.forEach(it => { antes[it.id] = it.on; }));
+  _reu.jogos = reuLances(reuVideos(_reu.projIds, _reu.avulsos), _reu.etiqueta);
+  _reu.jogos.forEach(j => j.itens.forEach(it => { if (antes[it.id] === false) it.on = false; }));
+  const box = $('reuLista'); box.innerHTML = '';
+  if (!_reu.jogos.length){ const e = document.createElement('div'); e.className = 'empty'; e.textContent = TX('vid.reu.none', 'No clips with this tag in the selected projects.'); box.appendChild(e); }
+  _reu.jogos.forEach(j => {
+    const d = document.createElement('details'); d.className = 'reujogo';
+    const sm = document.createElement('summary');
+    const cj = document.createElement('input'); cj.type = 'checkbox'; cj.checked = j.itens.some(x => x.on);
+    cj.addEventListener('click', (e) => e.stopPropagation());
+    cj.addEventListener('change', () => { j.itens.forEach(x => { x.on = cj.checked; }); reuPintaLista(); });
+    sm.appendChild(cj);
+    const b = document.createElement('b'); b.textContent = '🗂 ' + j.nome; sm.appendChild(b);
+    const er = document.createElement('span'); er.className = 'er';
+    er.textContent = (j.proj ? j.proj.name + ' · ' : '') + j.itens.filter(x => x.on).length + '/' + j.itens.length;
+    sm.appendChild(er);
+    d.appendChild(sm);
+    j.itens.forEach(it => {
+      const r = document.createElement('label'); r.className = 'reuit';
+      const c = document.createElement('input'); c.type = 'checkbox'; c.checked = it.on;
+      c.addEventListener('change', () => { it.on = c.checked; reuPintaLista(); });
+      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = it.color;
+      const t = document.createElement('span'); t.className = 't'; t.textContent = it.name || it.tagName;
+      const s = document.createElement('span'); s.className = 'er'; s.textContent = it.srcName + ' · ' + fmt(it.start, true) + ' · ' + (it.end - it.start).toFixed(1) + 's';
+      r.appendChild(c); r.appendChild(dot); r.appendChild(t); r.appendChild(s);
+      d.appendChild(r);
+    });
+    box.appendChild(d);
+  });
+  reuTotal();
+}
+/* so atualiza contagens (sem fechar as pastas abertas) */
+function reuPintaLista(){
+  document.querySelectorAll('#reuLista .reujogo').forEach((d, i) => {
+    const j = _reu.jogos[i]; if (!j) return;
+    const cj = d.querySelector('summary input'); if (cj) cj.checked = j.itens.some(x => x.on);
+    d.querySelectorAll('.reuit input').forEach((c, k) => { c.checked = j.itens[k].on; });
+    const er = d.querySelector('summary .er'); if (er) er.textContent = (j.proj ? j.proj.name + ' · ' : '') + j.itens.filter(x => x.on).length + '/' + j.itens.length;
+  });
+  reuTotal();
+}
+function reuSelecionados(){ return (_reu ? _reu.jogos : []).map(j => ({ jogo: j, itens: j.itens.filter(x => x.on) })).filter(x => x.itens.length); }
+function reuTotal(){
+  const sel = reuSelecionados();
+  const n = sel.reduce((a, x) => a + x.itens.length, 0);
+  const seg = sel.reduce((a, x) => a + x.itens.reduce((b, it) => b + (it.end - it.start), 0), 0);
+  const cart = $('reuCards').checked ? sel.length * (parseFloat($('reuDur').value) || 2.5) : 0;
+  $('reuTotal').textContent = sel.length + ' ' + TX('vid.reu.games', 'game(s)') + ' · ' + n + ' ' + TX('vid.f.clips', 'clips') + ' · ~' + Math.round(seg + cart) + 's';
+  $('reuGo').disabled = !n; $('reuApr').disabled = !n;
+}
+function reuExportar(){
+  const sel = reuSelecionados(); if (!sel.length) return;
+  const cartelas = $('reuCards').checked, dur = parseFloat($('reuDur').value) || 2.5;
+  const fila = [];
+  sel.forEach(x => {
+    if (cartelas) fila.push({ _cartela: x.jogo.nome, _sub: (x.jogo.proj ? x.jogo.proj.name + ' · ' : '') + x.itens.length + ' ' + TX('vid.f.clips', 'clips'), _dur: dur, color: x.itens[0].color || '#1E4FFF' });
+    x.itens.forEach(it => fila.push(Object.assign({}, it)));
+  });
+  const base = _reu.etiqueta + (window._fluxgkSeason ? ' - ' + window._fluxgkSeason : '');
+  reuFecha();
+  /* videos de projetos diferentes: cada lance acha o seu arquivo */
+  exportCombined(fila, base, { resolver: (it) => aprArquivo(it) });
+}
+/* manda para uma Apresentacao nova: uma pasta grande por jogo */
+function reuApresentacao(){
+  const sel = reuSelecionados(); if (!sel.length) return;
+  const nome = _reu.etiqueta + (window._fluxgkSeason ? ' · ' + window._fluxgkSeason : '');
+  const ap = aprCriar(nome);
+  sel.forEach(x => {
+    const g = aprGrupoAcha(ap, x.jogo.nome);
+    const f = { id: aprNovoId('f'), name: _reu.etiqueta, fora: [], subFech: [], grupoId: g.id };
+    ap.folders.push(f);
+    aprAdicionaLances(ap, x.itens.map(it => ({ k: 've', srcKey: it.srcKey, evId: it.evId })), f.id);
+  });
+  aprHidrata(ap); aprPersist();
+  reuFecha();
+  log(TX('vid.reu.toApr', 'Presentation created:') + ' "' + ap.name + '".', 'ok');
+  switchTab('apr');
+}
+function reuWire(){
+  if ($('reuBtn')) $('reuBtn').addEventListener('click', reuAbre);
+  if ($('reuX')) $('reuX').addEventListener('click', reuFecha);
+  if ($('reuTag')) $('reuTag').addEventListener('change', () => { if (!_reu) return; _reu.etiqueta = $('reuTag').value; _reu.jogos = []; reuPinta(); });
+  if ($('reuAvulsos')) $('reuAvulsos').addEventListener('change', () => { if (!_reu) return; _reu.avulsos = $('reuAvulsos').checked; reuPinta(); });
+  if ($('reuCards')) $('reuCards').addEventListener('change', reuTotal);
+  if ($('reuDur')) $('reuDur').addEventListener('input', reuTotal);
+  if ($('reuGo')) $('reuGo').addEventListener('click', reuExportar);
+  if ($('reuApr')) $('reuApr').addEventListener('click', reuApresentacao);
+}
+
+reuWire();
+
 /* menu do botao direito sobre um lance da playlist */
 function openPlaylistItemMenu(x, y, pl, ev, tag){
   const menu = $('ctxMenu');
@@ -10207,7 +10450,7 @@ function recordGroup(group, outW, outH, mime, ext, bitrate, withTitle, withWm, w
    os desenhos (áudio fica de fora nesta versão para estabilidade ao trocar
    de fonte no meio da gravação).
    ===================================================================== */
-async function exportCombined(items, baseName){
+async function exportCombined(items, baseName, opts){
   if (exporting){ log(TX('vid.msg.exportInProgress'), 'err'); return; }
   /* cartelas (telas com o nome da playlist) nao tem video: entram na fila
      do mesmo jeito e sao desenhadas direto no canvas */
@@ -10227,7 +10470,8 @@ async function exportCombined(items, baseName){
   const nomeDaFonte = k => (order.find(i => i.srcKey === k) || {}).srcName || '';
   for (const k of keys){
     const nm = (order.find(i => i.srcKey === k) || {}).srcName || k;
-    let f = null; try { f = await projResolveFile(p, nm); } catch (e) {}
+    let f = null;
+    try { f = (opts && opts.resolver) ? await opts.resolver({ srcKey: k, srcName: nm }) : await projResolveFile(p, nm); } catch (e) {}
     if (f) fileMap[k] = f; else missing.push(nm);
   }
   if (missing.length){ log(TX('vid.proj.expMissing') + missing.join(', '), 'err'); return; }
