@@ -244,7 +244,7 @@ html,body{height:100%;background:#0a0a0a;font-family:'Space Grotesk',sans-serif;
     <span class="mtnm" id="mtnm"></span>
     <button class="mfs" id="mfsBtn" onclick="toggleModuleFs()" title="Fullscreen" data-i18n-title="hub.fullscreen" aria-label="Fullscreen">⛶</button>
   </div>
-  <iframe class="mfrm" id="mfrm" src="about:blank" allowfullscreen allow="fullscreen" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
+  <iframe class="mfrm" id="mfrm" src="about:blank" allowfullscreen allow="fullscreen; microphone" sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
 </div>
 
 <!-- LISTAGEM: sessoes / jogos / goleiros -->
@@ -340,12 +340,13 @@ var MODS=[
   {k:'video',  i:'<rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/>'},
   {k:'data',   i:'<path d="M3 17l5-6 4 4 5-8 4 5"/>'},
   {k:'profile',i:'<path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.4 16.2c.8-1.7 2.1-2.6 3.6-2.6s2.8.9 3.6 2.6"/>'},
-  {k:'scouting',i:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/><path d="M8.4 11h5.2M11 8.4v5.2"/>'}
+  {k:'scouting',i:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/><path d="M8.4 11h5.2M11 8.4v5.2"/>'},
+  {k:'feedback',i:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'}
 ];
 function modName(k){return TX('hub.mod.'+k,k);}
 function modDesc(k){return TX('hub.mod.'+k+'.d','');}
 function modTag(k){return TX('hub.mod.'+k+'.t',k.toUpperCase());}
-var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html',period:'mod_periodization.html',profile:'mod_profile.html',scouting:'mod_scouting.html'};
+var MOD_FILES={xg:'mod_xg.html',planner:'mod_planner.html',data:'mod_data.html',stats:'mod_stats.html',minutes:'mod_minutes.html',video:'mod_video.html',period:'mod_periodization.html',profile:'mod_profile.html',scouting:'mod_scouting.html',feedback:'mod_feedback.html'};
 
 var _auth,_rtdb;
 var APP={

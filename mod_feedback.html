@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxGK — Feedback</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="fluxgk-i18n.js"></script>
+<style>
+:root{--ink:#0a0a0a;--paper:#f6f5f1;--card:#fff;--line:#e6e3dc;--muted:#77756f;--accent:#0f6e56;--good:#15803D;--warn:#B45309;--crit:#B91C1C;--blue:#1E4FFF;--r:10px}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+header h1{font-size:15px;margin:0;letter-spacing:.02em}
+header .ctx{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.dotfb{width:8px;height:8px;border-radius:50%;background:#bbb;display:inline-block}
+nav.tabs{display:flex;gap:4px;padding:8px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line)}
+nav.tabs button{border:1px solid transparent;background:none;padding:8px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;color:var(--muted)}
+nav.tabs button.on{background:var(--ink);color:#fff}
+nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;margin-left:4px}
+main{max-width:920px;margin:0 auto;padding:16px}
+section.tab{display:none}section.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--crit);border-color:#f1c7c7}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:4px 9px;font-size:12px}
+input,select,textarea{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fff;color:var(--ink)}
+textarea{width:100%;resize:vertical}
+.muted{color:var(--muted);font-size:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* gravar */
+.rec{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 10px}
+.recbtn{width:132px;height:132px;border-radius:50%;border:none;background:var(--crit);color:#fff;font-size:44px;cursor:pointer;box-shadow:0 8px 24px rgba(185,28,28,.25);transition:transform .1s}
+.recbtn:active{transform:scale(.97)}
+.recbtn.on{animation:pulse 1.2s infinite;background:#7f1d1d}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(185,28,28,.45)}70%{box-shadow:0 0 0 22px rgba(185,28,28,0)}100%{box-shadow:0 0 0 0 rgba(185,28,28,0)}}
+.rectime{font-family:'JetBrains Mono',monospace;font-size:26px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.steps span{font-size:12px;padding:4px 10px;border-radius:12px;background:#eee;color:var(--muted)}
+.steps span.on{background:#fff4d6;color:#8a5a00}
+.steps span.ok{background:#dcfce7;color:var(--good)}
+.steps span.err{background:#fee2e2;color:var(--crit)}
+/* listas */
+.item{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:none}
+.item .grow{flex:1;min-width:0}
+.cit{font-size:12px;color:var(--muted);font-style:italic;margin-top:3px}
+.cit.bad{color:var(--crit);font-style:normal}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#eee;color:#444;white-space:nowrap}
+.pill.good{background:#dcfce7;color:var(--good)}.pill.warn{background:#fef3c7;color:var(--warn)}.pill.crit{background:#fee2e2;color:var(--crit)}
+.pill.reforco{background:#e0e7ff;color:#3730a3}
+.gkblock{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.gkblock .gkh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.sess{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.sess:first-child{border-top:none}
+.sess:hover{background:rgba(0,0,0,.02)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw}
+.toast.on{opacity:1}
+.toast.err{background:var(--crit)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chips label{font-size:12px;border:1px solid var(--line);border-radius:12px;padding:2px 8px;cursor:pointer}
+.chips input{margin:0 4px 0 0}
+.trans{white-space:pre-wrap;font-size:13px;line-height:1.55;background:#fafaf8;border:1px solid var(--line);border-radius:8px;padding:10px}
+.rep h4{margin:14px 0 6px;font-size:14px}
+.rep ul{margin:4px 0 8px 18px;padding:0}
+@media print{header,nav.tabs,.no-print{display:none!important}body{background:#fff}main{max-width:none;padding:0}section.tab{display:none!important}#t-relatorio{display:block!important}.card{border:none;padding:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎙 <span id="tTitle">Feedback pós-treino</span></h1>
+  <span class="ctx" id="ctx">—</span>
+  <span style="flex:1"></span>
+  <span class="dotfb" id="dotfb" title=""></span>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<main>
+  <section class="tab" id="t-gravar"></section>
+  <section class="tab" id="t-revisar"></section>
+  <section class="tab" id="t-historico"></section>
+  <section class="tab" id="t-conteudos"></section>
+  <section class="tab" id="t-relatorio"></section>
+  <section class="tab" id="t-ajustes"></section>
+</main>
+<div class="toast" id="toast"></div>
+<input type="file" id="arq" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav,.webm" style="display:none">
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   FluxGK · FEEDBACK PÓS-TREINO
+   Fala depois do treino → transcrição fiel → o agente separa o que é
+   de cada goleiro, do grupo e o que trabalhar → vai para o diário do
+   Perfil e para "Conteúdos a trabalhar".
+
+   Firebase (escopo do hub: users/{uid}/data/{clube}/{temporada}):
+     feedback/config            { modo:'revisar'|'direto', vocab:[], apelidos:{playerId:[..]}, api }
+     feedback/audio             o ÚLTIMO áudio (data URL) — trocado a cada envio
+     feedback/sessoes/{id}      { data, criadoEm, duracao, status, transcricao, extracao, publicacao, erro }
+     feedback/pendencias/{id}   { texto, goleiros:[], restricao, criadoEm, ultimo, vezes, feito, origem, citacao }
+     profile/log/{playerId}/fb_{id}   entrada do diário do Perfil (date, cycle, focus, progress, limitation, next_step, status)
+     load/players               elenco (só leitura)
+   O worker (fluxgk.com/fb) faz a transcrição e roda o agente; não guarda nada.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+const D = {
+  pt: {
+    title:'Feedback pós-treino', tGravar:'🎙 Gravar', tRevisar:'📝 Revisar', tHist:'📚 Histórico', tCont:'✅ Conteúdos', tRel:'📊 Relatório', tAj:'⚙ Ajustes',
+    gravarHint:'Toque para gravar. Fale livremente sobre cada goleiro, o grupo e o que precisa ser trabalhado.', parar:'Toque para parar e enviar',
+    dataTreino:'Data do treino', ouArq:'ou enviar um áudio (WhatsApp, gravador…)', enviando:'Enviando', transcrevendo:'Transcrevendo', organizando:'Organizando', pronto:'Pronto',
+    modoRev:'Modo: revisar antes de publicar', modoDir:'Modo: publicar direto (corrijo depois)', semMic:'Não foi possível usar o microfone. Libere o microfone para fluxgk.com no navegador.',
+    nadaRev:'Nada para revisar.', publicar:'Publicar', atualizar:'Atualizar publicação', descartar:'Descartar', reprocessar:'Reorganizar com o agente',
+    transc:'Transcrição (fiel, palavra por palavra)', ouvir:'▶ Ouvir o áudio', audioSo:'O áudio fica guardado até o próximo envio.', audioFora:'O áudio desta sessão já foi substituído por um mais novo.',
+    goleiros:'Goleiros', grupo:'Grupo / treino', conteudos:'Conteúdos a trabalhar', semGk:'— goleiro não identificado —', addItem:'+ item',
+    evolucao:'O que evoluiu', limitacao:'O que ainda limita', ajuste:'Ajuste / próximo passo', observacao:'Observação',
+    tecnica:'técnica', tatica:'tática', fisica:'física', psicologica:'psicológica', outra:'outra',
+    good:'▲ bom', warn:'■ atenção', crit:'▼ preocupação', citFora:'⚠ este trecho não aparece igual na transcrição — confira', reforco:'↻ reforço',
+    novo:'— novo —', reforcoDe:'reforço de', restr:'restrição', tarefa:'tarefa', ambiente:'ambiente', individuo:'indivíduo', semRestr:'—',
+    stRevisar:'para revisar', stPublicado:'publicado', stErro:'erro', stTranscrevendo:'transcrevendo', stAnalisando:'organizando',
+    histVazio:'Nenhum feedback ainda.', abertos:'Em aberto', feitos:'Feitos', marcarFeito:'✓ feito', reabrir:'reabrir', vezes:'vezes', grupoTodo:'grupo todo',
+    contVazio:'Nenhum conteúdo em aberto.', relPeriodo:'Período', d7:'Últimos 7 dias', d30:'Últimos 30 dias', dTemp:'Temporada', relGk:'Goleiro', todos:'Todos',
+    gerar:'✨ Resumo da IA', imprimir:'🖨 Imprimir / PDF', relVazio:'Nenhum feedback publicado no período.', temas:'Temas que voltaram', atencao:'Pontos de atenção', aTrab:'A trabalhar', pend:'Pendentes no período',
+    ajModo:'Publicação', ajRev:'Revisar antes de publicar', ajDir:'Publicar direto e corrigir depois, se precisar', ajVocab:'Vocabulário (um termo por linha)', ajVocabD:'Termos que a transcrição deve reconhecer: jogadas, gestos, termos da sua metodologia.',
+    ajApel:'Apelidos dos goleiros', ajApelD:'Como você chama cada um no áudio (separe por vírgula).', ajApi:'Endereço do serviço', salvar:'Salvar', salvo:'Salvo.',
+    publicado:'Publicado no Perfil e em Conteúdos.', descartadoQ:'Descartar este feedback? O que foi publicado no Perfil e em Conteúdos sai também.', erroServ:'O serviço de feedback não respondeu: ',
+    perfilAviso:'Atualizar a publicação reescreve a entrada deste dia no diário do Perfil.', cycle:'Feedback pós-treino', grupoNotas:'Grupo', semCitacao:'(sem citação)',
+    tentar:'Tentar de novo', enviarArq:'Enviar arquivo', duracao:'duração', itens:'itens', repetidos:'Já dito em dias anteriores', ultimo:'último', desde:'desde'
+  },
+  en: {
+    title:'Post-training feedback', tGravar:'🎙 Record', tRevisar:'📝 Review', tHist:'📚 History', tCont:'✅ To work on', tRel:'📊 Report', tAj:'⚙ Settings',
+    gravarHint:'Tap to record. Talk freely about each goalkeeper, the group and what needs work.', parar:'Tap to stop and send',
+    dataTreino:'Training date', ouArq:'or send an audio file (WhatsApp, recorder…)', enviando:'Sending', transcrevendo:'Transcribing', organizando:'Organizing', pronto:'Done',
+    modoRev:'Mode: review before publishing', modoDir:'Mode: publish directly (fix later)', semMic:'Could not use the microphone. Allow the microphone for fluxgk.com in the browser.',
+    nadaRev:'Nothing to review.', publicar:'Publish', atualizar:'Update publication', descartar:'Discard', reprocessar:'Re-organize with the agent',
+    transc:'Transcript (verbatim)', ouvir:'▶ Play audio', audioSo:'The audio is kept until the next upload.', audioFora:'This session’s audio was already replaced by a newer one.',
+    goleiros:'Goalkeepers', grupo:'Group / session', conteudos:'To work on', semGk:'— goalkeeper not identified —', addItem:'+ item',
+    evolucao:'What improved', limitacao:'What still limits', ajuste:'Adjustment / next step', observacao:'Note',
+    tecnica:'technical', tatica:'tactical', fisica:'physical', psicologica:'psychological', outra:'other',
+    good:'▲ good', warn:'■ attention', crit:'▼ concern', citFora:'⚠ this excerpt is not literally in the transcript — check it', reforco:'↻ repeated',
+    novo:'— new —', reforcoDe:'repeats', restr:'constraint', tarefa:'task', ambiente:'environment', individuo:'individual', semRestr:'—',
+    stRevisar:'to review', stPublicado:'published', stErro:'error', stTranscrevendo:'transcribing', stAnalisando:'organizing',
+    histVazio:'No feedback yet.', abertos:'Open', feitos:'Done', marcarFeito:'✓ done', reabrir:'reopen', vezes:'times', grupoTodo:'whole group',
+    contVazio:'Nothing open.', relPeriodo:'Period', d7:'Last 7 days', d30:'Last 30 days', dTemp:'Season', relGk:'Goalkeeper', todos:'All',
+    gerar:'✨ AI summary', imprimir:'🖨 Print / PDF', relVazio:'No published feedback in this period.', temas:'Recurring themes', atencao:'Points of attention', aTrab:'To work on', pend:'Open in the period',
+    ajModo:'Publishing', ajRev:'Review before publishing', ajDir:'Publish directly and fix later if needed', ajVocab:'Vocabulary (one term per line)', ajVocabD:'Terms the transcription must recognize: plays, actions, terms of your methodology.',
+    ajApel:'Goalkeeper nicknames', ajApelD:'How you call each one in the audio (comma separated).', ajApi:'Service address', salvar:'Save', salvo:'Saved.',
+    publicado:'Published to the Profile and To work on.', descartadoQ:'Discard this feedback? What was published to the Profile and To work on is removed too.', erroServ:'The feedback service did not respond: ',
+    perfilAviso:'Updating the publication rewrites this day’s entry in the Profile log.', cycle:'Post-training feedback', grupoNotas:'Group', semCitacao:'(no excerpt)',
+    tentar:'Try again', enviarArq:'Send file', duracao:'length', itens:'items', repetidos:'Already said on previous days', ultimo:'last', desde:'since'
+  }
+};
+const VOCAB_PADRAO = ['1º pau','2º pau','1x1','2x1','3x2','5x4','goleiro-linha','zona morta','saída do gol','posicionamento inicial','bloqueio','cobertura','defesa baixa','defesa alta','ataque à bola','leitura de jogo','pé de apoio','queda lateral','reposição','restrição','tarefa','ambiente','affordance','percepção-ação'];
+const lang = () => (window.FluxGKI18n && FluxGKI18n.getLang && FluxGKI18n.getLang() === 'en') ? 'en' : 'pt';
+const t = (k) => (D[lang()] && D[lang()][k] != null) ? D[lang()][k] : (D.pt[k] != null ? D.pt[k] : k);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hoje = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fd = (s) => { if (!s) return ''; const p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0].slice(2); };
+const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9º]+/g, ' ').trim();
+const novoId = (px) => px + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const arr = (v) => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === 'object' ? Object.values(v).filter(x => x != null) : []);
+
+const FB = window.FB = {
+  hub: null, base: null, db: null, user: null,
+  elenco: {}, cfg: { modo: 'revisar', vocab: VOCAB_PADRAO.slice(), apelidos: {}, api: '/fb' },
+  sessoes: {}, pend: {}, aba: 'gravar', aberta: null, audio: null, contFiltro: 'abertos', rel: null
+};
+function toast(msg, err){ const el = $('toast'); el.textContent = msg; el.className = 'toast on' + (err ? ' err' : ''); clearTimeout(toast._t); toast._t = setTimeout(() => { el.className = 'toast'; }, err ? 6000 : 2600); }
+const P = (rel) => FB.base + '/feedback' + (rel ? '/' + rel : '');
+const ref = (p) => FB.db.ref(p);
+
+/* ── elenco (Load Control) ── */
+function gks(){ return Object.keys(FB.elenco).map(id => Object.assign({ id: id }, FB.elenco[id])).filter(g => g && g.name).sort((a, b) => a.name.localeCompare(b.name)); }
+function gkNome(id){ return (FB.elenco[id] && FB.elenco[id].name) || ''; }
+function apelidos(id){ return arr((FB.cfg.apelidos || {})[id]); }
+
+/* ── serviço (worker) ── */
+async function api(rota, corpo){
+  const u = FB.user || (window.firebase && firebase.auth().currentUser);
+  if (!u) throw new Error('sem login');
+  const tok = await u.getIdToken();
+  const ehForm = (typeof FormData !== 'undefined') && corpo instanceof FormData;
+  const r = await fetch((FB.cfg.api || '/fb').replace(/\/$/, '') + '/' + rota, {
+    method: 'POST', headers: Object.assign({ authorization: 'Bearer ' + tok }, ehForm ? {} : { 'content-type': 'application/json' }),
+    body: ehForm ? corpo : JSON.stringify(corpo)
+  });
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((j && j.erro) || ('HTTP ' + r.status));
+  return j;
+}
+
+/* ── citações: a frase tem de estar na transcrição ── */
+function citacaoOk(cit, trans){ const c = norm(cit); return !!c && norm(trans).indexOf(c) >= 0; }
+/* normaliza o que o agente devolveu (vetores, ids conhecidos, marcas) */
+function normalizaExtracao(x, trans){
+  x = x || {};
+  const out = { goleiros: [], grupo: [], conteudos: [], repetidos: arr(x.repetidos) };
+  const rep = out.repetidos.map(r => norm(r.texto));
+  arr(x.goleiros).forEach(g => {
+    const id = FB.elenco[g.id] ? g.id : '';
+    const itens = arr(g.itens).map(i => ({ tipo: ['evolucao', 'limitacao', 'ajuste', 'observacao'].indexOf(i.tipo) >= 0 ? i.tipo : 'observacao', area: i.area || '', texto: String(i.texto || '').trim(), citacao: String(i.citacao || ''), citOk: citacaoOk(i.citacao, trans), reforco: rep.indexOf(norm(i.texto)) >= 0 })).filter(i => i.texto);
+    if (!itens.length) return;
+    const ja = out.goleiros.find(o => id && o.id === id);
+    if (ja){ ja.itens = ja.itens.concat(itens); return; }
+    out.goleiros.push({ id: id, nome: id ? gkNome(id) : (g.nome || ''), estado: ['good', 'warn', 'crit'].indexOf(g.estado) >= 0 ? g.estado : 'good', duvida: g.duvida || '', itens: itens });
+  });
+  out.grupo = arr(x.grupo).map(i => ({ texto: String(i.texto || '').trim(), citacao: String(i.citacao || ''), citOk: citacaoOk(i.citacao, trans) })).filter(i => i.texto);
+  out.conteudos = arr(x.conteudos).map(c => ({ texto: String(c.texto || '').trim(), goleiros: arr(c.goleiros).filter(id => FB.elenco[id]), restricao: ['tarefa', 'ambiente', 'individuo'].indexOf(c.restricao) >= 0 ? c.restricao : '', igualA: (c.igualA && FB.pend[c.igualA]) ? c.igualA : '', citacao: String(c.citacao || ''), citOk: citacaoOk(c.citacao, trans) })).filter(c => c.texto);
+  return out;
+}
+
+/* ── o que mandar ao agente para ele não repetir ── */
+function contexto(dataTreino){
+  const lim = new Date(dataTreino + 'T12:00:00'); lim.setDate(lim.getDate() - 14);
+  const limS = lim.toISOString().slice(0, 10);
+  const recentes = [];
+  Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.data >= limS && s.extracao).sort((a, b) => b.data.localeCompare(a.data)).forEach(s => {
+    arr(s.extracao.goleiros).forEach(g => arr(g.itens).forEach(i => { if (recentes.length < 120) recentes.push({ data: s.data, goleiro: g.nome || gkNome(g.id), texto: i.texto }); }));
+  });
+  const pend = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !p.feito).map(p => ({ id: p.id, texto: p.texto, vezes: p.vezes || 1 }));
+  return {
+    goleiros: gks().map(g => ({ id: g.id, nome: g.name, apelidos: apelidos(g.id), situacao: g.status || 'ativo' })),
+    pendencias: pend, recentes: recentes
+  };
+}
+function palavrasChave(){
+  const out = [];
+  gks().forEach(g => { out.push(g.name); g.name.split(/\s+/).forEach(p => { if (p.length > 2) out.push(p); }); apelidos(g.id).forEach(a => out.push(a)); });
+  arr(FB.cfg.vocab).forEach(v => out.push(v));
+  return Array.from(new Set(out.map(s => String(s).trim()).filter(Boolean))).slice(0, 100);
+}
+
+/* ══ PIPELINE: áudio → transcrição → agente → (revisar | publicar) ══ */
+function blobParaDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); }); }
+function passos(estado){
+  const el = $('passos'); if (!el) return;
+  const nomes = ['enviando', 'transcrevendo', 'organizando', 'pronto'];
+  const i = nomes.indexOf(estado.em);
+  el.innerHTML = nomes.map((n, k) => `<span class="${estado.erro && k === i ? 'err' : k < i || estado.em === 'pronto' ? 'ok' : k === i ? 'on' : ''}">${esc(t(n))}</span>`).join('');
+}
+async function processar(blob, dataTreino, duracao){
+  const id = novoId('s');
+  const sessao = { id: id, data: dataTreino || hoje(), criadoEm: Date.now(), duracao: Math.round(duracao || 0), status: 'transcrevendo' };
+  FB.sessoes[id] = sessao;
+  passos({ em: 'enviando' });
+  try {
+    /* o áudio novo substitui o anterior: só o último fica guardado */
+    try {
+      const url = await blobParaDataURL(blob);
+      await ref(P('audio')).set(url.length < 9.5e6 ? { id: id, mime: blob.type || '', data: url, em: Date.now() } : { id: id, grande: true, em: Date.now() });
+    } catch (e) { console.warn('[FluxGK] feedback: áudio não guardado', e); }
+    await ref(P('sessoes/' + id)).set(sessao);
+    passos({ em: 'transcrevendo' });
+    const f = new FormData();
+    f.append('audio', blob, 'audio');
+    f.append('palavras', JSON.stringify(palavrasChave()));
+    const tr = await api('transcrever', f);
+    sessao.transcricao = tr.texto || '';
+    sessao.status = 'analisando';
+    await ref(P('sessoes/' + id)).update({ transcricao: sessao.transcricao, status: 'analisando', modeloStt: tr.modelo || '' });
+    await analisarSessao(sessao);
+    passos({ em: 'pronto' });
+  } catch (e) {
+    sessao.status = 'erro'; sessao.erro = String(e.message || e);
+    try { await ref(P('sessoes/' + id)).update({ status: 'erro', erro: sessao.erro }); } catch (e2) {}
+    passos({ em: sessao.transcricao ? 'organizando' : 'transcrevendo', erro: true });
+    toast(t('erroServ') + sessao.erro, true);
+  }
+  render();
+}
+async function analisarSessao(sessao){
+  passos({ em: 'organizando' });
+  const r = await api('analisar', Object.assign({ data: sessao.data, transcricao: sessao.transcricao }, contexto(sessao.data)));
+  sessao.extracao = normalizaExtracao(r.extracao, sessao.transcricao);
+  sessao.status = 'revisar'; delete sessao.erro;
+  await ref(P('sessoes/' + sessao.id)).update({ extracao: sessao.extracao, status: 'revisar', erro: null, modeloAgente: r.modelo || '' });
+  if (FB.cfg.modo === 'direto'){ await publicar(sessao); toast(t('publicado')); }
+  else { FB.aberta = sessao.id; mudaAba('revisar'); }
+}
+
+/* ══ PUBLICAR: diário do Perfil + Conteúdos a trabalhar ══
+   Publicar de novo desfaz a publicação anterior e refaz — é assim que
+   a correção "a posteriori" chega ao Perfil.                       */
+function linhas(itens, tipo){ return itens.filter(i => i.tipo === tipo).map(i => '• ' + (i.reforco ? '↻ ' : '') + i.texto).join('\n'); }
+function updDesfazer(s, upd){
+  const pub = s.publicacao; if (!pub) return;
+  arr(pub.logs).forEach(pid => { upd[FB.base + '/profile/log/' + pid + '/fb_' + s.id] = null; });
+  arr(pub.novos).forEach(cid => {
+    const p = FB.pend[cid]; if (!p) return;
+    if ((p.vezes || 1) <= 1){ upd[P('pendencias/' + cid)] = null; delete FB.pend[cid]; }
+    else { p.vezes = (p.vezes || 1) - 1; upd[P('pendencias/' + cid + '/vezes')] = p.vezes; }
+  });
+  arr(pub.reforcos).forEach(cid => {
+    const p = FB.pend[cid]; if (!p) return;
+    p.vezes = Math.max(1, (p.vezes || 1) - 1); upd[P('pendencias/' + cid + '/vezes')] = p.vezes;
+  });
+}
+async function publicar(s){
+  const x = s.extracao || { goleiros: [], grupo: [], conteudos: [] };
+  const upd = {};
+  updDesfazer(s, upd);
+  const pub = { logs: [], novos: [], reforcos: [], em: Date.now() };
+  arr(x.goleiros).forEach(g => {
+    if (!g.id || !FB.elenco[g.id]) return;
+    const its = arr(g.itens); if (!its.length) return;
+    const ja = pub.logs.indexOf(g.id) >= 0; if (ja) return;
+    const todos = arr(x.goleiros).filter(o => o.id === g.id).reduce((a, o) => a.concat(arr(o.itens)), []);
+    upd[FB.base + '/profile/log/' + g.id + '/fb_' + s.id] = {
+      date: s.data, cycle: t('cycle'), status: g.estado || 'good',
+      focus: linhas(todos, 'observacao'), progress: linhas(todos, 'evolucao'), limitation: linhas(todos, 'limitacao'), next_step: linhas(todos, 'ajuste'),
+      fonte: 'feedback', fbId: s.id
+    };
+    pub.logs.push(g.id);
+  });
+  arr(x.conteudos).forEach(c => {
+    if (c.igualA && FB.pend[c.igualA]){
+      const p = FB.pend[c.igualA];
+      p.vezes = (p.vezes || 1) + 1; p.ultimo = s.data;
+      upd[P('pendencias/' + c.igualA + '/vezes')] = p.vezes;
+      upd[P('pendencias/' + c.igualA + '/ultimo')] = s.data;
+      if (p.feito){ p.feito = false; upd[P('pendencias/' + c.igualA + '/feito')] = false; }   /* voltou a ser pedido */
+      pub.reforcos.push(c.igualA);
+    } else {
+      const cid = novoId('c');
+      const p = { texto: c.texto, goleiros: arr(c.goleiros), restricao: c.restricao || '', criadoEm: s.data, ultimo: s.data, vezes: 1, feito: false, origem: s.id, citacao: c.citacao || '' };
+      FB.pend[cid] = p; upd[P('pendencias/' + cid)] = p; pub.novos.push(cid);
+    }
+  });
+  s.publicacao = pub; s.status = 'publicado';
+  upd[P('sessoes/' + s.id + '/publicacao')] = pub;
+  upd[P('sessoes/' + s.id + '/status')] = 'publicado';
+  upd[P('sessoes/' + s.id + '/extracao')] = x;
+  upd[P('sessoes/' + s.id + '/data')] = s.data;
+  await ref('/').update(upd);
+}
+async function descartar(s){
+  if (!confirm(t('descartadoQ'))) return;
+  const upd = {}; updDesfazer(s, upd); upd[P('sessoes/' + s.id)] = null;
+  await ref('/').update(upd);
+  delete FB.sessoes[s.id]; FB.aberta = null; render();
+}
+
+/* ══ GRAVAÇÃO ══ */
+const REC = { mr: null, partes: [], ini: 0, timer: null, stream: null };
+function tipoGravacao(){
+  const MR = window.MediaRecorder; if (!MR || !MR.isTypeSupported) return '';
+  return ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].find(m => MR.isTypeSupported(m)) || '';
+}
+async function gravarToggle(){
+  if (REC.mr && REC.mr.state === 'recording'){ REC.mr.stop(); return; }
+  try { REC.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { toast(t('semMic'), true); return; }
+  const tipo = tipoGravacao();
+  REC.mr = new MediaRecorder(REC.stream, tipo ? { mimeType: tipo, audioBitsPerSecond: 48000 } : undefined);
+  REC.partes = [];
+  REC.mr.ondataavailable = (e) => { if (e.data && e.data.size) REC.partes.push(e.data); };
+  REC.mr.onstop = () => {
+    clearInterval(REC.timer);
+    try { REC.stream.getTracks().forEach(tr => tr.stop()); } catch (e) {}
+    const dur = (Date.now() - REC.ini) / 1000;
+    const blob = new Blob(REC.partes, { type: (REC.mr.mimeType || tipo || 'audio/webm').split(';')[0] });
+    REC.mr = null; renderGravar();
+    if (blob.size > 2000) processar(blob, ($('dataTreino') || {}).value || hoje(), dur);
+  };
+  REC.mr.start(1000); REC.ini = Date.now();
+  REC.timer = setInterval(() => {
+    const s = Math.floor((Date.now() - REC.ini) / 1000);
+    const el = $('rectime'); if (el) el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    if (s >= 20 * 60 && REC.mr) REC.mr.stop();       /* trava: 20 minutos */
+  }, 250);
+  renderGravar();
+}
+function arquivoEscolhido(file){
+  if (!file) return;
+  let tipo = file.type;
+  if (!tipo || /opus$/i.test(file.name)) tipo = /\.(opus|ogg)$/i.test(file.name) ? 'audio/ogg' : /\.m4a$/i.test(file.name) ? 'audio/mp4' : tipo || 'audio/mpeg';
+  const blob = file.slice(0, file.size, tipo);
+  processar(blob, ($('dataTreino') || {}).value || hoje(), 0);
+}
+
+/* ══ TELAS ══ */
+const ABAS = [['gravar', 'tGravar'], ['revisar', 'tRevisar'], ['historico', 'tHist'], ['conteudos', 'tCont'], ['relatorio', 'tRel'], ['ajustes', 'tAj']];
+function mudaAba(a){ FB.aba = a; render(); }
+function render(){
+  $('tTitle').textContent = t('title');
+  const nRev = Object.values(FB.sessoes).filter(s => s && (s.status === 'revisar' || s.status === 'erro')).length;
+  $('tabs').innerHTML = ABAS.map(([k, l]) => `<button data-aba="${k}" class="${FB.aba === k ? 'on' : ''}">${esc(t(l))}${k === 'revisar' && nRev ? `<span class="badge">${nRev}</span>` : ''}</button>`).join('');
+  ABAS.forEach(([k]) => $('t-' + k).classList.toggle('on', FB.aba === k));
+  ({ gravar: renderGravar, revisar: renderRevisar, historico: renderHist, conteudos: renderCont, relatorio: renderRel, ajustes: renderAj })[FB.aba]();
+}
+function renderGravar(){
+  const on = !!(REC.mr && REC.mr.state === 'recording');
+  $('t-gravar').innerHTML = `<div class="card"><div class="rec">
+      <div class="row"><label class="muted">${esc(t('dataTreino'))}</label><input type="date" id="dataTreino" value="${esc(($('dataTreino') || {}).value || hoje())}"></div>
+      <button class="recbtn ${on ? 'on' : ''}" id="recbtn">${on ? '■' : '🎙'}</button>
+      <div class="rectime" id="rectime">${on ? '' : '00:00'}</div>
+      <div class="muted" style="text-align:center;max-width:420px">${esc(on ? t('parar') : t('gravarHint'))}</div>
+      <div class="steps" id="passos"></div>
+      <button class="btn sm" id="btnArq">${esc(t('ouArq'))}</button>
+      <div class="muted">${esc(FB.cfg.modo === 'direto' ? t('modoDir') : t('modoRev'))}</div>
+    </div></div>`;
+}
+function selTipo(v){ return ['evolucao', 'limitacao', 'ajuste', 'observacao'].map(k => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(t(k))}</option>`).join(''); }
+function selGk(v){ return `<option value="">${esc(t('semGk'))}</option>` + gks().map(g => `<option value="${g.id}"${v === g.id ? ' selected' : ''}>${esc(g.name)}</option>`).join(''); }
+function selEstado(v){ return ['good', 'warn', 'crit'].map(k => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(t(k))}</option>`).join(''); }
+function selRestr(v){ return ['', 'tarefa', 'ambiente', 'individuo'].map(k => `<option value="${k}"${(v || '') === k ? ' selected' : ''}>${esc(k ? t(k) : t('semRestr'))}</option>`).join(''); }
+function selIgual(v){ return `<option value="">${esc(t('novo'))}</option>` + Object.keys(FB.pend).filter(id => !FB.pend[id].feito || id === v).map(id => `<option value="${id}"${v === id ? ' selected' : ''}>${esc(t('reforcoDe') + ': ' + FB.pend[id].texto.slice(0, 60) + ' (' + (FB.pend[id].vezes || 1) + 'x)')}</option>`).join(''); }
+function cit(i){ return i.citacao ? `<div class="cit ${i.citOk === false ? 'bad' : ''}">“${esc(i.citacao)}”${i.citOk === false ? ' — ' + esc(t('citFora')) : ''}</div>` : `<div class="cit">${esc(t('semCitacao'))}</div>`; }
+function editorSessao(s){
+  const x = s.extracao || { goleiros: [], grupo: [], conteudos: [] };
+  const stl = { revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '';
+  const audioAqui = FB.audio && FB.audio.id === s.id;
+  let h = `<div class="card" data-sess="${s.id}">
+    <div class="row" style="margin-bottom:10px"><input type="date" data-f="data" value="${esc(s.data)}">
+      <span class="pill ${stl}">${esc(t('st' + s.status.charAt(0).toUpperCase() + s.status.slice(1)) || s.status)}</span>
+      <span style="flex:1"></span>
+      ${s.status === 'erro' ? `<button class="btn sm" data-a="tentar">${esc(t('tentar'))}</button>` : ''}
+      ${s.transcricao ? `<button class="btn sm" data-a="reprocessar">${esc(t('reprocessar'))}</button>` : ''}
+      ${s.extracao ? `<button class="btn primary sm" data-a="publicar">${esc(s.status === 'publicado' ? t('atualizar') : t('publicar'))}</button>` : ''}
+      <button class="btn danger sm" data-a="descartar">${esc(t('descartar'))}</button></div>
+    ${s.erro ? `<div class="cit bad" style="margin-bottom:8px">${esc(s.erro)}</div>` : ''}
+    ${s.status === 'publicado' ? `<div class="muted" style="margin-bottom:8px">${esc(t('perfilAviso'))}</div>` : ''}
+    <details ${s.extracao ? '' : 'open'}><summary class="muted" style="cursor:pointer">${esc(t('transc'))}</summary>
+      <div class="row" style="margin:8px 0">${audioAqui ? `<button class="btn sm" data-a="ouvir">${esc(t('ouvir'))}</button><span class="muted">${esc(t('audioSo'))}</span>` : `<span class="muted">${esc(t('audioFora'))}</span>`}<span id="player-${s.id}"></span></div>
+      <textarea rows="6" data-f="transcricao">${esc(s.transcricao || '')}</textarea></details>`;
+  if (s.extracao){
+    h += `<h3 style="margin-top:14px">${esc(t('goleiros'))}</h3>`;
+    arr(x.goleiros).forEach((g, gi) => {
+      h += `<div class="gkblock"><div class="gkh"><select data-g="${gi}" data-f="gid">${selGk(g.id)}</select><select data-g="${gi}" data-f="estado">${selEstado(g.estado)}</select>${g.duvida ? `<span class="cit bad">${esc(g.duvida)}</span>` : ''}<span style="flex:1"></span><button class="btn sm" data-a="addItem" data-g="${gi}">${esc(t('addItem'))}</button></div>`;
+      arr(g.itens).forEach((i, ii) => {
+        h += `<div class="item"><select data-g="${gi}" data-i="${ii}" data-f="tipo">${selTipo(i.tipo)}</select><div class="grow"><input style="width:100%" data-g="${gi}" data-i="${ii}" data-f="texto" value="${esc(i.texto)}">${i.reforco ? ` <span class="pill reforco">${esc(t('reforco'))}</span>` : ''}${cit(i)}</div><button class="btn sm" data-a="rmItem" data-g="${gi}" data-i="${ii}">✕</button></div>`;
+      });
+      h += `</div>`;
+    });
+    h += `<button class="btn sm" data-a="addGk">+ ${esc(t('goleiros'))}</button>`;
+    h += `<h3 style="margin-top:16px">${esc(t('grupo'))}</h3>`;
+    arr(x.grupo).forEach((i, ii) => { h += `<div class="item"><div class="grow"><input style="width:100%" data-gr="${ii}" data-f="texto" value="${esc(i.texto)}">${cit(i)}</div><button class="btn sm" data-a="rmGrupo" data-gr="${ii}">✕</button></div>`; });
+    h += `<button class="btn sm" data-a="addGrupo">${esc(t('addItem'))}</button>`;
+    h += `<h3 style="margin-top:16px">${esc(t('conteudos'))}</h3>`;
+    arr(x.conteudos).forEach((c, ci) => {
+      h += `<div class="item"><div class="grow"><input style="width:100%" data-c="${ci}" data-f="texto" value="${esc(c.texto)}">
+        <div class="row" style="margin-top:5px"><div class="chips">${gks().map(g => `<label><input type="checkbox" data-c="${ci}" data-f="cgk" value="${g.id}"${arr(c.goleiros).indexOf(g.id) >= 0 ? ' checked' : ''}>${esc(g.name)}</label>`).join('')}</div>
+        <select data-c="${ci}" data-f="restricao" title="${esc(t('restr'))}">${selRestr(c.restricao)}</select><select data-c="${ci}" data-f="igualA" style="max-width:280px">${selIgual(c.igualA)}</select></div>${cit(c)}</div>
+        <button class="btn sm" data-a="rmCont" data-c="${ci}">✕</button></div>`;
+    });
+    h += `<button class="btn sm" data-a="addCont">${esc(t('addItem'))}</button>`;
+    if (arr(x.repetidos).length) h += `<h3 style="margin-top:16px">${esc(t('repetidos'))}</h3>` + arr(x.repetidos).map(r => `<div class="muted">↻ ${esc(r.texto)}${r.vezes ? ' · ' + r.vezes + 'x' : ''}</div>`).join('');
+  }
+  return h + `</div>`;
+}
+function renderRevisar(){
+  const lista = Object.values(FB.sessoes).filter(s => s && (s.status === 'revisar' || s.status === 'erro' || s.id === FB.aberta)).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+  $('t-revisar').innerHTML = lista.length ? lista.map(editorSessao).join('') : `<div class="card muted">${esc(t('nadaRev'))}</div>`;
+}
+function renderHist(){
+  const lista = Object.values(FB.sessoes).filter(Boolean).sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.criadoEm || 0) - (a.criadoEm || 0));
+  if (FB.aberta && FB.sessoes[FB.aberta] && FB.aba === 'historico'){
+    $('t-historico').innerHTML = `<button class="btn sm" data-a="voltar" style="margin-bottom:10px">← ${esc(t('tHist'))}</button>` + editorSessao(FB.sessoes[FB.aberta]);
+    return;
+  }
+  $('t-historico').innerHTML = `<div class="card">${lista.length ? lista.map(s => {
+    const x = s.extracao || {};
+    const nomes = arr(x.goleiros).map(g => g.nome || gkNome(g.id)).filter(Boolean).join(', ');
+    const stl = { revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '';
+    return `<div class="sess" data-abrir="${s.id}"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(s.data))}</b><span class="pill ${stl}">${esc(t('st' + s.status.charAt(0).toUpperCase() + s.status.slice(1)))}</span><span class="grow muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomes || (s.transcricao || '').slice(0, 90))}</span><span class="muted">${arr(x.conteudos).length ? arr(x.conteudos).length + ' ✅' : ''}</span></div>`;
+  }).join('') : `<div class="muted">${esc(t('histVazio'))}</div>`}</div>`;
+}
+function renderCont(){
+  const feitos = FB.contFiltro === 'feitos';
+  const lista = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !!p.feito === feitos).sort((a, b) => (b.vezes || 1) - (a.vezes || 1) || (b.ultimo || '').localeCompare(a.ultimo || ''));
+  $('t-conteudos').innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn sm ${!feitos ? 'primary' : ''}" data-cf="abertos">${esc(t('abertos'))}</button><button class="btn sm ${feitos ? 'primary' : ''}" data-cf="feitos">${esc(t('feitos'))}</button></div>
+    <div class="card">${lista.length ? lista.map(p => `<div class="item"><div class="grow"><input style="width:100%" data-pid="${p.id}" data-f="ptexto" value="${esc(p.texto)}">
+      <div class="row muted" style="margin-top:4px"><span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1} ${esc(t('vezes'))}</span>
+      <span>${esc(arr(p.goleiros).map(gkNome).filter(Boolean).join(', ') || t('grupoTodo'))}</span>${p.restricao ? `<span class="pill">${esc(t('restr'))}: ${esc(t(p.restricao))}</span>` : ''}
+      <span>${esc(t('desde'))} ${esc(fd(p.criadoEm))} · ${esc(t('ultimo'))} ${esc(fd(p.ultimo || p.criadoEm))}</span></div>${p.citacao ? `<div class="cit">“${esc(p.citacao)}”</div>` : ''}</div>
+      <button class="btn sm" data-a="${feitos ? 'reabrir' : 'feito'}" data-pid="${p.id}">${esc(feitos ? t('reabrir') : t('marcarFeito'))}</button><button class="btn sm danger" data-a="rmPend" data-pid="${p.id}">✕</button></div>`).join('') : `<div class="muted">${esc(t('contVazio'))}</div>`}</div>`;
+}
+/* ── relatório ── */
+function periodo(){
+  const sel = ($('relPer') || {}).value || (FB.rel && FB.rel.per) || 'd30';
+  const fim = hoje(); const d = new Date(); d.setDate(d.getDate() - (sel === 'd7' ? 6 : sel === 'd30' ? 29 : 3650));
+  return { sel: sel, ini: d.toISOString().slice(0, 10), fim: fim };
+}
+function registrosPeriodo(per, gkSel){
+  const regs = { goleiros: {}, grupo: [], conteudos: [] };
+  Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.data >= per.ini && s.data <= per.fim && s.extracao).sort((a, b) => a.data.localeCompare(b.data)).forEach(s => {
+    arr(s.extracao.goleiros).forEach(g => {
+      if (!g.id || (gkSel && g.id !== gkSel)) return;
+      const r = regs.goleiros[g.id] = regs.goleiros[g.id] || { id: g.id, nome: gkNome(g.id) || g.nome, itens: [] };
+      arr(g.itens).forEach(i => r.itens.push({ data: s.data, tipo: i.tipo, texto: i.texto, reforco: !!i.reforco }));
+    });
+    if (!gkSel) arr(s.extracao.grupo).forEach(i => regs.grupo.push({ data: s.data, texto: i.texto }));
+  });
+  Object.keys(FB.pend).forEach(id => {
+    const p = FB.pend[id];
+    if ((p.ultimo || p.criadoEm) < per.ini) return;
+    if (gkSel && arr(p.goleiros).length && arr(p.goleiros).indexOf(gkSel) < 0) return;
+    regs.conteudos.push({ texto: p.texto, vezes: p.vezes || 1, feito: !!p.feito, goleiros: arr(p.goleiros).map(gkNome) });
+  });
+  return regs;
+}
+function renderRel(){
+  const per = periodo();
+  const gkSel = ($('relGk') || {}).value || (FB.rel && FB.rel.gk) || '';
+  FB.rel = Object.assign(FB.rel || {}, { per: per.sel, gk: gkSel });
+  const regs = registrosPeriodo(per, gkSel);
+  const ia = FB.rel.ia && FB.rel.iaChave === per.sel + '|' + gkSel ? FB.rel.ia : null;
+  let h = `<div class="card no-print"><div class="row"><label class="muted">${esc(t('relPeriodo'))}</label><select id="relPer">${[['d7', 'd7'], ['d30', 'd30'], ['tudo', 'dTemp']].map(([v, l]) => `<option value="${v}"${per.sel === v ? ' selected' : ''}>${esc(t(l))}</option>`).join('')}</select>
+    <label class="muted">${esc(t('relGk'))}</label><select id="relGk"><option value="">${esc(t('todos'))}</option>${gks().map(g => `<option value="${g.id}"${gkSel === g.id ? ' selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
+    <span style="flex:1"></span><button class="btn" data-a="ia">${esc(t('gerar'))}</button><button class="btn" data-a="print">${esc(t('imprimir'))}</button></div></div>`;
+  h += `<div class="card rep"><h3>${esc(t('title'))} · ${esc(fd(per.ini))} – ${esc(fd(per.fim))}${FB.hub && FB.hub.club ? ' · ' + esc(FB.hub.club.name || '') : ''}</h3>`;
+  const ids = Object.keys(regs.goleiros);
+  if (!ids.length && !regs.grupo.length){ h += `<div class="muted">${esc(t('relVazio'))}</div></div>`; $('t-relatorio').innerHTML = h; return; }
+  if (ia){
+    arr(ia.goleiros).forEach(g => {
+      h += `<h4>${esc(g.nome || gkNome(g.id))}</h4><div>${esc(g.resumo || '')}</div>`;
+      [['temas', 'temas'], ['evolucao', 'evolucao'], ['atencao', 'atencao'], ['aTrabalhar', 'aTrab']].forEach(([k, l]) => { if (arr(g[k]).length) h += `<div class="muted" style="margin-top:6px">${esc(t(l))}</div><ul>${arr(g[k]).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`; });
+    });
+    if (ia.grupo) h += `<h4>${esc(t('grupoNotas'))}</h4><div>${esc(ia.grupo)}</div>`;
+    if (arr(ia.pendentes).length) h += `<h4>${esc(t('pend'))}</h4><ul>${arr(ia.pendentes).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    h += `<hr style="margin:18px 0;border:none;border-top:1px solid var(--line)">`;
+  }
+  ids.forEach(id => {
+    const r = regs.goleiros[id];
+    h += `<h4>${esc(r.nome)}</h4>`;
+    ['evolucao', 'limitacao', 'ajuste', 'observacao'].forEach(tp => {
+      const its = r.itens.filter(i => i.tipo === tp); if (!its.length) return;
+      h += `<div class="muted">${esc(t(tp))}</div><ul>${its.map(i => `<li>${esc(fd(i.data))} · ${i.reforco ? '↻ ' : ''}${esc(i.texto)}</li>`).join('')}</ul>`;
+    });
+  });
+  if (regs.grupo.length) h += `<h4>${esc(t('grupoNotas'))}</h4><ul>${regs.grupo.map(i => `<li>${esc(fd(i.data))} · ${esc(i.texto)}</li>`).join('')}</ul>`;
+  const abertos = regs.conteudos.filter(c => !c.feito).sort((a, b) => b.vezes - a.vezes);
+  if (abertos.length) h += `<h4>${esc(t('pend'))}</h4><ul>${abertos.map(c => `<li>${esc(c.texto)} <span class="muted">(${c.vezes}x${c.goleiros.length ? ' · ' + esc(c.goleiros.join(', ')) : ''})</span></li>`).join('')}</ul>`;
+  $('t-relatorio').innerHTML = h + `</div>`;
+}
+function renderAj(){
+  const ap = FB.cfg.apelidos || {};
+  $('t-ajustes').innerHTML = `<div class="card"><h3>${esc(t('ajModo'))}</h3>
+      <label class="row"><input type="radio" name="modo" value="revisar"${FB.cfg.modo !== 'direto' ? ' checked' : ''}> ${esc(t('ajRev'))}</label>
+      <label class="row" style="margin-top:6px"><input type="radio" name="modo" value="direto"${FB.cfg.modo === 'direto' ? ' checked' : ''}> ${esc(t('ajDir'))}</label></div>
+    <div class="card"><h3>${esc(t('ajApel'))}</h3><div class="muted" style="margin-bottom:8px">${esc(t('ajApelD'))}</div>
+      ${gks().map(g => `<div class="row" style="margin-bottom:6px"><span style="min-width:160px">${esc(g.name)}</span><input style="flex:1" data-apel="${g.id}" value="${esc(arr(ap[g.id]).join(', '))}"></div>`).join('')}</div>
+    <div class="card"><h3>${esc(t('ajVocab'))}</h3><div class="muted" style="margin-bottom:8px">${esc(t('ajVocabD'))}</div><textarea rows="8" id="ajVocab">${esc(arr(FB.cfg.vocab).join('\n'))}</textarea></div>
+    <div class="card"><h3>${esc(t('ajApi'))}</h3><input id="ajApi" style="width:100%" value="${esc(FB.cfg.api || '/fb')}"></div>
+    <button class="btn primary" data-a="salvarAj">${esc(t('salvar'))}</button>`;
+}
+
+/* ══ EVENTOS (delegados) ══ */
+function sessaoDe(el){ const c = el.closest('[data-sess]'); return c ? FB.sessoes[c.dataset.sess] : null; }
+let _salvaT = null;
+function salvaSessao(s){ clearTimeout(_salvaT); _salvaT = setTimeout(() => { ref(P('sessoes/' + s.id)).update({ extracao: s.extracao || null, transcricao: s.transcricao || '', data: s.data }).catch(() => {}); }, 500); }
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button, [data-abrir], [data-cf]'); if (!b) return;
+  if (b.dataset.aba){ FB.aberta = null; mudaAba(b.dataset.aba); return; }
+  if (b.id === 'recbtn'){ gravarToggle(); return; }
+  if (b.id === 'btnArq'){ $('arq').click(); return; }
+  if (b.dataset.abrir){ FB.aberta = b.dataset.abrir; renderHist(); return; }
+  if (b.dataset.cf){ FB.contFiltro = b.dataset.cf; renderCont(); return; }
+  const a = b.dataset.a; if (!a) return;
+  const s = sessaoDe(b);
+  try {
+    if (a === 'voltar'){ FB.aberta = null; renderHist(); }
+    else if (a === 'publicar' && s){ b.disabled = true; await publicar(s); toast(t('publicado')); if (FB.aba === 'revisar' && FB.aberta === s.id) FB.aberta = null; render(); }
+    else if (a === 'descartar' && s){ await descartar(s); }
+    else if (a === 'reprocessar' && s){ b.disabled = true; await analisarSessao(s); render(); }
+    else if (a === 'tentar' && s){
+      b.disabled = true;
+      if (s.transcricao){ await analisarSessao(s); }
+      else {
+        const snap = await ref(P('audio')).once('value'); const au = snap.val();
+        if (au && au.id === s.id && au.data){ const blob = await (await fetch(au.data)).blob(); delete FB.sessoes[s.id]; await ref(P('sessoes/' + s.id)).remove(); await processar(blob, s.data, s.duracao); }
+        else toast(t('audioFora'), true);
+      }
+      render();
+    }
+    else if (a === 'ouvir' && s){
+      const snap = await ref(P('audio')).once('value'); const au = snap.val();
+      if (au && au.id === s.id && au.data){ const el = $('player-' + s.id); if (el) el.innerHTML = `<audio controls autoplay src="${au.data}"></audio>`; }
+      else toast(t('audioFora'), true);
+    }
+    else if (s && s.extracao && a === 'addItem'){ s.extracao.goleiros[+b.dataset.g].itens.push({ tipo: 'observacao', texto: '', citacao: '', citOk: true }); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'rmItem'){ s.extracao.goleiros[+b.dataset.g].itens.splice(+b.dataset.i, 1); if (!s.extracao.goleiros[+b.dataset.g].itens.length) s.extracao.goleiros.splice(+b.dataset.g, 1); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'addGk'){ s.extracao.goleiros.push({ id: '', nome: '', estado: 'good', itens: [{ tipo: 'observacao', texto: '', citacao: '', citOk: true }] }); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'rmGrupo'){ s.extracao.grupo.splice(+b.dataset.gr, 1); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'addGrupo'){ s.extracao.grupo.push({ texto: '', citacao: '', citOk: true }); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'rmCont'){ s.extracao.conteudos.splice(+b.dataset.c, 1); salvaSessao(s); render(); }
+    else if (s && s.extracao && a === 'addCont'){ s.extracao.conteudos.push({ texto: '', goleiros: [], restricao: '', igualA: '', citacao: '', citOk: true }); salvaSessao(s); render(); }
+    else if (a === 'feito' || a === 'reabrir'){ const id = b.dataset.pid; FB.pend[id].feito = a === 'feito'; await ref(P('pendencias/' + id + '/feito')).set(FB.pend[id].feito); renderCont(); }
+    else if (a === 'rmPend'){ const id = b.dataset.pid; if (!confirm('✕ ' + FB.pend[id].texto + '?')) return; delete FB.pend[id]; await ref(P('pendencias/' + id)).remove(); renderCont(); }
+    else if (a === 'print'){ window.print(); }
+    else if (a === 'ia'){
+      b.disabled = true; b.textContent = '…';
+      const per = periodo(); const gkSel = ($('relGk') || {}).value || '';
+      const r = await api('relatorio', { periodo: fd(per.ini) + ' – ' + fd(per.fim), registros: registrosPeriodo(per, gkSel) });
+      FB.rel.ia = r.relatorio; FB.rel.iaChave = per.sel + '|' + gkSel; renderRel();
+    }
+    else if (a === 'salvarAj'){
+      const modo = (document.querySelector('input[name="modo"]:checked') || {}).value || 'revisar';
+      const vocab = ($('ajVocab').value || '').split('\n').map(x => x.trim()).filter(Boolean);
+      const apel = {}; document.querySelectorAll('[data-apel]').forEach(i => { const v = i.value.split(',').map(x => x.trim()).filter(Boolean); if (v.length) apel[i.dataset.apel] = v; });
+      FB.cfg = Object.assign({}, FB.cfg, { modo: modo, vocab: vocab, apelidos: apel, api: ($('ajApi').value || '/fb').trim() });
+      await ref(P('config')).set(FB.cfg); toast(t('salvo'));
+    }
+  } catch (err) { toast(t('erroServ') + (err.message || err), true); b.disabled = false; }
+});
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.id === 'arq'){ arquivoEscolhido(el.files && el.files[0]); el.value = ''; return; }
+  if (el.id === 'relPer' || el.id === 'relGk'){ renderRel(); return; }
+  if (el.dataset.pid && el.dataset.f === 'ptexto'){ const v = el.value.trim(); if (v){ FB.pend[el.dataset.pid].texto = v; ref(P('pendencias/' + el.dataset.pid + '/texto')).set(v); } return; }
+  const s = sessaoDe(el); if (!s) return;
+  const f = el.dataset.f;
+  if (f === 'data'){ s.data = el.value || s.data; salvaSessao(s); return; }
+  if (f === 'transcricao'){ s.transcricao = el.value; salvaSessao(s); return; }
+  const x = s.extracao; if (!x) return;
+  if (el.dataset.g != null && el.dataset.i == null){
+    const g = x.goleiros[+el.dataset.g];
+    if (f === 'gid'){ g.id = el.value; g.nome = gkNome(el.value); }
+    if (f === 'estado') g.estado = el.value;
+  } else if (el.dataset.g != null){
+    const i = x.goleiros[+el.dataset.g].itens[+el.dataset.i];
+    if (f === 'tipo') i.tipo = el.value;
+    if (f === 'texto') i.texto = el.value;
+  } else if (el.dataset.gr != null){ x.grupo[+el.dataset.gr].texto = el.value; }
+  else if (el.dataset.c != null){
+    const c = x.conteudos[+el.dataset.c];
+    if (f === 'texto') c.texto = el.value;
+    if (f === 'restricao') c.restricao = el.value;
+    if (f === 'igualA') c.igualA = el.value;
+    if (f === 'cgk'){ const set = new Set(arr(c.goleiros)); if (el.checked) set.add(el.value); else set.delete(el.value); c.goleiros = Array.from(set); }
+  }
+  salvaSessao(s);
+});
+
+/* ══ HUB + FIREBASE ══ */
+function ld(src){ return new Promise((res, rej) => { const ex = document.querySelector('script[src="' + src + '"]'); if (ex && ex.dataset.loaded === '1'){ res(); return; } const s = document.createElement('script'); s.src = src; s.onload = () => { s.dataset.loaded = '1'; res(); }; s.onerror = () => rej(new Error('falhou: ' + src)); document.head.appendChild(s); }); }
+let _iniciado = false;
+async function iniciar(ctx){
+  if (_iniciado) return; _iniciado = true;
+  const B = 'https://www.gstatic.com/firebasejs/9.23.0/';
+  await ld(B + 'firebase-app-compat.js'); await ld(B + 'firebase-auth-compat.js'); await ld(B + 'firebase-database-compat.js');
+  if (!firebase.apps.length) firebase.initializeApp(ctx.firebaseConfig);
+  FB.db = firebase.database();
+  firebase.auth().onAuthStateChanged((u) => {
+    if (!u){ console.error('[FluxGK] feedback: sem sessão. Abra pelo hub.'); return; }
+    if (FB.user) return; FB.user = u;
+    ref(FB.base + '/load/players').on('value', (sn) => { const v = sn.val() || {}; FB.elenco = {}; Object.keys(v).forEach(k => { if (v[k] && v[k].name) FB.elenco[k] = { name: v[k].name, status: v[k].status || 'ativo', origem: v[k].origem || '' }; }); render(); });
+    ref(P('config')).on('value', (sn) => { const v = sn.val(); if (v) FB.cfg = Object.assign({ modo: 'revisar', vocab: VOCAB_PADRAO.slice(), apelidos: {}, api: '/fb' }, v, { vocab: v.vocab ? arr(v.vocab) : VOCAB_PADRAO.slice() }); if (FB.aba !== 'ajustes') render(); });
+    ref(P('sessoes')).on('value', (sn) => { const v = sn.val() || {}; const atual = FB.sessoes; FB.sessoes = {}; Object.keys(v).forEach(k => { FB.sessoes[k] = Object.assign({ id: k }, v[k]); if (FB.sessoes[k].extracao){ const x = FB.sessoes[k].extracao; x.goleiros = arr(x.goleiros).map(g => Object.assign(g, { itens: arr(g.itens) })); x.grupo = arr(x.grupo); x.conteudos = arr(x.conteudos).map(c => Object.assign(c, { goleiros: arr(c.goleiros) })); } }); Object.keys(atual).forEach(k => { if (!FB.sessoes[k] && atual[k] && atual[k].status === 'transcrevendo') FB.sessoes[k] = atual[k]; }); const foco = document.activeElement; if (!(foco && foco.closest && foco.closest('[data-sess]'))) render(); });
+    ref(P('pendencias')).on('value', (sn) => { const v = sn.val() || {}; FB.pend = {}; Object.keys(v).forEach(k => { FB.pend[k] = Object.assign({}, v[k], { goleiros: arr(v[k].goleiros) }); }); if (FB.aba === 'conteudos' || FB.aba === 'relatorio') render(); });
+    ref(P('audio/id')).on('value', (sn) => { FB.audio = sn.val() ? { id: sn.val() } : null; });
+    ref('.info/connected').on('value', (sn) => { $('dotfb').style.background = sn.val() ? '#16a34a' : '#dc2626'; });
+  });
+}
+window.addEventListener('message', (e) => {
+  const d = e.data; if (!d || d.type !== 'FLUXGK_CONTEXT') return;
+  if (window.parent !== window && e.source !== window.parent) return;
+  if (!d.uid || !d.dataPath || !d.firebaseConfig){ console.error('[FluxGK] feedback: contexto incompleto', d); return; }
+  FB.hub = d; FB.base = d.dataPath;
+  if (d.lang && window.FluxGKI18n) FluxGKI18n.setLang(d.lang, false);
+  const c = d.club || {}, se = d.season || {};
+  if (c.color && /^#[0-9a-fA-F]{3,8}$/.test(c.color)) document.documentElement.style.setProperty('--accent', c.color);
+  $('ctx').textContent = [c.name, se.label].filter(Boolean).join(' · ');
+  iniciar(d).catch(err => { console.error('[FluxGK] feedback: falha ao iniciar', err); toast(String(err.message || err), true); });
+});
+if (window.FluxGKI18n) FluxGKI18n.onChange(() => render());
+render();
+try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'FLUXGK_MODULE_READY', module: 'feedback' }, '*'); } catch (e) {}
+})();
+</script>
+</body>
+</html>
