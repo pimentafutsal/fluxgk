@@ -60,7 +60,14 @@
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
-    expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'
+    expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    chevU: '<path d="M6 15l6-6 6 6"/>',
+    collapseAll: '<path d="M7 4l5 5 5-5M7 20l5-5 5 5"/>',
+    expandAll: '<path d="M7 9l5-5 5 5M7 15l5 5 5-5"/>',
+    tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
+    screen: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+    replay: '<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/>'
   };
   /* os de forma cheia (play/pause/stop) ficam melhores preenchidos */
   var CHEIO = { play: 1, pause: 1, stop: 1, next: 1, prev: 1 };

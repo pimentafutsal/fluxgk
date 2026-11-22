@@ -307,6 +307,11 @@
   button.ghost{border-color:var(--line);font-weight:500}
   button.danger{color:var(--red);border-color:var(--red)}
   button.mini{padding:3px 8px;font-size:11px;border-radius:4px}
+  /* ícones de linha (padrão híbrido — GUIA-VISUAL.md) */
+  .fx-i{width:1.15em;height:1.15em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;flex:none;display:inline-block}
+  .fx-i.cheio{fill:currentColor;stroke:none}.fx-i.sm{width:.95em;height:.95em}.fx-i.lg{width:1.35em;height:1.35em}
+  .fx-i + span,span + .fx-i{margin-left:5px}
+  .vltile-ic .fx-i{width:34px;height:34px;stroke-width:1.5}
 
   /* ---------- tags ---------- */
   .dashbar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -665,6 +670,13 @@
   .aprpgrp{border:1px solid var(--line);border-radius:7px;margin-bottom:6px;padding:4px 9px}
   .aprpgrp>summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}
   .aprpl{border-top:1px solid var(--line);padding:6px 0 4px}
+  .ptag .ptag-h{cursor:pointer;gap:8px}
+  .ptag-car{display:inline-block;font-size:10px;color:var(--muted);transition:transform .15s;width:12px}
+  .ptag-h.open>.ptag-car,.pjogo-h.open>.ptag-car{transform:rotate(90deg)}
+  .pjogo-h{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 18px;border-top:1px solid var(--line);cursor:pointer;font-size:13px;background:rgba(0,0,0,.015)}
+  .pjogo-h:hover{background:rgba(0,0,0,.04)}
+  .pjogo-h .er{font-size:11px;color:var(--muted)}
+  .pjogo-b .expitem{padding-left:34px}
   .reurow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .reulbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:80px}
   .reuproj{font-size:12.5px;cursor:pointer}
@@ -955,6 +967,7 @@
   #navHome{font-size:15px;line-height:1;padding:6px 11px}
 </style>
 <script src="fluxgk-i18n.js"></script>
+<script src="fluxgk-icones.js"></script>  <!-- icones de linha (visual) -->
 </head>
 <body>
 
@@ -993,27 +1006,27 @@
     <div class="vlhome-sub" data-i18n="vid.home.sub">What do you want to do?</div>
     <div class="vlhome-grid">
       <button class="vltile" data-go="analise">
-        <div class="vltile-ic">🎬</div>
+        <div class="vltile-ic"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></div>
         <div class="vltile-nm" data-i18n="vid.home.analysis">Analyze a video</div>
         <div class="vltile-ds" data-i18n="vid.home.analysisD">One match: load, tag clips and export.</div>
       </button>
       <button class="vltile" data-go="project">
-        <div class="vltile-ic">🗂️</div>
+        <div class="vltile-ic"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></div>
         <div class="vltile-nm" data-i18n="vid.home.project">Project</div>
         <div class="vltile-ds" data-i18n="vid.home.projectD">Themed playlists across several matches.</div>
       </button>
       <button class="vltile" data-go="apr">
-        <div class="vltile-ic">📽️</div>
+        <div class="vltile-ic"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/></svg></div>
         <div class="vltile-nm" data-i18n="vid.home.apr">Presentation</div>
         <div class="vltile-ds" data-i18n="vid.home.aprD">Mix clips from different projects into one sequence to show the goalkeepers.</div>
       </button>
       <button class="vltile" data-go="library">
-        <div class="vltile-ic">🎞️</div>
+        <div class="vltile-ic"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h12v18H6zM9 3v18"/></svg></div>
         <div class="vltile-nm" data-i18n="vid.home.gallery">Video gallery</div>
         <div class="vltile-ds" data-i18n="vid.home.galleryD">Your saved matches and their clips.</div>
       </button>
       <button class="vltile" data-go="dash">
-        <div class="vltile-ic">🏷️</div>
+        <div class="vltile-ic"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg></div>
         <div class="vltile-nm" data-i18n="vid.home.dash">Dashboards</div>
         <div class="vltile-ds" data-i18n="vid.home.dashD">Your tag sets for marking clips.</div>
       </button>
@@ -1025,7 +1038,7 @@
   <!-- ================= ABA: ANÁLISE ================= -->
   <section id="tab-analise" class="tabpane active">
     <div id="projBar" style="display:none;align-items:center;gap:10px;padding:8px 12px;margin-bottom:10px;background:rgba(30,79,255,.08);border:1px solid rgba(30,79,255,.25);border-radius:8px;font-size:13px">
-      <span style="font-weight:600">🗂️ <span data-i18n="vid.proj.working">Project</span>: <b id="projBarName"></b></span>
+      <span style="font-weight:600"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg> <span data-i18n="vid.proj.working">Project</span>: <b id="projBarName"></b></span>
       <span style="flex:1"></span>
       <button class="mini" id="projBarView" data-i18n="vid.proj.view">View project</button>
       <button class="mini ghost" id="projBarExit" data-i18n="vid.proj.exit">Exit project</button>
@@ -1310,7 +1323,7 @@
       <div id="projNewWrap" style="display:flex;gap:8px;margin-bottom:14px">
         <input type="text" id="projNewName" placeholder="New project (e.g. Scouting Semey 25/26)" data-i18n-placeholder="vid.proj.ph.newProject" maxlength="60" style="flex:1;min-width:160px">
         <button class="primary" id="projNewBtn" data-i18n="vid.proj.newProject">+ New project</button>
-        <button id="reuBtn" data-i18n-title="vid.reu.btnT" title="Gather every clip of a tag (e.g. Goals conceded) from all the projects of the season and export them in one video">🎯 <span data-i18n="vid.reu.btn">Gather &amp; export</span></button>
+        <button id="reuBtn" data-i18n-title="vid.reu.btnT" title="Gather every clip of a tag (e.g. Goals conceded) from all the projects of the season and export them in one video"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span data-i18n="vid.reu.btn">Gather &amp; export</span></button>
       </div>
       <div class="body" id="projView">
         <div data-i18n="vid.proj.noProjects" class="empty">No projects yet.</div>
@@ -1397,7 +1410,7 @@
   <div class="st-sh" style="max-width:700px">
     <div class="modal-hdr" style="margin-bottom:4px">
       <h2 style="font-size:15px;font-weight:600" id="reuTitle">—</h2>
-      <button class="modal-close" id="reuX">✕</button>
+      <button class="modal-close" id="reuX" aria-label="Close"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px" data-i18n="vid.reu.hint">Every clip of the tag, from every project of the season, in one video — in order of game, with a title screen per game. Untick what should stay out.</div>
     <div class="reurow"><span class="reulbl" data-i18n="vid.reu.tag">Tag</span><select id="reuTag" style="min-width:200px"></select></div>
@@ -1411,8 +1424,8 @@
       <span id="reuTotal" style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)"></span>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button class="mini primary" id="reuGo" style="padding:8px 18px">⬇ <span data-i18n="vid.reu.export">Export one video</span></button>
-      <button class="mini" id="reuApr" style="padding:8px 14px">📽 <span data-i18n="vid.reu.apr">Send to a new presentation</span></button>
+      <button class="mini primary" id="reuGo" style="padding:8px 18px"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg><span data-i18n="vid.reu.export">Export one video</span></button>
+      <button class="mini" id="reuApr" style="padding:8px 14px"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/></svg><span data-i18n="vid.reu.apr">Send to a new presentation</span></button>
     </div>
   </div>
 </div>
@@ -1422,7 +1435,7 @@
   <div class="st-sh" style="max-width:680px">
     <div class="modal-hdr" style="margin-bottom:4px">
       <h2 style="font-size:15px;font-weight:600" id="aprPickTitle">—</h2>
-      <button class="modal-close" id="aprPickX">✕</button>
+      <button class="modal-close" id="aprPickX" aria-label="Close"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px" data-i18n="vid.apr.pickHint">Tick a whole playlist to bring it as a synced block (new clips added to it appear here too), or open it and tick single clips.</div>
     <div id="aprPickList"></div>
@@ -1463,8 +1476,8 @@
 <div id="cineOv">
   <div id="cineTop">
     <div id="cineTitle">—</div>
-    <button class="mini ghost" id="cineFold" data-i18n-title="vid.fold.newT" title="New folder">📁 <span data-i18n="vid.fold.new">+ Folder</span></button>
-    <button class="mini ghost" id="cineClose" data-i18n-title="vid.cine.close" title="Close">✕</button>
+    <button class="mini ghost" id="cineFold" data-i18n-title="vid.fold.newT" title="New folder"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg><span data-i18n="vid.fold.new">+ Folder</span></button>
+    <button class="mini ghost" id="cineClose" data-i18n-title="vid.cine.close" title="Close" aria-label="Close"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div id="cineBody">
     <div id="cineStage">
@@ -1477,9 +1490,9 @@
     <div id="cineSide"></div>
   </div>
   <div id="cineBar">
-    <button class="mini" id="cinePrev" data-i18n-title="vid.cine.prev" title="Previous">⏮</button>
-    <button class="mini primary" id="cinePlay">⏸</button>
-    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next clip (Shift+→)">⏭</button>
+    <button class="mini" id="cinePrev" data-i18n-title="vid.cine.prev" title="Previous"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 5L9 12l10 7zM5 5v14"/></svg></button>
+    <button class="mini primary" id="cinePlay"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+    <button class="mini" id="cineNext" data-i18n-title="vid.cine.next" title="Next clip (Shift+→)"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5l10 7-10 7zM19 5v14"/></svg></button>
     <span id="cineCount">—</span>
     <button class="mini ghost" id="cineFrB" data-i18n-title="vid.cine.frameBack" title="One frame back">,</button>
     <div id="cineProg" data-i18n-title="vid.cine.scrub" title="Drag to move through the clip">
@@ -1494,11 +1507,11 @@
   <!-- so na apresentacao: desenhar por cima, apagar, apagar e seguir -->
   <div id="cineInkBar">
     <span class="ctlbl" data-i18n="vid.apr.draw">DRAW</span>
-    <button class="mini ghost" data-ink="pen" data-i18n-title="vid.tt.pen" title="Freehand pen">✎</button>
-    <button class="mini ghost" data-ink="arrow" data-i18n-title="vid.tt.arrow" title="Arrow">➔</button>
-    <button class="mini ghost" data-ink="line" data-i18n-title="vid.tt.line" title="Line">╱</button>
-    <button class="mini ghost" data-ink="ellipse" data-i18n-title="vid.tt.ellipse" title="Ellipse">◯</button>
-    <button class="mini ghost" data-ink="spot" data-i18n-title="vid.tt.spotlight" title="Spotlight">▼</button>
+    <button class="mini ghost" data-ink="pen" data-i18n-title="vid.tt.pen" title="Freehand pen"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20l1-5L16 4l4 4L9 19zM14 6l4 4"/></svg></button>
+    <button class="mini ghost" data-ink="arrow" data-i18n-title="vid.tt.arrow" title="Arrow"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h16M14 6l6 6-6 6"/></svg></button>
+    <button class="mini ghost" data-ink="line" data-i18n-title="vid.tt.line" title="Line"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19L19 5"/></svg></button>
+    <button class="mini ghost" data-ink="ellipse" data-i18n-title="vid.tt.ellipse" title="Ellipse"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/></svg></button>
+    <button class="mini ghost" data-ink="spot" data-i18n-title="vid.tt.spotlight" title="Spotlight"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l5 12H7z"/><ellipse cx="12" cy="18" rx="7" ry="2.5"/></svg></button>
     <span class="ctsep"></span>
     <button class="inkcor on" data-cor="#FFD400" style="background:#FFD400" title="#FFD400"></button>
     <button class="inkcor" data-cor="#FF3B30" style="background:#FF3B30" title="#FF3B30"></button>
@@ -1506,9 +1519,9 @@
     <button class="inkcor" data-cor="#1E9BFF" style="background:#1E9BFF" title="#1E9BFF"></button>
     <button class="inkcor" data-cor="#0A0A0A" style="background:#0A0A0A" data-i18n-title="vid.tt.black" title="Black"></button>
     <span class="ctsep"></span>
-    <button class="mini ghost" id="cineInkUndo" data-i18n-title="vid.apr.undoT" title="Undo the last stroke (Ctrl+Z)">↶</button>
-    <button class="mini" id="cineInkClr" data-i18n-title="vid.apr.clearT" title="Erase everything on the screen (Backspace)">🗑 <span data-i18n="vid.apr.clear">Erase</span></button>
-    <button class="mini primary" id="cineInkGo" data-i18n-title="vid.apr.clearGoT" title="Erase everything and continue the video (Enter)">⏵ <span data-i18n="vid.apr.clearGo">Erase &amp; continue</span></button>
+    <button class="mini ghost" id="cineInkUndo" data-i18n-title="vid.apr.undoT" title="Undo the last stroke (Ctrl+Z)"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+    <button class="mini" id="cineInkClr" data-i18n-title="vid.apr.clearT" title="Erase everything on the screen (Backspace)"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 20h12M5 15l9-9 5 5-9 9H8z"/></svg><span data-i18n="vid.apr.clear">Erase</span></button>
+    <button class="mini primary" id="cineInkGo" data-i18n-title="vid.apr.clearGoT" title="Erase everything and continue the video (Enter)"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5l10 7-10 7zM19 5v14"/></svg><span data-i18n="vid.apr.clearGo">Erase &amp; continue</span></button>
     <span class="ctsep"></span>
     <label><input type="checkbox" id="cineDes" checked> <span data-i18n="vid.apr.showDraw">Video drawings</span></label>
     <span id="cineInkInfo"></span>
@@ -2607,9 +2620,9 @@ function exAllPinta(){
     const ct = document.createElement('span'); ct.className = 'exct';
     ct.textContent = n ? (n + ' ' + TX('vid.f.clips')) : TX('vid.ex.empty');
     const sp = document.createElement('span'); sp.style.flex = '1';
-    const up = document.createElement('button'); up.className = 'mini ghost'; up.textContent = '▲';
+    const up = document.createElement('button'); up.className = 'mini ghost'; up.innerHTML = FXIco('chevU', 'sm');
     up.disabled = i === 0; up.addEventListener('click', () => exAllMover(i, -1));
-    const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.textContent = '▼';
+    const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.innerHTML = FXIco('chevD', 'sm');
     dn.disabled = i === _exAll.pl.length - 1; dn.addEventListener('click', () => exAllMover(i, 1));
 
     row.appendChild(num); row.appendChild(chk); row.appendChild(nm); row.appendChild(ct);
@@ -2884,13 +2897,13 @@ function playlistCard(p, pl){
                 grupo.folder.name = nv.trim().slice(0, 40); projPersist(); renderProjectTab();
               });
               const fi = plFolders(pl).indexOf(grupo.folder);
-              const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.textContent = '▲';
+              const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.innerHTML = FXIco('chevU', 'sm');
               fu.disabled = fi === 0;
               fu.addEventListener('click', () => {
                 const fs = plFolders(pl); fs.splice(fi, 1); fs.splice(fi - 1, 0, grupo.folder);
                 plNormaliza(pl); projPersist(); renderProjectTab();
               });
-              const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.textContent = '▼';
+              const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.innerHTML = FXIco('chevD', 'sm');
               fd.disabled = fi === plFolders(pl).length - 1;
               fd.addEventListener('click', () => {
                 const fs = plFolders(pl); fs.splice(fi, 1); fs.splice(fi + 1, 0, grupo.folder);
@@ -3295,49 +3308,101 @@ function _renderProjectTab(){
     }, false).wrap);
 
     box.appendChild(secaoRecolhivel(p, 'secPorTag', TX('vid.proj.byTag'), _nTag + ' · ' + _clipsProj.length + ' ' + TX('vid.f.clips'), function(alvo){
-    /* ---- visão por etiqueta (automática) ---- */
-    const tagHdr = document.createElement('div'); tagHdr.className = 'fpsection'; tagHdr.style.cssText = 'margin:16px 0 6px;font-size:12px';
-    tagHdr.textContent = TX('vid.proj.byTag');
-    alvo.appendChild(tagHdr);
-
+    /* ---- visão por etiqueta (automática) ----
+       Etiqueta → jogo → lances. Cada etiqueta e cada jogo recolhem
+       (fechados por padrão); o corpo só é montado quando abre.
+       Etiquetas com o mesmo nome em painéis diferentes viram uma só. */
     const clips = projAllClips(p);
     const meta = document.createElement('div'); meta.className = 'empty'; meta.style.cssText = 'text-align:left;margin:6px 0 10px';
     meta.textContent = ((p.videos && p.videos.length) || 0) + ' ' + TX('vid.proj.videos') + ' · ' + clips.length + ' ' + TX('vid.f.clips');
     alvo.appendChild(meta);
     if (!clips.length){ const em = document.createElement('div'); em.className = 'empty'; em.textContent = TX('vid.proj.benchEmpty'); alvo.appendChild(em); return; }
-
-    const byTag = {}; clips.forEach(c => { const k = c.tagId || '—'; (byTag[k] = byTag[k] || []).push(c); });
-    Object.keys(byTag).forEach(tagId => {
-      const arr = byTag[tagId]; const tg = findTag(tagId);
-      const card = document.createElement('div'); card.className = 'expgrp';
-      const head = document.createElement('div'); head.className = 'ghead';
-      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = (tg && tg.color) || '#888';
-      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = (tg && tg.name) || '—';
-      const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = arr.length + ' ' + TX('vid.f.clips');
+    if (!p.ui) p.ui = {};
+    const ordAn = projAnalises(p).map(a => a.id);
+    /* jogo de um lance: a análise do vídeo; sem análise, o próprio vídeo */
+    const jogoDe = (c) => {
+      const v = (p.videos || []).find(x => x.srcKey === c.srcKey || x.srcName === c.srcName);
+      const an = videoAnaliseId(p, v); const a = an ? analisePorId(p, an) : null;
+      return a ? { k: a.id, nome: a.name, ord: ordAn.indexOf(a.id) } : { k: 'v:' + (c.srcName || '—'), nome: c.srcName || '—', ord: 1e6 };
+    };
+    const porTag = {};
+    clips.forEach(c => {
+      const tg = findTag(c.tagId); const nome = (tg && tg.name) || '—'; const k = reuNorm(nome);
+      if (!porTag[k]) porTag[k] = { k: k, nome: nome, cor: (tg && tg.color) || '#888', arr: [] };
+      porTag[k].arr.push(c);
+    });
+    /* abre/fecha sem redesenhar a aba inteira (a rolagem fica onde está) */
+    const recolhe = (chave, head, corpo, montar) => {
+      let aberto = !!p.ui[chave];
+      const aplica = () => {
+        head.classList.toggle('open', aberto);
+        corpo.style.display = aberto ? '' : 'none';
+        if (aberto && !corpo._montado){ corpo._montado = true; montar(corpo); }
+      };
+      head.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        aberto = !aberto; if (aberto) p.ui[chave] = true; else delete p.ui[chave]; projPersist(); aplica();
+      });
+      aplica();
+    };
+    const linhaLance = (it, tg, alvo2) => {
+      const row = document.createElement('div'); row.className = 'expitem';
+      const nm2 = document.createElement('span'); nm2.style.flex = '1';
+      nm2.textContent = (it.name || (tg && tg.name) || 'clip') + (it.note ? (' — ' + it.note) : '') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
+      const actWrap = document.createElement('div'); actWrap.style.width = '100%';
+      const bAdd = document.createElement('button'); bAdd.className = 'mini ghost'; bAdd.textContent = '＋'; bAdd.title = TX('vid.proj.addToList');
+      bAdd.addEventListener('click', () => {
+        if (actWrap.firstChild){ actWrap.innerHTML = ''; return; }
+        const clip = it;
+        const panel = projBuildActionsPanel(null, (action, arg) => {
+          if (action === 'add') projAddClipToPlaylist(arg, clip);
+          else if (action === 'new'){ const npl = projPlaylistCreate(arg, []); if (npl) projAddClipToPlaylist(npl.id, clip); }
+        });
+        actWrap.appendChild(panel);
+      });
+      row.appendChild(nm2); row.appendChild(bAdd); alvo2.appendChild(row); alvo2.appendChild(actWrap);
+    };
+    Object.values(porTag).sort((a, b) => a.nome.localeCompare(b.nome)).forEach(T => {
+      const tg = findTag(T.arr[0].tagId);
+      /* jogos desta etiqueta, na ordem das análises do projeto */
+      const jogos = {};
+      T.arr.forEach(c => { const j = jogoDe(c); if (!jogos[j.k]) jogos[j.k] = Object.assign(j, { arr: [] }); jogos[j.k].arr.push(c); });
+      const listaJ = Object.values(jogos).sort((a, b) => a.ord - b.ord || a.nome.localeCompare(b.nome));
+      const card = document.createElement('div'); card.className = 'expgrp ptag';
+      const head = document.createElement('div'); head.className = 'ghead ptag-h';
+      const car = document.createElement('span'); car.className = 'ptag-car'; car.textContent = '▸';
+      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = T.cor;
+      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = T.nome;
+      const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = listaJ.length + ' ' + TX('vid.reu.games', 'game(s)') + ' · ' + T.arr.length + ' ' + TX('vid.f.clips');
       const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
-      bExp.addEventListener('click', () => exportCombined(arr, p.name + ' - ' + ((tg && tg.name) || 'tema')));
-      head.appendChild(dot); head.appendChild(nm); head.appendChild(cnt); head.appendChild(bExp);
+      bExp.addEventListener('click', () => exportCombined([].concat(...listaJ.map(j => j.arr)), p.name + ' - ' + T.nome));
+      head.appendChild(car); head.appendChild(dot); head.appendChild(nm); head.appendChild(cnt); head.appendChild(bExp);
       card.appendChild(head);
-      const bySrc = {}; arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
-      Object.keys(bySrc).forEach(src => {
-        const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:8px 0 4px'; sh.textContent = '🎬 ' + src;
-        card.appendChild(sh);
-        bySrc[src].forEach(it => {
-          const row = document.createElement('div'); row.className = 'expitem';
-          const nm2 = document.createElement('span'); nm2.style.flex = '1';
-          nm2.textContent = (it.name || (tg && tg.name) || 'clip') + (it.note ? (' — ' + it.note) : '') + '  ·  ' + fmt(it.start) + '→' + fmt(it.end);
-          const actWrap = document.createElement('div'); actWrap.style.width = '100%';
-          const bAdd = document.createElement('button'); bAdd.className = 'mini ghost'; bAdd.textContent = '＋'; bAdd.title = TX('vid.proj.addToList');
-          bAdd.addEventListener('click', () => {
-            if (actWrap.firstChild){ actWrap.innerHTML = ''; return; }
-            const clip = it;
-            const panel = projBuildActionsPanel(null, (action, arg) => {
-              if (action === 'add') projAddClipToPlaylist(arg, clip);
-              else if (action === 'new'){ const npl = projPlaylistCreate(arg, []); if (npl) projAddClipToPlaylist(npl.id, clip); }
+      const corpoT = document.createElement('div'); corpoT.className = 'ptag-b'; card.appendChild(corpoT);
+      recolhe('tg:' + T.k, head, corpoT, (alvoT) => {
+        listaJ.forEach(J => {
+          const jh = document.createElement('div'); jh.className = 'pjogo-h';
+          const jc = document.createElement('span'); jc.className = 'ptag-car'; jc.textContent = '▸';
+          const jn = document.createElement('span'); jn.style.cssText = 'flex:1;font-weight:600'; jn.textContent = '🗂 ' + J.nome;
+          const jq = document.createElement('span'); jq.className = 'er'; jq.textContent = J.arr.length + ' ' + TX('vid.f.clips');
+          const jx = document.createElement('button'); jx.className = 'mini ghost'; jx.textContent = TX('vid.proj.export');
+          jx.title = TX('vid.proj.expGameT', 'Export only this game');
+          jx.addEventListener('click', () => exportCombined(J.arr, p.name + ' - ' + J.nome + ' - ' + T.nome));
+          jh.appendChild(jc); jh.appendChild(jn); jh.appendChild(jq); jh.appendChild(jx);
+          alvoT.appendChild(jh);
+          const corpoJ = document.createElement('div'); corpoJ.className = 'pjogo-b'; alvoT.appendChild(corpoJ);
+          recolhe('tg:' + T.k + '|' + J.k, jh, corpoJ, (alvoJ) => {
+            const bySrc = {}; J.arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
+            const fontes = Object.keys(bySrc);
+            fontes.forEach(src => {
+              /* com dois vídeos no jogo (1º e 2º tempo), cada um tem o seu título */
+              if (fontes.length > 1 || J.k.indexOf('v:') !== 0){
+                const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:6px 0 3px 18px'; sh.textContent = '🎬 ' + src;
+                alvoJ.appendChild(sh);
+              }
+              bySrc[src].sort((a, b) => (a.start || 0) - (b.start || 0)).forEach(it => linhaLance(it, tg, alvoJ));
             });
-            actWrap.appendChild(panel);
           });
-          row.appendChild(nm2); row.appendChild(bAdd); card.appendChild(row); card.appendChild(actWrap);
         });
       });
       alvo.appendChild(card);
@@ -5372,8 +5437,8 @@ function cineRenderList(){
   const _gr = (_cine.apr && grupo.folder) ? aprGrupo(_cine.apr, grupo.folder.grupoId) : null;
   if (_cine.apr && _gr && _gr !== _gAnt){
     const gh = document.createElement('div'); gh.className = 'cgrp' + (_gr.fechado ? '' : ' open');
-    const gc = document.createElement('span'); gc.className = 'cgc'; gc.textContent = '▸';
-    const gn = document.createElement('span'); gn.className = 'cgn'; gn.textContent = '🗂 ' + _gr.name;
+    const gc = document.createElement('span'); gc.className = 'cgc'; gc.innerHTML = FXIco('chevR', 'sm');
+    const gn = document.createElement('span'); gn.className = 'cgn'; fxEl(gn, 'folder', _gr.name);
     const nItens = grupos.filter(x => x.folder && x.folder.grupoId === _gr.id).reduce((a, x) => a + x.items.length, 0);
     const gq = document.createElement('span'); gq.className = 'cfct'; gq.textContent = nItens;
     gh.appendChild(gc); gh.appendChild(gn); gh.appendChild(gq);
@@ -5420,16 +5485,16 @@ function cineRenderList(){
     });
     if (grupo.folder){
       const car = document.createElement('button'); car.className = 'cfcar';
-      car.textContent = '▸';
+      car.innerHTML = FXIco('chevR', 'sm');
       car.title = TX(plFoldAberta(grupo.folder) ? 'vid.fold.collapse' : 'vid.fold.expand');
       if (plFoldAberta(grupo.folder)) car.classList.add('open');
       car.addEventListener('click', (e) => { e.stopPropagation(); plFoldToggle(_cine.pl, grupo.folder); cineRenderList(); });
       fh.appendChild(car);
     }
-    const nm = document.createElement('span'); nm.textContent = grupo.folder ? ('📁 ' + grupo.folder.name) : TX('vid.fold.none');
+    const nm = document.createElement('span'); nm.textContent = grupo.folder ? grupo.folder.name : TX('vid.fold.none');
     if (_cine.apr && grupo.folder && grupo.folder.fonte && !_gr){
       const jg = aprJogoDaFonte(grupo.folder.fonte);
-      if (jg){ nm.title = jg; nm.textContent += '  ·  🗂 ' + jg; }
+      if (jg){ nm.title = jg; nm.textContent += '  ·  ' + jg; }
     }
     const ct = document.createElement('span'); ct.className = 'cfct'; ct.textContent = grupo.items.length;
     fh.appendChild(nm); fh.appendChild(ct);
@@ -5439,10 +5504,10 @@ function cineRenderList(){
       const sp = document.createElement('span'); sp.style.flex = '1'; fh.appendChild(sp);
       const fb = document.createElement('span'); fb.className = 'cfb';
       const fi = plFolders(_cine.pl).indexOf(grupo.folder);
-      const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.textContent = '▲';
+      const fu = document.createElement('button'); fu.className = 'mini ghost'; fu.innerHTML = FXIco('chevU', 'sm');
       fu.title = TX('vid.proj.itemUp'); fu.disabled = fi === 0;
       fu.addEventListener('click', (e) => { e.stopPropagation(); cineFolderMove(grupo.folder, -1); });
-      const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.textContent = '▼';
+      const fd = document.createElement('button'); fd.className = 'mini ghost'; fd.innerHTML = FXIco('chevD', 'sm');
       fd.title = TX('vid.proj.itemDown'); fd.disabled = fi === plFolders(_cine.pl).length - 1;
       fd.addEventListener('click', (e) => { e.stopPropagation(); cineFolderMove(grupo.folder, 1); });
       fb.appendChild(fu); fb.appendChild(fd); fh.appendChild(fb);
@@ -5463,7 +5528,7 @@ function cineRenderList(){
       _subFech = !!(it.pasta && Array.isArray(grupo.folder.subFech) && grupo.folder.subFech.indexOf(it.pasta) >= 0);
       if (it.pasta){
         const sh = document.createElement('div'); sh.className = 'csub' + (_subFech ? '' : ' open');
-        sh.textContent = '▸ 📁 ' + it.pasta;
+        fxEl(sh, 'chevR', it.pasta);
         const _f = grupo.folder, _sp = it.pasta;
         sh.addEventListener('click', () => { aprSubToggle(_cine.apr, _f, _sp); cineRenderList(); });
         box.appendChild(sh);
@@ -5489,10 +5554,10 @@ function cineRenderList(){
       + '  (' + ((it.end || 0) - (it.start || 0)).toFixed(1) + 's)';
     /* mudar a ordem sem sair do player */
     const b = document.createElement('span'); b.className = 'cib';
-    const up = document.createElement('button'); up.className = 'mini ghost'; up.textContent = '▲';
+    const up = document.createElement('button'); up.className = 'mini ghost'; up.innerHTML = FXIco('chevU', 'sm');
     up.title = TX('vid.proj.itemUp'); up.disabled = i === 0;
     up.addEventListener('click', (e) => { e.stopPropagation(); cineMove(it.id, -1); });
-    const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.textContent = '▼';
+    const dn = document.createElement('button'); dn.className = 'mini ghost'; dn.innerHTML = FXIco('chevD', 'sm');
     dn.title = TX('vid.proj.itemDown'); dn.disabled = i === _cine.items.length - 1;
     dn.addEventListener('click', (e) => { e.stopPropagation(); cineMove(it.id, 1); });
     b.appendChild(up); b.appendChild(dn);
@@ -5611,7 +5676,7 @@ function cineItemMenu(x, y, it){
   const subs = [];
   plFolders(_cine.pl).forEach(f => {
     if (f.id === it.folderId) return;
-    subs.push(ctxItem('📁 ' + f.name, () => {
+    subs.push(ctxItem(f.name, () => {
       const atual = (_cine.items[_cine.i] || {}).id;
       plItemToFolder(_cine.pl, it.id, f.id); cineResync(atual);
     }));
@@ -5661,7 +5726,7 @@ function cineItemMenu(x, y, it){
       const out = [];
       const a2 = minha ? analisePorId(_cine.proj, minha) : null;
       const h = document.createElement('div'); h.className = 'ctxhead';
-      h.textContent = a2 ? ('🗂 ' + a2.name) : TX('vid.an.loose');
+      h.textContent = a2 ? a2.name : TX('vid.an.loose');
       out.push(h);
       outras.forEach(pl2 => out.push(ctxItem(pl2.name + ' (' + ((pl2.items || []).length) + ')', () => acao(pl2))));
       return out;
@@ -5684,8 +5749,8 @@ function cineItemMenu(x, y, it){
   }
 
   const i = _cine.items.indexOf(it);
-  if (i > 0) menu.appendChild(ctxItem('▲ ' + TX('vid.proj.itemUp'), () => cineMove(it.id, -1)));
-  if (i < _cine.items.length - 1) menu.appendChild(ctxItem('▼ ' + TX('vid.proj.itemDown'), () => cineMove(it.id, 1)));
+  if (i > 0) menu.appendChild(ctxItem(TX('vid.proj.itemUp'), () => cineMove(it.id, -1)));
+  if (i < _cine.items.length - 1) menu.appendChild(ctxItem(TX('vid.proj.itemDown'), () => cineMove(it.id, 1)));
   const sep = document.createElement('div'); sep.className = 'ctxsep'; menu.appendChild(sep);
   menu.appendChild(ctxItem(TX('vid.cine.remove'), () => cineRemove(it.id), { danger: true }));
   cinePos(menu, x, y);
@@ -5706,8 +5771,8 @@ function cineFolderMenu(x, y, folder){
     folder.name = nv.trim().slice(0, 40); projPersist(); cineRenderList();
   }));
   const fs = plFolders(_cine.pl), fi = fs.indexOf(folder);
-  if (fi > 0) menu.appendChild(ctxItem('▲ ' + TX('vid.proj.itemUp'), () => cineFolderMove(folder, -1)));
-  if (fi < fs.length - 1) menu.appendChild(ctxItem('▼ ' + TX('vid.proj.itemDown'), () => cineFolderMove(folder, 1)));
+  if (fi > 0) menu.appendChild(ctxItem(TX('vid.proj.itemUp'), () => cineFolderMove(folder, -1)));
+  if (fi < fs.length - 1) menu.appendChild(ctxItem(TX('vid.proj.itemDown'), () => cineFolderMove(folder, 1)));
   const sep = document.createElement('div'); sep.className = 'ctxsep'; menu.appendChild(sep);
   menu.appendChild(ctxItem(TX('vid.fold.del'), async () => {
     if (!(await askConfirm(TX('vid.fold.del'), TX('vid.fold.delQ') + folder.name + TX('vid.fold.delQ2'), TX('vid.delete')))) return;
@@ -5946,7 +6011,7 @@ function cineCount(){
 }
 function cineSyncBtn(){
   const b = $('cinePlay'); if (!b || !_cine) return;
-  b.textContent = _cine.tocando ? '⏸' : (_cine.fim ? '↺' : '▶');
+  b.innerHTML = FXIco(_cine.tocando ? 'pause' : (_cine.fim ? 'replay' : 'play'));
   b.title = _cine.tocando ? '' : (_cine.fim ? TX('vid.cine.replay') : '');
 }
 
@@ -6734,7 +6799,7 @@ function aprPlay(ap, desdeItemId){
   aprInk.tool = null; aprInk.cur = null;
   const ov = $('cineOv');
   ov.classList.add('apr'); ov.classList.remove('inkon');
-  $('cineTitle').textContent = '▶ ' + ap.name;
+  $('cineTitle').textContent = ap.name;
   ov.classList.add('on');
   aprInkBarPinta();
   cineRenderList();
@@ -6887,7 +6952,7 @@ function aprInkBarPinta(){
   const info = $('cineInkInfo');
   if (info){
     const n = cineApr() ? (_cine.paradas || []).filter(d => (d.shapes || []).length).length : 0;
-    info.textContent = _cine && _cine.parada ? TX('vid.apr.stopped', '⏸ stopped on a drawing — play (button or space) to continue')
+    info.textContent = _cine && _cine.parada ? TX('vid.apr.stopped', 'Stopped on a drawing — play (button or space) to continue')
       : (n ? n + ' ' + TX('vid.apr.nDraw', 'drawing(s) in this clip') : '');
   }
 }
@@ -6948,6 +7013,13 @@ function aprInkWire(){
 }
 
 /* ══ ABA APRESENTACOES ════════════════════════════════════════ */
+/* visual: ícone de linha + texto (fluxgk-icones.js); sem o arquivo, só o texto */
+function FXIco(n, c){ return window.FXI ? FXI.ico(n, c) : ''; }
+function fxEl(el, icone, texto){
+  el.innerHTML = FXIco(icone) + (texto ? '<span>' + escapeHtml(texto) + '</span>' : '');
+  if (!texto && el.title && !el.getAttribute('aria-label')) el.setAttribute('aria-label', el.title);
+  return el;
+}
 function aprEl(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
 function aprBtn(txt, cls, fn, title){
   const b = aprEl('button', 'mini' + (cls ? ' ' + cls : ''), txt);
@@ -7082,7 +7154,7 @@ function aprRender(){
     const aberta = !ap.fechada;
     const card = aprEl('div', 'expgrp plcard aprcard' + (aberta ? ' open' : ''));
     const head = aprEl('div', 'ghead'); head.style.gap = '8px'; head.style.flexWrap = 'wrap';
-    const car = aprEl('button', 'plcar', '▸');
+    const car = fxEl(aprEl('button', 'plcar'), 'chevR');
     car.addEventListener('click', () => { if (ap.fechada) delete ap.fechada; else ap.fechada = true; aprPersist(); aprRender(); });
     const nm = aprEl('input'); nm.value = ap.name; nm.maxLength = 60; nm.style.cssText = 'flex:1;min-width:140px;font-weight:700';
     nm.addEventListener('change', () => { const v = nm.value.trim(); if (v){ ap.name = v.slice(0, 60); aprPersist(); } });
@@ -7090,10 +7162,10 @@ function aprRender(){
     const tot = vivos.reduce((a, it) => a + aprDur(it), 0);
     const cnt = aprEl('span', 'er', vivos.length + ' ' + TX('vid.f.clips', 'clips') + ' · ' + Math.round(tot) + 's');
     head.appendChild(car); head.appendChild(nm); head.appendChild(cnt);
-    head.appendChild(aprBtn('+ ' + TX('vid.apr.addClips', 'Add clips'), '', () => aprPickAbre(ap)));
-    head.appendChild(aprBtn('⊟', 'ghost', () => { aprRecolheTudo(ap, true); aprRender(); }, TX('vid.apr.collapseAll', 'Collapse everything')));
-    head.appendChild(aprBtn('⊞', 'ghost', () => { aprRecolheTudo(ap, false); aprRender(); }, TX('vid.apr.expandAll', 'Expand everything')));
-    head.appendChild(aprBtn('▶ ' + TX('vid.apr.present', 'Present'), 'primary', () => aprPlay(ap)));
+    head.appendChild(fxEl(aprBtn('', '', () => aprPickAbre(ap)), 'plus', TX('vid.apr.addClips', 'Add clips')));
+    head.appendChild(fxEl(aprBtn('', 'ghost', () => { aprRecolheTudo(ap, true); aprRender(); }, TX('vid.apr.collapseAll', 'Collapse everything')), 'collapseAll'));
+    head.appendChild(fxEl(aprBtn('', 'ghost', () => { aprRecolheTudo(ap, false); aprRender(); }, TX('vid.apr.expandAll', 'Expand everything')), 'expandAll'));
+    head.appendChild(fxEl(aprBtn('', 'primary', () => aprPlay(ap)), 'play', TX('vid.apr.present', 'Present')));
     head.appendChild(aprBtn(TX('vid.delete', 'Delete'), 'ghost danger', async () => {
       if (!(await askConfirm(TX('vid.apr.del', 'Delete presentation'), TX('vid.apr.delQ', 'Delete the presentation "{n}"? The clips stay in their projects and videos.').replace('{n}', ap.name), TX('vid.delete', 'Delete')))) return;
       state.apresentacoes = aprList().filter(x => x.id !== ap.id); aprPersist(); aprRender();
@@ -7114,26 +7186,26 @@ function aprRender(){
           const g = u.grupo;
           const n = u.blocos.reduce((a, b) => a + b.items.filter(x => !x.falta).length, 0);
           const gh = aprEl('div', 'aprgrp' + (g.fechado ? '' : ' open'));
-          const gc = aprEl('button', 'plcar', '▸');
+          const gc = fxEl(aprEl('button', 'plcar'), 'chevR');
           const tog = () => { if (g.fechado) delete g.fechado; else g.fechado = true; aprPersist(); aprRender(); };
           gc.addEventListener('click', (e) => { e.stopPropagation(); tog(); });
           gh.appendChild(gc);
-          gh.appendChild(aprEl('span', 'gi', '🗂'));
+          gh.appendChild(fxEl(aprEl('span', 'gi'), 'folder'));
           const gn = aprEl('input'); gn.value = g.name; gn.maxLength = 60;
           gn.addEventListener('click', (e) => e.stopPropagation());
           gn.addEventListener('change', () => { const v = gn.value.trim(); if (v){ g.name = v.slice(0, 60); aprPersist(); } });
           gh.appendChild(gn);
           gh.appendChild(aprEl('span', 'er', u.blocos.length + ' ' + TX('vid.apr.lists', 'playlist(s)') + ' · ' + n + ' ' + TX('vid.f.clips', 'clips')));
           const sp = aprEl('span'); sp.style.flex = '1'; gh.appendChild(sp);
-          const up = aprBtn('▲', 'ghost', () => { aprMoveUnidade(ap, ui, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = ui === 0;
-          const dn = aprBtn('▼', 'ghost', () => { aprMoveUnidade(ap, ui, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = ui === unidades.length - 1;
+          const up = fxEl(aprBtn('', 'ghost', () => { aprMoveUnidade(ap, ui, -1); aprRender(); }, TX('vid.proj.itemUp')), 'chevU'); up.disabled = ui === 0;
+          const dn = fxEl(aprBtn('', 'ghost', () => { aprMoveUnidade(ap, ui, 1); aprRender(); }, TX('vid.proj.itemDown')), 'chevD'); dn.disabled = ui === unidades.length - 1;
           gh.appendChild(up); gh.appendChild(dn);
-          gh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = [].concat(...u.blocos.map(b => b.items)).find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')));
-          gh.appendChild(aprBtn('✕', 'ghost danger', async () => {
+          gh.appendChild(fxEl(aprBtn('', 'ghost', () => { const p0 = [].concat(...u.blocos.map(b => b.items)).find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')), 'play'));
+          gh.appendChild(fxEl(aprBtn('', 'ghost danger', async () => {
             const q = TX('vid.apr.delGrpQ', 'Remove "{n}" and its playlists from the presentation? Nothing is deleted from the projects.').replace('{n}', g.name);
             if (!(await askConfirm(TX('vid.apr.delGrp', 'Remove folder'), q, TX('vid.delete', 'Delete')))) return;
             aprTiraGrupo(ap, g.id); aprRender();
-          }, TX('vid.apr.delGrp', 'Remove folder')));
+          }, TX('vid.apr.delGrp', 'Remove folder')), 'trash'));
           gh.addEventListener('click', (e) => { if (!e.target.closest('button,input')) tog(); });
           corpo.appendChild(gh);
           if (g.fechado) return;
@@ -7152,7 +7224,7 @@ function aprRenderBloco(ap, b, alvo, num, u){
   if (f){
     const fh = aprEl('div', 'aprfold' + (plFoldAberta(f) ? ' open' : ''));
     const tog = () => { plFoldToggle(ap, f); aprRender(); };
-    const fc = aprEl('button', 'plcar', '▸'); fc.addEventListener('click', (e) => { e.stopPropagation(); tog(); });
+    const fc = fxEl(aprEl('button', 'plcar'), 'chevR'); fc.addEventListener('click', (e) => { e.stopPropagation(); tog(); });
     fh.appendChild(fc);
     const fn = aprEl('input'); fn.value = f.name; fn.maxLength = 60;
     fn.addEventListener('click', (e) => e.stopPropagation());
@@ -7161,32 +7233,32 @@ function aprRenderBloco(ap, b, alvo, num, u){
     fh.appendChild(aprEl('span', 'er', b.items.filter(x => !x.falta).length + ' ' + TX('vid.f.clips', 'clips')));
     if (ligado){
       const nf = aprNomeFonte(f.fonte);
-      const lk = aprEl('span', 'aprlink' + (nf ? '' : ' off'), nf ? '🔗' : '⚠');
+      const lk = fxEl(aprEl('span', 'aprlink' + (nf ? '' : ' off')), nf ? 'link' : 'alert');
       lk.title = nf ? TX('vid.apr.linked', 'synced with') + ' ' + nf : TX('vid.apr.srcGone', 'source playlist not found');
       fh.appendChild(lk);
       /* playlist de um jogo so, fora da pasta daquele jogo: o jogo aparece aqui */
       const jg = aprJogoDaFonte(f.fonte);
-      if (jg && !(u && u.grupo && u.grupo.name === jg)) fh.appendChild(aprEl('span', 'aprjogo', '🗂 ' + jg));
+      if (jg && !(u && u.grupo && u.grupo.name === jg)) fh.appendChild(aprEl('span', 'aprjogo', jg));
     }
     const sp = aprEl('span'); sp.style.flex = '1'; fh.appendChild(sp);
     const irmaos = u ? u.blocos.map(x => x.folder).filter(Boolean) : [];
     const k = irmaos.indexOf(f);
     if (u && !u.grupo){
       /* bloco solto (criado a mao): sobe e desce entre as pastas grandes */
-      const up = aprBtn('▲', 'ghost', () => { aprMoveUnidade(ap, u._ui, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = u._ui <= 0;
-      const dn = aprBtn('▼', 'ghost', () => { aprMoveUnidade(ap, u._ui, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = u._ui >= u._n - 1;
+      const up = fxEl(aprBtn('', 'ghost', () => { aprMoveUnidade(ap, u._ui, -1); aprRender(); }, TX('vid.proj.itemUp')), 'chevU'); up.disabled = u._ui <= 0;
+      const dn = fxEl(aprBtn('', 'ghost', () => { aprMoveUnidade(ap, u._ui, 1); aprRender(); }, TX('vid.proj.itemDown')), 'chevD'); dn.disabled = u._ui >= u._n - 1;
       fh.appendChild(up); fh.appendChild(dn);
     } else if (irmaos.length > 1){
-      const up = aprBtn('▲', 'ghost', () => { aprMoveBloco(ap, f, -1); aprRender(); }, TX('vid.proj.itemUp')); up.disabled = k <= 0;
-      const dn = aprBtn('▼', 'ghost', () => { aprMoveBloco(ap, f, 1); aprRender(); }, TX('vid.proj.itemDown')); dn.disabled = k >= irmaos.length - 1;
+      const up = fxEl(aprBtn('', 'ghost', () => { aprMoveBloco(ap, f, -1); aprRender(); }, TX('vid.proj.itemUp')), 'chevU'); up.disabled = k <= 0;
+      const dn = fxEl(aprBtn('', 'ghost', () => { aprMoveBloco(ap, f, 1); aprRender(); }, TX('vid.proj.itemDown')), 'chevD'); dn.disabled = k >= irmaos.length - 1;
       fh.appendChild(up); fh.appendChild(dn);
     }
-    fh.appendChild(aprBtn('▶', 'ghost', () => { const p0 = b.items.find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')));
-    fh.appendChild(aprBtn('✕', 'ghost danger', async () => {
+    fh.appendChild(fxEl(aprBtn('', 'ghost', () => { const p0 = b.items.find(x => !x.falta); if (p0) aprPlay(ap, p0.id); }, TX('vid.apr.playFrom', 'Present from here')), 'play'));
+    fh.appendChild(fxEl(aprBtn('', 'ghost danger', async () => {
       const q = TX('vid.apr.delBlockQ2', 'Remove "{n}" from the presentation? Nothing is deleted from the project.').replace('{n}', f.name);
       if (!(await askConfirm(TX('vid.apr.delBlock', 'Remove block'), q, TX('vid.delete', 'Delete')))) return;
       aprTiraBloco(ap, f.id, true); aprRender();
-    }, TX('vid.apr.delBlock', 'Remove block')));
+    }, TX('vid.apr.delBlock', 'Remove block')), 'trash'));
     fh.addEventListener('click', (e) => { if (!e.target.closest('button,input')) tog(); });
     alvo.appendChild(fh);
     if (!plFoldAberta(f)) return;
@@ -7205,8 +7277,8 @@ function aprRenderBloco(ap, b, alvo, num, u){
       if (sub){
         const qtd = b.items.filter(x => (x.pasta || '') === sub).length;
         const sh = aprEl('div', 'aprsub' + (subFechada ? '' : ' open'));
-        sh.appendChild(aprEl('span', 'sc', '▸'));
-        sh.appendChild(aprEl('span', '', '📁 ' + sub));
+        sh.appendChild(fxEl(aprEl('span', 'sc'), 'chevR'));
+        sh.appendChild(fxEl(aprEl('span', ''), 'folder', sub));
         sh.appendChild(aprEl('span', 'er', qtd + ''));
         sh.addEventListener('click', () => { aprSubToggle(ap, f, sub); aprRender(); });
         alvo.appendChild(sh);
@@ -7224,12 +7296,12 @@ function aprRenderBloco(ap, b, alvo, num, u){
     /* lance da playlist ligada segue a ordem dela; os demais voce move */
     if (!daOrigem){
       const flat = plFlat(ap); const pos = flat.indexOf(it);
-      const up = aprBtn('▲', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }); up.disabled = pos <= 0;
-      const dn = aprBtn('▼', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }); dn.disabled = pos >= flat.length - 1;
+      const up = fxEl(aprBtn('', 'ghost', () => { projItemNudge(ap, it.id, -1); aprPersist(); aprRender(); }, TX('vid.proj.itemUp')), 'chevU'); up.disabled = pos <= 0;
+      const dn = fxEl(aprBtn('', 'ghost', () => { projItemNudge(ap, it.id, 1); aprPersist(); aprRender(); }, TX('vid.proj.itemDown')), 'chevD'); dn.disabled = pos >= flat.length - 1;
       bx.appendChild(up); bx.appendChild(dn);
     }
-    if (!it.falta) bx.appendChild(aprBtn('▶', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')));
-    bx.appendChild(aprBtn('✕', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')));
+    if (!it.falta) bx.appendChild(fxEl(aprBtn('', 'ghost', () => aprPlay(ap, it.id), TX('vid.apr.playFromClip', 'Present from this clip')), 'play'));
+    bx.appendChild(fxEl(aprBtn('', 'ghost danger', () => { aprTiraItem(ap, it.id); aprRender(); }, TX('vid.apr.remove', 'Remove from the presentation')), 'x'));
     row.appendChild(bx);
     row.addEventListener('contextmenu', (e) => { e.preventDefault(); aprRowMenu(e.clientX, e.clientY, ap, it); });
     row.addEventListener('dblclick', () => { if (!it.falta) aprPlay(ap, it.id); });
@@ -7241,7 +7313,7 @@ function aprRowMenu(x, y, ap, it){
   const h = aprEl('div', 'ctxhead', (it.name || it.tagName || '') + (it.origem ? ' · ' + it.origem : '')); menu.appendChild(h);
   if (!it.falta) menu.appendChild(ctxItem(TX('vid.apr.playFromClip', 'Present from this clip'), () => aprPlay(ap, it.id)));
   const subs = [];
-  ap.folders.forEach(f => { if (f.id !== it.folderId) subs.push(ctxItem('📁 ' + f.name, () => { plItemToFolder(ap, it.id, f.id); aprPersist(); aprRender(); })); });
+  ap.folders.forEach(f => { if (f.id !== it.folderId) subs.push(ctxItem(f.name, () => { plItemToFolder(ap, it.id, f.id); aprPersist(); aprRender(); })); });
   if (it.folderId) subs.push(ctxItem(TX('vid.fold.none', 'No folder'), () => { plItemToFolder(ap, it.id, ''); aprPersist(); aprRender(); }));
   if (subs.length) menu.appendChild(ctxItem(TX('vid.cine.moveTo', 'Move to'), null, { sub: subs }));
   if (aprTemAjuste(it)) menu.appendChild(ctxItem(TX('vid.apr.restore', 'Back to the original (undo adjustments made here)'), () => { aprRestauraItem(ap, it); aprRender(); }));
@@ -7268,7 +7340,7 @@ function aprPickAbre(ap){
   /* ── projetos: projeto → pasta grande (jogo) → playlist → pastas da playlist → lances ── */
   const projs = projList().filter(p => projPlaylistsOf(p).some(pl => (pl.items || []).length));
   if (projs.length){
-    box.appendChild(aprEl('div', 'aprpsec', '🗂 ' + TX('vid.apr.fromProjects', 'Project playlists')));
+    box.appendChild(aprEl('div', 'aprpsec', TX('vid.apr.fromProjects', 'Project playlists')));
     projs.forEach(p => {
       const dp = aprEl('details', 'aprpgrp'); dp.appendChild(aprEl('summary', '', p.name));
       const pls = projPlaylistsOf(p).filter(pl => (pl.items || []).length);
@@ -7285,13 +7357,13 @@ function aprPickAbre(ap){
         cg.title = TX('vid.apr.allOfFolder', 'Tick every playlist in this folder');
         cg.addEventListener('click', (e) => e.stopPropagation());
         sm.appendChild(cg);
-        sm.appendChild(aprEl('b', '', '🗂 ' + g.nome));
+        sm.appendChild(fxEl(aprEl('b', ''), 'folder', g.nome));
         const nl = g.pls.reduce((a, pl) => a + (pl.items || []).length, 0);
         sm.appendChild(aprEl('span', 'er', g.pls.length + ' ' + TX('vid.apr.lists', 'playlist(s)') + ' · ' + nl + ' ' + TX('vid.f.clips', 'clips')));
         dg.appendChild(sm);
         const vids = aprVideosDe([].concat(...g.pls.map(pl => (pl.items || []).map(it => it.srcName))));
-        if (g.varios) dg.appendChild(aprEl('div', 'aprpvid', '🗂 ' + aprJogosTxt(g.varios)));
-        if (vids.length) dg.appendChild(aprEl('div', 'aprpvid', '🎬 ' + vids.join(' · ')));
+        if (g.varios) dg.appendChild(aprEl('div', 'aprpvid', aprJogosTxt(g.varios)));
+        if (vids.length) dg.appendChild(fxEl(aprEl('div', 'aprpvid'), 'film', vids.join(' · ')));
         g.pls.forEach(pl => {
           const its = plFlat(pl).filter(it => it && it.srcKey);
           dg.appendChild(aprPickPlaylist(pl.name, { k: 'pp', projId: p.id, plId: pl.id }, pl.name, g.nome,
@@ -7313,7 +7385,7 @@ function aprPickAbre(ap){
   if (state.file && chaves.indexOf(sessionKey()) < 0) chaves.unshift(sessionKey());
   const vids = chaves.map(k => ({ k: k, s: aprSessao(k) })).filter(x => x.s && (x.s.namedPlaylists || []).some(pl => (pl.evIds || []).length));
   if (vids.length){
-    box.appendChild(aprEl('div', 'aprpsec', '🎞 ' + TX('vid.apr.fromVideos', 'Playlists inside each video')));
+    box.appendChild(aprEl('div', 'aprpsec', TX('vid.apr.fromVideos', 'Playlists inside each video')));
     vids.forEach(({ k, s }) => {
       const dv = aprEl('details', 'aprpgrp'); dv.appendChild(aprEl('summary', '', aprNomeVideo(k, s)));
       (s.namedPlaylists || []).filter(pl => (pl.evIds || []).length).forEach(pl => {
@@ -7343,7 +7415,7 @@ function aprPickPlaylist(nome, fonte, bloco, grupo, lances){
   lances.forEach(l => {
     if ((l.pasta || '') !== _pa){
       _pa = l.pasta || '';
-      if (l.pasta){ alvo = aprEl('details', 'aprppasta'); alvo.appendChild(aprEl('summary', '', '📁 ' + l.pasta + ' (' + lances.filter(x => x.pasta === l.pasta).length + ')')); d.appendChild(alvo); }
+      if (l.pasta){ alvo = aprEl('details', 'aprppasta'); alvo.appendChild(fxEl(aprEl('summary', ''), 'folder', l.pasta + ' (' + lances.filter(x => x.pasta === l.pasta).length + ')')); d.appendChild(alvo); }
       else alvo = d;
     }
     const r = aprEl('label', 'aprpit');
@@ -7381,7 +7453,7 @@ async function aprPickOk(){
 function aprMenuDestino(x, y, titulo, acao){
   const menu = $('ctxMenu'); menu.innerHTML = '';
   menu.appendChild(aprEl('div', 'ctxhead', titulo));
-  aprList().forEach(ap => menu.appendChild(ctxItem('▶ ' + ap.name, () => acao(ap))));
+  aprList().forEach(ap => menu.appendChild(ctxItem(ap.name, () => acao(ap))));
   menu.appendChild(ctxItem(TX('vid.apr.newDots', 'New presentation…'), async () => {
     const n = await askText(TX('vid.apr.newName', 'Name of the presentation'), TX('vid.apr.session', 'GK session') + ' ' + new Date().toLocaleDateString());
     if (!n || !n.trim()) return;
@@ -7528,7 +7600,7 @@ function reuPinta(){
     cj.addEventListener('click', (e) => e.stopPropagation());
     cj.addEventListener('change', () => { j.itens.forEach(x => { x.on = cj.checked; }); reuPintaLista(); });
     sm.appendChild(cj);
-    const b = document.createElement('b'); b.textContent = '🗂 ' + j.nome; sm.appendChild(b);
+    const b = document.createElement('b'); fxEl(b, 'folder', j.nome); sm.appendChild(b);
     const er = document.createElement('span'); er.className = 'er';
     er.textContent = (j.proj ? j.proj.name + ' · ' : '') + j.itens.filter(x => x.on).length + '/' + j.itens.length;
     sm.appendChild(er);
