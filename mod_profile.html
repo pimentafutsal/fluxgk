@@ -2,6 +2,7 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="utf-8">
+<script src="fluxgk-audit.js"></script>  <!-- historico de alteracoes + logs (so observa) -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GK Profile · FluxGK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -954,6 +955,7 @@ const T = {
     aval: { pt: 'Avaliação', en: 'Assessment', ru: 'Оценка' },
     plano: { pt: 'Plano de desenvolvimento', en: 'Development plan', ru: 'План развития' },
     diario: { pt: 'Diário da temporada', en: 'Season log', ru: 'Дневник сезона' },
+    feedback: { pt: 'Feedback (IA)', en: 'Feedback (AI)', ru: 'Отзывы (ИИ)' },
     evol: { pt: 'Evolução', en: 'Progress', ru: 'Динамика' }
   },
   // Dados gerais
@@ -1019,6 +1021,19 @@ const T = {
   rpSecQual: { pt: 'Comentário qualitativo', en: 'Qualitative comment', ru: 'Качественный комментарий' },
   rpSecPlano: { pt: 'Plano de desenvolvimento', en: 'Development plan', ru: 'План развития' },
   rpSecDiario: { pt: 'Diário', en: 'Log', ru: 'Дневник' },
+  rpSecFeedback: { pt: 'Feedback pós-treino', en: 'Post-training feedback', ru: 'Обратная связь после тренировки' },
+  fbTitle: { pt: 'Feedback pós-treino', en: 'Post-training feedback', ru: 'Обратная связь после тренировки' },
+  fbIntro: { pt: 'O que se repete nos feedbacks em áudio: o agente agrupa a cada feedback publicado. Para editar, use o módulo Feedback; os registros de cada dia estão no Diário da temporada.', en: 'What repeats in the audio feedback: the agent groups it after every published feedback. Edit it in the Feedback module; each day’s entries are in the Season log.', ru: 'Что повторяется в аудио-отзывах: агент группирует после каждой публикации. Редактируйте в модуле Feedback; записи по дням — в дневнике сезона.' },
+  fbMelhorar: { pt: 'Pontos a melhorar', en: 'Points to improve', ru: 'Что улучшить' },
+  fbEvol: { pt: 'Em evolução', en: 'Improving', ru: 'В развитии' },
+  fbVirou: { pt: 'virou em', en: 'turned on', ru: 'с' },
+  fbConteudos: { pt: 'Conteúdos a trabalhar', en: 'To work on', ru: 'Над чем работать' },
+  fbVazio: { pt: 'Ainda não há padrões: eles aparecem quando um assunto se repete em 2 feedbacks ou mais.', en: 'No patterns yet: they appear when a topic repeats in 2 or more feedbacks.', ru: 'Пока нет повторяющихся тем.' },
+  fbVezes: { pt: 'vezes', en: 'times', ru: 'раз' },
+  fbNoPeriodo: { pt: 'no período', en: 'in the period', ru: 'за период' },
+  fbUltima: { pt: 'última', en: 'last', ru: 'последний' },
+  fbMudaram: { pt: 'Passaram para "em evolução" no período', en: 'Moved to "improving" in the period', ru: 'Перешли в «в развитии» за период' },
+  fbGrupo: { pt: 'grupo', en: 'group', ru: 'группа' },
   rpSecAll: { pt: 'Marcar todos', en: 'Select all', ru: 'Выбрать всё' },
   moveUp: { pt: 'Subir', en: 'Move up', ru: 'Вверх' },
   moveDown: { pt: 'Descer', en: 'Move down', ru: 'Вниз' },
@@ -2157,6 +2172,15 @@ Object.assign(T, {
       return write(() => libRef('gkCriteria').set(model));
     },
 
+    /* ---------- feedback pós-treino (módulo Feedback; aqui só leitura) ---------- */
+    onFeedback(cb) {
+      ['padroes', 'pendencias'].forEach(k => {
+        const ref = db.ref(base + '/feedback/' + k);
+        const h = ref.on('value', s => cb(k, s.val() || {}));
+        listeners.push(() => ref.off('value', h));
+      });
+    },
+
     detach() { listeners.splice(0).forEach(off => { try { off(); } catch (e) { } }); }
   };
 
@@ -2182,7 +2206,7 @@ Object.assign(T, {
   'use strict';
 
   /* espelho local mantido pelos listeners do Firebase */
-  const cache = { roster: [], profiles: {}, assessments: {}, logs: {}, model: null };
+  const cache = { roster: [], profiles: {}, assessments: {}, logs: {}, model: null, fb: { padroes: {}, pendencias: {} } };
   let onChange = () => { };
 
   const PROFILE_FIELDS = [
@@ -2301,6 +2325,20 @@ Object.assign(T, {
       if (cache.assessments[gk]) delete cache.assessments[gk][date];
       await FDB.deleteAssessment(gk, date);
       return true;
+    },
+
+    /* ---------- feedback pós-treino ---------- */
+    /* { padroes: {gkId: {resumo, temas[]}}, pend: [{texto, goleiros[], vezes, feito, ...}] } — vetores normalizados */
+    feedback() {
+      const vet = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === 'object' ? Object.values(v).filter(x => x != null) : []);
+      const pad = {};
+      Object.keys(cache.fb.padroes || {}).forEach(k => {
+        const p = cache.fb.padroes[k] || {};
+        pad[k] = { resumo: p.resumo || '', atualizadoEm: p.atualizadoEm || 0,
+          temas: vet(p.temas).map(t => Object.assign({}, t, { datas: vet(t.datas), evidencias: vet(t.evidencias) })) };
+      });
+      const pend = Object.keys(cache.fb.pendencias || {}).map(id => Object.assign({ id }, cache.fb.pendencias[id], { goleiros: vet((cache.fb.pendencias[id] || {}).goleiros) }));
+      return { padroes: pad, pend };
     },
 
     /* ---------- diário ---------- */
@@ -3154,7 +3192,7 @@ Object.assign(T, {
     });
     if (o.crestImg) d.crestImg = o.crestImg;
     /* blocos escolhidos na aba Relatórios; sem escolha, sai tudo */
-    const S = Object.assign({ ident: 1, resumo: 1, evol: 1, comp: 1, fw: 1, qual: 1, plano: 1, diario: 1 }, o.secs || {});
+    const S = Object.assign({ ident: 1, resumo: 1, evol: 1, comp: 1, fw: 1, qual: 1, plano: 1, feedback: 1, diario: 1 }, o.secs || {});
     d.addPage();
 
     // identificação
@@ -3309,6 +3347,37 @@ Object.assign(T, {
       if (p.reviewDate) {
         d.space(6);
         d.text(C.t('reviewDate') + ': ' + C.fmtDate(p.reviewDate), { size: 8.6, bold: true, color: INK.muted });
+      }
+    }
+
+    // feedback pós-treino: o que se repete no período (vem do módulo Feedback)
+    const FB = o.feedback && o.feedback.padroes ? o.feedback : null;
+    const padG = FB && FB.padroes[gk.id];
+    if (S.feedback && padG) {
+      const noPer = x => (x.datas || []).filter(dd => inRange(dd, o.range)).length;
+      const temas = (padG.temas || []).filter(x => noPer(x) > 0 || (x.virouEm && inRange(x.virouEm, o.range)));
+      const pend = (FB.pend || []).filter(pp => !pp.feito && (pp.goleiros.indexOf(gk.id) >= 0 || !pp.goleiros.length))
+        .sort((a, b) => (b.vezes || 1) - (a.vezes || 1));
+      if (temas.length || pend.length) {
+        d.footer(d.footNote); d.addPage();
+        d.h1(C.t('fbTitle'));
+        d.text(periodLabel(C, o.range), { size: 8.4, color: INK.muted });
+        if (padG.resumo) { d.space(4); d.text(padG.resumo, { size: 9.4 }); }
+        const linha = x => {
+          const n = noPer(x);
+          return '•  ' + x.tema + '  ·  ' + n + ' ' + C.t('fbVezes') + ' ' + C.t('fbNoPeriodo')
+            + (x.vezes && x.vezes !== n ? ' (' + x.vezes + ')' : '')
+            + (x.ultima ? '  ·  ' + C.t('fbUltima') + ' ' + C.fmtDate(x.ultima) : '');
+        };
+        const melh = temas.filter(x => x.tipo === 'melhorar'), evo = temas.filter(x => x.tipo === 'evolucao');
+        if (melh.length) { d.h2(C.t('fbMelhorar')); melh.forEach(x => d.text(linha(x), { size: 9 })); }
+        if (evo.length) { d.h2(C.t('fbEvol')); evo.forEach(x => d.text(linha(x) + (x.virouEm ? '  ·  ' + C.t('fbVirou') + ' ' + C.fmtDate(x.virouEm) : ''), { size: 9 })); }
+        const viraram = evo.filter(x => x.virouEm && inRange(x.virouEm, o.range));
+        if (viraram.length) { d.h2(C.t('fbMudaram')); viraram.forEach(x => d.text('•  ' + x.tema + '  ·  ' + C.fmtDate(x.virouEm), { size: 9 })); }
+        if (pend.length) {
+          d.h2(C.t('fbConteudos'));
+          pend.forEach(pp => d.text('•  ' + pp.texto + '  (' + (pp.vezes || 1) + 'x' + (pp.goleiros.length ? '' : ' · ' + C.t('fbGrupo')) + ')', { size: 9 }));
+        }
       }
     }
 
@@ -3830,7 +3899,7 @@ Object.assign(T, {
       who: null, langs: null,
       ask: true,
       /* blocos do relatorio individual que o treinador quer exportar */
-      secs: { ident: true, resumo: true, evol: true, comp: true, fw: true, qual: true, plano: true, diario: true },
+      secs: { ident: true, resumo: true, evol: true, comp: true, fw: true, qual: true, plano: true, feedback: true, diario: true },
       individualFiles: true, consolidated: true,
       cover: true, watermark: true,
       busy: false, status: '', results: null
@@ -4185,11 +4254,11 @@ Object.assign(T, {
   /* =============================================================
      TELA: FICHA DO GOLEIRO
      ============================================================= */
-  const GK_TABS = ['geral', 'aval', 'plano', 'diario', 'evol'];
+  const GK_TABS = ['geral', 'aval', 'plano', 'diario', 'feedback', 'evol'];
 
   function viewGk() {
     if (!App.cur) return `<div class="empty">${esc(t('loading'))}</div>`;
-    const body = { geral: gkGeral, aval: gkAval, plano: gkPlano, diario: gkDiario, evol: gkEvol }[App.tab]();
+    const body = { geral: gkGeral, aval: gkAval, plano: gkPlano, diario: gkDiario, feedback: gkFeedback, evol: gkEvol }[App.tab]();
     return `
     <div class="page-head">
       <button class="btn ghost no-print" id="backBtn">← ${esc(t('back'))}</button>
@@ -4360,6 +4429,30 @@ Object.assign(T, {
     { v: 'warn', l: t('statusWarn'), c: 'var(--warn)', icon: '■' },
     { v: 'crit', l: t('statusCrit'), c: 'var(--crit)', icon: '▼' }
   ];
+
+  /* o que se repete nos feedbacks pós-treino deste goleiro */
+  function gkFeedback() {
+    const fb = App.db.feedback ? App.db.feedback() : { padroes: {}, pend: [] };
+    const pad = fb.padroes[App.cur.id] || { temas: [] };
+    const melh = pad.temas.filter(x => x.tipo === 'melhorar'), evo = pad.temas.filter(x => x.tipo === 'evolucao');
+    const pend = fb.pend.filter(p => !p.feito && (p.goleiros.indexOf(App.cur.id) >= 0 || !p.goleiros.length))
+      .sort((a, b) => (b.vezes || 1) - (a.vezes || 1));
+    const fd = d => { if (!d) return ''; const q = d.split('-'); return q[2] + '/' + q[1]; };
+    const tema = x => `<div class="entry" style="padding:10px 12px;margin-bottom:8px">
+        <b>${esc(x.tema)}</b> <span class="hint">${x.vezes || 0} ${esc(t('fbVezes'))} · ${esc(fd(x.primeira))}${x.ultima && x.ultima !== x.primeira ? ' → ' + esc(fd(x.ultima)) : ''}</span>
+        ${x.virouEm ? `<span class="hint" style="color:var(--good)"> · ${esc(t('fbVirou'))} ${esc(fd(x.virouEm))}</span>` : ''}
+        ${(x.evidencias || []).slice(-2).map(e => `<div class="hint" style="margin-top:4px">${esc(fd(e.data))} · ${esc(e.texto)}${e.citacao ? ' — “' + esc(e.citacao) + '”' : ''}</div>`).join('')}
+      </div>`;
+    return `<div class="card">
+      <div class="hint" style="margin-bottom:12px">${esc(t('fbIntro'))}</div>
+      ${pad.resumo ? `<p style="margin:0 0 14px">${esc(pad.resumo)}</p>` : ''}
+      ${pad.temas.length ? `<div class="grid g2">
+        <div><h3 style="margin:0 0 8px;color:var(--crit)">● ${esc(t('fbMelhorar'))}</h3>${melh.map(tema).join('') || '<div class="hint">—</div>'}</div>
+        <div><h3 style="margin:0 0 8px;color:var(--good)">● ${esc(t('fbEvol'))}</h3>${evo.map(tema).join('') || '<div class="hint">—</div>'}</div>
+      </div>` : `<div class="empty">${esc(t('fbVazio'))}</div>`}
+      ${pend.length ? `<h3 style="margin:18px 0 8px">${esc(t('fbConteudos'))}</h3>${pend.map(p => `<div class="hint" style="padding:4px 0">• ${esc(p.texto)} (${p.vezes || 1}x${p.goleiros.length ? '' : ' · ' + esc(t('fbGrupo'))})</div>`).join('')}` : ''}
+    </div>`;
+  }
 
   function gkDiario() {
     const rows = App.curLogs.map(e => {
@@ -5002,7 +5095,7 @@ Object.assign(T, {
   const RP_SECS = [
     ['ident', 'rpSecIdent'], ['resumo', 'rpSecResumo'], ['evol', 'rpSecEvol'],
     ['comp', 'rpSecComp'], ['fw', 'rpSecFw'], ['qual', 'rpSecQual'],
-    ['plano', 'rpSecPlano'], ['diario', 'rpSecDiario']
+    ['plano', 'rpSecPlano'], ['feedback', 'rpSecFeedback'], ['diario', 'rpSecDiario']
   ];
   function viewReports() {
     const r = App.rp;
@@ -5270,6 +5363,7 @@ Object.assign(T, {
           goalkeepers: sel,
           assessments: App.allAssess,
           logs: logsAll,
+          feedback: App.db.feedback ? App.db.feedback() : null,
           range: rpRange(),
           types: r.types,
           secs: r.secs,
@@ -5355,6 +5449,7 @@ Object.assign(T, {
         goalkeepers: [App.cur],
         assessments: App.allAssess,
         logs: logs,
+        feedback: App.db.feedback ? App.db.feedback() : null,
         range: rpRange(),
         types: { individual: true, onePager: false, squad: false, period: false },
         secs: r.secs,
@@ -5893,6 +5988,7 @@ Object.assign(T, {
     FDB.onProfiles(p => { cache.profiles = p; refresh(); });
     FDB.onAssessments(a => { cache.assessments = a; refresh(); });
     FDB.onLogs(l => { cache.logs = l; refresh(); });
+    FDB.onFeedback((k, v) => { cache.fb[k] = v; if (App.view === 'gk' && App.tab === 'feedback') render(); });
     FDB.onCriteria(m2 => {
       cache.model = m2;
       App.model = ModelKit.normalize(m2 || ModelKit.factory());

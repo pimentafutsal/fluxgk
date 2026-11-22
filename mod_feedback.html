@@ -68,6 +68,19 @@ textarea{width:100%;resize:vertical}
 .chips input{margin:0 4px 0 0}
 .trans{white-space:pre-wrap;font-size:13px;line-height:1.55;background:#fafaf8;border:1px solid var(--line);border-radius:8px;padding:10px}
 .rep h4{margin:14px 0 6px;font-size:14px}
+.gkcard{padding:0}
+.gkcard-h{display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;flex-wrap:wrap}
+.gkcard-h .car{font-size:11px;color:var(--muted);transition:transform .15s}
+.gkcard.open .gkcard-h .car{transform:rotate(90deg)}
+.gkcard>*:not(.gkcard-h){margin-left:16px;margin-right:16px}
+.gkcard>.secao:last-child,.gkcard>.cols2:last-child{margin-bottom:14px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.cols2{grid-template-columns:1fr}}
+.tema{border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-bottom:6px;background:#fcfcfa}
+.tema>summary{cursor:pointer;font-size:13px}
+.secao{border-top:1px solid var(--line);padding:10px 0}
+.secao>summary{cursor:pointer;font-weight:600;font-size:13px}
+.contgk>summary{cursor:pointer;font-weight:700;font-size:14px;padding:4px 0}
 .rep ul{margin:4px 0 8px 18px;padding:0}
 @media print{header,nav.tabs,.no-print{display:none!important}body{background:#fff}main{max-width:none;padding:0}section.tab{display:none!important}#t-relatorio{display:block!important}.card{border:none;padding:0}}
 </style>
@@ -82,6 +95,7 @@ textarea{width:100%;resize:vertical}
 <nav class="tabs" id="tabs"></nav>
 <main>
   <section class="tab" id="t-gravar"></section>
+  <section class="tab" id="t-goleiros"></section>
   <section class="tab" id="t-revisar"></section>
   <section class="tab" id="t-historico"></section>
   <section class="tab" id="t-conteudos"></section>
@@ -111,6 +125,9 @@ textarea{width:100%;resize:vertical}
 'use strict';
 const D = {
   pt: {
+    tGoleiros:'👤 Goleiros', virou:'virou em', paraEvol:'mover para Em evolução', paraMelhorar:'mover para A melhorar', semPadroes:'Os padrões aparecem quando um assunto se repete em 2 feedbacks ou mais.',
+    atualizandoPad:'atualizando…', atualizarPad:'Atualizar padrões', aMelhorar:'Pontos a melhorar', emEvolucao:'Em evolução', diario:'Diário', gkHint:'Cada goleiro com o que se repete: pontos a melhorar e em evolução (o agente atualiza a cada feedback publicado), os conteúdos e o diário.',
+    atualizarTodos:'Atualizar todos', renomearQ:'Novo nome do tema (fica travado: o agente não muda mais):', removerQ:'Tirar este tema? O agente não vai recriá-lo.', semGrupo:'Grupo',
     title:'Feedback pós-treino', tGravar:'🎙 Gravar', tRevisar:'📝 Revisar', tHist:'📚 Histórico', tCont:'✅ Conteúdos', tRel:'📊 Relatório', tAj:'⚙ Ajustes',
     gravarHint:'Toque para gravar. Fale livremente sobre cada goleiro, o grupo e o que precisa ser trabalhado.', parar:'Toque para parar e enviar',
     dataTreino:'Data do treino', ouArq:'ou enviar um áudio (WhatsApp, gravador…)', enviando:'Enviando', transcrevendo:'Transcrevendo', organizando:'Organizando', pronto:'Pronto',
@@ -122,7 +139,7 @@ const D = {
     tecnica:'técnica', tatica:'tática', fisica:'física', psicologica:'psicológica', outra:'outra',
     good:'▲ bom', warn:'■ atenção', crit:'▼ preocupação', citFora:'⚠ este trecho não aparece igual na transcrição — confira', reforco:'↻ reforço',
     novo:'— novo —', reforcoDe:'reforço de', restr:'restrição', tarefa:'tarefa', ambiente:'ambiente', individuo:'indivíduo', semRestr:'—',
-    stRevisar:'para revisar', stPublicado:'publicado', stErro:'erro', stTranscrevendo:'transcrevendo', stAnalisando:'organizando',
+    stRevisar:'para revisar',stInterrompido:'interrompido', stPublicado:'publicado', stErro:'erro', stTranscrevendo:'transcrevendo', stAnalisando:'organizando',
     histVazio:'Nenhum feedback ainda.', abertos:'Em aberto', feitos:'Feitos', marcarFeito:'✓ feito', reabrir:'reabrir', vezes:'vezes', grupoTodo:'grupo todo',
     contVazio:'Nenhum conteúdo em aberto.', relPeriodo:'Período', d7:'Últimos 7 dias', d30:'Últimos 30 dias', dTemp:'Temporada', relGk:'Goleiro', todos:'Todos',
     gerar:'✨ Resumo da IA', imprimir:'🖨 Imprimir / PDF', relVazio:'Nenhum feedback publicado no período.', temas:'Temas que voltaram', atencao:'Pontos de atenção', aTrab:'A trabalhar', pend:'Pendentes no período',
@@ -133,6 +150,9 @@ const D = {
     tentar:'Tentar de novo', enviarArq:'Enviar arquivo', duracao:'duração', itens:'itens', repetidos:'Já dito em dias anteriores', ultimo:'último', desde:'desde'
   },
   en: {
+    tGoleiros:'👤 Goalkeepers', virou:'turned on', paraEvol:'move to Improving', paraMelhorar:'move to To improve', semPadroes:'Patterns appear when a topic repeats in 2 or more feedbacks.',
+    atualizandoPad:'updating…', atualizarPad:'Update patterns', aMelhorar:'To improve', emEvolucao:'Improving', diario:'Log', gkHint:'Each goalkeeper with what repeats: points to improve and improving (the agent updates after every published feedback), the contents and the log.',
+    atualizarTodos:'Update all', renomearQ:'New theme name (it gets locked: the agent will not change it):', removerQ:'Remove this theme? The agent will not recreate it.', semGrupo:'Group',
     title:'Post-training feedback', tGravar:'🎙 Record', tRevisar:'📝 Review', tHist:'📚 History', tCont:'✅ To work on', tRel:'📊 Report', tAj:'⚙ Settings',
     gravarHint:'Tap to record. Talk freely about each goalkeeper, the group and what needs work.', parar:'Tap to stop and send',
     dataTreino:'Training date', ouArq:'or send an audio file (WhatsApp, recorder…)', enviando:'Sending', transcrevendo:'Transcribing', organizando:'Organizing', pronto:'Done',
@@ -144,7 +164,7 @@ const D = {
     tecnica:'technical', tatica:'tactical', fisica:'physical', psicologica:'psychological', outra:'other',
     good:'▲ good', warn:'■ attention', crit:'▼ concern', citFora:'⚠ this excerpt is not literally in the transcript — check it', reforco:'↻ repeated',
     novo:'— new —', reforcoDe:'repeats', restr:'constraint', tarefa:'task', ambiente:'environment', individuo:'individual', semRestr:'—',
-    stRevisar:'to review', stPublicado:'published', stErro:'error', stTranscrevendo:'transcribing', stAnalisando:'organizing',
+    stRevisar:'to review',stInterrompido:'interrupted', stPublicado:'published', stErro:'error', stTranscrevendo:'transcribing', stAnalisando:'organizing',
     histVazio:'No feedback yet.', abertos:'Open', feitos:'Done', marcarFeito:'✓ done', reabrir:'reopen', vezes:'times', grupoTodo:'whole group',
     contVazio:'Nothing open.', relPeriodo:'Period', d7:'Last 7 days', d30:'Last 30 days', dTemp:'Season', relGk:'Goalkeeper', todos:'All',
     gerar:'✨ AI summary', imprimir:'🖨 Print / PDF', relVazio:'No published feedback in this period.', temas:'Recurring themes', atencao:'Points of attention', aTrab:'To work on', pend:'Open in the period',
@@ -169,7 +189,7 @@ const arr = (v) => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v 
 const FB = window.FB = {
   hub: null, base: null, db: null, user: null,
   elenco: {}, cfg: { modo: 'revisar', vocab: VOCAB_PADRAO.slice(), apelidos: {}, api: '/fb' },
-  sessoes: {}, pend: {}, aba: 'gravar', aberta: null, audio: null, contFiltro: 'abertos', rel: null
+  sessoes: {}, pend: {}, padroes: {}, aba: 'gravar', aberta: null, audio: null, contFiltro: 'abertos', rel: null
 };
 function toast(msg, err){ const el = $('toast'); el.textContent = msg; el.className = 'toast on' + (err ? ' err' : ''); clearTimeout(toast._t); toast._t = setTimeout(() => { el.className = 'toast'; }, err ? 6000 : 2600); }
 const P = (rel) => FB.base + '/feedback' + (rel ? '/' + rel : '');
@@ -248,6 +268,7 @@ async function processar(blob, dataTreino, duracao){
   const id = novoId('s');
   const sessao = { id: id, data: dataTreino || hoje(), criadoEm: Date.now(), duracao: Math.round(duracao || 0), status: 'transcrevendo' };
   FB.sessoes[id] = sessao;
+  FB.rodando = FB.rodando || {}; FB.rodando[id] = true;
   passos({ em: 'enviando' });
   try {
     /* o áudio novo substitui o anterior: só o último fica guardado */
@@ -272,6 +293,7 @@ async function processar(blob, dataTreino, duracao){
     passos({ em: sessao.transcricao ? 'organizando' : 'transcrevendo', erro: true });
     toast(t('erroServ') + sessao.erro, true);
   }
+  if (FB.rodando) delete FB.rodando[id];
   render();
 }
 async function analisarSessao(sessao){
@@ -303,6 +325,7 @@ function updDesfazer(s, upd){
 }
 async function publicar(s){
   const x = s.extracao || { goleiros: [], grupo: [], conteudos: [] };
+  const logsAntes = arr((s.publicacao || {}).logs);
   const upd = {};
   updDesfazer(s, upd);
   const pub = { logs: [], novos: [], reforcos: [], em: Date.now() };
@@ -338,12 +361,15 @@ async function publicar(s){
   upd[P('sessoes/' + s.id + '/extracao')] = x;
   upd[P('sessoes/' + s.id + '/data')] = s.data;
   await ref('/').update(upd);
+  atualizarPadroes(pub.logs.concat(logsAntes));
 }
 async function descartar(s){
   if (!confirm(t('descartadoQ'))) return;
+  const logsAntes = arr((s.publicacao || {}).logs);
   const upd = {}; updDesfazer(s, upd); upd[P('sessoes/' + s.id)] = null;
   await ref('/').update(upd);
   delete FB.sessoes[s.id]; FB.aberta = null; render();
+  if (logsAntes.length) atualizarPadroes(logsAntes);
 }
 
 /* ══ GRAVAÇÃO ══ */
@@ -384,15 +410,153 @@ function arquivoEscolhido(file){
   processar(blob, ($('dataTreino') || {}).value || hoje(), 0);
 }
 
+
+
+/* ══ PADRÕES POR GOLEIRO (o que se repete) ══════════════════════
+   feedback/padroes/{playerId} = { atualizadoEm, resumo,
+     temas:[{ id, tema, tipo:'melhorar'|'evolucao', area, vezes, datas[], primeira, ultima, virouEm, evidencias[], travado }],
+     ignorados:[nomes] }
+   O agente agrupa e aponta os registros (refs); aqui contamos,
+   datamos e pegamos as citações — nada depende de o modelo contar.
+   Atualiza sozinho depois de publicar/descartar; o treinador pode
+   mover, renomear (trava) e apagar (ignora) temas.               */
+function registrosDe(pid){
+  const out = [];
+  Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.extracao).sort((a, b) => (a.data || '').localeCompare(b.data || '') || (a.criadoEm || 0) - (b.criadoEm || 0)).forEach(s => {
+    arr(s.extracao.goleiros).filter(g => g.id === pid).forEach(g => arr(g.itens).forEach(i => {
+      out.push({ data: s.data, tipo: i.tipo, texto: i.texto, citacao: i.citacao || '', sess: s.id });
+    }));
+  });
+  return out.slice(-250).map((r, n) => Object.assign(r, { n: n }));
+}
+FB.atualizandoPad = {};
+async function atualizarPadroes(ids){
+  ids = Array.from(new Set(arr(ids))).filter(id => FB.elenco[id]);
+  if (!ids.length) return;
+  const regs = {}, envio = [];
+  ids.forEach(id => {
+    regs[id] = registrosDe(id);
+    const pad = FB.padroes[id] || {};
+    envio.push({ id: id, nome: gkNome(id), registros: regs[id].map(r => ({ n: r.n, data: r.data, tipo: r.tipo, texto: r.texto })),
+      atuais: arr(pad.temas).map(t2 => ({ id: t2.id, tema: t2.tema, tipo: t2.tipo, travado: !!t2.travado })), ignorados: arr(pad.ignorados) });
+    FB.atualizandoPad[id] = true;
+  });
+  if (FB.aba === 'goleiros') renderGoleiros();
+  try {
+    const envioValido = envio.filter(g => g.registros.length);
+    const vazios = envio.filter(g => !g.registros.length);
+    const upd = {};
+    vazios.forEach(g => { upd[P('padroes/' + g.id)] = { atualizadoEm: Date.now(), resumo: '', temas: [], ignorados: arr((FB.padroes[g.id] || {}).ignorados) }; });
+    if (envioValido.length){
+      const r = await api('padroes', { goleiros: envioValido });
+      arr(r.padroes && r.padroes.goleiros).forEach(g => {
+        if (!regs[g.id]) return;
+        const antes = FB.padroes[g.id] || {};
+        const ign = arr(antes.ignorados).map(norm);
+        const temas = [];
+        arr(g.temas).forEach(tm => {
+          const refs = Array.from(new Set(arr(tm.refs).map(Number))).filter(n => regs[g.id][n]);
+          if (refs.length < 2) return;                                   /* repetir = 2 ou mais */
+          const velho = arr(antes.temas).find(x => x.id && x.id === tm.id);
+          if (!velho && ign.indexOf(norm(tm.tema)) >= 0) return;
+          const rs = refs.map(n => regs[g.id][n]).sort((a, b) => a.data.localeCompare(b.data));
+          const datas = Array.from(new Set(rs.map(x => x.data)));
+          const tema = {
+            id: (velho && velho.id) || novoId('t'),
+            tema: (velho && velho.travado) ? velho.tema : String(tm.tema || '').slice(0, 80),
+            tipo: (velho && velho.travado) ? velho.tipo : (tm.tipo === 'evolucao' ? 'evolucao' : 'melhorar'),
+            area: tm.area || '', vezes: rs.length, datas: datas, primeira: datas[0], ultima: datas[datas.length - 1],
+            virouEm: (tm.virou != null && regs[g.id][tm.virou]) ? regs[g.id][tm.virou].data : ((velho && velho.virouEm) || ''),
+            evidencias: rs.slice(-4).map(x => ({ data: x.data, tipo: x.tipo, texto: x.texto, citacao: x.citacao }))
+          };
+          if (velho && velho.travado) tema.travado = true;
+          /* virou para "em evolução" agora: guarda a data */
+          if (tema.tipo === 'evolucao' && velho && velho.tipo === 'melhorar' && !tema.virouEm) tema.virouEm = tema.ultima;
+          if (tema.tipo !== 'evolucao') tema.virouEm = '';
+          temas.push(tema);
+        });
+        /* travado que o agente não devolveu continua (o treinador decidiu) */
+        arr(antes.temas).filter(x => x.travado && !temas.some(y => y.id === x.id)).forEach(x => temas.push(x));
+        temas.sort((a, b) => (b.vezes || 0) - (a.vezes || 0) || (b.ultima || '').localeCompare(a.ultima || ''));
+        upd[P('padroes/' + g.id)] = { atualizadoEm: Date.now(), resumo: String(g.resumo || ''), temas: temas, ignorados: arr(antes.ignorados) };
+      });
+    }
+    if (Object.keys(upd).length) await ref('/').update(upd);
+  } catch (e) { toast(t('erroServ') + (e.message || e), true); }
+  ids.forEach(id => { delete FB.atualizandoPad[id]; });
+  if (FB.aba === 'goleiros') renderGoleiros();
+}
+async function salvaPadrao(pid){ const p = FB.padroes[pid]; if (p) await ref(P('padroes/' + pid)).set(p); }
+
+/* ══ TELA: GOLEIROS (um card por goleiro) ══ */
+FB.cardAberto = FB.cardAberto || {};
+function temaLinha(pid, tm){
+  const datas = tm.primeira === tm.ultima ? fd(tm.ultima) : fd(tm.primeira) + ' → ' + fd(tm.ultima);
+  const ev = arr(tm.evidencias).map(e => `<div class="cit">${esc(fd(e.data))} · ${esc(e.texto)}${e.citacao ? ' — “' + esc(e.citacao) + '”' : ''}</div>`).join('');
+  return `<details class="tema"><summary><b>${esc(tm.tema)}</b> <span class="pill">${tm.vezes || 0}x</span> <span class="muted">${esc(datas)}</span>${tm.virouEm ? ` <span class="pill good">${esc(t('virou'))} ${esc(fd(tm.virouEm))}</span>` : ''}${tm.travado ? ' 🔒' : ''}</summary>
+    ${ev}<div class="row" style="margin-top:6px"><button class="btn sm" data-a="temaMover" data-pid="${pid}" data-tid="${tm.id}">⇄ ${esc(tm.tipo === 'melhorar' ? t('paraEvol') : t('paraMelhorar'))}</button>
+    <button class="btn sm" data-a="temaRenomear" data-pid="${pid}" data-tid="${tm.id}">✎</button><button class="btn sm danger" data-a="temaRemover" data-pid="${pid}" data-tid="${tm.id}">✕</button></div></details>`;
+}
+function diarioDe(pid){
+  const dias = [];
+  Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.extracao).sort((a, b) => (b.data || '').localeCompare(a.data || '')).forEach(s => {
+    const its = arr(s.extracao.goleiros).filter(g => g.id === pid).reduce((a, g) => a.concat(arr(g.itens)), []);
+    if (its.length) dias.push({ s: s, its: its, estado: (arr(s.extracao.goleiros).find(g => g.id === pid) || {}).estado || 'good' });
+  });
+  return dias;
+}
+const ICONE = { evolucao: '▲', limitacao: '▼', ajuste: '→', observacao: '•' };
+function cardGoleiro(g){
+  const pad = FB.padroes[g.id] || {};
+  const temas = arr(pad.temas);
+  const melh = temas.filter(x => x.tipo === 'melhorar'), evo = temas.filter(x => x.tipo === 'evolucao');
+  const pend = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !p.feito && arr(p.goleiros).indexOf(g.id) >= 0).sort((a, b) => (b.vezes || 1) - (a.vezes || 1));
+  const dias = diarioDe(g.id);
+  const aberto = !!FB.cardAberto[g.id];
+  let h = `<div class="card gkcard${aberto ? ' open' : ''}"><div class="gkcard-h" data-card="${g.id}"><span class="car">▸</span><b style="font-size:15px">${esc(g.name)}</b>${g.origem ? ` <span class="pill">${esc(g.origem)}</span>` : ''}
+    <span style="flex:1"></span><span class="pill crit">🔴 ${melh.length}</span><span class="pill good">🟢 ${evo.length}</span><span class="pill">✅ ${pend.length}</span><span class="pill">📓 ${dias.length}</span></div>`;
+  if (!aberto) return h + `</div>`;
+  h += `<div class="row" style="margin:10px 0"><span class="muted" style="flex:1">${pad.resumo ? esc(pad.resumo) : esc(t('semPadroes'))}</span>
+    <button class="btn sm" data-a="padroesAtualizar" data-pid="${g.id}"${FB.atualizandoPad[g.id] ? ' disabled' : ''}>${FB.atualizandoPad[g.id] ? esc(t('atualizandoPad')) : '↻ ' + esc(t('atualizarPad'))}</button></div>
+    <div class="cols2"><div><h3>🔴 ${esc(t('aMelhorar'))}</h3>${melh.length ? melh.map(x => temaLinha(g.id, x)).join('') : `<div class="muted">—</div>`}</div>
+    <div><h3>🟢 ${esc(t('emEvolucao'))}</h3>${evo.length ? evo.map(x => temaLinha(g.id, x)).join('') : `<div class="muted">—</div>`}</div></div>`;
+  h += `<details class="secao"><summary>✅ ${esc(t('conteudos'))} (${pend.length})</summary>${pend.length ? pend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1}x</span>${p.restricao ? ` <span class="pill">${esc(t(p.restricao))}</span>` : ''}</div><button class="btn sm" data-a="feito" data-pid="${p.id}">${esc(t('marcarFeito'))}</button></div>`).join('') : `<div class="muted">—</div>`}</details>`;
+  h += `<details class="secao"><summary>📓 ${esc(t('diario'))} (${dias.length})</summary>${dias.map(d => `<div class="item"><div class="grow"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(d.s.data))}</b> <span class="pill ${d.estado}">${esc(t(d.estado))}</span>
+      ${d.its.map(i => `<div style="margin-top:3px">${ICONE[i.tipo] || '•'} ${i.reforco ? '↻ ' : ''}${esc(i.texto)}</div>`).join('')}</div><button class="btn sm" data-abrirsess="${d.s.id}">✎</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
+  return h + `</div>`;
+}
+function renderGoleiros(){
+  const lista = gks().filter(g => (g.status || 'ativo') !== 'saida' || FB.padroes[g.id]);
+  const grupoPend = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !p.feito && !arr(p.goleiros).length);
+  const grupoNotas = [];
+  Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.extracao).sort((a, b) => (b.data || '').localeCompare(a.data || '')).forEach(s => arr(s.extracao.grupo).forEach(i => grupoNotas.push({ data: s.data, texto: i.texto })));
+  const abertoG = !!FB.cardAberto.__grupo;
+  let h = `<div class="row no-print" style="margin-bottom:10px"><span class="muted" style="flex:1">${esc(t('gkHint'))}</span><button class="btn sm" data-a="padroesTodos">↻ ${esc(t('atualizarTodos'))}</button></div>`;
+  h += lista.map(cardGoleiro).join('');
+  h += `<div class="card gkcard${abertoG ? ' open' : ''}"><div class="gkcard-h" data-card="__grupo"><span class="car">▸</span><b style="font-size:15px">👥 ${esc(t('grupoNotas'))}</b><span style="flex:1"></span><span class="pill">✅ ${grupoPend.length}</span><span class="pill">📓 ${grupoNotas.length}</span></div>`;
+  if (abertoG){
+    h += `<details class="secao" open><summary>✅ ${esc(t('conteudos'))} (${grupoPend.length})</summary>${grupoPend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill">${p.vezes || 1}x</span></div><button class="btn sm" data-a="feito" data-pid="${p.id}">${esc(t('marcarFeito'))}</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
+    h += `<details class="secao"><summary>📓 ${esc(t('diario'))} (${grupoNotas.length})</summary>${grupoNotas.map(n => `<div class="muted" style="padding:3px 0">${esc(fd(n.data))} · ${esc(n.texto)}</div>`).join('') || `<div class="muted">—</div>`}</details>`;
+  }
+  $('t-goleiros').innerHTML = h + `</div>`;
+}
+
+/* sessao que parou no meio (ex.: o celular bloqueou antes de terminar):
+   mais de 3 minutos em "transcrevendo/organizando" sem ser a que roda agora */
+function interrompida(s){
+  return !!(s && (s.status === 'transcrevendo' || s.status === 'analisando') && !(FB.rodando && FB.rodando[s.id]) && Date.now() - (s.criadoEm || 0) > 3 * 60 * 1000);
+}
+function rotuloStatus(s){ const k = interrompida(s) ? 'interrompido' : s.status; return t('st' + k.charAt(0).toUpperCase() + k.slice(1)); }
+function precisaAtencao(s){ return !!(s && (s.status === 'revisar' || s.status === 'erro' || interrompida(s))); }
 /* ══ TELAS ══ */
-const ABAS = [['gravar', 'tGravar'], ['revisar', 'tRevisar'], ['historico', 'tHist'], ['conteudos', 'tCont'], ['relatorio', 'tRel'], ['ajustes', 'tAj']];
+const ABAS = [['gravar', 'tGravar'], ['goleiros', 'tGoleiros'], ['revisar', 'tRevisar'], ['historico', 'tHist'], ['conteudos', 'tCont'], ['relatorio', 'tRel'], ['ajustes', 'tAj']];
 function mudaAba(a){ FB.aba = a; render(); }
 function render(){
   $('tTitle').textContent = t('title');
-  const nRev = Object.values(FB.sessoes).filter(s => s && (s.status === 'revisar' || s.status === 'erro')).length;
+  const nRev = Object.values(FB.sessoes).filter(precisaAtencao).length;
   $('tabs').innerHTML = ABAS.map(([k, l]) => `<button data-aba="${k}" class="${FB.aba === k ? 'on' : ''}">${esc(t(l))}${k === 'revisar' && nRev ? `<span class="badge">${nRev}</span>` : ''}</button>`).join('');
   ABAS.forEach(([k]) => $('t-' + k).classList.toggle('on', FB.aba === k));
-  ({ gravar: renderGravar, revisar: renderRevisar, historico: renderHist, conteudos: renderCont, relatorio: renderRel, ajustes: renderAj })[FB.aba]();
+  ({ gravar: renderGravar, goleiros: renderGoleiros, revisar: renderRevisar, historico: renderHist, conteudos: renderCont, relatorio: renderRel, ajustes: renderAj })[FB.aba]();
 }
 function renderGravar(){
   const on = !!(REC.mr && REC.mr.state === 'recording');
@@ -414,13 +578,13 @@ function selIgual(v){ return `<option value="">${esc(t('novo'))}</option>` + Obj
 function cit(i){ return i.citacao ? `<div class="cit ${i.citOk === false ? 'bad' : ''}">“${esc(i.citacao)}”${i.citOk === false ? ' — ' + esc(t('citFora')) : ''}</div>` : `<div class="cit">${esc(t('semCitacao'))}</div>`; }
 function editorSessao(s){
   const x = s.extracao || { goleiros: [], grupo: [], conteudos: [] };
-  const stl = { revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '';
+  const stl = interrompida(s) ? 'crit' : ({ revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '');
   const audioAqui = FB.audio && FB.audio.id === s.id;
   let h = `<div class="card" data-sess="${s.id}">
     <div class="row" style="margin-bottom:10px"><input type="date" data-f="data" value="${esc(s.data)}">
-      <span class="pill ${stl}">${esc(t('st' + s.status.charAt(0).toUpperCase() + s.status.slice(1)) || s.status)}</span>
+      <span class="pill ${stl}">${esc(rotuloStatus(s) || s.status)}</span>
       <span style="flex:1"></span>
-      ${s.status === 'erro' ? `<button class="btn sm" data-a="tentar">${esc(t('tentar'))}</button>` : ''}
+      ${(s.status === 'erro' || interrompida(s)) ? `<button class="btn sm" data-a="tentar">${esc(t('tentar'))}</button>` : ''}
       ${s.transcricao ? `<button class="btn sm" data-a="reprocessar">${esc(t('reprocessar'))}</button>` : ''}
       ${s.extracao ? `<button class="btn primary sm" data-a="publicar">${esc(s.status === 'publicado' ? t('atualizar') : t('publicar'))}</button>` : ''}
       <button class="btn danger sm" data-a="descartar">${esc(t('descartar'))}</button></div>
@@ -455,7 +619,7 @@ function editorSessao(s){
   return h + `</div>`;
 }
 function renderRevisar(){
-  const lista = Object.values(FB.sessoes).filter(s => s && (s.status === 'revisar' || s.status === 'erro' || s.id === FB.aberta)).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+  const lista = Object.values(FB.sessoes).filter(s => precisaAtencao(s) || (s && s.id === FB.aberta)).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
   $('t-revisar').innerHTML = lista.length ? lista.map(editorSessao).join('') : `<div class="card muted">${esc(t('nadaRev'))}</div>`;
 }
 function renderHist(){
@@ -467,19 +631,28 @@ function renderHist(){
   $('t-historico').innerHTML = `<div class="card">${lista.length ? lista.map(s => {
     const x = s.extracao || {};
     const nomes = arr(x.goleiros).map(g => g.nome || gkNome(g.id)).filter(Boolean).join(', ');
-    const stl = { revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '';
-    return `<div class="sess" data-abrir="${s.id}"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(s.data))}</b><span class="pill ${stl}">${esc(t('st' + s.status.charAt(0).toUpperCase() + s.status.slice(1)))}</span><span class="grow muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomes || (s.transcricao || '').slice(0, 90))}</span><span class="muted">${arr(x.conteudos).length ? arr(x.conteudos).length + ' ✅' : ''}</span></div>`;
+    const stl = interrompida(s) ? 'crit' : ({ revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '');
+    return `<div class="sess" data-abrir="${s.id}"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(s.data))}</b><span class="pill ${stl}">${esc(rotuloStatus(s))}</span><span class="grow muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomes || (s.transcricao || '').slice(0, 90))}</span><span class="muted">${arr(x.conteudos).length ? arr(x.conteudos).length + ' ✅' : ''}</span></div>`;
   }).join('') : `<div class="muted">${esc(t('histVazio'))}</div>`}</div>`;
 }
+function linhaPend(p, feitos){
+  return `<div class="item"><div class="grow"><input style="width:100%" data-pid="${p.id}" data-f="ptexto" value="${esc(p.texto)}">
+      <div class="row muted" style="margin-top:4px"><span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1} ${esc(t('vezes'))}</span>
+      ${p.restricao ? `<span class="pill">${esc(t('restr'))}: ${esc(t(p.restricao))}</span>` : ''}
+      <span>${esc(t('desde'))} ${esc(fd(p.criadoEm))} · ${esc(t('ultimo'))} ${esc(fd(p.ultimo || p.criadoEm))}</span></div>${p.citacao ? `<div class="cit">“${esc(p.citacao)}”</div>` : ''}</div>
+      <button class="btn sm" data-a="${feitos ? 'reabrir' : 'feito'}" data-pid="${p.id}">${esc(feitos ? t('reabrir') : t('marcarFeito'))}</button><button class="btn sm danger" data-a="rmPend" data-pid="${p.id}">✕</button></div>`;
+}
+/* Conteúdos: um bloco por goleiro (e o do grupo), que recolhe */
 function renderCont(){
   const feitos = FB.contFiltro === 'feitos';
   const lista = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !!p.feito === feitos).sort((a, b) => (b.vezes || 1) - (a.vezes || 1) || (b.ultimo || '').localeCompare(a.ultimo || ''));
+  const blocos = gks().map(g => ({ nome: g.name, k: g.id, itens: lista.filter(p => arr(p.goleiros).indexOf(g.id) >= 0) })).filter(b => b.itens.length);
+  const doGrupo = lista.filter(p => !arr(p.goleiros).length);
+  if (doGrupo.length) blocos.push({ nome: '👥 ' + t('semGrupo'), k: '__grupo', itens: doGrupo });
+  FB.contAberto = FB.contAberto || {};
   $('t-conteudos').innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn sm ${!feitos ? 'primary' : ''}" data-cf="abertos">${esc(t('abertos'))}</button><button class="btn sm ${feitos ? 'primary' : ''}" data-cf="feitos">${esc(t('feitos'))}</button></div>
-    <div class="card">${lista.length ? lista.map(p => `<div class="item"><div class="grow"><input style="width:100%" data-pid="${p.id}" data-f="ptexto" value="${esc(p.texto)}">
-      <div class="row muted" style="margin-top:4px"><span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1} ${esc(t('vezes'))}</span>
-      <span>${esc(arr(p.goleiros).map(gkNome).filter(Boolean).join(', ') || t('grupoTodo'))}</span>${p.restricao ? `<span class="pill">${esc(t('restr'))}: ${esc(t(p.restricao))}</span>` : ''}
-      <span>${esc(t('desde'))} ${esc(fd(p.criadoEm))} · ${esc(t('ultimo'))} ${esc(fd(p.ultimo || p.criadoEm))}</span></div>${p.citacao ? `<div class="cit">“${esc(p.citacao)}”</div>` : ''}</div>
-      <button class="btn sm" data-a="${feitos ? 'reabrir' : 'feito'}" data-pid="${p.id}">${esc(feitos ? t('reabrir') : t('marcarFeito'))}</button><button class="btn sm danger" data-a="rmPend" data-pid="${p.id}">✕</button></div>`).join('') : `<div class="muted">${esc(t('contVazio'))}</div>`}</div>`;
+    ${blocos.length ? blocos.map(b => `<div class="card"><details class="contgk" data-contk="${b.k}"${FB.contAberto[b.k] ? ' open' : ''}><summary>${esc(b.nome)} <span class="pill">${b.itens.length}</span>${b.itens.some(p => (p.vezes || 1) > 2) ? ' <span class="pill crit">↻</span>' : ''}</summary>${b.itens.map(p => linhaPend(p, feitos)).join('')}</details></div>`).join('') : `<div class="card muted">${esc(t('contVazio'))}</div>`}`;
+  document.querySelectorAll('#t-conteudos details[data-contk]').forEach(d => d.addEventListener('toggle', () => { FB.contAberto[d.dataset.contk] = d.open; }));
 }
 /* ── relatório ── */
 function periodo(){
@@ -556,7 +729,10 @@ function sessaoDe(el){ const c = el.closest('[data-sess]'); return c ? FB.sessoe
 let _salvaT = null;
 function salvaSessao(s){ clearTimeout(_salvaT); _salvaT = setTimeout(() => { ref(P('sessoes/' + s.id)).update({ extracao: s.extracao || null, transcricao: s.transcricao || '', data: s.data }).catch(() => {}); }, 500); }
 document.addEventListener('click', async (e) => {
+  const cardH = e.target.closest('[data-card]');
+  if (cardH && !e.target.closest('button')){ const k = cardH.dataset.card; FB.cardAberto[k] = !FB.cardAberto[k]; renderGoleiros(); return; }
   const b = e.target.closest('button, [data-abrir], [data-cf]'); if (!b) return;
+  if (b.dataset.abrirsess){ FB.aberta = b.dataset.abrirsess; FB.aba = 'historico'; render(); return; }
   if (b.dataset.aba){ FB.aberta = null; mudaAba(b.dataset.aba); return; }
   if (b.id === 'recbtn'){ gravarToggle(); return; }
   if (b.id === 'btnArq'){ $('arq').click(); return; }
@@ -591,7 +767,16 @@ document.addEventListener('click', async (e) => {
     else if (s && s.extracao && a === 'addGrupo'){ s.extracao.grupo.push({ texto: '', citacao: '', citOk: true }); salvaSessao(s); render(); }
     else if (s && s.extracao && a === 'rmCont'){ s.extracao.conteudos.splice(+b.dataset.c, 1); salvaSessao(s); render(); }
     else if (s && s.extracao && a === 'addCont'){ s.extracao.conteudos.push({ texto: '', goleiros: [], restricao: '', igualA: '', citacao: '', citOk: true }); salvaSessao(s); render(); }
-    else if (a === 'feito' || a === 'reabrir'){ const id = b.dataset.pid; FB.pend[id].feito = a === 'feito'; await ref(P('pendencias/' + id + '/feito')).set(FB.pend[id].feito); renderCont(); }
+    else if (a === 'feito' || a === 'reabrir'){ const id = b.dataset.pid; FB.pend[id].feito = a === 'feito'; await ref(P('pendencias/' + id + '/feito')).set(FB.pend[id].feito); render(); }
+    else if (a === 'padroesAtualizar'){ await atualizarPadroes([b.dataset.pid]); }
+    else if (a === 'padroesTodos'){ await atualizarPadroes(gks().map(g => g.id)); }
+    else if (a === 'temaMover' || a === 'temaRenomear' || a === 'temaRemover'){
+      const pad = FB.padroes[b.dataset.pid]; const tm = pad && arr(pad.temas).find(x => x.id === b.dataset.tid); if (!tm) return;
+      if (a === 'temaMover'){ tm.tipo = tm.tipo === 'melhorar' ? 'evolucao' : 'melhorar'; tm.travado = true; if (tm.tipo === 'evolucao' && !tm.virouEm) tm.virouEm = hoje(); if (tm.tipo !== 'evolucao') tm.virouEm = ''; }
+      if (a === 'temaRenomear'){ const n = prompt(t('renomearQ'), tm.tema); if (!n || !n.trim()) return; tm.tema = n.trim().slice(0, 80); tm.travado = true; }
+      if (a === 'temaRemover'){ if (!confirm(t('removerQ'))) return; pad.ignorados = arr(pad.ignorados).concat([tm.tema]); pad.temas = arr(pad.temas).filter(x => x.id !== tm.id); }
+      await salvaPadrao(b.dataset.pid); renderGoleiros();
+    }
     else if (a === 'rmPend'){ const id = b.dataset.pid; if (!confirm('✕ ' + FB.pend[id].texto + '?')) return; delete FB.pend[id]; await ref(P('pendencias/' + id)).remove(); renderCont(); }
     else if (a === 'print'){ window.print(); }
     else if (a === 'ia'){
@@ -654,6 +839,7 @@ async function iniciar(ctx){
     ref(P('config')).on('value', (sn) => { const v = sn.val(); if (v) FB.cfg = Object.assign({ modo: 'revisar', vocab: VOCAB_PADRAO.slice(), apelidos: {}, api: '/fb' }, v, { vocab: v.vocab ? arr(v.vocab) : VOCAB_PADRAO.slice() }); if (FB.aba !== 'ajustes') render(); });
     ref(P('sessoes')).on('value', (sn) => { const v = sn.val() || {}; const atual = FB.sessoes; FB.sessoes = {}; Object.keys(v).forEach(k => { FB.sessoes[k] = Object.assign({ id: k }, v[k]); if (FB.sessoes[k].extracao){ const x = FB.sessoes[k].extracao; x.goleiros = arr(x.goleiros).map(g => Object.assign(g, { itens: arr(g.itens) })); x.grupo = arr(x.grupo); x.conteudos = arr(x.conteudos).map(c => Object.assign(c, { goleiros: arr(c.goleiros) })); } }); Object.keys(atual).forEach(k => { if (!FB.sessoes[k] && atual[k] && atual[k].status === 'transcrevendo') FB.sessoes[k] = atual[k]; }); const foco = document.activeElement; if (!(foco && foco.closest && foco.closest('[data-sess]'))) render(); });
     ref(P('pendencias')).on('value', (sn) => { const v = sn.val() || {}; FB.pend = {}; Object.keys(v).forEach(k => { FB.pend[k] = Object.assign({}, v[k], { goleiros: arr(v[k].goleiros) }); }); if (FB.aba === 'conteudos' || FB.aba === 'relatorio') render(); });
+    ref(P('padroes')).on('value', (sn) => { const v = sn.val() || {}; FB.padroes = {}; Object.keys(v).forEach(k => { FB.padroes[k] = Object.assign({}, v[k], { temas: arr(v[k].temas).map(x => Object.assign({}, x, { datas: arr(x.datas), evidencias: arr(x.evidencias) })), ignorados: arr(v[k].ignorados) }); }); if (FB.aba === 'goleiros') renderGoleiros(); });
     ref(P('audio/id')).on('value', (sn) => { FB.audio = sn.val() ? { id: sn.val() } : null; });
     ref('.info/connected').on('value', (sn) => { $('dotfb').style.background = sn.val() ? '#16a34a' : '#dc2626'; });
   });
