@@ -970,7 +970,57 @@ function openModule(key){
   fr.src=MOD_FILES[key]+(MOD_FILES[key].indexOf('?')<0?'?':'&')+'v='+Date.now();
   showScreen('module');
 }
-function closeModule(){ if(_fsEl()){var exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit){try{exit.call(document);}catch(e){}}} showScreen('home');loadStats();}
+function closeModule(){ if(_fsEl()){var exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit){try{exit.call(document);}catch(e){}}} if(_verNova&&_verNova!==_verCarregada){_verRecarrega(_verNova);return;} showScreen('home');loadStats();}
+
+/* ---------- VERSÃO: nunca rodar código velho ----------
+   No iPhone/iPad, o app salvo na tela de início pode ficar dias suspenso
+   com a versão antiga na memória — e código velho gravando no Firebase
+   pode estragar dados (ex.: fotos apagadas). Aqui o hub confere o arquivo
+   versao.json (trocado a cada atualização enviada ao GitHub):
+   - ao abrir, guarda a versão com que carregou;
+   - ao voltar para o app (tela desbloqueada, troca de app) e a cada 5 min,
+     confere de novo; se mudou, recarrega tudo (hub + módulo) já com a nova.
+   Com um módulo aberto, avisa e recarrega ao voltar para o hub ou em 60 s. */
+var _verCarregada=null, _verNova=null, _verTimer=null;
+function _verBusca(){
+  return fetch('versao.json?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null;}).then(function(j){return j&&j.versao?String(j.versao):null;})
+    .catch(function(){return null;});
+}
+function _verRecarrega(v){
+  /* evita laço: no máximo 1 tentativa a cada 2 min para a mesma versão
+     (a nova pode levar alguns minutos para chegar a todos os servidores) */
+  var k='fluxgk_ver_tentou_'+v, ult=+(sessionStorage.getItem(k)||0);
+  if(Date.now()-ult<120000) return;
+  sessionStorage.setItem(k,String(Date.now()));
+  location.replace(location.pathname+'?v='+encodeURIComponent(v));
+}
+function _verAviso(v){
+  var el=document.getElementById('verAviso');
+  if(!el){
+    el=document.createElement('div'); el.id='verAviso';
+    el.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:99999;background:#0a0a0a;color:#fff;padding:10px 14px;border-radius:10px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:92vw';
+    el.innerHTML='<span>'+TX('hub.ver.nova','Nova versão do FluxGK. Atualizando em 60 s…')+'</span><button style="background:#E8901A;border:0;color:#111;font:700 12px system-ui;padding:6px 10px;border-radius:7px;cursor:pointer">'+TX('hub.ver.agora','Atualizar agora')+'</button>';
+    el.querySelector('button').onclick=function(){_verRecarrega(v);};
+    document.body.appendChild(el);
+  }
+  clearTimeout(_verTimer); _verTimer=setTimeout(function(){_verRecarrega(v);},60000);
+}
+function _verConfere(retomou){
+  _verBusca().then(function(v){
+    if(!v) return;
+    if(!_verCarregada){ _verCarregada=v; return; }
+    if(v===_verCarregada) return;
+    _verNova=v;
+    var noHub=!document.querySelector('#scr-module.active');
+    /* voltou para o app agora (ninguém digitando) ou está no hub: recarrega já */
+    if(retomou||noHub) _verRecarrega(v); else _verAviso(v);
+  });
+}
+_verConfere(false);
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') _verConfere(true); });
+window.addEventListener('pageshow',function(e){ if(e.persisted) _verConfere(true); });
+setInterval(function(){ _verConfere(false); },5*60*1000);
 
 /* ---------- BOOT ---------- */
 function ldScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}

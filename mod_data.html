@@ -1146,7 +1146,11 @@ async function rtPushAll(){
   if(!_db||!_rf||!_uid)return;
   const upd={};
   Object.values(ST.players).forEach(p=>{
-    upd[uPath("players/"+p.id)]={name:p.name,id:p.id};
+    /* campo a campo: gravar o no inteiro (players/id = {name,id}) apagava na nuvem
+       a foto e o que este aparelho nao tinha em cache, e ainda conflitava com os
+       caminhos filhos abaixo (o Firebase recusa pai e filho no mesmo update) */
+    upd[uPath("players/"+p.id+"/name")]=p.name;
+    upd[uPath("players/"+p.id+"/id")]=p.id;
     if(p.photo)upd[uPath("players/"+p.id+"/photo")]=p.photo;
     if(p.origem)upd[uPath("players/"+p.id+"/origem")]=p.origem;
     if(p.periodos)upd[uPath("players/"+p.id+"/periodos")]=p.periodos;

@@ -1034,6 +1034,7 @@ const T = {
   fbUltima: { pt: 'última', en: 'last', ru: 'последний' },
   fbMudaram: { pt: 'Passaram para "em evolução" no período', en: 'Moved to "improving" in the period', ru: 'Перешли в «в развитии» за период' },
   fbGrupo: { pt: 'grupo', en: 'group', ru: 'группа' },
+  fbSemMencao: { pt: 'Sem menção recente', en: 'No recent mention', ru: 'Давно не упоминалось' },
   rpSecAll: { pt: 'Marcar todos', en: 'Select all', ru: 'Выбрать всё' },
   moveUp: { pt: 'Subir', en: 'Move up', ru: 'Вверх' },
   moveDown: { pt: 'Descer', en: 'Move down', ru: 'Вниз' },
@@ -2134,6 +2135,10 @@ Object.assign(T, {
     saveProfile(playerId, patch) {
       return write(() => dataRef('gk/' + playerId).update(patch));
     },
+    /* a foto é do elenco (Load Control): trocar aqui grava lá, e os dois módulos mostram a mesma */
+    savePhoto(playerId, data) {
+      return write(() => loadRef('players/' + playerId + '/photo').set(data || null));
+    },
 
     /* ---------- avaliações datadas ---------- */
     onAssessments(cb) {
@@ -2174,7 +2179,7 @@ Object.assign(T, {
 
     /* ---------- feedback pós-treino (módulo Feedback; aqui só leitura) ---------- */
     onFeedback(cb) {
-      ['padroes', 'pendencias'].forEach(k => {
+      ['padroes', 'pendencias', 'config'].forEach(k => {
         const ref = db.ref(base + '/feedback/' + k);
         const h = ref.on('value', s => cb(k, s.val() || {}));
         listeners.push(() => ref.off('value', h));
@@ -2206,7 +2211,7 @@ Object.assign(T, {
   'use strict';
 
   /* espelho local mantido pelos listeners do Firebase */
-  const cache = { roster: [], profiles: {}, assessments: {}, logs: {}, model: null, fb: { padroes: {}, pendencias: {} } };
+  const cache = { roster: [], profiles: {}, assessments: {}, logs: {}, model: null, fb: { padroes: {}, pendencias: {}, config: {} } };
   let onChange = () => { };
 
   const PROFILE_FIELDS = [
@@ -2295,6 +2300,12 @@ Object.assign(T, {
     },
 
     async updateGoalkeeper(id, patch) {
+      /* foto: antes era descartada aqui (não é campo do perfil) e sumia ao recarregar */
+      if (patch && Object.prototype.hasOwnProperty.call(patch, 'photo')) {
+        const r = cache.roster.find(x => x.id === id);
+        if (r) r.photo = patch.photo || null;
+        await FDB.savePhoto(id, patch.photo || null);
+      }
       const clean = {};
       Object.keys(patch || {}).forEach(k => {
         if (PROFILE_FIELDS.indexOf(k) < 0) return;      /* nome e foto: do Load Control */
@@ -2338,7 +2349,8 @@ Object.assign(T, {
           temas: vet(p.temas).map(t => Object.assign({}, t, { datas: vet(t.datas), evidencias: vet(t.evidencias) })) };
       });
       const pend = Object.keys(cache.fb.pendencias || {}).map(id => Object.assign({ id }, cache.fb.pendencias[id], { goleiros: vet((cache.fb.pendencias[id] || {}).goleiros) }));
-      return { padroes: pad, pend };
+      const dias = parseInt((cache.fb.config || {}).diasSemMencao, 10);
+      return { padroes: pad, pend, diasSemMencao: dias > 0 ? dias : 30 };
     },
 
     /* ---------- diário ---------- */
@@ -4434,6 +4446,10 @@ Object.assign(T, {
   function gkFeedback() {
     const fb = App.db.feedback ? App.db.feedback() : { padroes: {}, pend: [] };
     const pad = fb.padroes[App.cur.id] || { temas: [] };
+    /* mesmo critério do módulo Feedback: sem menção há N dias (ou recolhido à mão) vai para um bloco recolhido */
+    const hojeS = new Date().toISOString().slice(0, 10);
+    const dias = d => d ? Math.floor((new Date(hojeS + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5) : 9999;
+    const dorme = x => !x.fixo && (!!x.arquivado || dias(x.ultima) > (fb.diasSemMencao || 30));
     const melh = pad.temas.filter(x => x.tipo === 'melhorar'), evo = pad.temas.filter(x => x.tipo === 'evolucao');
     const pend = fb.pend.filter(p => !p.feito && (p.goleiros.indexOf(App.cur.id) >= 0 || !p.goleiros.length))
       .sort((a, b) => (b.vezes || 1) - (a.vezes || 1));
@@ -4443,12 +4459,17 @@ Object.assign(T, {
         ${x.virouEm ? `<span class="hint" style="color:var(--good)"> · ${esc(t('fbVirou'))} ${esc(fd(x.virouEm))}</span>` : ''}
         ${(x.evidencias || []).slice(-2).map(e => `<div class="hint" style="margin-top:4px">${esc(fd(e.data))} · ${esc(e.texto)}${e.citacao ? ' — “' + esc(e.citacao) + '”' : ''}</div>`).join('')}
       </div>`;
+    const coluna = lista => {
+      const at = lista.filter(x => !dorme(x)), dm = lista.filter(dorme);
+      return (at.map(tema).join('') || '<div class="hint">—</div>')
+        + (dm.length ? `<details style="margin-top:6px"><summary class="hint" style="cursor:pointer">💤 ${esc(t('fbSemMencao'))} (${dm.length})</summary><div style="opacity:.75;margin-top:6px">${dm.map(tema).join('')}</div></details>` : '');
+    };
     return `<div class="card">
       <div class="hint" style="margin-bottom:12px">${esc(t('fbIntro'))}</div>
       ${pad.resumo ? `<p style="margin:0 0 14px">${esc(pad.resumo)}</p>` : ''}
       ${pad.temas.length ? `<div class="grid g2">
-        <div><h3 style="margin:0 0 8px;color:var(--crit)">● ${esc(t('fbMelhorar'))}</h3>${melh.map(tema).join('') || '<div class="hint">—</div>'}</div>
-        <div><h3 style="margin:0 0 8px;color:var(--good)">● ${esc(t('fbEvol'))}</h3>${evo.map(tema).join('') || '<div class="hint">—</div>'}</div>
+        <div><h3 style="margin:0 0 8px;color:var(--crit)">● ${esc(t('fbMelhorar'))}</h3>${coluna(melh)}</div>
+        <div><h3 style="margin:0 0 8px;color:var(--good)">● ${esc(t('fbEvol'))}</h3>${coluna(evo)}</div>
       </div>` : `<div class="empty">${esc(t('fbVazio'))}</div>`}
       ${pend.length ? `<h3 style="margin:18px 0 8px">${esc(t('fbConteudos'))}</h3>${pend.map(p => `<div class="hint" style="padding:4px 0">• ${esc(p.texto)} (${p.vezes || 1}x${p.goleiros.length ? '' : ' · ' + esc(t('fbGrupo'))})</div>`).join('')}` : ''}
     </div>`;

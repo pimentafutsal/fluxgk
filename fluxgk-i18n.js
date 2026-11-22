@@ -119,7 +119,7 @@
     'hub.mod.profile.t':'GK PROFILE',
     'hub.mod.scouting':'Scouting',
     'hub.mod.scouting.d':'Goalkeepers across leagues and countries',
-    'hub.mod.feedback':'Post-training feedback','hub.mod.feedback.d':'Talk after training: the agent sorts it into each goalkeeper’s profile','hub.mod.feedback.t':'FEEDBACK',
+    'hub.ver.nova':'New FluxGK version. Updating in 60 s…','hub.ver.agora':'Update now','hub.mod.feedback':'Post-training feedback','hub.mod.feedback.d':'Talk after training: the agent sorts it into each goalkeeper’s profile','hub.mod.feedback.t':'FEEDBACK',
     'hub.mod.scouting.t':'SCOUTING',
     'scout.personal':'personal archive, across clubs and seasons',
 
@@ -1203,7 +1203,7 @@
     'hub.mod.profile.d':'Avaliação, evolução e relatórios',
     'hub.mod.profile.t':'PERFIL GK',
     'hub.mod.scouting':'Scouting',
-    'hub.mod.feedback':'Feedback pós-treino','hub.mod.feedback.d':'Fale depois do treino: o agente organiza no perfil de cada goleiro','hub.mod.feedback.t':'FEEDBACK',
+    'hub.ver.nova':'Nova versão do FluxGK. Atualizando em 60 s…','hub.ver.agora':'Atualizar agora','hub.mod.feedback':'Feedback pós-treino','hub.mod.feedback.d':'Fale depois do treino: o agente organiza no perfil de cada goleiro','hub.mod.feedback.t':'FEEDBACK',
     'hub.mod.scouting.d':'Goleiros por liga, país e nacionalidade',
     'hub.mod.scouting.t':'SCOUTING',
     'scout.personal':'acervo pessoal, atravessa clubes e temporadas',
