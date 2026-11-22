@@ -312,6 +312,7 @@
   .fx-i.cheio{fill:currentColor;stroke:none}.fx-i.sm{width:.95em;height:.95em}.fx-i.lg{width:1.35em;height:1.35em}
   .fx-i + span,span + .fx-i{margin-left:5px}
   .vltile-ic .fx-i{width:34px;height:34px;stroke-width:1.5}
+  .anct{white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
 
   /* ---------- tags ---------- */
   .dashbar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -397,7 +398,7 @@
   .ctxitem{position:relative;padding:7px 12px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap}
   .ctxitem:hover{background:var(--paper)}
   .ctxitem.danger{color:var(--red)}
-  .ctxitem.has-sub::after{content:'▸';position:absolute;right:10px;color:var(--muted)}
+  .ctxitem.has-sub::after{content:'›';font-size:15px;line-height:1;position:absolute;right:10px;color:var(--muted)}
   .ctxsep{height:1px;background:var(--line);margin:5px 0}
   .ctxhead{padding:6px 12px 4px;font-size:10px;letter-spacing:.1em;color:var(--muted);font-weight:600}
   .ctxsub{
@@ -694,7 +695,7 @@
   .aprpsub{font-size:11px;font-weight:600;color:var(--ink);margin:5px 0 1px}
   .aprpgrande{border-top:1px solid var(--line);padding:3px 0 3px 8px}
   .aprpgrande>summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;list-style:none}
-  .aprpgrande>summary::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .15s}
+  .aprpgrande>summary::before{content:'›';font-size:15px;line-height:1;color:var(--muted);transition:transform .15s}
   .aprpgrande[open]>summary::before{transform:rotate(90deg)}
   .aprpgrande>summary .er{font-size:11px;color:var(--muted);font-weight:400}
   .aprpgrande>.aprpl{margin-left:18px}
@@ -986,9 +987,9 @@
   <div class="spacer"></div>
   <button class="mini" id="togglePanel" title="Show/hide the tags panel" data-i18n-title="vid.tt.tagsPanel">Tags</button>
   <button class="mini" id="togglePl" title="Show/hide the playlists panel" data-i18n-title="vid.tt.playlistsPanel">Playlists <span class="badge" id="plCount">0</span></button>
-  <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels" data-i18n-title="vid.tt.layout">▦ Layout</button>
-  <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" data-i18n-title="vid.tt.header" style="display:none">▱ Header</button>
-  <button class="mini" id="appFullscreen" title="Fill the window (⌃⌘F for full browser fullscreen)" data-i18n-title="vid.tt.fullscreen">⛶ Fullscreen</button>
+  <button class="mini" id="toggleLayout" title="Toggle between LongoMatch (docked) layout and floating panels" data-i18n-title="vid.tt.layout"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M3 10h6"/></svg><span>Layout</span></button>
+  <button class="mini" id="toggleHeader" title="Hide/show the header (fullscreen only)" data-i18n-title="vid.tt.header" style="display:none"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18"/></svg><span>Header</span></button>
+  <button class="mini" id="appFullscreen" title="Fill the window (⌃⌘F for full browser fullscreen)" data-i18n-title="vid.tt.fullscreen"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Fullscreen</span></button>
 </header>
 <div id="ctxStrip" style="display:flex;align-items:center;gap:7px;padding:5px 16px;background:rgba(0,0,0,.04);border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#9aa">
   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 10-4-3-7-6-7-10V6z"/></svg>
@@ -1061,35 +1062,35 @@
       <div id="stage">
         <video id="video" playsinline preload="metadata"></video>
         <canvas id="drawCanvas"></canvas>
-        <button id="clipBack" title="Back to the full match video" data-i18n-title="vid.tt.backMatch">← Back to match</button>
+        <button id="clipBack" title="Back to the full match video" data-i18n-title="vid.tt.backMatch"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12H4M10 6l-6 6 6 6"/></svg><span>Back to match</span></button>
         <div class="zoomctl">
-          <button id="drawBtn" title="Draw over the video" data-i18n-title="vid.tt.draw">✎</button>
+          <button id="drawBtn" title="Draw over the video" data-i18n-title="vid.tt.draw"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20l1-5L16 4l4 4L9 19zM14 6l4 4"/></svg></button>
           <button id="zoomOut" title="Zoom out" data-i18n-title="vid.tt.zoomOut">−</button>
           <div class="zlevel" id="zoomLevel">100%</div>
           <button id="zoomIn" title="Zoom in" data-i18n-title="vid.tt.zoomIn">+</button>
-          <button id="freezeAdd" title="Freeze this frame (pause) — no drawing needed" data-i18n-title="vid.tt.freezeAdd">⏸</button>
+          <button id="freezeAdd" title="Freeze this frame (pause) — no drawing needed" data-i18n-title="vid.tt.freezeAdd"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
           <input type="number" id="freezeSec" value="3" min="1" max="60" step="1"
                  title="Freeze duration in seconds" data-i18n-title="vid.tt.freezeSec">
           <span class="zunit">s</span>
-          <button id="panHint" title="Zoomed in: drag the image to reposition · Alt + arrows for fine adjustment" data-i18n-title="vid.tt.pan" style="display:none">✥</button>
-          <button id="zoomReset" title="Reset to 100%" data-i18n-title="vid.tt.reset100">⟲</button>
-          <button id="fsBtn" title="Fullscreen" data-i18n-title="vid.tt.fs">⛶</button>
+          <button id="panHint" title="Zoomed in: drag the image to reposition · Alt + arrows for fine adjustment" data-i18n-title="vid.tt.pan" style="display:none"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg></button>
+          <button id="zoomReset" title="Reset to 100%" data-i18n-title="vid.tt.reset100"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg></button>
+          <button id="fsBtn" title="Fullscreen" data-i18n-title="vid.tt.fs"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
         <div id="drawbar">
-          <button data-tool="move" class="dtool" title="Move / Select — click a drawing to select it and edit its properties; drag to reposition" data-i18n-title="vid.tt.move">✥</button>
-          <button data-tool="erase" class="dtool" title="Eraser — click a drawing to delete just that one" data-i18n-title="vid.tt.eraser">⌫</button>
-          <button data-tool="pen" class="dtool active" title="Freehand pen" data-i18n-title="vid.tt.pen">✎</button>
-          <button data-tool="line" class="dtool" title="Line" data-i18n-title="vid.tt.line">╱</button>
-          <button data-tool="arrow" class="dtool" title="Arrow" data-i18n-title="vid.tt.arrow">➔</button>
-          <button data-tool="rect" class="dtool" title="Rectangle" data-i18n-title="vid.tt.rect">▭</button>
-          <button data-tool="ellipse" class="dtool" title="Ellipse" data-i18n-title="vid.tt.ellipse">◯</button>
+          <button data-tool="move" class="dtool" title="Move / Select — click a drawing to select it and edit its properties; drag to reposition" data-i18n-title="vid.tt.move"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg></button>
+          <button data-tool="erase" class="dtool" title="Eraser — click a drawing to delete just that one" data-i18n-title="vid.tt.eraser"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 20h12M5 15l9-9 5 5-9 9H8z"/></svg></button>
+          <button data-tool="pen" class="dtool active" title="Freehand pen" data-i18n-title="vid.tt.pen"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20l1-5L16 4l4 4L9 19zM14 6l4 4"/></svg></button>
+          <button data-tool="line" class="dtool" title="Line" data-i18n-title="vid.tt.line"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19L19 5"/></svg></button>
+          <button data-tool="arrow" class="dtool" title="Arrow" data-i18n-title="vid.tt.arrow"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h16M14 6l6 6-6 6"/></svg></button>
+          <button data-tool="rect" class="dtool" title="Rectangle" data-i18n-title="vid.tt.rect"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+          <button data-tool="ellipse" class="dtool" title="Ellipse" data-i18n-title="vid.tt.ellipse"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/></svg></button>
           <button data-tool="text" class="dtool" title="Text — click a point and type" data-i18n-title="vid.tt.text">T</button>
-          <button data-tool="spot" class="dtool" title="Spotlight — drag from the top down to the player's feet" data-i18n-title="vid.tt.spotlight">▼</button>
-          <button data-tool="measure" class="dtool" title="Measure — drag between two points (calibrate first)" data-i18n-title="vid.tt.measure">↔</button>
-          <button data-tool="poly" class="dtool" title="Polygon — click to add vertices; click the 1st point to close and form the shape" data-i18n-title="vid.tt.polygon">⬠</button>
-          <button data-tool="link" class="dtool" title="Linking — click players to connect; click the 1st point again to close, or double-click to finish open" data-i18n-title="vid.tt.linking">🔗</button>
-          <button data-tool="angle" class="dtool" title="Angle — click 3 points: end, vertex, end" data-i18n-title="vid.tt.angle">∠</button>
-          <button data-tool="lens" class="dtool" title="Magnifier — drag from the center outward" data-i18n-title="vid.tt.magnifier">🔍</button>
+          <button data-tool="spot" class="dtool" title="Spotlight — drag from the top down to the player's feet" data-i18n-title="vid.tt.spotlight"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l5 12H7z"/><ellipse cx="12" cy="18" rx="7" ry="2.5"/></svg></button>
+          <button data-tool="measure" class="dtool" title="Measure — drag between two points (calibrate first)" data-i18n-title="vid.tt.measure"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18M3 9v6M21 9v6M8 12v-2M12 12v-3M16 12v-2"/></svg></button>
+          <button data-tool="poly" class="dtool" title="Polygon — click to add vertices; click the 1st point to close and form the shape" data-i18n-title="vid.tt.polygon"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5l8.5 6.5-3.3 10H6.8L3.5 10z"/></svg></button>
+          <button data-tool="link" class="dtool" title="Linking — click players to connect; click the 1st point again to close, or double-click to finish open" data-i18n-title="vid.tt.linking"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button>
+          <button data-tool="angle" class="dtool" title="Angle — click 3 points: end, vertex, end" data-i18n-title="vid.tt.angle"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h16M4 20L15 5M10 20a6 6 0 0 0-1.6-4.1"/></svg></button>
+          <button data-tool="lens" class="dtool" title="Magnifier — drag from the center outward" data-i18n-title="vid.tt.magnifier"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg></button>
           <span class="sep"></span>
           <button class="dcolor active" data-color="#FFD400" style="background:#FFD400" title="Yellow" data-i18n-title="vid.tt.yellow"></button>
           <button class="dcolor" data-color="#1E4FFF" style="background:#1E4FFF" title="Blue" data-i18n-title="vid.tt.blue"></button>
@@ -1109,12 +1110,12 @@
           <span class="dlabel" id="drawWidthVal">1,0×</span>
           <span class="sep"></span>
           <button id="drawCalib" title="Calibrate measurement: draw a line over a known distance (e.g. goal width = 3m)" data-i18n-title="vid.tt.calibrate">Calibrate</button>
-          <button id="drawUndo" title="Undo last stroke" data-i18n-title="vid.tt.undo">↩</button>
+          <button id="drawUndo" title="Undo last stroke" data-i18n-title="vid.tt.undo"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
           <button id="drawClear" title="Erase all strokes on screen" data-i18n-title="vid.tt.eraseAll">Clear</button>
           <span class="sep"></span>
-          <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration" data-i18n-title="vid.tt.saveAtTime">💾 Save at time</button>
-          <button id="drawSnap" title="Save current frame + drawing as a PNG image" data-i18n-title="vid.tt.savePng">⤓ PNG</button>
-          <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)" data-i18n-title="vid.tt.exitDraw">✕</button>
+          <button id="drawSave" title="Save the drawing at this video time — on playback the video freezes here for the set duration" data-i18n-title="vid.tt.saveAtTime"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"/></svg><span>Save at time</span></button>
+          <button id="drawSnap" title="Save current frame + drawing as a PNG image" data-i18n-title="vid.tt.savePng"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg><span>PNG</span></button>
+          <button id="drawExit" title="Exit draw mode (unsaved strokes stay on screen)" data-i18n-title="vid.tt.exitDraw"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <div id="drawProps" style="display:none">
           <div id="lensProps" class="dprops" style="display:none">
             <span data-i18n="vid.magnifier" class="dlabel">Magnifier — zoom</span>
@@ -1151,10 +1152,10 @@
         </div>
       </div>
       <div class="pbar">
-        <button id="playBtn" title="Play/pause (space)" data-i18n-title="vid.tt.playPause">▶</button>
+        <button id="playBtn" title="Play/pause (space)" data-i18n-title="vid.tt.playPause"><svg class="fx-i cheio" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4.5v15l12.5-7.5z"/></svg></button>
         <button class="ghost mini" id="back5" title="Back 5s (←)" data-i18n-title="vid.tt.back5">−5s</button>
         <button class="ghost mini" id="fwd5" title="Forward 5s (→)" data-i18n-title="vid.tt.fwd5">+5s</button>
-        <button class="ghost mini" id="muteBtn" title="Sound on/off" data-i18n-title="vid.tt.sound">🔊</button>
+        <button class="ghost mini" id="muteBtn" title="Sound on/off" data-i18n-title="vid.tt.sound"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
         <input type="range" id="seek" min="0" max="100" step="0.05" value="0">
         <div class="speeds" id="speeds"></div>
       </div>
@@ -1162,12 +1163,12 @@
         <div class="cdot" id="clipDot"></div>
         <div class="cinfo"><span id="clipName"></span><span class="crange" id="clipRange"></span></div>
         <div class="spacer"></div>
-        <button class="mini" id="clipReplay" title="Play the clip from the start" data-i18n-title="vid.tt.playClip">↺ Replay</button>
-        <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins" data-i18n-title="vid.tt.editMargins">✎ Edit time</button>
-        <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing" data-i18n-title="vid.tt.saveFraming">🔍 Frame</button>
-        <button class="mini" id="clipSlow" title="Slow motion on part of this clip" data-i18n-title="vid.slow.btnT">🐢 Slow</button>
-        <button class="mini" id="clipExport" title="Export this clip (.mp4)" data-i18n-title="vid.tt.exportClip">⤓ Export</button>
-        <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video" data-i18n-title="vid.tt.exitClip">✕ Exit clip</button>
+        <button class="mini" id="clipReplay" title="Play the clip from the start" data-i18n-title="vid.tt.playClip"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg><span>Replay</span></button>
+        <button class="mini" id="clipEditBtn" title="Edit start/end on the timeline with margins" data-i18n-title="vid.tt.editMargins"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg><span>Edit time</span></button>
+        <button class="mini" id="clipFrame" title="Save the current zoom as this clip's export framing" data-i18n-title="vid.tt.saveFraming"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 3v14h14M3 7h14v14"/></svg><span>Frame</span></button>
+        <button class="mini" id="clipSlow" title="Slow motion on part of this clip" data-i18n-title="vid.slow.btnT"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l-4.5-4.5M4 17h2M18 17h2"/></svg><span>Slow</span></button>
+        <button class="mini" id="clipExport" title="Export this clip (.mp4)" data-i18n-title="vid.tt.exportClip"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg><span>Export</span></button>
+        <button class="mini ghost" id="clipExit" title="Exit the clip and back to the full video" data-i18n-title="vid.tt.exitClip"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Exit clip</span></button>
       </div>
       <div id="slowRow"></div>
       <div id="trimWrap">
@@ -1279,7 +1280,7 @@
             <div id="expOrderNote" class="expnote" style="display:none;align-items:center;gap:8px;background:#eef3ff;border:1px solid #cfe0ff;border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:12px"></div>
             <div id="expNote" class="expnote"></div>
             <div class="exprow" style="margin-top:14px">
-              <button data-i18n="vid.export" class="primary" id="expRun" style="flex:1">⤓ Export</button>
+              <button class="primary" id="expRun" style="flex:1"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg><span data-i18n="vid.export">Export</span></button>
             </div>
           </div>
         </div>
@@ -1304,7 +1305,7 @@
         </div>
         <div id="bkStats" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="primary" id="bkExport" data-i18n="vid.bk.export">⤓ Export backup</button>
+          <button class="primary" id="bkExport"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg><span data-i18n="vid.bk.export">Export backup</span></button>
           <button class="ghost" id="bkImportBtn" data-i18n="vid.bk.import">⤒ Import backup</button>
           <input type="file" id="bkImportFile" accept="application/json,.json" style="display:none">
         </div>
@@ -1351,13 +1352,13 @@
     <span data-i18n="vid.tags">TAGS</span>
     <span data-i18n="vid.dragMove" style="font-weight:400;letter-spacing:0;color:var(--muted)">drag to move</span>
     <span class="spacer"></span>
-    <button class="mini ghost" id="tagWide" title="Dock as a horizontal bar at the bottom (off the video)" data-i18n-title="vid.tt.wideTags">⬌</button>
+    <button class="mini ghost" id="tagWide" title="Dock as a horizontal bar at the bottom (off the video)" data-i18n-title="vid.tt.wideTags"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg></button>
     <button class="mini ghost" id="panelMin" title="Minimize/expand" data-i18n-title="vid.tt.minimize">—</button>
   </div>
   <div class="fpbody" id="tagPanelBody">
     <div class="dashbar">
       <select id="dashSelect" title="Active dashboard" data-i18n-title="vid.tt.activeDash"></select>
-      <button class="mini" id="dashEditGo" title="Open the dashboards editor" data-i18n-title="vid.tt.openDashEditor">⚙ Dashboards</button>
+      <button class="mini" id="dashEditGo" title="Open the dashboards editor" data-i18n-title="vid.tt.openDashEditor"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Dashboards</span></button>
     </div>
     <div id="tagGrid"></div>
     <div class="addtag">
@@ -1365,7 +1366,7 @@
       <button data-i18n="vid.add" id="addTagBtn">Add</button>
     </div>
   </div>
-  <div class="fpresize" id="tagGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
+  <div class="fpresize" id="tagGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 9L9 20M20 15l-5 5"/></svg></div>
 </div>
 
 <div id="plPanel" class="fpanel">
@@ -1384,7 +1385,7 @@
       <div data-i18n="vid.noDrawings" class="empty">No drawings saved on the video timeline.</div>
     </div>
   </div>
-  <div class="fpresize" id="plGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize">◢</div>
+  <div class="fpresize" id="plGrip" title="Drag to resize" data-i18n-title="vid.tt.dragResize"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 9L9 20M20 15l-5 5"/></svg></div>
 </div>
 
 <!-- RELATORIO DE VIDEO PARA A DIRECAO -->
@@ -1393,7 +1394,7 @@
     <div class="modal-hdr" style="margin-bottom:4px">
       <h2 style="font-size:15px;font-weight:600"><span data-i18n="vid.rel.open">Report for the board</span>
         <span id="relTitulo" style="font-weight:400;color:var(--muted)"></span></h2>
-      <button class="modal-close" onclick="relFechar()">✕</button>
+      <button class="modal-close" onclick="relFechar()" aria-label="Close"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div id="relHint" style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste the YouTube link of each playlist and write what the board should notice.</div>
     <label class="rellb" data-i18n="vid.rel.geral">Opening note</label>
@@ -1454,7 +1455,7 @@
   <div class="st-sh" style="max-width:620px">
     <div class="modal-hdr" style="margin-bottom:4px">
       <h2 style="font-size:15px;font-weight:600"><span data-i18n="vid.ex.allTitle">Export every playlist in one video</span></h2>
-      <button class="modal-close" onclick="exAllFechar()">✕</button>
+      <button class="modal-close" onclick="exAllFechar()" aria-label="Close"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:11px" data-i18n="vid.ex.allHint">Tick what goes in, drag or use the arrows to set the order.</div>
     <div id="exAllList"></div>
@@ -1547,7 +1548,7 @@
     <span class="ctval" id="cineZmV">100%</span>
     <button class="mini ghost" id="cineZmP" data-i18n-title="vid.cine.zoomIn" title="Zoom in">+</button>
     <button class="mini" id="cineZmS" data-i18n-title="vid.cine.zoomSetT" title="Fix this framing on the clip">⟐ <span data-i18n="vid.cine.zoomSet">Set</span></button>
-    <button class="mini ghost" id="cineZmR" data-i18n-title="vid.cine.zoomReset" title="Remove framing">⟲</button>
+    <button class="mini ghost" id="cineZmR" data-i18n-title="vid.cine.zoomReset" title="Remove framing"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg></button>
     <span class="ctsep"></span>
     <span id="cineSlowBox"></span>
     <span class="ctsep"></span>
@@ -1590,8 +1591,8 @@
       </div>
       <label data-i18n="vid.outcome" class="nmlabel">Action</label>
       <div class="oc-group" id="ocGroup">
-        <button type="button" class="oc-btn" data-oc="ok"  data-i18n="vid.outcomeOk">✓ Correct</button>
-        <button type="button" class="oc-btn" data-oc="bad" data-i18n="vid.outcomeBad">✗ Wrong</button>
+        <button type="button" class="oc-btn" data-oc="ok"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="vid.outcomeOk">Correct</span></button>
+        <button type="button" class="oc-btn" data-oc="bad"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg><span data-i18n="vid.outcomeBad">Wrong</span></button>
         <button type="button" class="oc-btn" data-oc=""    data-i18n="vid.outcomeNone">— Not rated</button>
       </div>
       <label data-i18n="vid.notes" class="nmlabel" for="noteInput">Notes</label>
@@ -1606,7 +1607,7 @@
   </div>
 </div>
 
-<button id="fsShow" title="Show the header" data-i18n-title="vid.tt.showHeader">▾ Menu</button>
+<button id="fsShow" title="Show the header" data-i18n-title="vid.tt.showHeader"><svg class="fx-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg><span>Menu</span></button>
 <div id="ctxMenu"></div>
 
 <div id="statusBar">
@@ -1951,7 +1952,7 @@ function projBuildActionsPanel(currentPlId, onPick){
   grupos.forEach(g => {
     if (!g.pls.length) return;
     const h = document.createElement('div'); h.className = 'pagrp';
-    h.textContent = g.a ? ('🗂 ' + g.a.name) : TX('vid.an.loose');
+    h.textContent = g.a ? g.a.name : TX('vid.an.loose');
     panel.appendChild(h);
     g.pls.forEach(pl => {
       const row = document.createElement('div'); row.className = 'parow';
@@ -2219,7 +2220,7 @@ async function marcarVideosAusentes(p){
     if (f){ st.textContent = ''; continue; }
     st.innerHTML = '';
     const aviso = document.createElement('span'); aviso.className = 'vmiss';
-    aviso.textContent = '⚠ ' + TX('vid.rl.ausente', 'arquivo não encontrado (renomeado ou mudou de pasta?)');
+    fxEl(aviso, 'alert', TX('vid.rl.ausente', 'arquivo não encontrado (renomeado ou mudou de pasta?)'));
     const b = document.createElement('button'); b.className = 'mini primary'; b.textContent = TX('vid.rl.go', 'Localizar vídeo');
     b.addEventListener('click', (e) => { e.stopPropagation(); localizarVideo(p, v); });
     st.appendChild(aviso); st.appendChild(b);
@@ -2301,7 +2302,7 @@ function relPinta(){
       const h = document.createElement('label'); h.className = 'relgh';
       const ck = document.createElement('input'); ck.type = 'checkbox'; ck.checked = !!_rel.sel[g.id];
       ck.addEventListener('change', function(){ relToggleG(g.id); });
-      const nm = document.createElement('span'); nm.className = 'relgn'; nm.textContent = '🗂 ' + g.nome;
+      const nm = document.createElement('span'); nm.className = 'relgn'; fxEl(nm, 'folder', g.nome);
       const ct = document.createElement('span'); ct.className = 'relct';
       ct.textContent = g.pls.length + ' ' + TX('vid.rel.mPl','Playlists').toLowerCase();
       h.appendChild(ck); h.appendChild(nm); h.appendChild(ct);
@@ -2320,7 +2321,7 @@ function relPinta(){
       lkA.addEventListener('input', guarda); lkA.addEventListener('change', guarda);
       /* o texto do botao e seu: "Assistir ao jogo", "Ver no YouTube"… */
       const bt = document.createElement('input'); bt.type = 'text'; bt.className = 'relin relbt'; bt.maxLength = 40;
-      bt.placeholder = TX('vid.rel.watchAn','▶ Assistir ao vídeo');
+      bt.placeholder = TX('vid.rel.watchAn','Assistir ao vídeo');
       bt.title = TX('vid.rel.btLabel','Texto do botão no relatório');
       bt.value = dono.linkTxt || '';
       const guardaBt = function(){ dono.linkTxt = bt.value.trim(); relAgenda(); };
@@ -2725,7 +2726,7 @@ function videoRow(p, v){
   const row = document.createElement('div'); row.className = 'librow';
   row.dataset.vkey = v.srcKey || '';
   const info = document.createElement('div'); info.style.flex = '1';
-  info.innerHTML = '<div class="lname">🎬 ' + escapeHtml(v.srcName || '—') + '</div>';
+  info.innerHTML = '<div class="lname">' + FXIco('film') + ' ' + escapeHtml(v.srcName || '—') + '</div>';
   const nClips = projAllClips(p).filter(c => c.srcKey === v.srcKey).length;
   const sub = document.createElement('div'); sub.className = 'lsub';
   sub.style.cssText = 'font-size:11px;color:var(--muted)';
@@ -2747,7 +2748,7 @@ function videoRow(p, v){
   if (projAnalises(p).length) row.appendChild(sel);
   const bOpen = document.createElement('button'); bOpen.className = 'mini primary'; bOpen.textContent = TX('vid.open');
   bOpen.addEventListener('click', () => projOpenVideo(v.srcName));
-  const bRm = document.createElement('button'); bRm.className = 'mini ghost danger'; bRm.textContent = '✕'; bRm.title = TX('vid.proj.removeVideo');
+  const bRm = document.createElement('button'); bRm.className = 'mini ghost danger'; bRm.title = TX('vid.proj.removeVideo'); fxEl(bRm, 'x');
   bRm.addEventListener('click', () => projRemoveVideo(v.srcKey));
   row.appendChild(bOpen); row.appendChild(bRm);
   return row;
@@ -2759,7 +2760,7 @@ function secaoRecolhivel(p, chave, titulo, extra, montarCorpo, abertaPorPadrao){
   const aberta = (p.ui[chave] === undefined) ? !!abertaPorPadrao : !!p.ui[chave];
   const wrap = document.createElement('div'); wrap.className = 'psec' + (aberta ? ' open' : '');
   const head = document.createElement('div'); head.className = 'psec-h';
-  const car = document.createElement('span'); car.className = 'psec-car'; car.textContent = '▸';
+  const car = document.createElement('span'); car.className = 'psec-car'; car.innerHTML = FXIco('chevR', 'sm');
   const nm = document.createElement('span'); nm.className = 'psec-t'; nm.textContent = titulo;
   head.appendChild(car); head.appendChild(nm);
   if (extra){ const ex = document.createElement('span'); ex.className = 'psec-x'; ex.textContent = extra; head.appendChild(ex); }
@@ -2782,7 +2783,7 @@ function playlistCard(p, pl){
         const _plAberta = !pl.fechada;
         const card = document.createElement('div'); card.className = 'expgrp plcard' + (_plAberta ? ' open' : '');
         const head = document.createElement('div'); head.className = 'ghead'; head.style.gap = '8px';
-        const car = document.createElement('button'); car.className = 'plcar'; car.textContent = '▸';
+        const car = document.createElement('button'); car.className = 'plcar'; car.innerHTML = FXIco('chevR', 'sm');
         car.title = TX(_plAberta ? 'vid.fold.collapse' : 'vid.fold.expand');
         car.addEventListener('click', () => {
           if (pl.fechada) delete pl.fechada; else pl.fechada = true;
@@ -2800,10 +2801,10 @@ function playlistCard(p, pl){
           const f = plFolderCreate(pl, nome);
           if (f){ log(TX('vid.fold.created') + f.name); renderProjectTab(); }
         });
-        const bPlay = document.createElement('button'); bPlay.className = 'mini'; bPlay.textContent = '▶ ' + TX('vid.proj.play');
+        const bPlay = document.createElement('button'); bPlay.className = 'mini'; fxEl(bPlay, 'play', TX('vid.proj.play'));
         bPlay.title = TX('vid.proj.playHint');
         bPlay.addEventListener('click', () => cineOpen(pl));
-        const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+        const bExp = document.createElement('button'); bExp.className = 'mini primary'; fxEl(bExp, 'download', TX('vid.proj.export')); bExp.title = TX('vid.proj.expHint');
         bExp.addEventListener('click', () => { plNormaliza(pl); exportCombined(plFlat(pl), p.name + ' - ' + pl.name); });
         const bDel = document.createElement('button'); bDel.className = 'mini ghost danger'; bDel.textContent = TX('vid.delete');
         bDel.addEventListener('click', async () => {
@@ -2811,7 +2812,7 @@ function playlistCard(p, pl){
           p.playlists = projPlaylistsOf(p).filter(x => x.id !== pl.id); projPersist(); renderProjectTab();
         });
         /* manda a playlist inteira para uma apresentacao (bloco sincronizado) */
-        const bApr = document.createElement('button'); bApr.className = 'mini ghost'; bApr.textContent = '📽 ' + TX('vid.apr.short', 'Presentation');
+        const bApr = document.createElement('button'); bApr.className = 'mini ghost'; fxEl(bApr, 'screen', TX('vid.apr.short', 'Presentation'));
         bApr.title = TX('vid.apr.sendPlT', 'Add this whole playlist to a presentation (stays synced)');
         bApr.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -2878,7 +2879,7 @@ function playlistCard(p, pl){
             let ic;
             if (grupo.folder){
               ic = document.createElement('button'); ic.className = 'pfcar';
-              ic.textContent = '▸';
+              ic.innerHTML = FXIco('chevR', 'sm');
               ic.title = TX(plFoldAberta(grupo.folder) ? 'vid.fold.collapse' : 'vid.fold.expand');
               if (plFoldAberta(grupo.folder)) ic.classList.add('open');
               ic.addEventListener('click', (e) => { e.stopPropagation(); plFoldToggle(pl, grupo.folder); renderProjectTab(); });
@@ -2909,7 +2910,7 @@ function playlistCard(p, pl){
                 const fs = plFolders(pl); fs.splice(fi, 1); fs.splice(fi + 1, 0, grupo.folder);
                 plNormaliza(pl); projPersist(); renderProjectTab();
               });
-              const fx = document.createElement('button'); fx.className = 'mini ghost danger'; fx.textContent = '✕';
+              const fx = document.createElement('button'); fx.className = 'mini ghost danger'; fx.innerHTML = FXIco('trash');
               fx.title = TX('vid.fold.del');
               fx.addEventListener('click', async () => {
                 if (!(await askConfirm(TX('vid.fold.del'), TX('vid.fold.delQ') + grupo.folder.name + TX('vid.fold.delQ2'), TX('vid.delete')))) return;
@@ -2951,17 +2952,17 @@ function playlistCard(p, pl){
             });
             const meta = document.createElement('div'); meta.className = 'pmeta';
             meta.textContent = (it.spec ? it.spec + ' · ' : '') + (it.srcName || '') + ' · ' + fmt(it.start) + '→' + fmt(it.end)
-              + (it.exportZoom && it.exportZoom.zoom > 1.001 ? ' · 🔍' + Math.round(it.exportZoom.zoom * 100) + '%' : '')
-              + (slowValido(it.slow) ? ' · 🐢' + slowTxtRate(it.slow.rate) : '');
+              + (it.exportZoom && it.exportZoom.zoom > 1.001 ? ' · zoom ' + Math.round(it.exportZoom.zoom * 100) + '%' : '')
+              + (slowValido(it.slow) ? ' · ' + TX('vid.slow.curto', 'slow') + ' ' + slowTxtRate(it.slow.rate) : '');
             tx.appendChild(nm2); tx.appendChild(meta);
 
             const actWrap = document.createElement('div'); actWrap.style.width = '100%';
             const btns = document.createElement('div'); btns.className = 'pbtns';
-            const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.textContent = '▲';
+            const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.innerHTML = FXIco('chevU', 'sm');
             bUp.title = TX('vid.proj.itemUp'); bUp.disabled = ord === 0;
             /* com pastas, a fronteira e util: descer para dentro da pasta seguinte */
             bUp.addEventListener('click', () => projItemNudge(pl, it.id, -1));
-            const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.textContent = '▼';
+            const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.innerHTML = FXIco('chevD', 'sm');
             bDn.title = TX('vid.proj.itemDown'); bDn.disabled = ord === items.length - 1 && !plFolders(pl).length;
             bDn.addEventListener('click', () => projItemNudge(pl, it.id, 1));
             const bMove = document.createElement('button'); bMove.className = 'mini ghost'; bMove.textContent = '⋯'; bMove.title = TX('vid.proj.moveCopy');
@@ -2974,7 +2975,7 @@ function playlistCard(p, pl){
               });
               actWrap.appendChild(panel);
             });
-            const rm = document.createElement('button'); rm.className = 'mini ghost danger'; rm.textContent = '✕'; rm.title = TX('vid.proj.removeItem');
+            const rm = document.createElement('button'); rm.className = 'mini ghost danger'; rm.title = TX('vid.proj.removeItem'); fxEl(rm, 'x');
             rm.addEventListener('click', () => { pl.items = items.filter(x => x.id !== it.id); projPersist(); renderProjectTab(); });
             btns.appendChild(bUp); btns.appendChild(bDn); btns.appendChild(bMove); btns.appendChild(rm);
 
@@ -3057,7 +3058,7 @@ function _renderProjectTab(){
     const nmInp = document.createElement('input'); nmInp.value = p.name; nmInp.maxLength = 60;
     nmInp.style.cssText = 'flex:1;min-width:120px;font-weight:700';
     nmInp.addEventListener('change', () => { const v = nmInp.value.trim(); if (v){ p.name = v.slice(0, 60); projPersist(); } });
-    const bWork = document.createElement('button'); bWork.className = 'mini primary'; bWork.textContent = TX('vid.proj.goBench');
+    const bWork = document.createElement('button'); bWork.className = 'mini primary'; fxEl(bWork, 'play', TX('vid.proj.goBench'));
     bWork.addEventListener('click', () => { state.projectMode = true; updateProjBar(); switchTab('analise'); log(TX('vid.proj.benchHint')); });
     const bClose = document.createElement('button'); bClose.className = 'mini ghost'; bClose.textContent = TX('vid.proj.close'); bClose.title = TX('vid.proj.closeTip','Closes the view only — the project stays saved.');
     bClose.addEventListener('click', () => { projClose(); renderProjectTab(); });
@@ -3095,9 +3096,9 @@ function _renderProjectTab(){
     const fRow = document.createElement('div');
     fRow.className = 'exprow'; fRow.style.cssText = 'align-items:center;gap:8px;margin:8px 0 4px';
     const fLbl = document.createElement('span'); fLbl.style.cssText = 'font-size:12px;color:var(--muted);flex:1';
-    fLbl.textContent = '🔗 ' + TX('vid.proj.folder') + ': ' + (p.folderName ? p.folderName : TX('vid.proj.folderNone'));
+    fxEl(fLbl, 'link', TX('vid.proj.folder') + ': ' + (p.folderName ? p.folderName : TX('vid.proj.folderNone')));
     const fBtn = document.createElement('button'); fBtn.className = 'mini';
-    fBtn.textContent = p.folderName ? TX('vid.proj.folderChange') : TX('vid.proj.folderLink');
+    fxEl(fBtn, 'folder', p.folderName ? TX('vid.proj.folderChange') : TX('vid.proj.folderLink'));
     fBtn.addEventListener('click', projLinkFolder);
     if (!fsSupported()){ fBtn.disabled = true; fBtn.title = TX('vid.proj.fsUnsupported'); }
     fRow.appendChild(fLbl); fRow.appendChild(fBtn);
@@ -3120,7 +3121,7 @@ function _renderProjectTab(){
       if (a){ log(TX('vid.an.created') + a.name); renderProjectTab(); }
     });
     const anRel = document.createElement('button'); anRel.className = 'mini ghost';
-    anRel.textContent = TX('vid.rel.period'); anRel.title = TX('vid.rel.periodT');
+    anRel.title = TX('vid.rel.periodT'); fxEl(anRel, 'review', TX('vid.rel.period'));
     anRel.addEventListener('click', () => relAbrir(p, null));
     anHdr.appendChild(anT); anHdr.appendChild(anRel); anHdr.appendChild(anNew);
     box.appendChild(anHdr);
@@ -3138,24 +3139,24 @@ function _renderProjectTab(){
       const card = document.createElement('div'); card.className = 'ancard' + (aberta ? ' open' : '');
       const head = document.createElement('div'); head.className = 'anhead';
       if (a){
-        const car = document.createElement('span'); car.className = 'ancar'; car.textContent = '▸';
+        const car = document.createElement('span'); car.className = 'ancar'; car.innerHTML = FXIco('chevR', 'sm');
         head.appendChild(car);
       }
       const nm = document.createElement('span'); nm.className = 'annm';
-      nm.textContent = a ? ('🗂 ' + a.name) : TX('vid.an.loose');
+      if (a) fxEl(nm, 'folder', a.name); else nm.textContent = TX('vid.an.loose');
       if (!a) nm.classList.add('solta');
       const ct = document.createElement('span'); ct.className = 'anct';
-      ct.textContent = jogos.length + ' 🎬 · ' + pls.length + ' ▶';
+      ct.innerHTML = jogos.length + ' ' + FXIco('film', 'sm') + ' · ' + pls.length + ' ' + FXIco('list', 'sm');
       head.appendChild(nm); head.appendChild(ct);
       const sp = document.createElement('span'); sp.style.flex = '1'; head.appendChild(sp);
       if (a){
-        const bRel = document.createElement('button'); bRel.className = 'mini ghost'; bRel.textContent = TX('vid.rel.btn');
+        const bRel = document.createElement('button'); bRel.className = 'mini ghost'; fxEl(bRel, 'review', TX('vid.rel.btn'));
         bRel.title = TX('vid.rel.open');
         bRel.addEventListener('click', (e) => { e.stopPropagation(); relAbrir(p, a); });
-        const bExpAll = document.createElement('button'); bExpAll.className = 'mini'; bExpAll.textContent = TX('vid.ex.all');
+        const bExpAll = document.createElement('button'); bExpAll.className = 'mini'; fxEl(bExpAll, 'download', TX('vid.ex.all'));
         bExpAll.title = TX('vid.ex.allTitle');
         bExpAll.addEventListener('click', (e) => { e.stopPropagation(); exAllAbrir(p, a); });
-        const bRen = document.createElement('button'); bRen.className = 'mini ghost'; bRen.textContent = '✎';
+        const bRen = document.createElement('button'); bRen.className = 'mini ghost'; bRen.innerHTML = FXIco('pencil');
         bRen.title = TX('vid.an.rename');
         bRen.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -3164,18 +3165,18 @@ function _renderProjectTab(){
           a.name = nv.trim().slice(0, 50); projPersist(); renderProjectTab();
         });
         const fi = projAnalises(p).indexOf(a);
-        const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.textContent = '▲'; bUp.disabled = fi === 0;
+        const bUp = document.createElement('button'); bUp.className = 'mini ghost'; bUp.innerHTML = FXIco('chevU', 'sm'); bUp.disabled = fi === 0;
         bUp.addEventListener('click', (e) => {
           e.stopPropagation();
           const as = projAnalises(p); as.splice(fi, 1); as.splice(fi - 1, 0, a); projPersist(); renderProjectTab();
         });
-        const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.textContent = '▼';
+        const bDn = document.createElement('button'); bDn.className = 'mini ghost'; bDn.innerHTML = FXIco('chevD', 'sm');
         bDn.disabled = fi === projAnalises(p).length - 1;
         bDn.addEventListener('click', (e) => {
           e.stopPropagation();
           const as = projAnalises(p); as.splice(fi, 1); as.splice(fi + 1, 0, a); projPersist(); renderProjectTab();
         });
-        const bX = document.createElement('button'); bX.className = 'mini ghost danger'; bX.textContent = '✕'; bX.title = TX('vid.an.del');
+        const bX = document.createElement('button'); bX.className = 'mini ghost danger'; bX.title = TX('vid.an.del'); fxEl(bX, 'trash');
         bX.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (!(await askConfirm(TX('vid.an.del'), TX('vid.an.delQ') + a.name + TX('vid.an.delQ2'), TX('vid.delete')))) return;
@@ -3253,8 +3254,8 @@ function _renderProjectTab(){
     const gkBar = document.createElement('div'); gkBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px';
     gkList().forEach(g => {
       const chip = document.createElement('span'); chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:20px;font-size:12px';
-      chip.textContent = '🧤 ' + g;
-      const x = document.createElement('button'); x.className = 'mini ghost danger'; x.textContent = '✕'; x.style.cssText = 'padding:0 4px;border:none'; x.title = TX('vid.gkRemove');
+      fxEl(chip, 'user', g);
+      const x = document.createElement('button'); x.className = 'mini ghost danger'; x.style.cssText = 'padding:0 4px;border:none'; x.title = TX('vid.gkRemove'); fxEl(x, 'x');
       x.addEventListener('click', () => { gkRemove(g); renderProjectTab(); });
       chip.appendChild(x); gkBar.appendChild(chip);
     });
@@ -3280,18 +3281,18 @@ function _renderProjectTab(){
         const arr = byGk[gk];
         const card = document.createElement('div'); card.className = 'expgrp';
         const head = document.createElement('div'); head.className = 'ghead';
-        const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = gk === '—' ? TX('vid.gkUnassigned') : ('🧤 ' + gk);
+        const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; if (gk === '—') nm.textContent = TX('vid.gkUnassigned'); else fxEl(nm, 'user', gk);
         const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = arr.length + ' ' + TX('vid.f.clips');
         head.appendChild(nm); head.appendChild(cnt);
         if (gk !== '—'){
-          const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+          const bExp = document.createElement('button'); bExp.className = 'mini primary'; fxEl(bExp, 'download', TX('vid.proj.export')); bExp.title = TX('vid.proj.expHint');
           bExp.addEventListener('click', () => exportCombined(arr, p.name + ' - ' + gk));
           head.appendChild(bExp);
         }
         card.appendChild(head);
         const bySrc = {}; arr.forEach(it => { const k = it.srcName || '—'; (bySrc[k] = bySrc[k] || []).push(it); });
         Object.keys(bySrc).forEach(src => {
-          const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:8px 0 4px'; sh.textContent = '🎬 ' + src;
+          const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:8px 0 4px'; fxEl(sh, 'film', src);
           card.appendChild(sh);
           bySrc[src].forEach(it => {
             const row = document.createElement('div'); row.className = 'expitem';
@@ -3370,11 +3371,11 @@ function _renderProjectTab(){
       const listaJ = Object.values(jogos).sort((a, b) => a.ord - b.ord || a.nome.localeCompare(b.nome));
       const card = document.createElement('div'); card.className = 'expgrp ptag';
       const head = document.createElement('div'); head.className = 'ghead ptag-h';
-      const car = document.createElement('span'); car.className = 'ptag-car'; car.textContent = '▸';
+      const car = document.createElement('span'); car.className = 'ptag-car'; car.innerHTML = FXIco('chevR', 'sm');
       const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = T.cor;
       const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-weight:700'; nm.textContent = T.nome;
       const cnt = document.createElement('span'); cnt.className = 'er'; cnt.textContent = listaJ.length + ' ' + TX('vid.reu.games', 'game(s)') + ' · ' + T.arr.length + ' ' + TX('vid.f.clips');
-      const bExp = document.createElement('button'); bExp.className = 'mini primary'; bExp.textContent = TX('vid.proj.export'); bExp.title = TX('vid.proj.expHint');
+      const bExp = document.createElement('button'); bExp.className = 'mini primary'; fxEl(bExp, 'download', TX('vid.proj.export')); bExp.title = TX('vid.proj.expHint');
       bExp.addEventListener('click', () => exportCombined([].concat(...listaJ.map(j => j.arr)), p.name + ' - ' + T.nome));
       head.appendChild(car); head.appendChild(dot); head.appendChild(nm); head.appendChild(cnt); head.appendChild(bExp);
       card.appendChild(head);
@@ -3382,10 +3383,10 @@ function _renderProjectTab(){
       recolhe('tg:' + T.k, head, corpoT, (alvoT) => {
         listaJ.forEach(J => {
           const jh = document.createElement('div'); jh.className = 'pjogo-h';
-          const jc = document.createElement('span'); jc.className = 'ptag-car'; jc.textContent = '▸';
-          const jn = document.createElement('span'); jn.style.cssText = 'flex:1;font-weight:600'; jn.textContent = '🗂 ' + J.nome;
+          const jc = document.createElement('span'); jc.className = 'ptag-car'; jc.innerHTML = FXIco('chevR', 'sm');
+          const jn = document.createElement('span'); jn.style.cssText = 'flex:1;font-weight:600'; fxEl(jn, 'folder', J.nome);
           const jq = document.createElement('span'); jq.className = 'er'; jq.textContent = J.arr.length + ' ' + TX('vid.f.clips');
-          const jx = document.createElement('button'); jx.className = 'mini ghost'; jx.textContent = TX('vid.proj.export');
+          const jx = document.createElement('button'); jx.className = 'mini ghost'; fxEl(jx, 'download', TX('vid.proj.export'));
           jx.title = TX('vid.proj.expGameT', 'Export only this game');
           jx.addEventListener('click', () => exportCombined(J.arr, p.name + ' - ' + J.nome + ' - ' + T.nome));
           jh.appendChild(jc); jh.appendChild(jn); jh.appendChild(jq); jh.appendChild(jx);
@@ -3397,7 +3398,7 @@ function _renderProjectTab(){
             fontes.forEach(src => {
               /* com dois vídeos no jogo (1º e 2º tempo), cada um tem o seu título */
               if (fontes.length > 1 || J.k.indexOf('v:') !== 0){
-                const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:6px 0 3px 18px'; sh.textContent = '🎬 ' + src;
+                const sh = document.createElement('div'); sh.className = 'fpsection'; sh.style.cssText = 'margin:6px 0 3px 18px'; fxEl(sh, 'film', src);
                 alvoJ.appendChild(sh);
               }
               bySrc[src].sort((a, b) => (a.start || 0) - (b.start || 0)).forEach(it => linhaLance(it, tg, alvoJ));
@@ -3643,8 +3644,8 @@ video.addEventListener('timeupdate', () => {
   enforceClipBounds();
   tickPlaylist();
 });
-video.addEventListener('play', () => { $('playBtn').textContent = '⏸'; });
-video.addEventListener('pause', () => { $('playBtn').textContent = '▶'; });
+video.addEventListener('play', () => { $('playBtn').innerHTML = FXIco('pause'); });
+video.addEventListener('pause', () => { $('playBtn').innerHTML = FXIco('play'); });
 
 /* ---------------- player: controles ---------------- */
 function togglePlay(){
@@ -3658,7 +3659,7 @@ $('back5').addEventListener('click', () => { seekClamped(video.currentTime - 5);
 $('fwd5').addEventListener('click', () => { seekClamped(video.currentTime + 5); });
 $('muteBtn').addEventListener('click', () => {
   video.muted = !video.muted;
-  $('muteBtn').textContent = video.muted ? '🔇' : '🔊';
+  $('muteBtn').innerHTML = FXIco(video.muted ? 'mute' : 'volume');
 });
 
 const seekEl = $('seek');
@@ -3752,7 +3753,7 @@ function hubExpand(on){
   document.body.classList.toggle('app-fs', _vidMax);
   if (!_vidMax) document.body.classList.remove('hide-header');
   $('toggleHeader').style.display = (_vidMax || isAppFs()) ? '' : 'none';
-  $('appFullscreen').textContent = (_vidMax || isAppFs()) ? TX('vid.f.exit') : TX('vid.fullscreen');
+  fxEl($('appFullscreen'), 'expand', (_vidMax || isAppFs()) ? TX('vid.f.exit') : TX('vid.fullscreen'));
   setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
 }
 function toggleAppFullscreen(){
@@ -3824,7 +3825,7 @@ function syncAppFs(){
   const on = isAppFs();
   document.body.classList.toggle('app-fs', on);
   $('toggleHeader').style.display = on ? '' : 'none';
-  $('appFullscreen').textContent = on ? TX('vid.f.exit') : TX('vid.fullscreen');
+  fxEl($('appFullscreen'), 'expand', on ? TX('vid.f.exit') : TX('vid.fullscreen'));
   if (!on) document.body.classList.remove('hide-header');
   setTimeout(() => { if (typeof resizeDrawCanvas === 'function') resizeDrawCanvas(); }, 80);
 }
@@ -4124,7 +4125,7 @@ function slowMontar(box, ctx){
   const sl = ctx.get();
   const ok = slowValido(sl);
   const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-  const lbl = mk('span', 'slowlbl ctlbl', '🐢 ' + TX('vid.slow.lbl', 'CÂMERA LENTA'));
+  const lbl = fxEl(mk('span', 'slowlbl ctlbl', ''), 'slow', TX('vid.slow.lbl', 'CÂMERA LENTA'));
   const bA = mk('button', 'mini', '⟐ ' + TX('vid.slow.from', 'início aqui'));
   bA.title = TX('vid.slow.fromT', 'O trecho lento começa no quadro atual');
   const val = mk('span', 'slowval', ok ? (fmt(sl.a, true) + ' → ' + fmt(sl.b, true)) : TX('vid.slow.none', 'sem trecho'));
@@ -4134,10 +4135,10 @@ function slowMontar(box, ctx){
   sel.title = TX('vid.slow.rateT', 'Velocidade do trecho lento');
   SLOW_RATES.forEach(r => { const o = mk('option', '', slowTxtRate(r)); o.value = r;
     if (Math.abs((ok ? sl.rate : _slowRateEscolhida) - r) < 0.001) o.selected = true; sel.appendChild(o); });
-  const bVer = mk('button', 'mini ghost', '▶ ' + TX('vid.slow.see', 'ver'));
+  const bVer = fxEl(mk('button', 'mini ghost', ''), 'play', TX('vid.slow.see', 'ver'));
   bVer.title = TX('vid.slow.seeT', 'Toca a partir de 1 s antes do trecho lento');
   bVer.disabled = !ok;
-  const bX = mk('button', 'mini ghost', '⟲');
+  const bX = mk('button', 'mini ghost', ''); bX.innerHTML = FXIco('replay');
   bX.title = TX('vid.slow.clear', 'Remover câmera lenta');
   bX.disabled = !ok;
 
@@ -4197,10 +4198,10 @@ function slowClipPinta(){
   if (!btn || !row) return;
   const sl = c ? c.ev.slow : null;
   if (slowValido(sl)){
-    btn.textContent = '🐢 ' + slowTxtRate(sl.rate);
+    fxEl(btn, 'slow', slowTxtRate(sl.rate));
     btn.classList.add('primary');
   } else {
-    btn.textContent = TX('vid.slow.btn', '🐢 Lento');
+    fxEl(btn, 'slow', TX('vid.slow.btn', 'Lento'));
     btn.classList.remove('primary');
   }
   if (row.classList.contains('on')) slowMontar(row, slowClipCtx());
@@ -4338,10 +4339,10 @@ function updateClipFrameBtn(){
   const btn = $('clipFrame');
   if (!btn) return;
   if (c && c.ev.exportZoom){
-    btn.textContent = TX('vid.f.framed') + Math.round(c.ev.exportZoom.zoom * 100) + '%)';
+    fxEl(btn, 'frame', TX('vid.f.framed') + Math.round(c.ev.exportZoom.zoom * 100) + '%)');
     btn.classList.add('primary');
   } else {
-    btn.textContent = TX('vid.frame');
+    fxEl(btn, 'frame', TX('vid.frame'));
     btn.classList.remove('primary');
   }
 }
@@ -4779,15 +4780,15 @@ function specHead(bloco, tag){
   h.appendChild(nm); h.appendChild(ct);
   if (ok || bad){
     const oc = document.createElement('span'); oc.className = 'occount';
-    oc.innerHTML = (ok ? '<span class="ok">✓' + ok + '</span>' : '') + (ok && bad ? ' ' : '') +
-                   (bad ? '<span class="bad">✗' + bad + '</span>' : '');
+    oc.innerHTML = (ok ? '<span class="ok">' + FXIco('check', 'sm') + ok + '</span>' : '') + (ok && bad ? ' ' : '') +
+                   (bad ? '<span class="bad">' + FXIco('x', 'sm') + bad + '</span>' : '');
     h.appendChild(oc);
   }
   const sp = document.createElement('span'); sp.className = 'spacer'; h.appendChild(sp);
   const rotulo = (tag.name + ' · ' + (bloco.spec || TX('vid.spec.unspec')));
-  const bVer = document.createElement('button'); bVer.className = 'mini ghost'; bVer.textContent = TX('vid.f.viewAll');
+  const bVer = document.createElement('button'); bVer.className = 'mini ghost'; fxEl(bVer, 'play', TX('vid.f.viewAll'));
   bVer.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(bloco.evs, rotulo); });
-  const bSel = document.createElement('button'); bSel.className = 'mini ghost'; bSel.textContent = TX('vid.f.select');
+  const bSel = document.createElement('button'); bSel.className = 'mini ghost'; fxEl(bSel, 'check', TX('vid.f.select'));
   bSel.addEventListener('click', (e) => {
     e.stopPropagation();
     bloco.evs.forEach(ev => selectedIds.add(ev.id));
@@ -4814,14 +4815,14 @@ function renderPlaylists(){
   if (gkList().length){
     const fr = document.createElement('div');
     fr.style.cssText = 'display:flex;gap:6px;align-items:center;padding:2px 2px 7px;border-bottom:1px solid var(--line,#eee);margin-bottom:6px';
-    const lbl = document.createElement('span'); lbl.textContent = '🧤'; lbl.style.fontSize = '13px'; lbl.style.flex = 'none';
+    const lbl = document.createElement('span'); lbl.innerHTML = FXIco('user'); lbl.style.fontSize = '13px'; lbl.style.flex = 'none';
     const sel = document.createElement('select'); sel.style.cssText = 'flex:1;min-width:0;padding:4px 6px;font-size:12px;border:1px solid var(--line,#ddd);border-radius:5px;background:#fff';
     const oAll = document.createElement('option'); oAll.value = ''; oAll.textContent = TX('vid.gkFilterAll'); sel.appendChild(oAll);
     gkList().forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; if (g === _gkFilter) o.selected = true; sel.appendChild(o); });
     sel.addEventListener('change', () => { _gkFilter = sel.value; renderPlaylists(); });
     fr.appendChild(lbl); fr.appendChild(sel);
     if (_gkFilter){
-      const exp = document.createElement('button'); exp.className = 'mini primary'; exp.textContent = '⤓'; exp.title = TX('vid.gkFilterExport'); exp.style.flex = 'none';
+      const exp = document.createElement('button'); exp.className = 'mini primary'; exp.innerHTML = FXIco('download'); exp.title = TX('vid.gkFilterExport'); exp.style.flex = 'none';
       exp.addEventListener('click', () => {
         const gkEvs = state.events.filter(e => (e.gk || '') === _gkFilter);
         if (!gkEvs.length){ log(TX('vid.gkFilterNone'), 'err'); return; }
@@ -4861,7 +4862,7 @@ function renderPlaylists(){
 
     const head = document.createElement('div');
     head.className = 'phead';
-    head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(isOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">▸</button>' +
+    head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(isOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">' + FXIco('chevR', 'sm') + '</button>' +
       '<div class="dot" style="background:' + g.tag.color + '"></div>' +
       '<div class="pname">' + escapeHtml(g.tag.name) + '</div>' +
       '<div class="count">' + g.evs.length + ' clip' + (g.evs.length === 1 ? '' : 's') + '</div>' +
@@ -4869,8 +4870,8 @@ function renderPlaylists(){
         const ok = g.evs.filter(e => e.outcome === 'ok').length;
         const bad = g.evs.filter(e => e.outcome === 'bad').length;
         if (!ok && !bad) return '';
-        return '<div class="occount">' + (ok ? '<span class="ok">✓' + ok + '</span>' : '') +
-               (ok && bad ? ' ' : '') + (bad ? '<span class="bad">✗' + bad + '</span>' : '') + '</div>';
+        return '<div class="occount">' + (ok ? '<span class="ok">' + FXIco('check', 'sm') + ok + '</span>' : '') +
+               (ok && bad ? ' ' : '') + (bad ? '<span class="bad">' + FXIco('x', 'sm') + bad + '</span>' : '') + '</div>';
       })() +
       '<div class="spacer"></div>';
 
@@ -4885,13 +4886,13 @@ function renderPlaylists(){
 
     const playAll = document.createElement('button');
     playAll.className = 'mini ghost';
-    playAll.textContent = TX('vid.f.viewAll');
+    fxEl(playAll, 'play', TX('vid.f.viewAll'));
     playAll.title = TX('vid.tt.playTagClips');
     playAll.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(g.evs, g.tag.name); });
 
     const selAll = document.createElement('button');
     selAll.className = 'mini ghost';
-    selAll.textContent = TX('vid.f.select');
+    fxEl(selAll, 'check', TX('vid.f.select'));
     selAll.title = TX('vid.tt.selectTagClips');
     selAll.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4961,7 +4962,7 @@ function renderPlaylists(){
       const ocEl = document.createElement('span');
       const _oc = ev.outcome === 'ok' || ev.outcome === 'bad' ? ev.outcome : '';
       ocEl.className = 'ocdot ' + (_oc || 'none');
-      ocEl.textContent = _oc === 'ok' ? '✓' : _oc === 'bad' ? '✗' : '·';
+      ocEl.innerHTML = _oc === 'ok' ? FXIco('check', 'sm') : _oc === 'bad' ? FXIco('x', 'sm') : '·';
       ocEl.title = ocLabel(_oc) + ' — ' + TX('vid.tt.outcomeToggle', 'click to change');
       ocEl.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -5004,7 +5005,7 @@ function renderPlaylists(){
 
       const bEdit = document.createElement('button');
       bEdit.className = 'mini ghost';
-      bEdit.textContent = '✎';
+      bEdit.innerHTML = FXIco('pencil');
       bEdit.title = TX('vid.tt.editStartEnd');
       bEdit.addEventListener('click', (e) => { e.stopPropagation(); openClip(ev, g.tag, true); });
 
@@ -5012,7 +5013,7 @@ function renderPlaylists(){
          agora tem um botao visivel na linha do lance. */
       const bDraw = document.createElement('button');
       bDraw.className = 'mini ghost';
-      bDraw.textContent = '✏️';
+      bDraw.innerHTML = FXIco('pen');
       bDraw.title = TX('vid.tt.drawClip');
       bDraw.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -5085,7 +5086,7 @@ function renderPlaylists(){
       if (plOpen) wrap.classList.add('open');
       const head = document.createElement('div');
       head.className = 'phead';
-      head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(plOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">▸</button>' +
+      head.innerHTML = '<button class="caret" title="' + escapeHtml(TX(plOpen ? 'vid.tt.collapse' : 'vid.tt.expand')) + '">' + FXIco('chevR', 'sm') + '</button>' +
         '<div class="dot" style="background:var(--blue)"></div>' +
         '<div class="pname">' + escapeHtml(pl.name) + '</div>' +
         '<div class="count">' + evs.length + ' clip' + (evs.length === 1 ? '' : 's') + '</div>' +
@@ -5100,7 +5101,7 @@ function renderPlaylists(){
       head.querySelector('.caret').addEventListener('click', (e) => { e.stopPropagation(); plToggle(); });
       const bPlay = document.createElement('button');
       bPlay.className = 'mini';
-      bPlay.textContent = TX('vid.f.playlistBtn');
+      fxEl(bPlay, 'play', TX('vid.f.playlistBtn'));
       bPlay.disabled = !evs.length;
       bPlay.addEventListener('click', (e) => { e.stopPropagation(); startPlaylist(evs.slice(), pl.name); });   /* ordem da playlist */
       const bExp = document.createElement('button');
@@ -5121,7 +5122,7 @@ function renderPlaylists(){
       });
       const bDel = document.createElement('button');
       bDel.className = 'mini ghost danger';
-      bDel.textContent = '✕';
+      bDel.innerHTML = FXIco('x');
       bDel.title = TX('vid.tt.deletePlaylist');
       bDel.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -7830,7 +7831,7 @@ function openCtxMenu(x, y){
     if (filtrar){
       const a = anAberta ? analisePorId(projP, anAberta) : null;
       const cab = document.createElement('div'); cab.className = 'ctxhead';
-      cab.textContent = a ? ('🗂 ' + a.name) : TX('vid.an.loose');
+      if (a) fxEl(cab, 'folder', a.name); else cab.textContent = TX('vid.an.loose');
       ppSubs.push(cab);
     }
     lista.forEach(pl => {
@@ -9205,7 +9206,7 @@ function desenhoSujo(){ return !!curShape || !!pending || JSON.stringify(shapes)
 function avisoTravado(){
   if (Date.now() - _avisouTrava < 2500) return;
   _avisouTrava = Date.now();
-  log(TX('vid.dr.locked', 'Desenhando: o vídeo fica parado neste quadro. Use ▶ Prévia para ver com o desenho, ou Salvar / Cancelar.'));
+  log(TX('vid.dr.locked', 'Desenhando: o vídeo fica parado neste quadro. Use Prévia para ver com o desenho, ou Salvar / Cancelar.'));
 }
 /* sai do desenho perguntando antes de jogar fora o que nao foi salvo */
 function sairDoDesenho(depois){
@@ -9305,7 +9306,7 @@ function previewDesenho(){
   const dur = Math.min(60, Math.max(0.5, parseFloat($('drawFreeze').value) || 3));
   _preview = { t0: t0, ini: Math.max(vb.a || 0, t0 - 2), fim: Math.min(fimV, t0 + 2), dur: dur, fase: 'antes', raf: 0, ate: 0 };
   _ocultaBuffer = true; redrawShapes();
-  $('drawPrev').textContent = '■ ' + TX('vid.dr.stop', 'Parar');
+  fxEl($('drawPrev'), 'stop', TX('vid.dr.stop', 'Parar'));
   document.body.classList.add('previa');
   video.currentTime = _preview.ini;
   const passo = () => {
@@ -9335,7 +9336,7 @@ function pararPreview(silencioso){
   video.pause();
   _ocultaBuffer = false;
   try { video.currentTime = p.t0 + quadroDur() * 0.3; } catch (e) {}
-  const b = $('drawPrev'); if (b) b.textContent = '▶ ' + TX('vid.dr.preview', 'Prévia');
+  const b = $('drawPrev'); if (b) fxEl(b, 'play', TX('vid.dr.preview', 'Prévia'));
   if (!silencioso) redrawShapes();
 }
 
@@ -9376,7 +9377,7 @@ window.addEventListener('resize', () => setTimeout(pintaMarcas, 50));
   row.appendChild(rail); row.appendChild(stage);
   /* saida sempre visivel, no topo da coluna de ferramentas */
   const sair = document.createElement('button'); sair.type = 'button'; sair.className = 'dsair';
-  sair.innerHTML = '✕<span>' + TX('vid.dr.sair', 'Sair') + '</span>';
+  sair.innerHTML = FXIco('x') + '<span>' + TX('vid.dr.sair', 'Sair') + '</span>';
   sair.title = TX('vid.dr.sairT', 'Sair do desenho (Esc)');
   sair.addEventListener('click', () => sairDoDesenho());
   rail.appendChild(sair);
@@ -9386,12 +9387,12 @@ window.addEventListener('resize', () => setTimeout(pintaMarcas, 50));
   bar.classList.add('fora');
   /* navegacao entre desenhos do lance + freeze + previa + cancelar/salvar */
   const nav = document.createElement('span'); nav.id = 'drawNav'; nav.className = 'dgroup';
-  nav.innerHTML = '<button id="drawNavPrev" type="button">◀</button><span class="dlabel" id="drawNavTxt">—</span><button id="drawNavNext" type="button">▶</button>';
+  nav.innerHTML = '<button id="drawNavPrev" type="button">' + FXIco('chevL') + '</button><span class="dlabel" id="drawNavTxt">—</span><button id="drawNavNext" type="button">' + FXIco('chevR') + '</button>';
   bar.insertBefore(nav, bar.firstChild);
   const fz = document.createElement('span'); fz.className = 'dgroup';
   fz.innerHTML = '<span class="dlabel">' + TX('vid.dr.freeze', 'freeze') + '</span><input type="number" id="drawFreeze" min="0.5" max="60" step="0.5" value="3"><span class="dlabel">s</span>';
   const prev = document.createElement('button'); prev.id = 'drawPrev'; prev.type = 'button';
-  prev.textContent = '▶ ' + TX('vid.dr.preview', 'Prévia');
+  fxEl(prev, 'play', TX('vid.dr.preview', 'Prévia'));
   prev.title = TX('vid.dr.previewT', 'Toca 2 s antes, congela no desenho e segue 2 s — como no vídeo exportado');
   const save = $('drawSave'), exit = $('drawExit');
   bar.insertBefore(fz, save); bar.insertBefore(prev, save);
@@ -9440,7 +9441,7 @@ function editDrawing(d){
       redrawShapes(); pintaMarcas(); navDesenhos();
     });
     const extra = group.length > 1 ? ' (' + group.length + TX('vid.f.mergedForEdit') : '';
-    log(TX('vid.f.editingDrawing')+' ' + fmt(d.t, true) + extra + '. Ajuste e clique em 💾 Save at time.');
+    log(TX('vid.f.editingDrawing')+' ' + fmt(d.t, true) + extra + '. Ajuste e clique em Salvar no tempo.');
   };
   video.addEventListener('seeked', apply);
   video.currentTime = alvoDoQuadro(d);
@@ -9475,7 +9476,7 @@ function renderDrawList(){
     info.className = 'er';
     /* pausa pura aparece como "freeze", nao como "0 stroke" */
     const nSh = (d.shapes || []).length;
-    info.textContent = nSh ? (nSh + ' stroke' + (nSh > 1 ? 's' : '')) : ('⏸ ' + TX('vid.f.freezeOnly', 'freeze'));
+    if (nSh) info.textContent = nSh + ' stroke' + (nSh > 1 ? 's' : ''); else fxEl(info, 'pause', TX('vid.f.freezeOnly', 'freeze'));
 
     const sp = document.createElement('span');
     sp.className = 'spacer';
@@ -9501,13 +9502,13 @@ function renderDrawList(){
 
     const bEdit = document.createElement('button');
     bEdit.className = 'mini ghost';
-    bEdit.textContent = '✎';
+    bEdit.innerHTML = FXIco('pencil');
     bEdit.title = TX('vid.tt.editDrawing');
     bEdit.addEventListener('click', () => editDrawing(d));
 
     const bDel = document.createElement('button');
     bDel.className = 'mini ghost';
-    bDel.textContent = '✕';
+    bDel.innerHTML = FXIco('x');
     bDel.title = TX('vid.tt.deleteDrawing');
     bDel.addEventListener('click', () => {
       state.drawings = state.drawings.filter(x => x !== d);
@@ -9640,14 +9641,14 @@ function renderDashEditor(){
   /* botao explicito de salvar — grava agora e confirma se foi para a nuvem */
   const bSave = document.createElement('button');
   bSave.className = 'mini primary';
-  bSave.textContent = TX('vid.saveDash');
+  fxEl(bSave, 'save', TX('vid.saveDash'));
   bSave.title = TX('vid.tt.saveDash');
   bSave.addEventListener('click', async () => {
     bSave.disabled = true;
     const okCloud = await pushToCloudNow();
     bSave.disabled = false;
-    bSave.textContent = TX('vid.saved');
-    setTimeout(() => { bSave.textContent = TX('vid.saveDash'); }, 1600);
+    fxEl(bSave, 'check', TX('vid.saved'));
+    setTimeout(() => { fxEl(bSave, 'save', TX('vid.saveDash')); }, 1600);
     log(okCloud ? TX('vid.msg.dashSavedCloud') : TX('vid.msg.dashSavedLocal'), okCloud ? 'ok' : 'err');
   });
   head.appendChild(bSave);
@@ -9788,7 +9789,7 @@ function renderDashEditor(){
     const idx = d.tags.indexOf(tag);
     const bL = document.createElement('button');
     bL.className = 'mini ghost';
-    bL.textContent = '◀';
+    bL.innerHTML = FXIco('chevL', 'sm');
     bL.title = TX('vid.moveLeft');
     bL.disabled = idx === 0;
     bL.addEventListener('click', () => {
@@ -9798,7 +9799,7 @@ function renderDashEditor(){
     });
     const bR = document.createElement('button');
     bR.className = 'mini ghost';
-    bR.textContent = '▶';
+    bR.innerHTML = FXIco('chevR', 'sm');
     bR.title = TX('vid.moveRight');
     bR.disabled = idx === d.tags.length - 1;
     bR.addEventListener('click', () => {
@@ -9840,13 +9841,13 @@ function renderDashEditor(){
     specs.forEach((sp, i) => {
       const chip = document.createElement('span'); chip.className = 'spchip';
       const t = document.createElement('span'); t.textContent = sp;
-      const up = document.createElement('button'); up.textContent = '◀'; up.title = TX('vid.moveLeft');
+      const up = document.createElement('button'); up.innerHTML = FXIco('chevL', 'sm'); up.title = TX('vid.moveLeft');
       up.disabled = i === 0;
       up.addEventListener('click', () => { specs.splice(i, 1); specs.splice(i - 1, 0, sp); persistDashboards(); renderDashTab(); renderPlaylists(); });
-      const dn = document.createElement('button'); dn.textContent = '▶'; dn.title = TX('vid.moveRight');
+      const dn = document.createElement('button'); dn.innerHTML = FXIco('chevR', 'sm'); dn.title = TX('vid.moveRight');
       dn.disabled = i === specs.length - 1;
       dn.addEventListener('click', () => { specs.splice(i, 1); specs.splice(i + 1, 0, sp); persistDashboards(); renderDashTab(); renderPlaylists(); });
-      const x = document.createElement('button'); x.className = 'dg'; x.textContent = '✕'; x.title = TX('vid.spec.remove');
+      const x = document.createElement('button'); x.className = 'dg'; x.title = TX('vid.spec.remove'); fxEl(x, 'x');
       x.addEventListener('click', async () => {
         if (!(await askConfirm(TX('vid.spec.editor'), TX('vid.spec.removeQ') + sp + TX('vid.spec.removeQ2'), TX('vid.delete')))) return;
         specRemove(tag, sp); renderDashTab(); renderPlaylists();
@@ -9989,7 +9990,7 @@ function renderExportTab(){
         const _o2 = ev.outcome === 'ok' || ev.outcome === 'bad' ? ev.outcome : '';
         oc2.className = 'ocdot ' + (_o2 || 'none');
         oc2.style.cursor = 'default';
-        oc2.textContent = _o2 === 'ok' ? '✓' : _o2 === 'bad' ? '✗' : '·';
+        oc2.innerHTML = _o2 === 'ok' ? FXIco('check', 'sm') : _o2 === 'bad' ? FXIco('x', 'sm') : '·';
         oc2.title = ocLabel(_o2);
         const nm2 = document.createElement('span');
         nm2.textContent = ev.name || (tag.name + ' ' + (i + 1));
@@ -10717,7 +10718,7 @@ async function exportCombined(items, baseName, opts){
         catch (e) {
           /* antes sumia calado e o MP4 saia com lances faltando */
           pulados.push((it.name || it.tagName || '') + ' · ' + (it.srcName || it.srcKey));
-          log('⚠ ' + (e.message || e), 'err');
+          log(String(e.message || e), 'err');
           resolve(); return;
         }
         /* pausas puras (freeze sem desenho) valem sempre; desenhos so com a opcao */
@@ -10855,7 +10856,7 @@ function svAlerta(tipo, titulo, msg, acoes){
     bar.appendChild(b);
   });
   const x = document.createElement('button'); x.className = 'mini ghost';
-  x.textContent = '✕'; x.addEventListener('click', svAlertaOff);
+  x.innerHTML = FXIco('x'); x.addEventListener('click', svAlertaOff);
   bar.appendChild(x);
   el.appendChild(bar);
 }
@@ -10924,13 +10925,13 @@ function svSelo(estado){
   var hora = _svUltimoOk ? new Date(_svUltimoOk).toLocaleTimeString().slice(0, 5) : '--:--';
   if (estado === 'ruim'){
     el.className = 'ruim';
-    el.textContent = '⚠ ' + TX('vid.sv.badgeNo') + (_svPendente ? ' · ' + _svPendente : '');
+    fxEl(el, 'alert', TX('vid.sv.badgeNo') + (_svPendente ? ' · ' + _svPendente : ''));
   } else if (estado === 'indo'){
     el.className = 'indo';
     el.textContent = '… ' + TX('vid.sv.badgeWait');
   } else {
     el.className = 'ok';
-    el.textContent = '✓ ' + TX('vid.sv.badgeOk') + ' ' + hora;
+    fxEl(el, 'check', TX('vid.sv.badgeOk') + ' ' + hora);
   }
 }
 function svSeloClique(){
@@ -11648,7 +11649,7 @@ async function montarExato(mp4, vInfo, aInfo, valid, file, progress){
     const durClip = (ultimoRel >= 0 ? ultimoRel + frameUs : Math.max(frameUs, endUs - startUs));
     j.exOffUs = offUs; j.exDurUs = durClip;
     offUs += durClip;
-    if (!nClip) log('⚠ ' + TX('vid.exp.exactEmpty', 'Lance sem quadros no trecho marcado') + ' (' + fmt(j.start, true) + ')', 'err');
+    if (!nClip) log(TX('vid.exp.exactEmpty', 'Lance sem quadros no trecho marcado') + ' (' + fmt(j.start, true) + ')', 'err');
   }
   await enc.flush();
   try { enc.close(); } catch (e) {}

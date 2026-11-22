@@ -67,7 +67,22 @@
     tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
     screen: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
-    replay: '<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/>'
+    replay: '<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/>',
+    chevL: '<path d="M15 6l-6 6 6 6"/>',
+    volume: '<path d="M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
+    mute: '<path d="M4 9h4l5-4v14l-5-4H4zM17 9l5 6M22 9l-5 6"/>',
+    slow: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l-4.5-4.5M4 17h2M18 17h2"/>',
+    save: '<path d="M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"/>',
+    move: '<path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/>',
+    layout: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M3 10h6"/>',
+    header: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18"/>',
+    rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+    poly: '<path d="M12 3.5l8.5 6.5-3.3 10H6.8L3.5 10z"/>',
+    frame: '<path d="M7 3v14h14M3 7h14v14"/>',
+    wide: '<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>',
+    grip: '<path d="M20 9L9 20M20 15l-5 5"/>',
+    measure: '<path d="M3 12h18M3 9v6M21 9v6M8 12v-2M12 12v-3M16 12v-2"/>',
+    angle: '<path d="M4 20h16M4 20L15 5M10 20a6 6 0 0 0-1.6-4.1"/>'
   };
   /* os de forma cheia (play/pause/stop) ficam melhores preenchidos */
   var CHEIO = { play: 1, pause: 1, stop: 1, next: 1, prev: 1 };
