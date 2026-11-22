@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="fluxgk-i18n.js"></script>
+<script src="fluxgk-icones.js"></script>  <!-- icones de linha e pontos de estado (visual) -->
 <style>
 :root{--ink:#0a0a0a;--paper:#f6f5f1;--card:#fff;--line:#e6e3dc;--muted:#77756f;--accent:#0f6e56;--good:#15803D;--warn:#B45309;--crit:#B91C1C;--blue:#1E4FFF;--r:10px}
 *{box-sizing:border-box}
@@ -18,14 +19,15 @@ header h1{font-size:15px;margin:0;letter-spacing:.02em}
 header .ctx{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
 .dotfb{width:8px;height:8px;border-radius:50%;background:#bbb;display:inline-block}
 nav.tabs{display:flex;gap:4px;padding:8px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line)}
-nav.tabs button{border:1px solid transparent;background:none;padding:8px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;color:var(--muted)}
+nav.tabs button{border:1px solid transparent;background:none;padding:8px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 nav.tabs button.on{background:var(--ink);color:#fff}
 nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;margin-left:4px}
 main{max-width:920px;margin:0 auto;padding:16px}
 section.tab{display:none}section.tab.on{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
 .card h3{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ico{padding:5px 7px;color:var(--muted)}.btn.ico:hover{color:var(--ink)}.btn.ico.danger:hover{color:var(--crit)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.danger{color:var(--crit);border-color:#f1c7c7}
 .btn:disabled{opacity:.45;cursor:default}
@@ -36,7 +38,7 @@ textarea{width:100%;resize:vertical}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* gravar */
 .rec{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 10px}
-.recbtn{width:132px;height:132px;border-radius:50%;border:none;background:var(--crit);color:#fff;font-size:44px;cursor:pointer;box-shadow:0 8px 24px rgba(185,28,28,.25);transition:transform .1s}
+.recbtn{width:132px;height:132px;border-radius:50%;border:none;background:var(--crit);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 8px 24px rgba(185,28,28,.25);transition:transform .1s;display:flex;align-items:center;justify-content:center}
 .recbtn:active{transform:scale(.97)}
 .recbtn.on{animation:pulse 1.2s infinite;background:#7f1d1d}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(185,28,28,.45)}70%{box-shadow:0 0 0 22px rgba(185,28,28,0)}100%{box-shadow:0 0 0 0 rgba(185,28,28,0)}}
@@ -52,7 +54,8 @@ textarea{width:100%;resize:vertical}
 .item .grow{flex:1;min-width:0}
 .cit{font-size:12px;color:var(--muted);font-style:italic;margin-top:3px}
 .cit.bad{color:var(--crit);font-style:normal}
-.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#eee;color:#444;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:#eee;color:#444;white-space:nowrap}
+.n{font:600 11px 'JetBrains Mono',monospace;color:var(--muted)}
 .pill.good{background:#dcfce7;color:var(--good)}.pill.warn{background:#fef3c7;color:var(--warn)}.pill.crit{background:#fee2e2;color:var(--crit)}
 .pill.reforco{background:#e0e7ff;color:#3730a3}
 .gkblock{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
@@ -70,7 +73,7 @@ textarea{width:100%;resize:vertical}
 .rep h4{margin:14px 0 6px;font-size:14px}
 .gkcard{padding:0}
 .gkcard-h{display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;flex-wrap:wrap}
-.gkcard-h .car{font-size:11px;color:var(--muted);transition:transform .15s}
+.gkcard-h .car{display:inline-flex;color:var(--muted);transition:transform .15s}
 .gkcard.open .gkcard-h .car{transform:rotate(90deg)}
 .gkcard>*:not(.gkcard-h){margin-left:16px;margin-right:16px}
 .gkcard>.secao:last-child,.gkcard>.cols2:last-child{margin-bottom:14px}
@@ -79,6 +82,7 @@ textarea{width:100%;resize:vertical}
 .tema{border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-bottom:6px;background:#fcfcfa}
 .tema>summary{cursor:pointer;font-size:13px}
 .secao{border-top:1px solid var(--line);padding:10px 0}
+.dorm{margin-top:6px}.dorm>summary{cursor:pointer;font-size:12px;padding:3px 0}.dorm .tema{opacity:.75}
 .secao>summary{cursor:pointer;font-weight:600;font-size:13px}
 .contgk>summary{cursor:pointer;font-weight:700;font-size:14px;padding:4px 0}
 .rep ul{margin:4px 0 8px 18px;padding:0}
@@ -87,7 +91,7 @@ textarea{width:100%;resize:vertical}
 </head>
 <body>
 <header>
-  <h1>🎙 <span id="tTitle">Feedback pós-treino</span></h1>
+  <h1><span id="tTitle">Feedback pós-treino</span></h1>
   <span class="ctx" id="ctx">—</span>
   <span style="flex:1"></span>
   <span class="dotfb" id="dotfb" title=""></span>
@@ -125,24 +129,25 @@ textarea{width:100%;resize:vertical}
 'use strict';
 const D = {
   pt: {
-    tGoleiros:'👤 Goleiros', virou:'virou em', paraEvol:'mover para Em evolução', paraMelhorar:'mover para A melhorar', semPadroes:'Os padrões aparecem quando um assunto se repete em 2 feedbacks ou mais.',
+    semMencao:'Sem menção recente', arquivadoMao:'recolhido por você', diasSem:'dias sem menção', manterAtivo:'manter ativo', recolher:'recolher', soltar:'soltar', ajDorm:'Sem menção recente', ajDormD:'Tema não citado há mais deste número de dias vai para o bloco recolhido "Sem menção recente". Nada é apagado; volta sozinho quando você falar dele de novo. Em cada tema dá para recolher na hora ou mantê-lo ativo (fixado).', dias:'dias',
+    tGoleiros:'Goleiros', virou:'virou em', paraEvol:'mover para Em evolução', paraMelhorar:'mover para A melhorar', semPadroes:'Os padrões aparecem quando um assunto se repete em 2 feedbacks ou mais.',
     atualizandoPad:'atualizando…', atualizarPad:'Atualizar padrões', aMelhorar:'Pontos a melhorar', emEvolucao:'Em evolução', diario:'Diário', gkHint:'Cada goleiro com o que se repete: pontos a melhorar e em evolução (o agente atualiza a cada feedback publicado), os conteúdos e o diário.',
     atualizarTodos:'Atualizar todos', renomearQ:'Novo nome do tema (fica travado: o agente não muda mais):', removerQ:'Tirar este tema? O agente não vai recriá-lo.', semGrupo:'Grupo',
-    title:'Feedback pós-treino', tGravar:'🎙 Gravar', tRevisar:'📝 Revisar', tHist:'📚 Histórico', tCont:'✅ Conteúdos', tRel:'📊 Relatório', tAj:'⚙ Ajustes',
+    title:'Feedback pós-treino', tGravar:'Gravar', tRevisar:'Revisar', tHist:'Histórico', tCont:'Conteúdos', tRel:'Relatório', tAj:'Ajustes', renomear:'Renomear', tirar:'Tirar o tema', travado:'travado: o agente não muda nome nem coluna', abrirDia:'Abrir e corrigir o dia',
     gravarHint:'Toque para gravar. Fale livremente sobre cada goleiro, o grupo e o que precisa ser trabalhado.', parar:'Toque para parar e enviar',
     dataTreino:'Data do treino', ouArq:'ou enviar um áudio (WhatsApp, gravador…)', enviando:'Enviando', transcrevendo:'Transcrevendo', organizando:'Organizando', pronto:'Pronto',
     modoRev:'Modo: revisar antes de publicar', modoDir:'Modo: publicar direto (corrijo depois)', semMic:'Não foi possível usar o microfone. Libere o microfone para fluxgk.com no navegador.',
     nadaRev:'Nada para revisar.', publicar:'Publicar', atualizar:'Atualizar publicação', descartar:'Descartar', reprocessar:'Reorganizar com o agente',
-    transc:'Transcrição (fiel, palavra por palavra)', ouvir:'▶ Ouvir o áudio', audioSo:'O áudio fica guardado até o próximo envio.', audioFora:'O áudio desta sessão já foi substituído por um mais novo.',
-    goleiros:'Goleiros', grupo:'Grupo / treino', conteudos:'Conteúdos a trabalhar', semGk:'— goleiro não identificado —', addItem:'+ item',
+    transc:'Transcrição (fiel, palavra por palavra)', ouvir:'Ouvir o áudio', audioSo:'O áudio fica guardado até o próximo envio.', audioFora:'O áudio desta sessão já foi substituído por um mais novo.',
+    goleiros:'Goleiros', grupo:'Grupo / treino', conteudos:'Conteúdos a trabalhar', semGk:'— goleiro não identificado —', addItem:'item',
     evolucao:'O que evoluiu', limitacao:'O que ainda limita', ajuste:'Ajuste / próximo passo', observacao:'Observação',
     tecnica:'técnica', tatica:'tática', fisica:'física', psicologica:'psicológica', outra:'outra',
-    good:'▲ bom', warn:'■ atenção', crit:'▼ preocupação', citFora:'⚠ este trecho não aparece igual na transcrição — confira', reforco:'↻ reforço',
+    good:'bom', warn:'atenção', crit:'preocupação', citFora:'este trecho não aparece igual na transcrição — confira', reforco:'reforço',
     novo:'— novo —', reforcoDe:'reforço de', restr:'restrição', tarefa:'tarefa', ambiente:'ambiente', individuo:'indivíduo', semRestr:'—',
     stRevisar:'para revisar',stInterrompido:'interrompido', stPublicado:'publicado', stErro:'erro', stTranscrevendo:'transcrevendo', stAnalisando:'organizando',
-    histVazio:'Nenhum feedback ainda.', abertos:'Em aberto', feitos:'Feitos', marcarFeito:'✓ feito', reabrir:'reabrir', vezes:'vezes', grupoTodo:'grupo todo',
+    histVazio:'Nenhum feedback ainda.', abertos:'Em aberto', feitos:'Feitos', marcarFeito:'feito', reabrir:'reabrir', vezes:'vezes', grupoTodo:'grupo todo',
     contVazio:'Nenhum conteúdo em aberto.', relPeriodo:'Período', d7:'Últimos 7 dias', d30:'Últimos 30 dias', dTemp:'Temporada', relGk:'Goleiro', todos:'Todos',
-    gerar:'✨ Resumo da IA', imprimir:'🖨 Imprimir / PDF', relVazio:'Nenhum feedback publicado no período.', temas:'Temas que voltaram', atencao:'Pontos de atenção', aTrab:'A trabalhar', pend:'Pendentes no período',
+    gerar:'Resumo da IA', imprimir:'Imprimir / PDF', relVazio:'Nenhum feedback publicado no período.', temas:'Temas que voltaram', atencao:'Pontos de atenção', aTrab:'A trabalhar', pend:'Pendentes no período',
     ajModo:'Publicação', ajRev:'Revisar antes de publicar', ajDir:'Publicar direto e corrigir depois, se precisar', ajVocab:'Vocabulário (um termo por linha)', ajVocabD:'Termos que a transcrição deve reconhecer: jogadas, gestos, termos da sua metodologia.',
     ajApel:'Apelidos dos goleiros', ajApelD:'Como você chama cada um no áudio (separe por vírgula).', ajApi:'Endereço do serviço', salvar:'Salvar', salvo:'Salvo.',
     publicado:'Publicado no Perfil e em Conteúdos.', descartadoQ:'Descartar este feedback? O que foi publicado no Perfil e em Conteúdos sai também.', erroServ:'O serviço de feedback não respondeu: ',
@@ -150,24 +155,25 @@ const D = {
     tentar:'Tentar de novo', enviarArq:'Enviar arquivo', duracao:'duração', itens:'itens', repetidos:'Já dito em dias anteriores', ultimo:'último', desde:'desde'
   },
   en: {
-    tGoleiros:'👤 Goalkeepers', virou:'turned on', paraEvol:'move to Improving', paraMelhorar:'move to To improve', semPadroes:'Patterns appear when a topic repeats in 2 or more feedbacks.',
+    semMencao:'No recent mention', arquivadoMao:'collapsed by you', diasSem:'days without mention', manterAtivo:'keep active', recolher:'collapse', soltar:'unpin', ajDorm:'No recent mention', ajDormD:'A theme not mentioned for more than this number of days goes to the collapsed block "No recent mention". Nothing is deleted; it comes back when you mention it again. Each theme can be collapsed right away or kept active (pinned).', dias:'days',
+    tGoleiros:'Goalkeepers', virou:'turned on', paraEvol:'move to Improving', paraMelhorar:'move to To improve', semPadroes:'Patterns appear when a topic repeats in 2 or more feedbacks.',
     atualizandoPad:'updating…', atualizarPad:'Update patterns', aMelhorar:'To improve', emEvolucao:'Improving', diario:'Log', gkHint:'Each goalkeeper with what repeats: points to improve and improving (the agent updates after every published feedback), the contents and the log.',
     atualizarTodos:'Update all', renomearQ:'New theme name (it gets locked: the agent will not change it):', removerQ:'Remove this theme? The agent will not recreate it.', semGrupo:'Group',
-    title:'Post-training feedback', tGravar:'🎙 Record', tRevisar:'📝 Review', tHist:'📚 History', tCont:'✅ To work on', tRel:'📊 Report', tAj:'⚙ Settings',
+    title:'Post-training feedback', tGravar:'Record', tRevisar:'Review', tHist:'History', tCont:'To work on', tRel:'Report', tAj:'Settings', renomear:'Rename', tirar:'Remove theme', travado:'locked: the agent keeps name and column', abrirDia:'Open and fix this day',
     gravarHint:'Tap to record. Talk freely about each goalkeeper, the group and what needs work.', parar:'Tap to stop and send',
     dataTreino:'Training date', ouArq:'or send an audio file (WhatsApp, recorder…)', enviando:'Sending', transcrevendo:'Transcribing', organizando:'Organizing', pronto:'Done',
     modoRev:'Mode: review before publishing', modoDir:'Mode: publish directly (fix later)', semMic:'Could not use the microphone. Allow the microphone for fluxgk.com in the browser.',
     nadaRev:'Nothing to review.', publicar:'Publish', atualizar:'Update publication', descartar:'Discard', reprocessar:'Re-organize with the agent',
-    transc:'Transcript (verbatim)', ouvir:'▶ Play audio', audioSo:'The audio is kept until the next upload.', audioFora:'This session’s audio was already replaced by a newer one.',
-    goleiros:'Goalkeepers', grupo:'Group / session', conteudos:'To work on', semGk:'— goalkeeper not identified —', addItem:'+ item',
+    transc:'Transcript (verbatim)', ouvir:'Play audio', audioSo:'The audio is kept until the next upload.', audioFora:'This session’s audio was already replaced by a newer one.',
+    goleiros:'Goalkeepers', grupo:'Group / session', conteudos:'To work on', semGk:'— goalkeeper not identified —', addItem:'item',
     evolucao:'What improved', limitacao:'What still limits', ajuste:'Adjustment / next step', observacao:'Note',
     tecnica:'technical', tatica:'tactical', fisica:'physical', psicologica:'psychological', outra:'other',
-    good:'▲ good', warn:'■ attention', crit:'▼ concern', citFora:'⚠ this excerpt is not literally in the transcript — check it', reforco:'↻ repeated',
+    good:'good', warn:'attention', crit:'concern', citFora:'this excerpt is not literally in the transcript — check it', reforco:'repeated',
     novo:'— new —', reforcoDe:'repeats', restr:'constraint', tarefa:'task', ambiente:'environment', individuo:'individual', semRestr:'—',
     stRevisar:'to review',stInterrompido:'interrupted', stPublicado:'published', stErro:'error', stTranscrevendo:'transcribing', stAnalisando:'organizing',
-    histVazio:'No feedback yet.', abertos:'Open', feitos:'Done', marcarFeito:'✓ done', reabrir:'reopen', vezes:'times', grupoTodo:'whole group',
+    histVazio:'No feedback yet.', abertos:'Open', feitos:'Done', marcarFeito:'done', reabrir:'reopen', vezes:'times', grupoTodo:'whole group',
     contVazio:'Nothing open.', relPeriodo:'Period', d7:'Last 7 days', d30:'Last 30 days', dTemp:'Season', relGk:'Goalkeeper', todos:'All',
-    gerar:'✨ AI summary', imprimir:'🖨 Print / PDF', relVazio:'No published feedback in this period.', temas:'Recurring themes', atencao:'Points of attention', aTrab:'To work on', pend:'Open in the period',
+    gerar:'AI summary', imprimir:'Print / PDF', relVazio:'No published feedback in this period.', temas:'Recurring themes', atencao:'Points of attention', aTrab:'To work on', pend:'Open in the period',
     ajModo:'Publishing', ajRev:'Review before publishing', ajDir:'Publish directly and fix later if needed', ajVocab:'Vocabulary (one term per line)', ajVocabD:'Terms the transcription must recognize: plays, actions, terms of your methodology.',
     ajApel:'Goalkeeper nicknames', ajApelD:'How you call each one in the audio (comma separated).', ajApi:'Service address', salvar:'Save', salvo:'Saved.',
     publicado:'Published to the Profile and To work on.', descartadoQ:'Discard this feedback? What was published to the Profile and To work on is removed too.', erroServ:'The feedback service did not respond: ',
@@ -175,6 +181,9 @@ const D = {
     tentar:'Try again', enviarArq:'Send file', duracao:'length', itens:'items', repetidos:'Already said on previous days', ultimo:'last', desde:'since'
   }
 };
+/* icones de linha e pontos de estado (fluxgk-icones.js); sem o arquivo, ficam vazios */
+const I = (n, c) => (window.FXI ? FXI.ico(n, c) : '');
+const DOT = (k) => (window.FXI ? FXI.dot(k) : '');
 const VOCAB_PADRAO = ['1º pau','2º pau','1x1','2x1','3x2','5x4','goleiro-linha','zona morta','saída do gol','posicionamento inicial','bloqueio','cobertura','defesa baixa','defesa alta','ataque à bola','leitura de jogo','pé de apoio','queda lateral','reposição','restrição','tarefa','ambiente','affordance','percepção-ação'];
 const lang = () => (window.FluxGKI18n && FluxGKI18n.getLang && FluxGKI18n.getLang() === 'en') ? 'en' : 'pt';
 const t = (k) => (D[lang()] && D[lang()][k] != null) ? D[lang()][k] : (D.pt[k] != null ? D.pt[k] : k);
@@ -470,6 +479,9 @@ async function atualizarPadroes(ids){
             evidencias: rs.slice(-4).map(x => ({ data: x.data, tipo: x.tipo, texto: x.texto, citacao: x.citacao }))
           };
           if (velho && velho.travado) tema.travado = true;
+          if (velho && velho.fixo) tema.fixo = true;
+          /* arquivado à mão volta sozinho quando o assunto é citado de novo depois do arquivamento */
+          if (velho && velho.arquivado && !(tema.ultima > (velho.arquivadoEm || ''))){ tema.arquivado = true; tema.arquivadoEm = velho.arquivadoEm || ''; }
           /* virou para "em evolução" agora: guarda a data */
           if (tema.tipo === 'evolucao' && velho && velho.tipo === 'melhorar' && !tema.virouEm) tema.virouEm = tema.ultima;
           if (tema.tipo !== 'evolucao') tema.virouEm = '';
@@ -490,12 +502,25 @@ async function salvaPadrao(pid){ const p = FB.padroes[pid]; if (p) await ref(P('
 
 /* ══ TELA: GOLEIROS (um card por goleiro) ══ */
 FB.cardAberto = FB.cardAberto || {};
+/* "sem menção recente": não citado há N dias (Ajustes) ou arquivado à mão.
+   "Manter ativo" (fixo) ignora o prazo. Nada é apagado: só recolhe. */
+function diasSemMencao(){ const n = parseInt(FB.cfg.diasSemMencao, 10); return n > 0 ? n : 30; }
+function diasDesde(d){ if (!d) return 9999; return Math.floor((new Date(hoje() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5); }
+function adormecido(tm){ return !tm.fixo && (!!tm.arquivado || diasDesde(tm.ultima) > diasSemMencao()); }
+function colunaTemas(pid, lista){
+  const ativos = lista.filter(x => !adormecido(x)), dorm = lista.filter(adormecido);
+  return (ativos.length ? ativos.map(x => temaLinha(pid, x)).join('') : `<div class="muted">—</div>`)
+    + (dorm.length ? `<details class="dorm"><summary class="muted">${I('clock', 'sm')} ${esc(t('semMencao'))} <span class="n">${dorm.length}</span></summary>${dorm.map(x => temaLinha(pid, x)).join('')}</details>` : '');
+}
 function temaLinha(pid, tm){
   const datas = tm.primeira === tm.ultima ? fd(tm.ultima) : fd(tm.primeira) + ' → ' + fd(tm.ultima);
   const ev = arr(tm.evidencias).map(e => `<div class="cit">${esc(fd(e.data))} · ${esc(e.texto)}${e.citacao ? ' — “' + esc(e.citacao) + '”' : ''}</div>`).join('');
-  return `<details class="tema"><summary><b>${esc(tm.tema)}</b> <span class="pill">${tm.vezes || 0}x</span> <span class="muted">${esc(datas)}</span>${tm.virouEm ? ` <span class="pill good">${esc(t('virou'))} ${esc(fd(tm.virouEm))}</span>` : ''}${tm.travado ? ' 🔒' : ''}</summary>
-    ${ev}<div class="row" style="margin-top:6px"><button class="btn sm" data-a="temaMover" data-pid="${pid}" data-tid="${tm.id}">⇄ ${esc(tm.tipo === 'melhorar' ? t('paraEvol') : t('paraMelhorar'))}</button>
-    <button class="btn sm" data-a="temaRenomear" data-pid="${pid}" data-tid="${tm.id}">✎</button><button class="btn sm danger" data-a="temaRemover" data-pid="${pid}" data-tid="${tm.id}">✕</button></div></details>`;
+  return `<details class="tema"><summary><b>${esc(tm.tema)}</b> <span class="n">${tm.vezes || 0}×</span> <span class="muted">${esc(datas)}</span>${tm.virouEm ? ` <span class="pill good">${esc(t('virou'))} ${esc(fd(tm.virouEm))}</span>` : ''}${tm.travado ? ' <span class="muted" title="' + esc(t('travado')) + '">' + I('lock', 'sm') + '</span>' : ''}${tm.fixo ? ' <span class="muted">' + I('pin', 'sm') + '</span>' : ''}${adormecido(tm) ? ` <span class="muted">· ${tm.arquivado ? esc(t('arquivadoMao')) : diasDesde(tm.ultima) + ' ' + esc(t('diasSem'))}</span>` : ''}</summary>
+    ${ev}<div class="row" style="margin-top:6px"><button class="btn sm ico" data-a="temaMover" data-pid="${pid}" data-tid="${tm.id}" title="${esc(tm.tipo === 'melhorar' ? t('paraEvol') : t('paraMelhorar'))}" aria-label="${esc(tm.tipo === 'melhorar' ? t('paraEvol') : t('paraMelhorar'))}">${I('swap')}</button>
+    <button class="btn sm ico" data-a="temaRenomear" data-pid="${pid}" data-tid="${tm.id}" title="${esc(t('renomear'))}" aria-label="${esc(t('renomear'))}">${I('pencil')}</button>
+    ${adormecido(tm) ? `<button class="btn sm" data-a="temaAtivar" data-pid="${pid}" data-tid="${tm.id}">${I('pin')}${esc(t('manterAtivo'))}</button>`
+      : `<button class="btn sm ico" data-a="temaArquivar" data-pid="${pid}" data-tid="${tm.id}" title="${esc(t('recolher'))}" aria-label="${esc(t('recolher'))}">${I('clock')}</button>${tm.fixo ? `<button class="btn sm" data-a="temaSoltar" data-pid="${pid}" data-tid="${tm.id}">${I('unpin')}${esc(t('soltar'))}</button>` : ''}`}
+    <button class="btn sm ico danger" data-a="temaRemover" data-pid="${pid}" data-tid="${tm.id}" title="${esc(t('tirar'))}" aria-label="${esc(t('tirar'))}">${I('trash')}</button></div></details>`;
 }
 function diarioDe(pid){
   const dias = [];
@@ -505,24 +530,26 @@ function diarioDe(pid){
   });
   return dias;
 }
-const ICONE = { evolucao: '▲', limitacao: '▼', ajuste: '→', observacao: '•' };
+/* tipo do registro no diário: ponto de cor (evolução verde, limitação vermelho, ajuste âmbar, observação cinza) */
+const ICONE = { evolucao: DOT('good'), limitacao: DOT('crit'), ajuste: DOT('warn'), observacao: DOT('mut') };
 function cardGoleiro(g){
   const pad = FB.padroes[g.id] || {};
   const temas = arr(pad.temas);
   const melh = temas.filter(x => x.tipo === 'melhorar'), evo = temas.filter(x => x.tipo === 'evolucao');
+  const nMelh = melh.filter(x => !adormecido(x)).length, nEvo = evo.filter(x => !adormecido(x)).length;
   const pend = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !p.feito && arr(p.goleiros).indexOf(g.id) >= 0).sort((a, b) => (b.vezes || 1) - (a.vezes || 1));
   const dias = diarioDe(g.id);
   const aberto = !!FB.cardAberto[g.id];
-  let h = `<div class="card gkcard${aberto ? ' open' : ''}"><div class="gkcard-h" data-card="${g.id}"><span class="car">▸</span><b style="font-size:15px">${esc(g.name)}</b>${g.origem ? ` <span class="pill">${esc(g.origem)}</span>` : ''}
-    <span style="flex:1"></span><span class="pill crit">🔴 ${melh.length}</span><span class="pill good">🟢 ${evo.length}</span><span class="pill">✅ ${pend.length}</span><span class="pill">📓 ${dias.length}</span></div>`;
+  let h = `<div class="card gkcard${aberto ? ' open' : ''}"><div class="gkcard-h" data-card="${g.id}"><span class="car">${I('chevR', 'sm')}</span><b style="font-size:15px">${esc(g.name)}</b>${g.origem ? ` <span class="pill">${esc(g.origem)}</span>` : ''}
+    <span style="flex:1"></span><span class="fx-st" title="${esc(t('aMelhorar'))}">${DOT('crit')}${nMelh}</span><span class="fx-st" title="${esc(t('emEvolucao'))}">${DOT('good')}${nEvo}</span><span class="fx-st" title="${esc(t('conteudos'))}">${I('list', 'sm')}${pend.length}</span><span class="fx-st" title="${esc(t('diario'))}">${I('book', 'sm')}${dias.length}</span></div>`;
   if (!aberto) return h + `</div>`;
-  h += `<div class="row" style="margin:10px 0"><span class="muted" style="flex:1">${pad.resumo ? esc(pad.resumo) : esc(t('semPadroes'))}</span>
-    <button class="btn sm" data-a="padroesAtualizar" data-pid="${g.id}"${FB.atualizandoPad[g.id] ? ' disabled' : ''}>${FB.atualizandoPad[g.id] ? esc(t('atualizandoPad')) : '↻ ' + esc(t('atualizarPad'))}</button></div>
-    <div class="cols2"><div><h3>🔴 ${esc(t('aMelhorar'))}</h3>${melh.length ? melh.map(x => temaLinha(g.id, x)).join('') : `<div class="muted">—</div>`}</div>
-    <div><h3>🟢 ${esc(t('emEvolucao'))}</h3>${evo.length ? evo.map(x => temaLinha(g.id, x)).join('') : `<div class="muted">—</div>`}</div></div>`;
-  h += `<details class="secao"><summary>✅ ${esc(t('conteudos'))} (${pend.length})</summary>${pend.length ? pend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1}x</span>${p.restricao ? ` <span class="pill">${esc(t(p.restricao))}</span>` : ''}</div><button class="btn sm" data-a="feito" data-pid="${p.id}">${esc(t('marcarFeito'))}</button></div>`).join('') : `<div class="muted">—</div>`}</details>`;
-  h += `<details class="secao"><summary>📓 ${esc(t('diario'))} (${dias.length})</summary>${dias.map(d => `<div class="item"><div class="grow"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(d.s.data))}</b> <span class="pill ${d.estado}">${esc(t(d.estado))}</span>
-      ${d.its.map(i => `<div style="margin-top:3px">${ICONE[i.tipo] || '•'} ${i.reforco ? '↻ ' : ''}${esc(i.texto)}</div>`).join('')}</div><button class="btn sm" data-abrirsess="${d.s.id}">✎</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
+  h += `<div class="row" style="margin:10px 16px"><span class="muted" style="flex:1">${pad.resumo ? esc(pad.resumo) : esc(t('semPadroes'))}</span>
+    <button class="btn sm" data-a="padroesAtualizar" data-pid="${g.id}"${FB.atualizandoPad[g.id] ? ' disabled' : ''}>${FB.atualizandoPad[g.id] ? esc(t('atualizandoPad')) : I('refresh') + esc(t('atualizarPad'))}</button></div>
+    <div class="cols2"><div><h3>${DOT('crit')} ${esc(t('aMelhorar'))}</h3>${colunaTemas(g.id, melh)}</div>
+    <div><h3>${DOT('good')} ${esc(t('emEvolucao'))}</h3>${colunaTemas(g.id, evo)}</div></div>`;
+  h += `<details class="secao"><summary>${esc(t('conteudos'))} <span class="n">${pend.length}</span></summary>${pend.length ? pend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1}x</span>${p.restricao ? ` <span class="pill">${esc(t(p.restricao))}</span>` : ''}</div><button class="btn sm" data-a="feito" data-pid="${p.id}">${I('check')}${esc(t('marcarFeito'))}</button></div>`).join('') : `<div class="muted">—</div>`}</details>`;
+  h += `<details class="secao"><summary>${esc(t('diario'))} <span class="n">${dias.length}</span></summary>${dias.map(d => `<div class="item"><div class="grow"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(d.s.data))}</b> <span class="pill ${d.estado}">${esc(t(d.estado))}</span>
+      ${d.its.map(i => `<div style="margin-top:3px">${ICONE[i.tipo] || DOT('mut')} ${i.reforco ? I('refresh', 'sm') + ' ' : ''}${esc(i.texto)}</div>`).join('')}</div><button class="btn sm ico" data-abrirsess="${d.s.id}" title="${esc(t('abrirDia'))}" aria-label="${esc(t('abrirDia'))}">${I('pencil')}</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
   return h + `</div>`;
 }
 function renderGoleiros(){
@@ -531,12 +558,12 @@ function renderGoleiros(){
   const grupoNotas = [];
   Object.values(FB.sessoes).filter(s => s && s.status === 'publicado' && s.extracao).sort((a, b) => (b.data || '').localeCompare(a.data || '')).forEach(s => arr(s.extracao.grupo).forEach(i => grupoNotas.push({ data: s.data, texto: i.texto })));
   const abertoG = !!FB.cardAberto.__grupo;
-  let h = `<div class="row no-print" style="margin-bottom:10px"><span class="muted" style="flex:1">${esc(t('gkHint'))}</span><button class="btn sm" data-a="padroesTodos">↻ ${esc(t('atualizarTodos'))}</button></div>`;
+  let h = `<div class="row no-print" style="margin-bottom:10px"><span class="muted" style="flex:1">${esc(t('gkHint'))}</span><button class="btn sm" data-a="padroesTodos">${I('refresh')}${esc(t('atualizarTodos'))}</button></div>`;
   h += lista.map(cardGoleiro).join('');
-  h += `<div class="card gkcard${abertoG ? ' open' : ''}"><div class="gkcard-h" data-card="__grupo"><span class="car">▸</span><b style="font-size:15px">👥 ${esc(t('grupoNotas'))}</b><span style="flex:1"></span><span class="pill">✅ ${grupoPend.length}</span><span class="pill">📓 ${grupoNotas.length}</span></div>`;
+  h += `<div class="card gkcard${abertoG ? ' open' : ''}"><div class="gkcard-h" data-card="__grupo"><span class="car">${I('chevR', 'sm')}</span><b style="font-size:15px">${esc(t('grupoNotas'))}</b><span style="flex:1"></span><span class="fx-st" title="${esc(t('conteudos'))}">${I('list', 'sm')}${grupoPend.length}</span><span class="fx-st" title="${esc(t('diario'))}">${I('book', 'sm')}${grupoNotas.length}</span></div>`;
   if (abertoG){
-    h += `<details class="secao" open><summary>✅ ${esc(t('conteudos'))} (${grupoPend.length})</summary>${grupoPend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill">${p.vezes || 1}x</span></div><button class="btn sm" data-a="feito" data-pid="${p.id}">${esc(t('marcarFeito'))}</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
-    h += `<details class="secao"><summary>📓 ${esc(t('diario'))} (${grupoNotas.length})</summary>${grupoNotas.map(n => `<div class="muted" style="padding:3px 0">${esc(fd(n.data))} · ${esc(n.texto)}</div>`).join('') || `<div class="muted">—</div>`}</details>`;
+    h += `<details class="secao" open><summary>${esc(t('conteudos'))} <span class="n">${grupoPend.length}</span></summary>${grupoPend.map(p => `<div class="item"><div class="grow">${esc(p.texto)} <span class="pill">${p.vezes || 1}x</span></div><button class="btn sm" data-a="feito" data-pid="${p.id}">${I('check')}${esc(t('marcarFeito'))}</button></div>`).join('') || `<div class="muted">—</div>`}</details>`;
+    h += `<details class="secao"><summary>${esc(t('diario'))} <span class="n">${grupoNotas.length}</span></summary>${grupoNotas.map(n => `<div class="muted" style="padding:3px 0">${esc(fd(n.data))} · ${esc(n.texto)}</div>`).join('') || `<div class="muted">—</div>`}</details>`;
   }
   $('t-goleiros').innerHTML = h + `</div>`;
 }
@@ -554,7 +581,7 @@ function mudaAba(a){ FB.aba = a; render(); }
 function render(){
   $('tTitle').textContent = t('title');
   const nRev = Object.values(FB.sessoes).filter(precisaAtencao).length;
-  $('tabs').innerHTML = ABAS.map(([k, l]) => `<button data-aba="${k}" class="${FB.aba === k ? 'on' : ''}">${esc(t(l))}${k === 'revisar' && nRev ? `<span class="badge">${nRev}</span>` : ''}</button>`).join('');
+  $('tabs').innerHTML = ABAS.map(([k, l]) => `<button data-aba="${k}" class="${FB.aba === k ? 'on' : ''}">${k === 'ajustes' ? I('settings') : ''}${esc(t(l))}${k === 'revisar' && nRev ? `<span class="badge">${nRev}</span>` : ''}</button>`).join('');
   ABAS.forEach(([k]) => $('t-' + k).classList.toggle('on', FB.aba === k));
   ({ gravar: renderGravar, goleiros: renderGoleiros, revisar: renderRevisar, historico: renderHist, conteudos: renderCont, relatorio: renderRel, ajustes: renderAj })[FB.aba]();
 }
@@ -562,11 +589,11 @@ function renderGravar(){
   const on = !!(REC.mr && REC.mr.state === 'recording');
   $('t-gravar').innerHTML = `<div class="card"><div class="rec">
       <div class="row"><label class="muted">${esc(t('dataTreino'))}</label><input type="date" id="dataTreino" value="${esc(($('dataTreino') || {}).value || hoje())}"></div>
-      <button class="recbtn ${on ? 'on' : ''}" id="recbtn">${on ? '■' : '🎙'}</button>
+      <button class="recbtn ${on ? 'on' : ''}" id="recbtn" aria-label="${esc(on ? t('parar') : t('tGravar'))}">${on ? I('stop', 'xl') : I('mic', 'xl')}</button>
       <div class="rectime" id="rectime">${on ? '' : '00:00'}</div>
       <div class="muted" style="text-align:center;max-width:420px">${esc(on ? t('parar') : t('gravarHint'))}</div>
       <div class="steps" id="passos"></div>
-      <button class="btn sm" id="btnArq">${esc(t('ouArq'))}</button>
+      <button class="btn sm" id="btnArq">${I('upload')}${esc(t('ouArq'))}</button>
       <div class="muted">${esc(FB.cfg.modo === 'direto' ? t('modoDir') : t('modoRev'))}</div>
     </div></div>`;
 }
@@ -575,7 +602,7 @@ function selGk(v){ return `<option value="">${esc(t('semGk'))}</option>` + gks()
 function selEstado(v){ return ['good', 'warn', 'crit'].map(k => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(t(k))}</option>`).join(''); }
 function selRestr(v){ return ['', 'tarefa', 'ambiente', 'individuo'].map(k => `<option value="${k}"${(v || '') === k ? ' selected' : ''}>${esc(k ? t(k) : t('semRestr'))}</option>`).join(''); }
 function selIgual(v){ return `<option value="">${esc(t('novo'))}</option>` + Object.keys(FB.pend).filter(id => !FB.pend[id].feito || id === v).map(id => `<option value="${id}"${v === id ? ' selected' : ''}>${esc(t('reforcoDe') + ': ' + FB.pend[id].texto.slice(0, 60) + ' (' + (FB.pend[id].vezes || 1) + 'x)')}</option>`).join(''); }
-function cit(i){ return i.citacao ? `<div class="cit ${i.citOk === false ? 'bad' : ''}">“${esc(i.citacao)}”${i.citOk === false ? ' — ' + esc(t('citFora')) : ''}</div>` : `<div class="cit">${esc(t('semCitacao'))}</div>`; }
+function cit(i){ return i.citacao ? `<div class="cit ${i.citOk === false ? 'bad' : ''}">“${esc(i.citacao)}”${i.citOk === false ? ' — ' + I('alert', 'sm') + ' ' + esc(t('citFora')) : ''}</div>` : `<div class="cit">${esc(t('semCitacao'))}</div>`; }
 function editorSessao(s){
   const x = s.extracao || { goleiros: [], grupo: [], conteudos: [] };
   const stl = interrompida(s) ? 'crit' : ({ revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '');
@@ -591,30 +618,30 @@ function editorSessao(s){
     ${s.erro ? `<div class="cit bad" style="margin-bottom:8px">${esc(s.erro)}</div>` : ''}
     ${s.status === 'publicado' ? `<div class="muted" style="margin-bottom:8px">${esc(t('perfilAviso'))}</div>` : ''}
     <details ${s.extracao ? '' : 'open'}><summary class="muted" style="cursor:pointer">${esc(t('transc'))}</summary>
-      <div class="row" style="margin:8px 0">${audioAqui ? `<button class="btn sm" data-a="ouvir">${esc(t('ouvir'))}</button><span class="muted">${esc(t('audioSo'))}</span>` : `<span class="muted">${esc(t('audioFora'))}</span>`}<span id="player-${s.id}"></span></div>
+      <div class="row" style="margin:8px 0">${audioAqui ? `<button class="btn sm" data-a="ouvir">${I('play')}${esc(t('ouvir'))}</button><span class="muted">${esc(t('audioSo'))}</span>` : `<span class="muted">${esc(t('audioFora'))}</span>`}<span id="player-${s.id}"></span></div>
       <textarea rows="6" data-f="transcricao">${esc(s.transcricao || '')}</textarea></details>`;
   if (s.extracao){
     h += `<h3 style="margin-top:14px">${esc(t('goleiros'))}</h3>`;
     arr(x.goleiros).forEach((g, gi) => {
-      h += `<div class="gkblock"><div class="gkh"><select data-g="${gi}" data-f="gid">${selGk(g.id)}</select><select data-g="${gi}" data-f="estado">${selEstado(g.estado)}</select>${g.duvida ? `<span class="cit bad">${esc(g.duvida)}</span>` : ''}<span style="flex:1"></span><button class="btn sm" data-a="addItem" data-g="${gi}">${esc(t('addItem'))}</button></div>`;
+      h += `<div class="gkblock"><div class="gkh"><select data-g="${gi}" data-f="gid">${selGk(g.id)}</select><select data-g="${gi}" data-f="estado">${selEstado(g.estado)}</select>${g.duvida ? `<span class="cit bad">${esc(g.duvida)}</span>` : ''}<span style="flex:1"></span><button class="btn sm" data-a="addItem" data-g="${gi}">${I('plus')}${esc(t('addItem'))}</button></div>`;
       arr(g.itens).forEach((i, ii) => {
-        h += `<div class="item"><select data-g="${gi}" data-i="${ii}" data-f="tipo">${selTipo(i.tipo)}</select><div class="grow"><input style="width:100%" data-g="${gi}" data-i="${ii}" data-f="texto" value="${esc(i.texto)}">${i.reforco ? ` <span class="pill reforco">${esc(t('reforco'))}</span>` : ''}${cit(i)}</div><button class="btn sm" data-a="rmItem" data-g="${gi}" data-i="${ii}">✕</button></div>`;
+        h += `<div class="item"><select data-g="${gi}" data-i="${ii}" data-f="tipo">${selTipo(i.tipo)}</select><div class="grow"><input style="width:100%" data-g="${gi}" data-i="${ii}" data-f="texto" value="${esc(i.texto)}">${i.reforco ? ` <span class="pill reforco">${I('refresh', 'sm')}${esc(t('reforco'))}</span>` : ''}${cit(i)}</div><button class="btn sm ico danger" data-a="rmItem" data-g="${gi}" data-i="${ii}" title="${esc(t('descartar'))}" aria-label="${esc(t('descartar'))}">${I('x')}</button></div>`;
       });
       h += `</div>`;
     });
-    h += `<button class="btn sm" data-a="addGk">+ ${esc(t('goleiros'))}</button>`;
+    h += `<button class="btn sm" data-a="addGk">${I('plus')}${esc(t('goleiros'))}</button>`;
     h += `<h3 style="margin-top:16px">${esc(t('grupo'))}</h3>`;
-    arr(x.grupo).forEach((i, ii) => { h += `<div class="item"><div class="grow"><input style="width:100%" data-gr="${ii}" data-f="texto" value="${esc(i.texto)}">${cit(i)}</div><button class="btn sm" data-a="rmGrupo" data-gr="${ii}">✕</button></div>`; });
-    h += `<button class="btn sm" data-a="addGrupo">${esc(t('addItem'))}</button>`;
+    arr(x.grupo).forEach((i, ii) => { h += `<div class="item"><div class="grow"><input style="width:100%" data-gr="${ii}" data-f="texto" value="${esc(i.texto)}">${cit(i)}</div><button class="btn sm ico danger" data-a="rmGrupo" data-gr="${ii}" title="${esc(t('descartar'))}" aria-label="${esc(t('descartar'))}">${I('x')}</button></div>`; });
+    h += `<button class="btn sm" data-a="addGrupo">${I('plus')}${esc(t('addItem'))}</button>`;
     h += `<h3 style="margin-top:16px">${esc(t('conteudos'))}</h3>`;
     arr(x.conteudos).forEach((c, ci) => {
       h += `<div class="item"><div class="grow"><input style="width:100%" data-c="${ci}" data-f="texto" value="${esc(c.texto)}">
         <div class="row" style="margin-top:5px"><div class="chips">${gks().map(g => `<label><input type="checkbox" data-c="${ci}" data-f="cgk" value="${g.id}"${arr(c.goleiros).indexOf(g.id) >= 0 ? ' checked' : ''}>${esc(g.name)}</label>`).join('')}</div>
         <select data-c="${ci}" data-f="restricao" title="${esc(t('restr'))}">${selRestr(c.restricao)}</select><select data-c="${ci}" data-f="igualA" style="max-width:280px">${selIgual(c.igualA)}</select></div>${cit(c)}</div>
-        <button class="btn sm" data-a="rmCont" data-c="${ci}">✕</button></div>`;
+        <button class="btn sm ico danger" data-a="rmCont" data-c="${ci}" title="${esc(t('descartar'))}" aria-label="${esc(t('descartar'))}">${I('x')}</button></div>`;
     });
-    h += `<button class="btn sm" data-a="addCont">${esc(t('addItem'))}</button>`;
-    if (arr(x.repetidos).length) h += `<h3 style="margin-top:16px">${esc(t('repetidos'))}</h3>` + arr(x.repetidos).map(r => `<div class="muted">↻ ${esc(r.texto)}${r.vezes ? ' · ' + r.vezes + 'x' : ''}</div>`).join('');
+    h += `<button class="btn sm" data-a="addCont">${I('plus')}${esc(t('addItem'))}</button>`;
+    if (arr(x.repetidos).length) h += `<h3 style="margin-top:16px">${esc(t('repetidos'))}</h3>` + arr(x.repetidos).map(r => `<div class="muted">${I('refresh', 'sm')} ${esc(r.texto)}${r.vezes ? ' · ' + r.vezes + 'x' : ''}</div>`).join('');
   }
   return h + `</div>`;
 }
@@ -625,14 +652,14 @@ function renderRevisar(){
 function renderHist(){
   const lista = Object.values(FB.sessoes).filter(Boolean).sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.criadoEm || 0) - (a.criadoEm || 0));
   if (FB.aberta && FB.sessoes[FB.aberta] && FB.aba === 'historico'){
-    $('t-historico').innerHTML = `<button class="btn sm" data-a="voltar" style="margin-bottom:10px">← ${esc(t('tHist'))}</button>` + editorSessao(FB.sessoes[FB.aberta]);
+    $('t-historico').innerHTML = `<button class="btn sm" data-a="voltar" style="margin-bottom:10px">${I('left')}${esc(t('tHist'))}</button>` + editorSessao(FB.sessoes[FB.aberta]);
     return;
   }
   $('t-historico').innerHTML = `<div class="card">${lista.length ? lista.map(s => {
     const x = s.extracao || {};
     const nomes = arr(x.goleiros).map(g => g.nome || gkNome(g.id)).filter(Boolean).join(', ');
     const stl = interrompida(s) ? 'crit' : ({ revisar: 'warn', publicado: 'good', erro: 'crit' }[s.status] || '');
-    return `<div class="sess" data-abrir="${s.id}"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(s.data))}</b><span class="pill ${stl}">${esc(rotuloStatus(s))}</span><span class="grow muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomes || (s.transcricao || '').slice(0, 90))}</span><span class="muted">${arr(x.conteudos).length ? arr(x.conteudos).length + ' ✅' : ''}</span></div>`;
+    return `<div class="sess" data-abrir="${s.id}"><b style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(fd(s.data))}</b><span class="pill ${stl}">${esc(rotuloStatus(s))}</span><span class="grow muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomes || (s.transcricao || '').slice(0, 90))}</span><span class="muted">${arr(x.conteudos).length ? I('list', 'sm') + ' ' + arr(x.conteudos).length : ''}</span></div>`;
   }).join('') : `<div class="muted">${esc(t('histVazio'))}</div>`}</div>`;
 }
 function linhaPend(p, feitos){
@@ -640,7 +667,7 @@ function linhaPend(p, feitos){
       <div class="row muted" style="margin-top:4px"><span class="pill ${p.vezes > 2 ? 'crit' : p.vezes > 1 ? 'warn' : ''}">${p.vezes || 1} ${esc(t('vezes'))}</span>
       ${p.restricao ? `<span class="pill">${esc(t('restr'))}: ${esc(t(p.restricao))}</span>` : ''}
       <span>${esc(t('desde'))} ${esc(fd(p.criadoEm))} · ${esc(t('ultimo'))} ${esc(fd(p.ultimo || p.criadoEm))}</span></div>${p.citacao ? `<div class="cit">“${esc(p.citacao)}”</div>` : ''}</div>
-      <button class="btn sm" data-a="${feitos ? 'reabrir' : 'feito'}" data-pid="${p.id}">${esc(feitos ? t('reabrir') : t('marcarFeito'))}</button><button class="btn sm danger" data-a="rmPend" data-pid="${p.id}">✕</button></div>`;
+      <button class="btn sm" data-a="${feitos ? 'reabrir' : 'feito'}" data-pid="${p.id}">${feitos ? I('undo') : I('check')}${esc(feitos ? t('reabrir') : t('marcarFeito'))}</button><button class="btn sm ico danger" data-a="rmPend" data-pid="${p.id}" title="${esc(t('descartar'))}" aria-label="${esc(t('descartar'))}">${I('trash')}</button></div>`;
 }
 /* Conteúdos: um bloco por goleiro (e o do grupo), que recolhe */
 function renderCont(){
@@ -648,10 +675,10 @@ function renderCont(){
   const lista = Object.keys(FB.pend).map(id => Object.assign({ id: id }, FB.pend[id])).filter(p => !!p.feito === feitos).sort((a, b) => (b.vezes || 1) - (a.vezes || 1) || (b.ultimo || '').localeCompare(a.ultimo || ''));
   const blocos = gks().map(g => ({ nome: g.name, k: g.id, itens: lista.filter(p => arr(p.goleiros).indexOf(g.id) >= 0) })).filter(b => b.itens.length);
   const doGrupo = lista.filter(p => !arr(p.goleiros).length);
-  if (doGrupo.length) blocos.push({ nome: '👥 ' + t('semGrupo'), k: '__grupo', itens: doGrupo });
+  if (doGrupo.length) blocos.push({ nome: t('semGrupo'), k: '__grupo', itens: doGrupo });
   FB.contAberto = FB.contAberto || {};
   $('t-conteudos').innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn sm ${!feitos ? 'primary' : ''}" data-cf="abertos">${esc(t('abertos'))}</button><button class="btn sm ${feitos ? 'primary' : ''}" data-cf="feitos">${esc(t('feitos'))}</button></div>
-    ${blocos.length ? blocos.map(b => `<div class="card"><details class="contgk" data-contk="${b.k}"${FB.contAberto[b.k] ? ' open' : ''}><summary>${esc(b.nome)} <span class="pill">${b.itens.length}</span>${b.itens.some(p => (p.vezes || 1) > 2) ? ' <span class="pill crit">↻</span>' : ''}</summary>${b.itens.map(p => linhaPend(p, feitos)).join('')}</details></div>`).join('') : `<div class="card muted">${esc(t('contVazio'))}</div>`}`;
+    ${blocos.length ? blocos.map(b => `<div class="card"><details class="contgk" data-contk="${b.k}"${FB.contAberto[b.k] ? ' open' : ''}><summary>${esc(b.nome)} <span class="pill">${b.itens.length}</span>${b.itens.some(p => (p.vezes || 1) > 2) ? ' <span class="pill crit">' + I('refresh', 'sm') + '</span>' : ''}</summary>${b.itens.map(p => linhaPend(p, feitos)).join('')}</details></div>`).join('') : `<div class="card muted">${esc(t('contVazio'))}</div>`}`;
   document.querySelectorAll('#t-conteudos details[data-contk]').forEach(d => d.addEventListener('toggle', () => { FB.contAberto[d.dataset.contk] = d.open; }));
 }
 /* ── relatório ── */
@@ -686,7 +713,7 @@ function renderRel(){
   const ia = FB.rel.ia && FB.rel.iaChave === per.sel + '|' + gkSel ? FB.rel.ia : null;
   let h = `<div class="card no-print"><div class="row"><label class="muted">${esc(t('relPeriodo'))}</label><select id="relPer">${[['d7', 'd7'], ['d30', 'd30'], ['tudo', 'dTemp']].map(([v, l]) => `<option value="${v}"${per.sel === v ? ' selected' : ''}>${esc(t(l))}</option>`).join('')}</select>
     <label class="muted">${esc(t('relGk'))}</label><select id="relGk"><option value="">${esc(t('todos'))}</option>${gks().map(g => `<option value="${g.id}"${gkSel === g.id ? ' selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
-    <span style="flex:1"></span><button class="btn" data-a="ia">${esc(t('gerar'))}</button><button class="btn" data-a="print">${esc(t('imprimir'))}</button></div></div>`;
+    <span style="flex:1"></span><button class="btn" data-a="ia">${I('sparkles')}${esc(t('gerar'))}</button><button class="btn" data-a="print">${I('printer')}${esc(t('imprimir'))}</button></div></div>`;
   h += `<div class="card rep"><h3>${esc(t('title'))} · ${esc(fd(per.ini))} – ${esc(fd(per.fim))}${FB.hub && FB.hub.club ? ' · ' + esc(FB.hub.club.name || '') : ''}</h3>`;
   const ids = Object.keys(regs.goleiros);
   if (!ids.length && !regs.grupo.length){ h += `<div class="muted">${esc(t('relVazio'))}</div></div>`; $('t-relatorio').innerHTML = h; return; }
@@ -704,7 +731,7 @@ function renderRel(){
     h += `<h4>${esc(r.nome)}</h4>`;
     ['evolucao', 'limitacao', 'ajuste', 'observacao'].forEach(tp => {
       const its = r.itens.filter(i => i.tipo === tp); if (!its.length) return;
-      h += `<div class="muted">${esc(t(tp))}</div><ul>${its.map(i => `<li>${esc(fd(i.data))} · ${i.reforco ? '↻ ' : ''}${esc(i.texto)}</li>`).join('')}</ul>`;
+      h += `<div class="muted">${esc(t(tp))}</div><ul>${its.map(i => `<li>${esc(fd(i.data))} · ${i.reforco ? I('refresh', 'sm') + ' ' : ''}${esc(i.texto)}</li>`).join('')}</ul>`;
     });
   });
   if (regs.grupo.length) h += `<h4>${esc(t('grupoNotas'))}</h4><ul>${regs.grupo.map(i => `<li>${esc(fd(i.data))} · ${esc(i.texto)}</li>`).join('')}</ul>`;
@@ -720,6 +747,7 @@ function renderAj(){
     <div class="card"><h3>${esc(t('ajApel'))}</h3><div class="muted" style="margin-bottom:8px">${esc(t('ajApelD'))}</div>
       ${gks().map(g => `<div class="row" style="margin-bottom:6px"><span style="min-width:160px">${esc(g.name)}</span><input style="flex:1" data-apel="${g.id}" value="${esc(arr(ap[g.id]).join(', '))}"></div>`).join('')}</div>
     <div class="card"><h3>${esc(t('ajVocab'))}</h3><div class="muted" style="margin-bottom:8px">${esc(t('ajVocabD'))}</div><textarea rows="8" id="ajVocab">${esc(arr(FB.cfg.vocab).join('\n'))}</textarea></div>
+    <div class="card"><h3>${esc(t('ajDorm'))}</h3><div class="muted" style="margin-bottom:8px">${esc(t('ajDormD'))}</div><div class="row"><input type="number" id="ajDias" min="7" max="365" style="width:90px" value="${diasSemMencao()}"> <span class="muted">${esc(t('dias'))}</span></div></div>
     <div class="card"><h3>${esc(t('ajApi'))}</h3><input id="ajApi" style="width:100%" value="${esc(FB.cfg.api || '/fb')}"></div>
     <button class="btn primary" data-a="salvarAj">${esc(t('salvar'))}</button>`;
 }
@@ -770,10 +798,13 @@ document.addEventListener('click', async (e) => {
     else if (a === 'feito' || a === 'reabrir'){ const id = b.dataset.pid; FB.pend[id].feito = a === 'feito'; await ref(P('pendencias/' + id + '/feito')).set(FB.pend[id].feito); render(); }
     else if (a === 'padroesAtualizar'){ await atualizarPadroes([b.dataset.pid]); }
     else if (a === 'padroesTodos'){ await atualizarPadroes(gks().map(g => g.id)); }
-    else if (a === 'temaMover' || a === 'temaRenomear' || a === 'temaRemover'){
+    else if (a === 'temaMover' || a === 'temaRenomear' || a === 'temaRemover' || a === 'temaArquivar' || a === 'temaAtivar' || a === 'temaSoltar'){
       const pad = FB.padroes[b.dataset.pid]; const tm = pad && arr(pad.temas).find(x => x.id === b.dataset.tid); if (!tm) return;
       if (a === 'temaMover'){ tm.tipo = tm.tipo === 'melhorar' ? 'evolucao' : 'melhorar'; tm.travado = true; if (tm.tipo === 'evolucao' && !tm.virouEm) tm.virouEm = hoje(); if (tm.tipo !== 'evolucao') tm.virouEm = ''; }
       if (a === 'temaRenomear'){ const n = prompt(t('renomearQ'), tm.tema); if (!n || !n.trim()) return; tm.tema = n.trim().slice(0, 80); tm.travado = true; }
+      if (a === 'temaArquivar'){ tm.arquivado = true; tm.arquivadoEm = hoje(); delete tm.fixo; }
+      if (a === 'temaAtivar'){ delete tm.arquivado; delete tm.arquivadoEm; tm.fixo = true; }
+      if (a === 'temaSoltar'){ delete tm.fixo; }
       if (a === 'temaRemover'){ if (!confirm(t('removerQ'))) return; pad.ignorados = arr(pad.ignorados).concat([tm.tema]); pad.temas = arr(pad.temas).filter(x => x.id !== tm.id); }
       await salvaPadrao(b.dataset.pid); renderGoleiros();
     }
@@ -789,7 +820,7 @@ document.addEventListener('click', async (e) => {
       const modo = (document.querySelector('input[name="modo"]:checked') || {}).value || 'revisar';
       const vocab = ($('ajVocab').value || '').split('\n').map(x => x.trim()).filter(Boolean);
       const apel = {}; document.querySelectorAll('[data-apel]').forEach(i => { const v = i.value.split(',').map(x => x.trim()).filter(Boolean); if (v.length) apel[i.dataset.apel] = v; });
-      FB.cfg = Object.assign({}, FB.cfg, { modo: modo, vocab: vocab, apelidos: apel, api: ($('ajApi').value || '/fb').trim() });
+      FB.cfg = Object.assign({}, FB.cfg, { modo: modo, vocab: vocab, apelidos: apel, api: ($('ajApi').value || '/fb').trim(), diasSemMencao: Math.max(7, Math.min(365, parseInt($('ajDias').value, 10) || 30)) });
       await ref(P('config')).set(FB.cfg); toast(t('salvo'));
     }
   } catch (err) { toast(t('erroServ') + (err.message || err), true); b.disabled = false; }
