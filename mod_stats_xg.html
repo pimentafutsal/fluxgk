@@ -381,6 +381,17 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .hm-ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}
 .hm-ctl .lbl{font-size:9.5px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);min-width:110px;}
 .hm-wrap{display:grid;grid-template-columns:minmax(0,3fr) minmax(220px,1fr);gap:16px;align-items:start;margin-top:6px;}
+.op-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:center;margin-bottom:8px;}
+.op-top select{width:auto;min-width:220px;max-width:100%;}
+.op-why{font-size:11.5px;color:var(--mute);line-height:1.5;margin:0 0 10px;}
+.op-leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11.5px;color:var(--mute);margin:2px 0 6px;align-items:center;}
+.op-leg i{display:inline-block;border-radius:50%;margin-right:6px;vertical-align:-1px;}
+.op-svg{display:block;width:100%;height:auto;}
+.op-pt{cursor:pointer;}
+.op-pt:focus{outline:none;}
+.op-pt:focus circle,.op-pt.on circle{stroke:#0a0a0a;stroke-width:2.5;}
+.op-det{background:var(--surface2);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.55;color:var(--ink);margin-top:8px;min-height:44px;}
+.op-det .sub{color:var(--mute);}
 .hm-empty{border:1px dashed var(--border2);border-radius:8px;padding:40px 16px;text-align:center;color:var(--mute);font-size:12px;}
 .hm-tab tbody tr{cursor:pointer;}
 .hm-tab tr.on td{background:var(--surface2);font-weight:600;}
@@ -466,6 +477,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <button class="subtab active" id="dsub-def" onclick="dashSub('def')" data-i18n="st.subDefensive">Defensive</button>
     <button class="subtab" id="dsub-off" onclick="dashSub('off')" data-i18n="st.subOffensive">Offensive</button>
     <button class="subtab" id="dsub-map" onclick="dashSub('map')" data-i18n="st.subMaps">Maps</button>
+    <button class="subtab" id="dsub-opp" onclick="dashSub('opp')" data-i18n="st.subOpp">Opportunities</button>
   </div>
 
   <div class="g3" id="dpan-def">
@@ -491,6 +503,11 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
     <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
+  </div>
+
+  <!-- oportunidades: cada finalizacao real pela complexidade (xG), sem medias -->
+  <div id="dpan-opp" style="display:none">
+  <div class="card" id="dash-opp-card"></div>
   </div>
 
   <!-- detalhe do recorte: mapas daquelas acoes + lance a lance -->
@@ -2934,6 +2951,8 @@ function renderDashboard(){
       okEl.innerHTML='<div class="kpi"><div class="kpi-n">'+offs.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
         + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
     }
+  } else if(_dashSub==='opp'){
+    renderOppCard(games,fGk);
   } else {
     orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),cfgOrder(ST.hdists,HDIST_ORDER),null,true,'hDistance');
     document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total,52);
@@ -2947,11 +2966,123 @@ function renderDashboard(){
 let _dashSub='def';
 function dashSub(t){
   _dashSub=t;
-  ['def','off','map'].forEach(function(n){
+  ['def','off','map','opp'].forEach(function(n){
     const pan=document.getElementById('dpan-'+n); if(pan) pan.style.display=(n===t)?'':'none';
     const bt=document.getElementById('dsub-'+n); if(bt) bt.classList.toggle('active',n===t);
   });
   renderDashboard();
+}
+
+// ═══ OPORTUNIDADES POR COMPLEXIDADE (xG) ═══════════════════════════
+/* Unidade de analise = a oportunidade (cada finalizacao), nao o jogo.
+   Cada finalizacao do jogo escolhido aparece na linha do seu momento,
+   posicionada pela complexidade (xG). As dos outros jogos ficam ao fundo.
+   Nada e somado em media: a comparacao usa so finalizacoes parecidas
+   (mesmo momento, xG +-0,10) e sempre mostra "x de y". */
+const OPP_FAIXAS=[0.15,0.35], OPP_JANELA=0.10;
+let _oppGame=null, _oppPick=null, _oppList=[];
+function _oppFaixa(x){ return x<OPP_FAIXAS[0]?0:(x<OPP_FAIXAS[1]?1:2); }
+function _oppSemGol(s){ return resKind(s.result)!=='goal'; }
+function oppSetGame(id){ _oppGame=id; _oppPick=null; renderDashboard(); }
+function oppPick(i){ _oppPick=i; renderOppDetail(); document.querySelectorAll('#dash-opp-card .op-pt').forEach(function(g){ g.classList.toggle('on',+g.getAttribute('data-i')===i); }); }
+function oppKey(ev,i){ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); oppPick(i); } }
+function _oppParecidas(s){
+  return _oppList.filter(function(o){ return o!==s && o.moment===s.moment && Math.abs(o._x-s._x)<=OPP_JANELA+1e-9; });
+}
+function renderOppDetail(){
+  const box=document.getElementById('op-det'); if(!box) return;
+  const s=_oppList[_oppPick];
+  if(!s){ box.innerHTML='<span class="sub">'+esc(_txf('st.op.hint','Click a large point to compare that opportunity with similar ones.'))+'</span>'; return; }
+  const FN=[_txf('st.op.low','low complexity'),_txf('st.op.mid','medium'),_txf('st.op.high','high')];
+  const mom=s.moment?stLbl(s.moment):_txf('st.op.noMom','No moment');
+  const par=_oppParecidas(s), ok=par.filter(_oppSemGol).length;
+  const a=xgFmt(Math.max(0,s._x-OPP_JANELA),2), b=xgFmt(Math.min(1,s._x+OPP_JANELA),2);
+  let comp;
+  if(!par.length) comp=esc(_txf('st.op.first','No similar shot yet in {m}: this is the first reference.').replace('{m}',mom));
+  else comp=esc(_txf('st.op.similar','In the filtered games, similar shots in {m} (xG {a} to {b}): no goal in {x} of {y}.').replace('{m}',mom).replace('{a}',a).replace('{b}',b).replace('{x}',ok).replace('{y}',par.length))
+    + (par.length<5?' <span class="sub">('+esc(_txf('st.op.small','small sample'))+')</span>':'');
+  box.innerHTML='<div style="font-weight:600">'+esc(mom)+' · xG '+esc(xgFmt(s._x,2))+' ('+esc(FN[_oppFaixa(s._x)])+') · '
+    + '<span style="color:'+(_oppSemGol(s)?'#2563eb':'#b91c1c')+'">'+esc(stLbl(s.result)||'—')+'</span>'
+    + (s.minute?' <span class="sub">· '+esc(String(s.minute))+"'</span>":'')+'</div>'
+    + '<div>'+comp+'</div>';
+}
+function renderOppCard(games,fGk){
+  const box=document.getElementById('dash-opp-card'); if(!box) return;
+  /* mesmo recorte do painel (filtros, goleiro e recortes clicados) */
+  let todas=[];
+  games.forEach(function(g){ (g.shots||[]).forEach(function(s){
+    if(fGk&&!fGk.has(s.gk)) return;
+    todas.push(Object.assign({},s,{_gid:String(g.id)}));
+  }); });
+  todas=_drillAplica(todas,_drillS);
+  const comXg=todas.filter(function(s){ const x=xgOf(s); if(x==null||!isFinite(x)) return false; s._x=Math.max(0,Math.min(1,x)); return true; });
+  _oppList=comXg;
+  const titulo='<div class="op-top"><div class="card-title" style="margin:0">'+esc(_txf('st.op.title','Opportunities by complexity'))+'</div>'
+    + '<div style="font-size:11px;color:var(--mute)">'+esc(_txf('st.op.cover','{n} of {t} shots have xG').replace('{n}',comXg.length).replace('{t}',todas.length))+'</div></div>';
+  if(!comXg.length){
+    box.innerHTML=titulo+'<div class="hm-empty">'+esc(_txf('st.op.empty','No shot with xG in this cut yet. Opportunities appear from games registered with the court.'))+'</div>';
+    return;
+  }
+  /* jogos: mais recentes primeiro; padrao = o mais recente com xG */
+  const porJogo={}; comXg.forEach(function(s){ porJogo[s._gid]=(porJogo[s._gid]||0)+1; });
+  const ordJ=games.slice().sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+  if(_oppGame==null||!ordJ.some(function(g){ return String(g.id)===String(_oppGame); })||!porJogo[_oppGame]){
+    const pri=ordJ.filter(function(g){ return porJogo[String(g.id)]; })[0]; _oppGame=pri?String(pri.id):null; _oppPick=null;
+  }
+  const opts=ordJ.map(function(g){ const n=porJogo[String(g.id)]||0;
+    return '<option value="'+esc(String(g.id))+'"'+(String(g.id)===String(_oppGame)?' selected':'')+(n?'':' disabled')+'>'+esc((g.date||'—')+' · '+(g.opponent||'—')+' ('+n+')')+'</option>'; }).join('');
+  /* linhas = momentos (ordem do treinador) + os que aparecerem + sem momento */
+  const ordem=cfgOrder(ST.moments,MOMENT_ORDER);
+  const pres=[]; comXg.forEach(function(s){ const m=s.moment||''; if(pres.indexOf(m)<0) pres.push(m); });
+  const linhas=ordem.filter(function(m){ return pres.indexOf(m)>=0; })
+    .concat(pres.filter(function(m){ return m&&ordem.indexOf(m)<0; }).sort())
+    .concat(pres.indexOf('')>=0?['']:[]);
+  const W=900, L=170, X0=L+10, X1=660, RC=X1+22, TOP=40, RH=56, H=TOP+linhas.length*RH+30;
+  const px=function(x){ return X0+x*(X1-X0); };
+  const FS=[_txf('st.op.lowS','Low'),_txf('st.op.midS','Medium'),_txf('st.op.highS','High')];
+  let h='';
+  [[0,OPP_FAIXAS[0],_txf('st.op.low','low complexity')],[OPP_FAIXAS[0],OPP_FAIXAS[1],_txf('st.op.mid','medium')],[OPP_FAIXAS[1],1,_txf('st.op.high','high')]].forEach(function(z,i){
+    if(i===1) h+='<rect x="'+px(z[0])+'" y="'+(TOP-8)+'" width="'+(px(z[1])-px(z[0]))+'" height="'+(linhas.length*RH+6)+'" fill="#f4f4f1"/>';
+    h+='<text x="'+((px(z[0])+px(z[1]))/2)+'" y="20" text-anchor="middle" font-size="12" fill="#737373">'+esc(z[2])+'</text>';
+  });
+  h+='<text x="'+RC+'" y="20" font-size="12" fill="#737373">'+esc(_txf('st.op.colHead','Filtered games: no goal / total'))+'</text>';
+  const doJogo=[];
+  linhas.forEach(function(m,mi){
+    const y=TOP+mi*RH+RH/2;
+    const daLinha=comXg.filter(function(s){ return (s.moment||'')===m; });
+    h+='<line x1="'+X0+'" x2="'+X1+'" y1="'+y+'" y2="'+y+'" stroke="#e5e5e5" stroke-width="1"/>';
+    let nome=m?stLbl(m):_txf('st.op.noMom','No moment'); if(nome.length>24) nome=nome.slice(0,23)+'…';
+    h+='<text x="0" y="'+(y+4)+'" font-size="13" fill="#0a0a0a">'+esc(nome)+'</text>';
+    daLinha.filter(function(s){ return s._gid!==String(_oppGame); }).forEach(function(s,k){
+      const jy=y+((k*7)%17-8), gol=!_oppSemGol(s);
+      h+='<circle cx="'+px(s._x).toFixed(1)+'" cy="'+jy+'" r="3.4" fill="'+(gol?'#ffffff':'#a3a3a3')+'" stroke="#a3a3a3" stroke-width="1.2"/>';
+    });
+    const fx=[0,1,2].map(function(f){ const a=daLinha.filter(function(s){ return _oppFaixa(s._x)===f; }); return a.length?FS[f]+' '+a.filter(_oppSemGol).length+'/'+a.length:null; }).filter(Boolean).join(' · ');
+    h+='<text x="'+RC+'" y="'+(y+4)+'" font-size="12" fill="#404040" font-family="JetBrains Mono,monospace">'+esc(fx)+'</text>';
+    const jg=daLinha.filter(function(s){ return s._gid===String(_oppGame); });
+    if(!jg.length) h+='<text x="'+(X1-4)+'" y="'+(y-10)+'" text-anchor="end" font-size="11" fill="#a3a3a3">'+esc(_txf('st.op.notThis','none in this game'))+'</text>';
+    jg.forEach(function(s,k){
+      const i=_oppList.indexOf(s), jy=y+(jg.length>1?(k%2?8:-8):0), gol=!_oppSemGol(s);
+      doJogo.push(s);
+      h+='<g class="op-pt'+(i===_oppPick?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc((m?stLbl(m):'')+' xG '+xgFmt(s._x,2)+' '+(stLbl(s.result)||''))+'" onclick="oppPick('+i+')" onkeydown="oppKey(event,'+i+')">'
+        + '<circle cx="'+px(s._x).toFixed(1)+'" cy="'+jy+'" r="9" fill="'+(gol?'#b91c1c':'#2563eb')+'" stroke="#ffffff" stroke-width="2"/></g>';
+    });
+  });
+  const yb=TOP+linhas.length*RH+16;
+  [0,OPP_FAIXAS[0],OPP_FAIXAS[1],1].forEach(function(t){ h+='<text x="'+px(t)+'" y="'+yb+'" text-anchor="middle" font-size="11" fill="#a3a3a3" font-family="JetBrains Mono,monospace">'+xgFmt(t,2)+'</text>'; });
+  h+='<text x="'+X1+'" y="'+(yb+14)+'" text-anchor="end" font-size="11" fill="#a3a3a3">'+esc(_txf('st.op.axis','xG · more complex →'))+'</text>';
+  const sg=doJogo.filter(_oppSemGol).length;
+  box.innerHTML=titulo
+    + '<p class="op-why">'+esc(_txf('st.op.why','Each point is a real shot, placed by its complexity (xG). Nothing is averaged: comparisons use only similar opportunities (xG ±0.10) in the same moment.'))+'</p>'
+    + '<div class="op-top"><label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)">'+esc(_txf('st.op.game','Game'))
+    +   '<select onchange="oppSetGame(this.value)">'+opts+'</select></label>'
+    +   '<div style="font-size:12px;color:var(--ink)">'+esc(_txf('st.op.inGame','{n} opportunities with xG in this game · no goal in {x}').replace('{n}',doJogo.length).replace('{x}',sg))+'</div></div>'
+    + '<div class="op-leg"><span><i style="width:12px;height:12px;background:#2563eb"></i>'+esc(_txf('st.op.legNo','this game: no goal'))+'</span>'
+    +   '<span><i style="width:12px;height:12px;background:#b91c1c"></i>'+esc(_txf('st.op.legGoal','this game: goal'))+'</span>'
+    +   '<span><i style="width:8px;height:8px;background:#a3a3a3"></i>'+esc(_txf('st.op.legOther','other games (hollow = goal)'))+'</span></div>'
+    + '<div style="overflow-x:auto"><svg class="op-svg" viewBox="0 0 '+W+' '+H+'" style="min-width:620px" role="img" aria-label="'+esc(_txf('st.op.title','Opportunities by complexity'))+'">'+h+'</svg></div>'
+    + '<div class="op-det" id="op-det"></div>';
+  renderOppDetail();
 }
 
 // ═══ REPORTS ══════════════════════════════════════════════════════
