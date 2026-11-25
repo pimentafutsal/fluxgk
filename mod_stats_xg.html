@@ -353,6 +353,16 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 #fb-loading .loading-bar-fill{background:var(--paper);}
 /* ── quadra de coleta e mapa de calor (xG) ── */
 .xgc-court{display:block;width:100%;padding:0;border:none;background:none;cursor:crosshair;border-radius:8px;overflow:hidden;}
+/* registro: quadra larga com menus ao lado; lista de finalizacoes abaixo */
+.sf-top{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(260px,1fr);gap:22px;align-items:start;margin-bottom:18px;}
+.sf-side{display:flex;flex-direction:column;gap:16px;min-width:0;}
+.sf-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sf-rest{border-top:1px solid var(--border);padding-top:16px;}
+.sf-rest .xgc-ctx{margin-top:0;}
+@media(max-width:900px){.sf-rest{grid-template-columns:1fr;}}
+.sf-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+.sf-list>div:only-child:not(.shot-item){grid-column:1/-1;}
+@media(max-width:900px){.sf-top{grid-template-columns:1fr;}}
 .xgc-court svg{display:block;width:100%;height:auto;}
 .xgc-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
 .xgc-pos{font-size:11px;color:var(--mute);font-family:var(--mono);}
@@ -474,13 +484,13 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   </div>
 
   <div id="dpan-map" style="display:none">
+  <!-- mapa de calor pela posicao exata na quadra (finalizacoes com xG): primeiro da aba -->
+  <div class="card" id="dash-hm-card" style="margin-bottom:14px"></div>
   <div class="g3">
     <div class="card"><div data-i18n="st.hDistance" class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="150"></canvas></div>
     <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
     <div class="card"><div data-i18n="st.vShotPos" class="card-title">Vertical Shot Position</div><div id="dash-court-hm" style="margin-top:6px;"></div></div>
   </div>
-  <!-- mapa de calor pela posicao exata na quadra (finalizacoes com xG) -->
-  <div class="card" id="dash-hm-card" style="margin-top:14px"></div>
   </div>
 
   <!-- detalhe do recorte: mapas daquelas acoes + lance a lance -->
@@ -557,27 +567,22 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     </div>
   </div>
   <div id="rec-phase-shots" style="display:none;">
-    <div class="g2" style="align-items:start;">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-          <div style="font-weight:700;font-size:15px;"><span data-i18n="st.shotNum">Shot #</span><span id="shot-form-num">1</span></div>
-          <button data-i18n="st.reviewSave" class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
-        </div>
-        <div class="g2" style="gap:16px;">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div style="font-weight:700;font-size:15px;"><span data-i18n="st.shotNum">Shot #</span><span id="shot-form-num">1</span></div>
+        <button data-i18n="st.reviewSave" class="btn btn-ghost btn-sm" onclick="recTab('review')">Review &amp; Save</button>
+      </div>
+      <!-- quadra larga a esquerda; ao lado, o que se decide junto com o toque -->
+      <div class="sf-top">
+        <!-- quadra: o toque marca o ponto e preenche corredor e distancia -->
+        <div id="sf-xgc"></div>
+        <div class="sf-side">
+          <div class="sf-pair">
           <div>
             <div data-i18n="st.goalkeeper" class="label">Goalkeeper</div>
             <select id="sf-gk" onchange="SF.gk=this.value;lastShotGk=this.value;"></select>
           </div>
           <div><div data-i18n="st.minute" class="label">Minute</div><input type="text" id="sf-minute" placeholder="e.g. 14, 32+1"></div>
-          <!-- quadra: o toque marca o ponto e preenche corredor e distancia -->
-          <div id="sf-xgc" style="grid-column:1/-1;"></div>
-          <div>
-            <div data-i18n="st.gameMoment" class="label">Game Moment</div>
-            <div class="mc-group" id="sf-moment-group"></div>
-          </div>
-          <div>
-            <div data-i18n="st.skillType" class="label">Skill Type</div>
-            <div class="mc-group" id="sf-skill-group"></div>
           </div>
           <div>
             <div data-i18n="st.result" class="label">Result *</div>
@@ -589,7 +594,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
               <button data-i18n="st.r.post" class="mc-btn" onclick="mcSel(this,'result','Post')">Post</button>
             </div>
           </div>
-          <div style="grid-column:1/-1;">
+          <div>
             <div class="label"><span data-i18n="st.hDistance">Horizontal Distance</span><span class="xgc-tag" id="xgc-hdtag-sf"></span></div>
             <div class="mc-group" id="sf-hdist-group">
               <button data-i18n="st.d.beforeHalf" class="mc-btn" onclick="mcSel(this,'hDistance','Before the halfway line')">Before halfway</button>
@@ -599,6 +604,25 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
               <button class="mc-btn" onclick="mcSel(this,'hDistance','10m')">10m</button>
               <button data-i18n="st.d.penalty" class="mc-btn" onclick="mcSel(this,'hDistance','Penalty')">Penalty</button>
             </div>
+          </div>
+          <div>
+            <div class="label"><span data-i18n="st.corridor">Corridor of the shot</span><span class="xgc-tag" id="xgc-corrtag-sf"></span></div>
+            <div class="mc-group" id="sf-court-group">
+              <button class="court-zone" data-z="124" onclick="selCourt(this,124)" data-i18n="st.g.left">Left</button>
+              <button class="court-zone" data-z="152" onclick="selCourt(this,152)" data-i18n="st.g.center">Center</button>
+              <button class="court-zone" data-z="125" onclick="selCourt(this,125)" data-i18n="st.g.right">Right</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="g2 sf-rest" style="gap:16px;">
+          <div>
+            <div data-i18n="st.gameMoment" class="label">Game Moment</div>
+            <div class="mc-group" id="sf-moment-group"></div>
+          </div>
+          <div>
+            <div data-i18n="st.skillType" class="label">Skill Type</div>
+            <div class="mc-group" id="sf-skill-group"></div>
           </div>
           <div>
             <div data-i18n="st.shotLocation" class="label" style="margin-bottom:10px;">Shot Location on Goal</div>
@@ -612,26 +636,18 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
               <button class="goal-zone" onclick="selGoal(this,6)" title="Low Right" data-i18n-title="st.g.lowRight"></button>
             </div>
           </div>
-          <div>
-            <div class="label"><span data-i18n="st.corridor">Corridor of the shot</span><span class="xgc-tag" id="xgc-corrtag-sf"></span></div>
-            <div class="mc-group" id="sf-court-group">
-              <button class="court-zone" data-z="124" onclick="selCourt(this,124)" data-i18n="st.g.left">Left</button>
-              <button class="court-zone" data-z="152" onclick="selCourt(this,152)" data-i18n="st.g.center">Center</button>
-              <button class="court-zone" data-z="125" onclick="selCourt(this,125)" data-i18n="st.g.right">Right</button>
-            </div>
-          </div>
           <!-- contexto do xG: ja vem com os padroes marcados -->
-          <div id="xgc-ctx-sf" class="xgc-ctx" style="grid-column:1/-1;"></div>
-        </div>
-        <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
-          <button data-i18n="st.clear" class="btn btn-ghost" onclick="clearShotForm()">Clear</button>
-          <button data-i18n="st.saveShot" class="btn btn-accent" onclick="saveShot()">Save Shot →</button>
-        </div>
+          <div id="xgc-ctx-sf" class="xgc-ctx"></div>
       </div>
-      <div>
-        <div data-i18n="st.savedShots" class="label mb16">Saved Shots</div>
-        <div id="shots-list"><div data-i18n="st.noShots" style="color:var(--mute);font-size:13px;">No shots recorded yet.</div></div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
+        <button data-i18n="st.clear" class="btn btn-ghost" onclick="clearShotForm()">Clear</button>
+        <button data-i18n="st.saveShot" class="btn btn-accent" onclick="saveShot()">Save Shot →</button>
       </div>
+    </div>
+    <!-- finalizacoes salvas: abaixo do formulario -->
+    <div style="margin-top:22px;">
+      <div data-i18n="st.savedShots" class="label mb16">Saved Shots</div>
+      <div id="shots-list" class="sf-list"><div data-i18n="st.noShots" style="color:var(--mute);font-size:13px;">No shots recorded yet.</div></div>
     </div>
   </div>
   <div id="rec-phase-off" style="display:none;">
