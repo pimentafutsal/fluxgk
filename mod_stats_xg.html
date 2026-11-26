@@ -356,6 +356,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 #fb-loading .loading-bar-fill{background:var(--paper);}
 /* ── quadra de coleta e mapa de calor (xG) ── */
 .xgc-court{display:block;width:100%;padding:0;border:none;background:none;cursor:crosshair;border-radius:8px;overflow:hidden;}
+.psx{border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface);}
+.psx-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start;}
+@media(max-width:900px){.psx-grid{grid-template-columns:1fr;}}
+.psx-goal{display:block;width:100%;max-width:420px;padding:0;border:none;background:none;cursor:crosshair;}
+.psx-goal svg{display:block;width:100%;height:auto;border-radius:6px;background:var(--surface2);}
+.psx-row{margin-bottom:10px;}
+.psx-out{display:flex;gap:14px;align-items:center;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:6px;}
+.psx-num{font:700 26px var(--mono);}
+.psx-off{color:var(--mute);font-size:12px;}
 .xgc-half{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;margin-bottom:6px;}
 .xgc-hgrp{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .xgc-hl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-right:2px;}
@@ -665,6 +674,8 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
           </div>
           <!-- contexto do xG: ja vem com os padroes marcados -->
           <div id="xgc-ctx-sf" class="xgc-ctx"></div>
+          <!-- PsxG: onde a bola ia no gol + como chegou (so chutes no alvo) -->
+          <div id="psx-sf" class="psx" style="grid-column:1/-1"></div>
       </div>
       <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">
         <button data-i18n="st.clear" class="btn btn-ghost" onclick="clearShotForm()">Clear</button>
@@ -1578,6 +1589,7 @@ function mcSel(btn,field,val){
   try{
     if(field==='hDistance') xgcManualHd('sf',val);
     else if(field==='moment'){ SF.xgSub=null; xgcRefresh('sf'); }
+    else if(field==='result'){ psxRefresh(); }
   }catch(e){ console.warn('xgc',e); }
 }
 
@@ -1603,7 +1615,7 @@ function renderSkillMomentGroups(){
 }
 function selGoal(btn,zone){
   document.querySelectorAll('.goal-zone').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); SF.goalZone=zone;
+  btn.classList.add('active'); SF.goalZone=zone; SF._gzM=true;
 }
 function selCourt(btn,zone){
   document.querySelectorAll('.court-zone').forEach(b=>b.classList.remove('active'));
@@ -1731,7 +1743,8 @@ function renderShotsList(){
     const d=document.createElement('div');
     d.className=`shot-item${isGoal?' goal':isSave?' save':''}`;
     const tags=[s.gk,s.moment,s.skill,s.hDistance].filter(Boolean).map(t=>`<span class="shot-tag">${stLbl(t)}</span>`).join('')
-      +(xgOf(s)!=null?`<span class="shot-tag" style="color:#2563eb;font-weight:600">xG ${xgFmt(xgOf(s),2)}</span>`:'');
+      +(xgOf(s)!=null?`<span class="shot-tag" style="color:#2563eb;font-weight:600">xG ${xgFmt(xgOf(s),2)}</span>`:'')
+      +(psxgOf(s)!=null?`<span class="shot-tag" style="color:#0a0a0a;font-weight:600">PsxG ${xgFmt(psxgOf(s),2)}</span>`:(psxFalta(s)?`<span class="shot-tag" style="color:#b45309;font-weight:600">${esc(_txf('st.ps.missing','PsxG missing: tap the goal'))}</span>`:''));
     d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <div>
         <span style="font-family:var(--mono);font-size:11px;color:var(--mute);">#${i+1}</span>
@@ -1752,7 +1765,7 @@ function editShot(idx){
   document.getElementById('sf-minute').value=s.minute||'';
   SF=Object.assign(xgDefaults(),{...s});
   /* o que ja estava gravado conta como escolhido: so um novo toque recalcula */
-  SF._hdM=!!s.hDistance; SF._corrM=!!s.courtZone;
+  SF._hdM=!!s.hDistance; SF._corrM=!!s.courtZone; SF._gzM=!!s.goalZone&&!(s.ball&&typeof s.ball.u==='number');
   /* tempo: o gravado; jogos antigos sem tempo usam o minuto */
   SF.half=(s.half===1||s.half===2)?s.half:(xgHalfDoMinuto(s.minute)||1); SF._halfM=(s.half===1||s.half===2); SF._inv=false;
   const fieldMap={'moment':'sf-moment-group','skill':'sf-skill-group','result':'sf-result-group','hDistance':'sf-hdist-group'};
@@ -2282,7 +2295,7 @@ const XG_HD_CANON=['Before the halfway line','Before 10m','After 10m','Area','10
 /* desenho: quadra deitada, nosso gol a esquerda. 14 px por metro. */
 const XGC_W=648,XGC_H=322,XGC_GL=28,XGC_CY=156,XGC_S=14;
 
-function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null}; }
+function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null,ball:null,vel:'media',traj:'rasteira',defl:false,screen:false,psxg:null}; }
 /* ── tempo da finalizacao e lado do nosso gol no video ──
    O treinador diz de que lado do video fica o nosso gol no 1o tempo (CUR.sideH1);
    no 2o tempo o lado troca sozinho. A quadra da coleta aparece igual ao video e
@@ -2402,6 +2415,91 @@ function xgCompute(s){
   b*=[1,.9,.8,.72,.65][Math.min(parseInt(s.defs,10)||0,4)];
   return Math.round(Math.min(Math.max(b,.01),.97)*1000)/1000;
 }
+/* ── PsxG: gols esperados DEPOIS do chute (so chutes no alvo) ──
+   Mede quao dificil era defender a bola que de fato chegou. Entra:
+   de onde saiu (pos), onde ia no gol (ball), velocidade, trajetoria, desvio
+   e se o goleiro viu a bola sair. Pesos de rascunho (prototipo aprovado em
+   26/11/2026), a calibrar com a coleta. Sempre recalculado, como o xG.
+   ball = {u, v} em metros, na visao do FINALIZADOR de frente para o gol:
+   u de -1,5 (esquerda dele) a +1,5 (direita dele); v de 0 (chao) a 2 (travessao). */
+const PSX_VEL={fraca:11,media:16,forte:22};
+function psxNoAlvo(s){ const k=resKind(s&&s.result); return k==='save'||k==='goal'; }
+function psxgCompute(s){
+  if(!s||!psxNoAlvo(s)||!s.ball||typeof s.ball.u!=='number'||typeof s.ball.v!=='number') return null;
+  const p=xgPosOf(s); if(!p) return null;
+  const u=s.ball.u, v=s.ball.v;
+  const dx=Math.min(1,Math.abs(u)/1.5);
+  let dy=0; if(v<.45) dy=(.45-v)/.45*.6; else if(v>1.35) dy=(v-1.35)/.65*.8;
+  const longe=Math.min(1,Math.hypot(dx,dy));
+  const col=.06+.66*Math.pow(longe,1.6);
+  const dm=Math.hypot(p.x,Math.max(0,p.d));
+  const t=dm/(PSX_VEL[s.vel]||PSX_VEL.media);
+  const tempo=Math.min(1.15,Math.max(.6,.55+.27/Math.max(.12,t)));
+  let m=1;
+  if(s.traj==='quicada') m*=1.18; else if(s.traj==='rasteira') m*=(dx>.6?1.08:1); else if(s.traj==='meia') m*=.95;
+  if(s.defl) m*=1.35;
+  if(s.screen) m*=1.22;
+  return Math.round(Math.min(.97,Math.max(.02,col*tempo*m))*1000)/1000;
+}
+function psxgOf(s){ return psxgCompute(s); }
+/* chute no alvo que ainda nao tem o ponto no gol (para avisar o que falta editar) */
+function psxFalta(s){ return psxNoAlvo(s)&&!!xgPosOf(s)&&!(s.ball&&typeof s.ball.u==='number'); }
+/* zona do "Local da finalizacao no gol" (1..6) pelo ponto tocado: mesma posicao na tela */
+function psxZona(b){ const col=b.u<0?0:1; const lin=b.v>4/3?0:(b.v>2/3?1:2); return lin*2+col+1; }
+const PSX_GX=30,PSX_GY=22,PSX_PM=100;
+function psxSvg(st){
+  let s='';
+  for(let i=1;i<6;i++) s+='<line x1="'+(PSX_GX+i*50)+'" y1="'+PSX_GY+'" x2="'+(PSX_GX+i*50)+'" y2="'+(PSX_GY+200)+'" stroke="#d4d4d4" stroke-width="1"/>';
+  for(let j=1;j<4;j++) s+='<line x1="'+PSX_GX+'" y1="'+(PSX_GY+j*50)+'" x2="'+(PSX_GX+300)+'" y2="'+(PSX_GY+j*50)+'" stroke="#d4d4d4" stroke-width="1"/>';
+  s+='<ellipse cx="'+(PSX_GX+150)+'" cy="'+(PSX_GY+110)+'" rx="62" ry="78" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
+  s+='<text x="'+(PSX_GX+150)+'" y="'+(PSX_GY+114)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".75">'+esc(_txf('st.ps.easy','easy reach'))+'</text>';
+  s+='<path d="M '+PSX_GX+' '+(PSX_GY+200)+' L '+PSX_GX+' '+PSX_GY+' L '+(PSX_GX+300)+' '+PSX_GY+' L '+(PSX_GX+300)+' '+(PSX_GY+200)+'" fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linejoin="round"/>';
+  s+='<line x1="8" y1="'+(PSX_GY+200)+'" x2="352" y2="'+(PSX_GY+200)+'" stroke="#a3a3a3" stroke-width="2"/>';
+  s+='<text x="'+PSX_GX+'" y="'+(PSX_GY+218)+'" font-size="10" fill="#737373">'+esc(_txf('st.ps.shL','shooter’s LEFT'))+'</text>';
+  s+='<text x="'+(PSX_GX+300)+'" y="'+(PSX_GY+218)+'" text-anchor="end" font-size="10" fill="#737373">'+esc(_txf('st.ps.shR','shooter’s RIGHT'))+'</text>';
+  if(st.ball&&typeof st.ball.u==='number'){ const X=PSX_GX+(st.ball.u+1.5)*PSX_PM, Y=PSX_GY+(2-st.ball.v)*PSX_PM;
+    s+='<circle cx="'+X.toFixed(1)+'" cy="'+Y.toFixed(1)+'" r="9" fill="'+(resKind(st.result)==='goal'?'#b91c1c':'#0a0a0a')+'" stroke="#ffffff" stroke-width="2"/>'; }
+  return s;
+}
+function psxHtml(){
+  const st=SF;
+  const b=function(field,val,lbl){ const on=(st[field]===val)||(field==='defl'&&!!st.defl===val)||(field==='screen'&&!!st.screen===val);
+    const v=(typeof val==='string')?("'"+val+"'"):String(val);
+    return '<button type="button" class="mc-btn'+(on?' active':'')+'" onclick="psxSet(\''+field+'\','+v+')">'+esc(lbl)+'</button>'; };
+  const ps=psxgCompute(st), alvo=psxNoAlvo(st);
+  let nota;
+  if(!st.result) nota=_txf('st.ps.pickRes','Pick the result: PsxG only exists for saves and goals.');
+  else if(!alvo) nota=_txf('st.ps.offTarget','Off target: no PsxG. It does not count in goals prevented.');
+  else if(!xgPosOf(st)) nota=_txf('st.ps.needCourt','Tap the court (where the shot came from).');
+  else if(!st.ball) nota=_txf('st.ps.needGoal','Tap the goal where the ball was going.');
+  else { const p=xgPosOf(st), dm=Math.hypot(p.x,Math.max(0,p.d)), t=dm/(PSX_VEL[st.vel]||PSX_VEL.media);
+    nota=_txf('st.ps.note','reaction time ~{t} s').replace('{t}',xgFmt(t,2)); }
+  return '<div class="label" style="margin-bottom:8px">'+esc(_txf('st.ps.title','PsxG · after the shot (shots on target)'))+'</div>'
+    + '<div class="psx-grid"><div>'
+    +   '<div class="label" style="margin-bottom:4px">'+esc(_txf('st.ps.where','Where the ball was going · shooter’s view'))+'</div>'
+    +   '<button type="button" class="psx-goal" onclick="psxTap(event)" aria-label="'+esc(_txf('st.ps.where','Where the ball was going · shooter’s view'))+'"><svg viewBox="0 0 360 250" aria-hidden="true">'+psxSvg(st)+'</svg></button>'
+    +   '<div style="font-size:11px;color:var(--mute);margin-top:4px">'+esc(_txf('st.ps.hint','Save: where the ball was going (or where the GK touched it). Goal: where it went in.'))+'</div>'
+    + '</div><div>'
+    +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.vel','Speed'))+'</div><div class="mc-group">'+b('vel','fraca',_txf('st.ps.v1','Weak'))+b('vel','media',_txf('st.ps.v2','Medium'))+b('vel','forte',_txf('st.ps.v3','Strong'))+'</div></div>'
+    +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.traj','Trajectory'))+'</div><div class="mc-group">'+b('traj','rasteira',_txf('st.ps.t1','Along the ground'))+b('traj','meia',_txf('st.ps.t2','Mid height'))+b('traj','alta',_txf('st.ps.t3','High'))+b('traj','quicada',_txf('st.ps.t4','Bouncing'))+'</div></div>'
+    +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.defl','Deflection on the way'))+'</div><div class="mc-group">'+b('defl',false,_txf('st.xg.without','Without'))+b('defl',true,_txf('st.xg.with','With'))+'</div></div>'
+    +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.saw','Did the GK see the ball leave?'))+'</div><div class="mc-group">'+b('screen',false,_txf('st.ps.saw1','Saw it'))+b('screen',true,_txf('st.ps.saw2','View blocked'))+'</div></div>'
+    +   '<div class="psx-out"><div><div class="label" style="margin:0">PsxG</div><div class="psx-num">'+(ps==null?'—':xgFmt(ps,2))+'</div></div><div class="psx-off">'+esc(nota)+'</div></div>'
+    + '</div></div>';
+}
+function psxRefresh(){ const el=document.getElementById('psx-sf'); if(el) el.innerHTML=psxHtml(); }
+function psxSet(field,val){ SF[field]=val; psxRefresh(); }
+function psxTap(ev){
+  if(!ev||(!ev.clientX&&!ev.clientY)) return;
+  const svg=ev.currentTarget&&ev.currentTarget.querySelector('svg'); if(!svg) return;
+  const r=svg.getBoundingClientRect(); if(!r.width||!r.height) return;
+  const vx=(ev.clientX-r.left)/r.width*360, vy=(ev.clientY-r.top)/r.height*250;
+  const u=Math.min(1.5,Math.max(-1.5,(vx-PSX_GX)/PSX_PM-1.5)), v=Math.min(2,Math.max(0,2-(vy-PSX_GY)/PSX_PM));
+  SF.ball={u:Math.round(u*100)/100,v:Math.round(v*100)/100};
+  /* preenche o "Local da finalizacao no gol" (mesma posicao na tela), se nao foi escolhido a mao */
+  if(!SF._gzM){ SF.goalZone=psxZona(SF.ball); document.querySelectorAll('.goal-zone').forEach(function(bt,i){ bt.classList.toggle('active',i+1===SF.goalZone); }); }
+  psxRefresh();
+}
 /* xG de uma finalizacao gravada (recalcula se faltar) */
 /* xG de uma finalizacao: SEMPRE recalculado a partir do ponto e do contexto
    gravados, para que qualquer ajuste na formula valha na hora para todos os
@@ -2414,6 +2512,7 @@ function xgClean(s){
   Object.keys(s).forEach(function(k){ if(k.charAt(0)==='_') return; o[k]=(s[k]===undefined)?null:s[k]; });
   Object.keys(xgDefaults()).forEach(function(k){ if(o[k]===undefined) o[k]=xgDefaults()[k]; });
   o.xg=xgCompute(o);
+  o.psxg=psxgCompute(o);
   return o;
 }
 function xgSvgPt(p){ return [XGC_GL+p.d*XGC_S, XGC_CY+p.x*XGC_S]; }
@@ -2603,6 +2702,7 @@ function xgcRefresh(k){
       return '<circle cx="'+xy[0].toFixed(1)+'" cy="'+xy[1].toFixed(1)+'" r="5" fill="'+(resKind(s.result)==='goal'?'#dc2626':'#0a0a0a')+'" stroke="#ffffff" stroke-width="1.4"/>'; }).join('');
   }
   const ctx=document.getElementById('xgc-ctx-'+k); if(ctx) ctx.innerHTML=xgcCtxHtml(k);
+  if(k==='sf') psxRefresh();
   const hdTag=document.getElementById('xgc-hdtag-'+k);
   if(hdTag){ const on=!!st.hDistance&&(p||st.setPiece); hdTag.textContent=on?(st._hdM?_txf('st.xg.manual','set by hand'):_txf('st.xg.tagAuto','automatic')):''; hdTag.classList.toggle('man',!!st._hdM); }
   const cTag=document.getElementById('xgc-corrtag-'+k);
@@ -2646,11 +2746,19 @@ function shotMapSvg(shots,metric,view,opt){
     + '<rect x="0" y="0" width="'+XGC_W+'" height="'+XGC_H+'" fill="#2563eb"/>'+over+xgcLines(true)+lab+'</svg>';
 }
 /* numeros de xG de uma lista (so finalizacoes com xG) */
+/* xG = demanda (todas as finalizacoes com ponto na quadra).
+   Gols evitados = PsxG - gols, SO nos chutes no alvo que tem PsxG: chutes
+   para fora, bloqueados e na trave nao entram (o goleiro nao "evitou" esses gols). */
 function xgStats(shots){
   const c=shots.filter(function(s){ return xgOf(s)!=null; });
   const xg=c.reduce(function(a,s){ return a+xgOf(s); },0);
   const goals=c.filter(function(s){ return resKind(s.result)==='goal'; }).length;
-  return {n:c.length,xg:xg,goals:goals,prev:xg-goals,avg:c.length?xg/c.length:null};
+  const pc=shots.filter(function(s){ return psxgOf(s)!=null; });
+  const ps=pc.reduce(function(a,s){ return a+psxgOf(s); },0);
+  const psGoals=pc.filter(function(s){ return resKind(s.result)==='goal'; }).length;
+  const alvo=shots.filter(psxNoAlvo).length;
+  return {n:c.length,xg:xg,goals:goals,avg:c.length?xg/c.length:null,
+          nPs:pc.length,ps:ps,psGoals:psGoals,alvo:alvo,prev:pc.length?(ps-psGoals):null};
 }
 function xgTopZone(shots){
   const ps=shots.filter(xgHasPos); if(!ps.length) return null;
@@ -2680,7 +2788,7 @@ function renderShotMapCard(shots,shotsSemMomento){
   })).filter(function(r){ return r.i<0||r.lista.length; }).map(function(r){
     const st=xgStats(r.lista), on=(r.i<0&&ativo==null)||(r.i>=0&&String(_hmMomList[r.i])===String(ativo));
     return '<tr class="hm-tr'+(on?' on':'')+'" onclick="hmMom('+r.i+')"><td style="font-weight:600">'+esc(r.l)+'</td><td>'+r.lista.length+'</td><td>'+st.n+'</td><td>'+xgFmt(st.xg,1)+'</td><td>'+st.goals+'</td><td>'+(st.avg==null?'—':xgFmt(st.avg,2))+'</td>'
-      + '<td style="color:'+(st.n?(st.prev>=0?'#1d4ed8':'#b91c1c'):'var(--mute)')+'">'+(st.n?xgSigned(st.prev):'—')+'</td></tr>';
+      + '<td style="color:'+(st.nPs?(st.prev>=0?'#1d4ed8':'#b91c1c'):'var(--mute)')+'">'+(st.nPs?xgSigned(st.prev):'—')+'</td></tr>';
   }).join('');
   box.innerHTML='<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:10px">'
     + '<div class="card-title" style="margin:0">'+esc(_txf('st.hm.title','Shot heat map'))+'</div>'
@@ -2700,7 +2808,7 @@ function renderShotMapCard(shots,shotsSemMomento){
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px">'+xs.n+'</div><div class="kpi-l">'+esc(_txf('st.hm.withXg','Shots with xG'))+'</div></div>'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px">'+(xs.n?xgFmt(xs.xg,1):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.faced','xG faced'))+'</div></div>'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px;color:var(--red)">'+(xs.n?xs.goals:'—')+'</div><div class="kpi-l">'+esc(TX('st.goalsConceded'))+'</div></div>'
-    +     '<div class="kpi"><div class="kpi-n" style="font-size:26px;color:'+(xs.prev>=0?'#1d4ed8':'#b91c1c')+'">'+(xs.n?xgSigned(xs.prev):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.prev','Goals prevented'))+'</div></div>'
+    +     '<div class="kpi"><div class="kpi-n" style="font-size:26px;color:'+(xs.nPs&&xs.prev>=0?'#1d4ed8':'#b91c1c')+'">'+(xs.nPs?xgSigned(xs.prev):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.prev','Goals prevented'))+'</div></div>'
     +   '</div>'
     +   (top?'<div class="kpi" style="text-align:left;margin-top:8px"><div class="kpi-l" style="margin:0 0 4px">'+esc(_txf('st.hm.top','Most frequent area'))+'</div><div style="font-weight:700;font-size:14px">'+esc(top.txt)+'</div>'
     +     '<div style="font-size:11px;color:var(--mute);margin-top:2px">'+esc(_txf('st.hm.ofShots','{n} of {t} shots ({p}%)').replace('{n}',top.n).replace('{t}',top.t).replace('{p}',Math.round(top.n/top.t*100)))+'</div></div>':'')
@@ -2987,8 +3095,9 @@ function renderDashboard(){
   const _xs=xgStats(shots);
   const _ex=document.getElementById('kpi-xg'), _ep=document.getElementById('kpi-gp');
   if(_ex) _ex.textContent=_xs.n?xgFmt(_xs.xg,1):'—';
-  if(_ep){ _ep.textContent=_xs.n?xgSigned(_xs.prev):'—'; _ep.style.color=_xs.n?(_xs.prev>=0?'#1d4ed8':'var(--red)'):''; }
-  ['kpi-xg-cell','kpi-gp-cell'].forEach(function(id){ const c=document.getElementById(id); if(c) c.title=_txf('st.xg.kpiTip','Only shots registered on the court')+' ('+_xs.n+')'; });
+  if(_ep){ _ep.textContent=_xs.nPs?xgSigned(_xs.prev):'—'; _ep.style.color=_xs.nPs?(_xs.prev>=0?'#1d4ed8':'var(--red)'):''; }
+  { const c=document.getElementById('kpi-xg-cell'); if(c) c.title=_txf('st.xg.kpiTip','Only shots registered on the court')+' ('+_xs.n+')'; }
+  { const c=document.getElementById('kpi-gp-cell'); if(c) c.title=_txf('st.ps.kpiTip','PsxG − goals, only shots on target with the goal point')+' ('+_xs.nPs+' / '+_xs.alvo+')'; }
   document.getElementById('kpi-games').textContent=games.length;
   document.getElementById('kpi-shots').textContent=s.total;
   document.getElementById('kpi-saves').textContent=s.saves;
@@ -3270,7 +3379,8 @@ function makeReportBlock(title,subtitle,shots,games,shotsLink,offLink,offs){
       <div class="dcell"><div class="dnum">${s.out}</div><div class="dlbl">${stLbl("Out")}</div></div>
       <div class="dcell"><div class="dnum">${s.post}</div><div class="dlbl">${stLbl("Post")}</div></div>
       ${xs.n?`<div class="dcell"><div class="dnum">${xgFmt(xs.xg,1)}</div><div class="dlbl">${_txf('st.xg.faced','xG faced')}</div></div>
-      <div class="dcell"><div class="dnum" style="color:${xs.prev>=0?'#1d4ed8':'var(--red)'}">${xgSigned(xs.prev)}</div><div class="dlbl">${_txf('st.xg.prev','Goals prevented')}</div></div>`:''}
+      <div class="dcell"><div class="dnum">${xs.nPs?xgFmt(xs.ps,1):'—'}</div><div class="dlbl">PsxG</div></div>
+      <div class="dcell"><div class="dnum" style="color:${xs.nPs?(xs.prev>=0?'#1d4ed8':'var(--red)'):''}">${xs.nPs?xgSigned(xs.prev):'—'}</div><div class="dlbl">${_txf('st.xg.prev','Goals prevented')}</div></div>`:''}
     </div>
 
     <div class="rsec">${TX("st.pdf.shotAnalysis","Shot analysis")}</div>
@@ -3342,14 +3452,14 @@ function exportReport(){
     list.forEach(function(sh){ if(xgOf(sh)==null) return; const k=sh.moment||'—'; (porMom[k]=porMom[k]||[]).push(sh); });
     const ordemM=cfgOrder(ST.moments,MOMENT_ORDER).filter(function(m){ return porMom[m]; }).concat(Object.keys(porMom).filter(function(m){ return cfgOrder(ST.moments,MOMENT_ORDER).indexOf(m)<0; }));
     const linhas=ordemM.map(function(m){ const q=xgStats(porMom[m]);
-      return '<tr><td style="font-weight:600">'+esc(stLbl(m))+'</td><td style="text-align:center">'+q.n+'</td><td style="text-align:center">'+xgFmt(q.xg,1)+'</td><td style="text-align:center;color:#dc2626;font-weight:600">'+q.goals+'</td><td style="text-align:center">'+xgFmt(q.avg,2)+'</td><td style="text-align:center;font-weight:700;color:'+(q.prev>=0?'#1d4ed8':'#dc2626')+'">'+xgSigned(q.prev)+'</td></tr>'; }).join('');
+      return '<tr><td style="font-weight:600">'+esc(stLbl(m))+'</td><td style="text-align:center">'+q.n+'</td><td style="text-align:center">'+xgFmt(q.xg,1)+'</td><td style="text-align:center;color:#dc2626;font-weight:600">'+q.goals+'</td><td style="text-align:center">'+xgFmt(q.avg,2)+'</td><td style="text-align:center;font-weight:700;color:'+(q.nPs?(q.prev>=0?'#1d4ed8':'#dc2626'):'#999')+'">'+(q.nPs?xgSigned(q.prev):'—')+'</td></tr>'; }).join('');
     return '<div class="sec"><div class="sec-title">'+esc(titulo)+'</div>'
       + '<div class="kpi-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">'
       + '<div class="kpi"><div class="kpi-n k">'+st.n+'</div><div class="kpi-l">'+esc(_txf('st.hm.withXg','Shots with xG'))+'</div></div>'
       + '<div class="kpi"><div class="kpi-n k">'+xgFmt(st.xg,1)+'</div><div class="kpi-l">'+esc(_txf('st.xg.faced','xG faced'))+'</div></div>'
       + '<div class="kpi"><div class="kpi-n r">'+st.goals+'</div><div class="kpi-l">'+esc(TX('st.goals'))+'</div></div>'
-      + '<div class="kpi"><div class="kpi-n k">'+xgFmt(st.avg,2)+'</div><div class="kpi-l">'+esc(_txf('st.hm.thAvg','xG / shot'))+'</div></div>'
-      + '<div class="kpi"><div class="kpi-n" style="color:'+(st.prev>=0?'#1d4ed8':'#dc2626')+'">'+xgSigned(st.prev)+'</div><div class="kpi-l">'+esc(_txf('st.xg.prev','Goals prevented'))+'</div></div>'
+      + '<div class="kpi"><div class="kpi-n k">'+(st.nPs?xgFmt(st.ps,1):'—')+'</div><div class="kpi-l">PsxG ('+st.nPs+' / '+st.alvo+')</div></div>'
+      + '<div class="kpi"><div class="kpi-n" style="color:'+(st.nPs?(st.prev>=0?'#1d4ed8':'#dc2626'):'#999')+'">'+(st.nPs?xgSigned(st.prev):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.prev','Goals prevented'))+'</div></div>'
       + '</div>'
       + '<div class="chart-box"><div class="chart-title">'+esc(_txf('st.pdf.shotMap','Shot map'))+' · '+esc(poucos?_txf('st.hm.hDots','each point is a shot · size = xG · red = goal'):_txf('st.hm.hCells','cells of 2.5 × 2.5 m · number = total in the cell'))+'</div>'
       + shotMapSvg(list,poucos?'xg':'n',poucos?'dots':'cells')+'</div>'
