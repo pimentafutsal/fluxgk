@@ -118,7 +118,10 @@
   function _statsLoadAll(db){
     db.ref(_SPATH.games).on('value',function(snap){
       var g=snap.val();
-      ST.games=g?Object.values(g).map(function(x){return Object.assign({},x);}):[];
+      /* o Firebase nao guarda lista vazia: um jogo salvo sem finalizacoes (ou sem
+         acoes ofensivas) chega SEM o campo, e isso derrubava o painel inteiro.
+         Aqui toda lista vira lista (vazia se faltar) e itens nulos saem. */
+      ST.games=g?Object.values(g).filter(Boolean).map(function(x){var o=Object.assign({},x);o.shots=_asArr(o.shots).filter(Boolean);o.offActions=_asArr(o.offActions).filter(Boolean);return o;}):[];
       if(!window._uiBooted){window._uiBooted=true;bootUI();}
       else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
