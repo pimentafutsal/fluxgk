@@ -353,6 +353,13 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 #fb-loading .loading-bar-fill{background:var(--paper);}
 /* ── quadra de coleta e mapa de calor (xG) ── */
 .xgc-court{display:block;width:100%;padding:0;border:none;background:none;cursor:crosshair;border-radius:8px;overflow:hidden;}
+.xgc-half{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;margin-bottom:6px;}
+.xgc-hgrp{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.xgc-hl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-right:2px;}
+.xgc-hl i{font-style:normal;text-transform:none;letter-spacing:0;color:#2563eb;font-weight:500;margin-left:4px;}
+.xgc-half .mc-btn.auto.active{background:#2563eb;border-color:#2563eb;color:#fff;}
+.xgc-side-now{font-size:12px;color:var(--mute);margin:0 0 10px;}
+.xgc-flip{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font:inherit;font-size:11.5px;color:var(--ink);cursor:pointer;margin-left:6px;}
 /* registro: quadra larga com menus ao lado; lista de finalizacoes abaixo */
 .sf-top{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(260px,1fr);gap:22px;align-items:start;margin-bottom:18px;}
 .sf-side{display:flex;flex-direction:column;gap:16px;min-width:0;}
@@ -599,7 +606,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
             <div data-i18n="st.goalkeeper" class="label">Goalkeeper</div>
             <select id="sf-gk" onchange="SF.gk=this.value;lastShotGk=this.value;"></select>
           </div>
-          <div><div data-i18n="st.minute" class="label">Minute</div><input type="text" id="sf-minute" placeholder="e.g. 14, 32+1"></div>
+          <div><div data-i18n="st.minute" class="label">Minute</div><input type="text" id="sf-minute" placeholder="e.g. 14, 32+1" oninput="xgcMinute()"></div>
           </div>
           <div>
             <div data-i18n="st.result" class="label">Result *</div>
@@ -1694,6 +1701,7 @@ function clearShotForm(){
   // preserve gk from last shot, reset everything else
   const preservedGk = lastShotGk;
   SF=Object.assign({minute:'',moment:null,skill:null,result:null,hDistance:null,goalZone:null,courtZone:null,gk:preservedGk},xgDefaults());
+  SF.half=lastShotHalf||1;   /* segue no mesmo tempo da finalizacao anterior */
   editShotIdx=null; updateShotNum();
   populateShotGkSelect(preservedGk);
   try{ xgcRefresh('sf'); }catch(e){}
@@ -1703,7 +1711,9 @@ function saveShot(){
   const gkVal=document.getElementById('sf-gk').value||SF.gk||null;
   if(gkVal) lastShotGk=gkVal;
   /* xgClean: tira os campos internos, garante os campos do xG e calcula o xG */
-  const shot=xgClean({...SF, minute:document.getElementById('sf-minute').value, gk:gkVal});
+  const minV=document.getElementById('sf-minute').value;
+  const shot=xgClean({...SF, minute:minV, gk:gkVal, half:(SF.half===2?2:1)});
+  lastShotHalf=shot.half;
   if(editShotIdx!==null) CUR.shots[editShotIdx]=shot;
   else CUR.shots.push(shot);
   try{ clearShotForm(); }catch(e){ console.error('clearShotForm:',e); }
@@ -1722,7 +1732,7 @@ function renderShotsList(){
     d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <div>
         <span style="font-family:var(--mono);font-size:11px;color:var(--mute);">#${i+1}</span>
-        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>
+        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>${(s.half===1||s.half===2)?`<span style="margin-left:6px;font-family:var(--mono);font-size:11px;color:var(--mute);">${esc(_txf(s.half===1?'st.xg.hs1':'st.xg.hs2',s.half===1?'1H':'2H'))}</span>`:''}
         <span style="margin-left:8px;font-size:12px;color:${isGoal?'var(--red)':isSave?'var(--green)':'var(--mute)'};">${stLbl(s.result)||'—'}</span>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1740,6 +1750,8 @@ function editShot(idx){
   SF=Object.assign(xgDefaults(),{...s});
   /* o que ja estava gravado conta como escolhido: so um novo toque recalcula */
   SF._hdM=!!s.hDistance; SF._corrM=!!s.courtZone;
+  /* tempo: o gravado; jogos antigos sem tempo usam o minuto */
+  SF.half=(s.half===1||s.half===2)?s.half:(xgHalfDoMinuto(s.minute)||1); SF._halfM=(s.half===1||s.half===2); SF._inv=false;
   const fieldMap={'moment':'sf-moment-group','skill':'sf-skill-group','result':'sf-result-group','hDistance':'sf-hdist-group'};
   Object.entries(fieldMap).forEach(([key,gid])=>{
     if(!s[key]) return;
@@ -1934,7 +1946,7 @@ function saveGame(){
     if(idx>=0) ST.games[idx]=gameToSave; else ST.games.push(gameToSave);
     persistGame(gameToSave);
     const shotCount=CUR.shots.length;
-    CUR=newGame(); editingGameId=null; lastShotGk=null; clearShotForm(); clearOffForm(); recTab('meta');
+    CUR=newGame(); editingGameId=null; lastShotGk=null; lastShotHalf=1; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
     alert(TX('st.gameUpdatedN')+shotCount+TX('st.shotsSaved'));
   } else {
@@ -1942,7 +1954,7 @@ function saveGame(){
     ST.games.push(gameToSave);
     persistGame(gameToSave);
     const shotCount=gameToSave.shots.length;
-    CUR=newGame(); lastShotGk=null; clearShotForm(); clearOffForm(); recTab('meta');
+    CUR=newGame(); lastShotGk=null; lastShotHalf=1; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
     alert(TX('st.gameSavedN')+shotCount+TX('st.shotsRecorded'));
   }
@@ -2005,7 +2017,7 @@ function renderHistoryShotsList(gameId){
     d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
       <div>
         <span style="font-family:var(--mono);font-size:10px;color:var(--mute);">#${i+1}</span>
-        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>
+        <span style="margin-left:8px;font-weight:600;font-size:13px;">${s.minute?s.minute+"'":"—"}</span>${(s.half===1||s.half===2)?`<span style="margin-left:6px;font-family:var(--mono);font-size:11px;color:var(--mute);">${esc(_txf(s.half===1?'st.xg.hs1':'st.xg.hs2',s.half===1?'1H':'2H'))}</span>`:''}
         <span style="margin-left:8px;font-size:12px;color:${isGoal?'var(--red)':isSave?'var(--green)':'var(--mute)'};">${stLbl(s.result)||'—'}</span>
       </div>
       <div style="display:flex;gap:6px;">
@@ -2179,6 +2191,7 @@ function openGameInRecord(id){
   if(CUR.ga===undefined) CUR.ga=null;
   editingGameId=id;
   lastShotGk=g.shots.length?g.shots[g.shots.length-1].gk||null:null;
+  { const ul=g.shots.length?g.shots[g.shots.length-1]:null; lastShotHalf=ul?((ul.half===1||ul.half===2)?ul.half:(xgHalfDoMinuto(ul.minute)||1)):1; }
   // Navigate to Record page
   showPage('record');
   // Pre-fill meta fields (after selects are populated by showPage)
@@ -2266,7 +2279,44 @@ const XG_HD_CANON=['Before the halfway line','Before 10m','After 10m','Area','10
 /* desenho: quadra deitada, nosso gol a esquerda. 14 px por metro. */
 const XGC_W=648,XGC_H=322,XGC_GL=28,XGC_CY=156,XGC_S=14;
 
-function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null}; }
+function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null}; }
+/* ── tempo da finalizacao e lado do nosso gol no video ──
+   O treinador diz de que lado do video fica o nosso gol no 1o tempo (CUR.sideH1);
+   no 2o tempo o lado troca sozinho. A quadra da coleta aparece igual ao video e
+   o toque e convertido para o ponto padrao (nosso gol sempre a esquerda), que e o
+   que vai para mapas e xG. O minuto corre de 0 a 40: ate 20 = 1o tempo. */
+let lastShotHalf=1;
+function xgHalfDoMinuto(m){ const n=parseInt(String(m==null?'':m),10); return isFinite(n)?(n>20?2:1):null; }
+function xgcSide(k){
+  if(k!=='sf') return 'L';
+  const h1=(CUR&&CUR.sideH1==='R')?'R':'L';
+  let lado=(SF&&SF.half===2)?(h1==='L'?'R':'L'):h1;
+  if(SF&&SF._inv) lado=(lado==='L'?'R':'L');
+  return lado;
+}
+function xgcSetSide(l){ CUR.sideH1=(l==='R')?'R':'L'; if(SF) SF._inv=false; xgcRefresh('sf'); }
+function xgcSetHalf(h){ SF.half=h; SF._halfM=true; SF._inv=false; xgcRefresh('sf'); }
+function xgcFlip(){ SF._inv=!SF._inv; xgcRefresh('sf'); }
+function xgcMinute(){
+  const v=(document.getElementById('sf-minute')||{}).value;
+  SF.minute=v;
+  if(!SF._halfM){ const h=xgHalfDoMinuto(v); if(h){ if(h!==SF.half) SF._inv=false; SF.half=h; } }
+  xgcRefresh('sf');
+}
+function xgcHalfHtml(){
+  const b=function(on,js,txt,extra){ return '<button type="button" class="mc-btn'+(on?' active':'')+(extra||'')+'" onclick="'+js+'">'+esc(txt)+'</button>'; };
+  const h1=(CUR&&CUR.sideH1==='R')?'R':'L', h=SF.half===2?2:1, auto=!SF._halfM&&!!String(SF.minute||'').trim();
+  const lado=xgcSide('sf');
+  return '<div class="xgc-half">'
+    + '<div class="xgc-hgrp"><span class="xgc-hl">'+esc(_txf('st.xg.half','Half'))+(auto?' <i>'+esc(_txf('st.xg.byMinute','by the minute'))+'</i>':'')+'</span>'
+    +   b(h===1,'xgcSetHalf(1)',_txf('st.xg.h1','1st half'),auto?' auto':'')+b(h===2,'xgcSetHalf(2)',_txf('st.xg.h2','2nd half'),auto?' auto':'')+'</div>'
+    + '<div class="xgc-hgrp"><span class="xgc-hl">'+esc(_txf('st.xg.side1','Our goal in the 1st half (video):'))+'</span>'
+    +   b(h1==='L',"xgcSetSide('L')",_txf('st.xg.sideL','Left'))+b(h1==='R',"xgcSetSide('R')",_txf('st.xg.sideR','Right'))+'</div>'
+    + '</div>'
+    + '<div class="xgc-side-now">'+esc(_txf('st.xg.sideNow','Our goal in the video: {s} ({h})').replace('{s}',lado==='L'?_txf('st.xg.onLeft','on the left'):_txf('st.xg.onRight','on the right')).replace('{h}',h===1?_txf('st.xg.h1','1st half'):_txf('st.xg.h2','2nd half')))
+    +   (SF._inv?' · '+esc(_txf('st.xg.flipped','court flipped by hand')):'')
+    +   ' <button type="button" class="xgc-flip" onclick="xgcFlip()" title="'+esc(_txf('st.xg.flipTip','For exceptions, such as extra time or a camera on the other side'))+'">'+esc(_txf('st.xg.flip','Flip court'))+'</button></div>';
+}
 function _xgPt(){ try{ return FluxGKI18n.getLang()==='pt'; }catch(e){ return false; } }
 function xgFmt(n,k){ if(n==null||!isFinite(n)) return '—'; const t=Number(n).toFixed(k==null?2:k); return _xgPt()?t.replace('.',','):t; }
 function xgSigned(n){ if(n==null||!isFinite(n)) return '—'; return (n>0?'+':'')+xgFmt(n,1); }
@@ -2321,7 +2371,11 @@ function xgHdKeyOf(label){
   return i>=0?XG_HD_KEYS[i]:null;
 }
 /* corredores: tercos da largura (20 m) */
-function xgCorr(x){ return x< -20/6 ? 124 : (x> 20/6 ? 125 : 152); }
+/* corredor pela visao do FINALIZADOR, de frente para o nosso gol (como o
+   treinador sempre registrou). pos.x continua pela visao do nosso goleiro
+   (- = esquerda do goleiro), entao os lados se invertem aqui:
+   esquerda do goleiro = direita do finalizador. */
+function xgCorr(x){ return x< -20/6 ? 125 : (x> 20/6 ? 124 : 152); }
 
 /* xG em metros. Mesma estrutura e mesmos multiplicadores do mod_xg (preset
    Futsal), mas distancia e angulo calculados na quadra real: no mod_xg o
@@ -2346,7 +2400,11 @@ function xgCompute(s){
   return Math.round(Math.min(Math.max(b,.01),.97)*1000)/1000;
 }
 /* xG de uma finalizacao gravada (recalcula se faltar) */
-function xgOf(s){ if(s&&typeof s.xg==='number') return s.xg; const v=xgCompute(s); return v; }
+/* xG de uma finalizacao: SEMPRE recalculado a partir do ponto e do contexto
+   gravados, para que qualquer ajuste na formula valha na hora para todos os
+   jogos. O s.xg gravado fica so como registro do valor na epoca e serve de
+   reserva se faltar o ponto. */
+function xgOf(s){ if(!s) return null; const v=xgCompute(s); if(v!=null) return v; return (typeof s.xg==='number')?s.xg:null; }
 /* limpa o objeto antes de gravar: sem campos internos nem undefined (Firebase recusa) */
 function xgClean(s){
   const o={};
@@ -2357,6 +2415,24 @@ function xgClean(s){
 }
 function xgSvgPt(p){ return [XGC_GL+p.d*XGC_S, XGC_CY+p.x*XGC_S]; }
 
+/* rotulos da quadra. side = lado do NOSSO gol na tela ('L' padrao; 'R' quando o
+   video mostra o nosso gol a direita). Corredor pela visao do finalizador. */
+function xgcLabels(side){
+  const T='fill="#ffffff" fill-opacity=".85" font-size="9" font-family="JetBrains Mono,monospace"';
+  const R=side==='R', X=function(x){ return R?616-x:x; };
+  let s='';
+  s+='<text x="'+X(28)+'" y="312" '+T+(R?' text-anchor="end"':'')+'>'+esc(_txf('st.hm.ourGoal','OUR GOAL'))+'</text>';
+  s+='<text x="'+X(168)+'" y="312" '+T+' text-anchor="middle">10 m</text>';
+  s+='<text x="308" y="312" '+T+' text-anchor="middle">'+esc(_txf('st.hm.half','HALFWAY'))+'</text>';
+  s+='<text x="'+X(448)+'" y="312" '+T+' text-anchor="middle">'+esc(_txf('st.hm.beforeHalf','BEFORE HALFWAY'))+'</text>';
+  /* finalizador de frente para o nosso gol: com o gol a esquerda, a direita dele fica em cima;
+     com o gol a direita, a esquerda dele fica em cima */
+  const ex=606;   /* sempre na margem direita (a unica com espaco livre) */
+  s+='<text x="'+ex+'" y="66" '+T+'>'+esc(R?_txf('st.hm.l','L'):_txf('st.hm.r','R'))+'</text>';
+  s+='<text x="'+ex+'" y="160" '+T+'>'+esc(_txf('st.hm.c','C'))+'</text>';
+  s+='<text x="'+ex+'" y="252" '+T+'>'+esc(R?_txf('st.hm.r','R'):_txf('st.hm.l','L'))+'</text>';
+  return s;
+}
 /* linhas da quadra (40 x 20 m), sem fundo */
 function xgcLines(labels){
   const L='stroke="#ffffff" stroke-width="1.6" fill="none"';
@@ -2373,15 +2449,7 @@ function xgcLines(labels){
   s+='<circle cx="504" cy="156" r="2.6" fill="#ffffff"/><circle cx="448" cy="156" r="2.6" fill="#ffffff"/>';
   s+='<rect x="16" y="135" width="12" height="42" fill="#ffffff" fill-opacity=".25" stroke="#ffffff" stroke-width="1.6"/>';
   s+='<rect x="588" y="135" width="12" height="42" fill="#ffffff" fill-opacity=".12" stroke="#ffffff" stroke-width="1.6"/>';
-  if(labels!==false){
-    s+='<text x="28" y="312" '+T+'>'+esc(_txf('st.hm.ourGoal','OUR GOAL'))+'</text>';
-    s+='<text x="168" y="312" '+T+' text-anchor="middle">10 m</text>';
-    s+='<text x="308" y="312" '+T+' text-anchor="middle">'+esc(_txf('st.hm.half','HALFWAY'))+'</text>';
-    s+='<text x="448" y="312" '+T+' text-anchor="middle">'+esc(_txf('st.hm.beforeHalf','BEFORE HALFWAY'))+'</text>';
-    s+='<text x="606" y="66" '+T+'>'+esc(_txf('st.hm.l','L'))+'</text>';
-    s+='<text x="606" y="160" '+T+'>'+esc(_txf('st.hm.c','C'))+'</text>';
-    s+='<text x="606" y="252" '+T+'>'+esc(_txf('st.hm.r','R'))+'</text>';
-  }
+  if(labels!==false) s+=xgcLabels('L');
   return s;
 }
 
@@ -2393,13 +2461,15 @@ function _xgcCfg(k){
 }
 function xgcCourtHtml(k){
   const q="'"+String(k).replace(/'/g,'')+"'";
-  return '<div class="xgc-head"><span class="label" style="margin:0">'+esc(_txf('st.xg.court','Where the shot came from'))+'</span>'
+  return (k==='sf'?'<div id="xgc-halfbox-sf"></div>':'')
+    + '<div class="xgc-head"><span class="label" style="margin:0">'+esc(_txf('st.xg.court','Where the shot came from'))+'</span>'
     + '<span class="xgc-pos" id="xgc-pos-'+k+'">'+esc(_txf('st.xg.tap','tap the court'))+'</span></div>'
     + '<button type="button" class="xgc-court" onclick="xgcTap(event,'+q+')" aria-label="'+esc(_txf('st.xg.courtAria','Court: tap the point the shot came from'))+'">'
     + '<svg viewBox="0 0 '+XGC_W+' '+XGC_H+'" aria-hidden="true"><rect x="0" y="0" width="'+XGC_W+'" height="'+XGC_H+'" fill="#2563eb"/>'
-    + xgcLines(true)
+    + '<g id="xgc-rot-'+k+'">'+xgcLines(false)
     + '<g id="xgc-dots-'+k+'"></g>'
     + '<g id="xgc-mk-'+k+'" opacity="0"><circle r="13" cx="-40" cy="-40" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 3"/><circle r="5" cx="-40" cy="-40" fill="#ffffff"/></g>'
+    + '</g><g id="xgc-lab-'+k+'">'+xgcLabels('L')+'</g>'
     + '</svg></button>'
     + '<div class="xgc-row"><span style="font-size:11px;color:var(--mute);margin-right:2px">'+esc(_txf('st.xg.setPiece','Set piece:'))+'</span>'
     + '<button type="button" class="mc-btn" id="xgc-sp-pen-'+k+'" onclick="xgcSetPiece('+q+',\'pen\')">'+esc(_txf('st.xg.pen','Penalty'))+'</button>'
@@ -2476,7 +2546,9 @@ function xgcTap(ev,k){
   if(!ev||(!ev.clientX&&!ev.clientY)) return;      /* teclado: sem coordenada */
   const svg=ev.currentTarget&&ev.currentTarget.querySelector('svg'); if(!svg) return;
   const r=svg.getBoundingClientRect(); if(!r.width||!r.height) return;
-  const vx=(ev.clientX-r.left)/r.width*XGC_W, vy=(ev.clientY-r.top)/r.height*XGC_H;
+  let vx=(ev.clientX-r.left)/r.width*XGC_W, vy=(ev.clientY-r.top)/r.height*XGC_H;
+  /* nosso gol a direita no video: a quadra esta girada 180 graus em torno do centro */
+  if(xgcSide(k)==='R'){ vx=616-vx; vy=312-vy; }
   const d=Math.min(40,Math.max(0,(vx-XGC_GL)/XGC_S)), x=Math.min(10,Math.max(-10,(vy-XGC_CY)/XGC_S));
   st.pos={d:Math.round(d*100)/100,x:Math.round(x*100)/100};
   st.setPiece=null; st._hdM=false; st._corrM=false;
@@ -2508,6 +2580,10 @@ function xgcManualCorr(k){
 function xgcRefresh(k){
   const c=_xgcCfg(k), st=c.st(); if(!st) return;
   st.xg=xgCompute(st);
+  const lado=xgcSide(k);
+  const rot=document.getElementById('xgc-rot-'+k); if(rot){ if(lado==='R') rot.setAttribute('transform','rotate(180 308 156)'); else rot.removeAttribute('transform'); }
+  const lab=document.getElementById('xgc-lab-'+k); if(lab) lab.innerHTML=xgcLabels(lado);
+  if(k==='sf'){ const hb=document.getElementById('xgc-halfbox-sf'); if(hb) hb.innerHTML=xgcHalfHtml(); }
   const p=xgPosOf(st);
   const mk=document.getElementById('xgc-mk-'+k);
   if(mk){
