@@ -111,6 +111,7 @@
         var a = document.querySelector('.page.active'); if(!a) return;
         var id = a.id.replace('page-','');
         if(id === 'dashboard') renderDashboard();
+        else if(id === 'flow') renderFlow();
         else if(id === 'history') renderHistory();
       }catch(e){}
     }, 80);
@@ -169,7 +170,7 @@
       ST.games=g?Object.values(g).filter(Boolean).map(function(x){var o=Object.assign({},x);o.shots=_asArr(o.shots).filter(Boolean);o.offActions=_asArr(o.offActions).filter(Boolean);return o;}):[];
       _jogosChegaram=true;
       if(!window._uiBooted){ _tentaBoot(); }
-      else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
+      else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='flow')renderFlow();if(id==='history')renderHistory();}}catch(e){}}
     });
     /* rede de seguranca: se as configuracoes demorarem, desenha com o que tiver */
     setTimeout(function(){ _cfgChegou=true; _tentaBoot(); },2500);
@@ -407,6 +408,27 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 #fb-loading .loading-bar-fill{background:var(--paper);}
 /* ── quadra de coleta e mapa de calor (xG) ── */
 .xgc-court{display:block;width:100%;padding:0;border:none;background:none;cursor:crosshair;border-radius:8px;overflow:hidden;}
+.lbl-sm{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;}
+.fl-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px;}
+.fl-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch;margin-bottom:16px;}
+@media(max-width:900px){.fl-flow{grid-template-columns:1fr;}.fl-arr svg{transform:rotate(90deg);}}
+.fl-st{border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.fl-st .n{font:700 30px var(--mono);line-height:1.1;}
+.fl-st .d{font-size:12px;color:var(--mute);}
+.fl-arr{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:150px;max-width:200px;text-align:center;font-size:11.5px;color:var(--mute);}
+.fl-arr b{font:700 17px var(--mono);color:var(--ink);}
+.fl-arr svg{width:40px;height:14px;margin:2px 0;}
+.fl-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:18px;align-items:start;}
+@media(max-width:900px){.fl-grid{grid-template-columns:1fr;}}
+.fl-svg{display:block;width:100%;height:auto;}
+.fl-pt{cursor:pointer;}
+.fl-row{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.fl-row b{font:700 20px var(--mono);}
+.fl-row span{display:block;font-size:12px;color:var(--mute);}
+.fl-det{background:var(--surface2);border-radius:8px;padding:10px 12px;font-size:12.5px;min-height:56px;margin-top:8px;}
+.fl-leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;color:var(--mute);margin:4px 0 6px;}
+.fl-leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
+.fl-warn{border-left:3px solid #b45309;border-radius:0;background:#fff7ed;padding:7px 11px;font-size:12px;margin:0 0 12px;}
 .psx{border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface);}
 .psx-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start;}
 @media(max-width:900px){.psx-grid{grid-template-columns:1fr;}}
@@ -488,6 +510,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     </div>
     <nav class="nav">
       <button data-i18n="st.tab.dash" class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+      <button data-i18n="st.tab.flow" class="nav-btn" onclick="showPage('flow')">Shot to goal</button>
       <button data-i18n="st.tab.record" class="nav-btn" onclick="navToRecord()">Record Game</button>
       <button data-i18n="st.tab.history" class="nav-btn" onclick="showPage('history')">History</button>
       <button data-i18n="st.tab.reports" class="nav-btn" onclick="showPage('reports')">Reports</button>
@@ -542,12 +565,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <div class="dcell"><div class="dnum" id="kpi-record" style="font-size:19px">—</div><div data-i18n="st.record" class="dlbl">Record</div></div>
   </div>
 
+  <!-- ABERTURA: mapa de calor e, logo abaixo, oportunidades (pedido do Lucas) -->
+  <div class="card" id="dash-hm-card" style="margin-bottom:14px"></div>
+  <div class="card" id="dash-opp-card" style="margin-bottom:18px"></div>
+
   <!-- sub-abas: 3 graficos por vez em vez de 9 empilhados -->
   <div class="subtabs" id="dash-subtabs">
     <button class="subtab active" id="dsub-def" onclick="dashSub('def')" data-i18n="st.subDefensive">Defensive</button>
     <button class="subtab" id="dsub-off" onclick="dashSub('off')" data-i18n="st.subOffensive">Offensive</button>
     <button class="subtab" id="dsub-map" onclick="dashSub('map')" data-i18n="st.subMaps">Maps</button>
-    <button class="subtab" id="dsub-opp" onclick="dashSub('opp')" data-i18n="st.subOpp">Opportunities</button>
   </div>
 
   <div class="g3" id="dpan-def">
@@ -566,8 +592,6 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   </div>
 
   <div id="dpan-map" style="display:none">
-  <!-- mapa de calor pela posicao exata na quadra (finalizacoes com xG): primeiro da aba -->
-  <div class="card" id="dash-hm-card" style="margin-bottom:14px"></div>
   <div class="g3">
     <div class="card"><div data-i18n="st.hDistance" class="card-title">Horizontal Distance</div><canvas id="ch-hdist" height="150"></canvas></div>
     <div class="card"><div data-i18n="st.shotLocation" class="card-title">Shot Location on Goal</div><div id="dash-goal-hm" style="margin-top:6px;width:100%;"></div></div>
@@ -575,10 +599,6 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
   </div>
   </div>
 
-  <!-- oportunidades: cada finalizacao real pela complexidade (xG), sem medias -->
-  <div id="dpan-opp" style="display:none">
-  <div class="card" id="dash-opp-card"></div>
-  </div>
 
   <!-- detalhe do recorte: mapas daquelas acoes + lance a lance -->
   <div id="dash-drill" style="display:none"></div>
@@ -803,6 +823,15 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     </div>
   </div>
   <div id="history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+
+<!-- DO LANCE AO GOL: xG (a chance) -> PsxG (o chute que chegou) -> gol -->
+<div id="page-flow" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px" class="mb20">
+    <div><div data-i18n="st.tab.flow" class="page-title">Shot to goal</div><div data-i18n="st.fl.sub" class="page-sub">The path of each opportunity: the chance (xG), the shot that arrived (PsxG) and the goal.</div></div>
+    <select id="flow-gk" style="width:auto;font-size:12px;" onchange="_flowPick=null;renderFlow()"><option data-i18n="st.allGks" value="">All GKs</option></select>
+  </div>
+  <div class="card" id="flow-card"></div>
 </div>
 
 <!-- REPORTS -->
@@ -1052,9 +1081,10 @@ function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const pages=['dashboard','record','history','reports','settings'];
+  const pages=['dashboard','flow','record','history','reports','settings'];
   const idx=pages.indexOf(name); if(idx>=0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
   if(name==='dashboard') renderDashboard();
+  if(name==='flow') renderFlow();
   if(name==='history') renderHistory();
   if(name==='reports'){populateReportFilters();buildReport();}
   if(name==='record'){
@@ -2802,30 +2832,38 @@ let _hmMetric='n', _hmView='cells', _hmMomList=[];
 function shotMapSvg(shots,metric,view,opt){
   opt=opt||{};
   const ps=shots.filter(xgHasPos);
-  const w=function(s){ return metric==='xg'?(xgOf(s)||0):metric==='goal'?(resKind(s.result)==='goal'?1:0):1; };
+  /* ps = PsxG dos chutes no alvo; gp = gols evitados (PsxG - gol), com sinal */
+  const temPs=function(s){ return psxgOf(s)!=null; };
+  const w=function(s){
+    if(metric==='ps') return psxgOf(s)||0;
+    if(metric==='gp') return temPs(s)?(psxgOf(s)-(resKind(s.result)==='goal'?1:0)):0;
+    return metric==='xg'?(xgOf(s)||0):metric==='goal'?(resKind(s.result)==='goal'?1:0):1; };
   const ink=metric==='goal'?'#b91c1c':'#0a0a0a';
+  const cor=function(v){ return metric==='gp'?(v>=0?'#1d4ed8':'#b91c1c'):ink; };
   let over='', lab='';
   if(view==='cells'){
     const g={};
     ps.forEach(function(s){ const p=xgPosOf(s); const i=Math.min(15,Math.floor(p.d/2.5)), j=Math.min(7,Math.floor((p.x+10)/2.5)); g[i+'_'+j]=(g[i+'_'+j]||0)+w(s); });
-    const vals=Object.values(g).filter(function(v){return v>0;}); const mx=Math.max(1e-9,...vals,0);
+    if(metric==='ps'||metric==='gp'){ Object.keys(g).forEach(function(k){ delete g[k]; });
+      ps.filter(temPs).forEach(function(s){ const p=xgPosOf(s); const i=Math.min(15,Math.floor(p.d/2.5)), j=Math.min(7,Math.floor((p.x+10)/2.5)); g[i+'_'+j]=(g[i+'_'+j]||0)+w(s); }); }
+    const vals=Object.values(g).map(function(v){return Math.abs(v);}).filter(function(v){return v>0;}); const mx=Math.max(1e-9,...vals,0);
     Object.keys(g).forEach(function(key){
-      const v=g[key]; if(!(v>0)) return;
+      const v=g[key]; if(!(Math.abs(v)>0)) return;
       const a=key.split('_').map(Number), cx=XGC_GL+a[0]*35, cy=16+a[1]*35;
-      over+='<rect x="'+cx+'" y="'+cy+'" width="35" height="35" fill="'+ink+'" fill-opacity="'+(.12+.72*v/mx).toFixed(2)+'"/>';
-      lab+='<text x="'+(cx+17.5)+'" y="'+(cy+21)+'" fill="#ffffff" font-size="10" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">'+(metric==='xg'?xgFmt(v,1):Math.round(v))+'</text>';
+      over+='<rect x="'+cx+'" y="'+cy+'" width="35" height="35" fill="'+cor(v)+'" fill-opacity="'+(.12+.72*Math.abs(v)/mx).toFixed(2)+'"/>';
+      lab+='<text x="'+(cx+17.5)+'" y="'+(cy+21)+'" fill="#ffffff" font-size="10" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">'+(metric==='gp'?xgSigned(v):(metric==='xg'||metric==='ps')?xgFmt(v,1):Math.round(v))+'</text>';
     });
   } else if(view==='smooth'){
     const grid=[], sig2=2*1.8*1.8; let mx=1e-9;
     for(let i=0;i<40;i++) for(let j=0;j<20;j++){
       const cd=i+.5, cx=j-10+.5; let v=0;
       ps.forEach(function(s){ const ww=w(s); if(ww){ const p=xgPosOf(s); v+=ww*Math.exp(-((p.d-cd)*(p.d-cd)+(p.x-cx)*(p.x-cx))/sig2); } });
-      grid.push([i,j,v]); if(v>mx) mx=v;
+      grid.push([i,j,v]); if(Math.abs(v)>mx) mx=Math.abs(v);
     }
-    grid.forEach(function(c){ const r=c[2]/mx; if(r>.04) over+='<rect x="'+(XGC_GL+c[0]*XGC_S)+'" y="'+(16+c[1]*XGC_S)+'" width="14" height="14" shape-rendering="crispEdges" fill="'+ink+'" fill-opacity="'+(r*.8).toFixed(2)+'"/>'; });
+    grid.forEach(function(c){ const r=Math.abs(c[2])/mx; if(r>.04) over+='<rect x="'+(XGC_GL+c[0]*XGC_S)+'" y="'+(16+c[1]*XGC_S)+'" width="14" height="14" shape-rendering="crispEdges" fill="'+cor(c[2])+'" fill-opacity="'+(r*.8).toFixed(2)+'"/>'; });
   } else {
-    ps.filter(function(s){ return metric!=='goal'||resKind(s.result)==='goal'; }).forEach(function(s){
-      const xy=xgSvgPt(xgPosOf(s)), xg=xgOf(s)||0;
+    ps.filter(function(s){ return (metric!=='goal'||resKind(s.result)==='goal')&&((metric!=='ps'&&metric!=='gp')||temPs(s)); }).forEach(function(s){
+      const xy=xgSvgPt(xgPosOf(s)), xg=(metric==='ps'||metric==='gp')?(psxgOf(s)||0):(xgOf(s)||0);
       const r=metric==='n'?5:3+xg*10;
       over+='<circle cx="'+xy[0].toFixed(1)+'" cy="'+xy[1].toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+(resKind(s.result)==='goal'?'#b91c1c':'#0a0a0a')+'" fill-opacity=".85" stroke="#ffffff" stroke-width="1"/>';
     });
@@ -2869,13 +2907,14 @@ function renderShotMapCard(shots,shotsSemMomento){
   const btn=function(lbl,on,js){ return '<button type="button" class="mc-btn'+(on?' active':'')+'" onclick="'+js+'">'+esc(lbl)+'</button>'; };
   const xs=xgStats(shots), top=xgTopZone(shots);
   const hint=_hmView==='cells'?_txf('st.hm.hCells','cells of 2.5 × 2.5 m · number = total in the cell'):_hmView==='smooth'?_txf('st.hm.hSmooth','smoothed density: reliable from ~10 games'):_txf('st.hm.hDots','each point is a shot · size = xG · red = goal');
-  const grad=_hmMetric==='goal'?'rgba(185,28,28,.12),rgba(185,28,28,.85)':'rgba(10,10,10,.12),rgba(10,10,10,.85)';
+  const grad=_hmMetric==='goal'?'rgba(185,28,28,.12),rgba(185,28,28,.85)':_hmMetric==='gp'?'rgba(185,28,28,.85),rgba(185,28,28,.12),rgba(29,78,216,.12),rgba(29,78,216,.85)':'rgba(10,10,10,.12),rgba(10,10,10,.85)';
+  const _hintPs=_hmMetric==='gp'?_txf('st.hm.hGp','blue = goalkeeper prevented more than expected · red = conceded more · only shots on target with PsxG'):_hmMetric==='ps'?_txf('st.hm.hPs','PsxG of the shots on target that started there'):'';
   /* resumo por momento: mesmos filtros e recortes, menos o proprio momento */
   const linhas=[{l:_txf('st.hm.all','All'),i:-1,lista:shotsSemMomento}].concat(_hmMomList.map(function(m,i){
     return {l:stLbl(m),i:i,lista:shotsSemMomento.filter(function(s){ return s.moment===m; })};
   })).filter(function(r){ return r.i<0||r.lista.length; }).map(function(r){
     const st=xgStats(r.lista), on=(r.i<0&&ativo==null)||(r.i>=0&&String(_hmMomList[r.i])===String(ativo));
-    return '<tr class="hm-tr'+(on?' on':'')+'" onclick="hmMom('+r.i+')"><td style="font-weight:600">'+esc(r.l)+'</td><td>'+r.lista.length+'</td><td>'+st.n+'</td><td>'+xgFmt(st.xg,1)+'</td><td>'+st.goals+'</td><td>'+(st.avg==null?'—':xgFmt(st.avg,2))+'</td>'
+    return '<tr class="hm-tr'+(on?' on':'')+'" onclick="hmMom('+r.i+')"><td style="font-weight:600">'+esc(r.l)+'</td><td>'+r.lista.length+'</td><td>'+st.n+'</td><td>'+xgFmt(st.xg,1)+'</td><td>'+(st.nPs?xgFmt(st.ps,1)+' <span style="color:var(--mute);font-size:10px">('+st.nPs+')</span>':'—')+'</td><td>'+st.goals+'</td><td>'+(st.avg==null?'—':xgFmt(st.avg,2))+'</td>'
       + '<td style="color:'+(st.nPs?(st.prev>=0?'#1d4ed8':'#b91c1c'):'var(--mute)')+'">'+(st.nPs?xgSigned(st.prev):'—')+'</td></tr>';
   }).join('');
   box.innerHTML='<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:10px">'
@@ -2885,16 +2924,17 @@ function renderShotMapCard(shots,shotsSemMomento){
     +   _hmMomList.map(function(m,i){ return btn(stLbl(m),String(ativo)===String(m),'hmMom('+i+')'); }).join('')+'</div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:6px 22px">'
     + '<div class="hm-ctl"><span class="lbl">'+esc(_txf('st.hm.measure','What it measures'))+'</span>'
-    +   btn(_txf('st.hm.n','Count'),_hmMetric==='n',"hmSet('metric','n')")+btn(_txf('st.hm.xg','Danger (xG)'),_hmMetric==='xg',"hmSet('metric','xg')")+btn(_txf('st.hm.goals','Goals conceded'),_hmMetric==='goal',"hmSet('metric','goal')")+'</div>'
+    +   btn(_txf('st.hm.n','Count'),_hmMetric==='n',"hmSet('metric','n')")+btn(_txf('st.hm.xg','Danger (xG)'),_hmMetric==='xg',"hmSet('metric','xg')")+btn(_txf('st.hm.goals','Goals conceded'),_hmMetric==='goal',"hmSet('metric','goal')")+btn('PsxG',_hmMetric==='ps',"hmSet('metric','ps')")+btn(_txf('st.xg.prev','Goals prevented'),_hmMetric==='gp',"hmSet('metric','gp')")+'</div>'
     + '<div class="hm-ctl"><span class="lbl" style="min-width:0">'+esc(_txf('st.hm.view','View'))+'</span>'
     +   btn(_txf('st.hm.cells','Cells'),_hmView==='cells',"hmSet('view','cells')")+btn(_txf('st.hm.smooth','Smoothed'),_hmView==='smooth',"hmSet('view','smooth')")+btn(_txf('st.hm.dots','Points'),_hmView==='dots',"hmSet('view','dots')")+'</div></div>'
     + '<div class="hm-wrap"><div class="hm-map">'
     +   (ps.length?shotMapSvg(shots,_hmMetric,_hmView):'<div class="hm-empty">'+esc(_txf('st.hm.empty','No shot with a court position in this cut yet. Shots registered with the court appear here.'))+'</div>')
-    +   '<div class="xgc-legend" style="margin-top:8px"><span>'+esc(_txf('st.hm.less','less'))+' <i class="xgc-sw" style="width:110px;background:linear-gradient(90deg,'+grad+'),#2563eb"></i>'+esc(_txf('st.hm.more','more'))+'</span><span>'+esc(hint)+'</span></div>'
+    +   '<div class="xgc-legend" style="margin-top:8px"><span>'+esc(_txf('st.hm.less','less'))+' <i class="xgc-sw" style="width:110px;background:linear-gradient(90deg,'+grad+'),#2563eb"></i>'+esc(_txf('st.hm.more','more'))+'</span><span>'+esc(hint)+'</span>'+(_hintPs?'<span>'+esc(_hintPs)+'</span>':'')+'</div>'
     + '</div><div class="hm-side">'
     +   '<div class="g2" style="gap:8px">'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px">'+xs.n+'</div><div class="kpi-l">'+esc(_txf('st.hm.withXg','Shots with xG'))+'</div></div>'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px">'+(xs.n?xgFmt(xs.xg,1):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.faced','xG faced'))+'</div></div>'
+    +     '<div class="kpi"><div class="kpi-n" style="font-size:26px">'+(xs.nPs?xgFmt(xs.ps,1):'—')+'</div><div class="kpi-l">PsxG · '+esc(_txf('st.hm.psOf','{n} of {t} on target').replace('{n}',xs.nPs).replace('{t}',xs.alvo))+'</div></div>'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px;color:var(--red)">'+(xs.n?xs.goals:'—')+'</div><div class="kpi-l">'+esc(TX('st.goalsConceded'))+'</div></div>'
     +     '<div class="kpi"><div class="kpi-n" style="font-size:26px;color:'+(xs.nPs&&xs.prev>=0?'#1d4ed8':'#b91c1c')+'">'+(xs.nPs?xgSigned(xs.prev):'—')+'</div><div class="kpi-l">'+esc(_txf('st.xg.prev','Goals prevented'))+'</div></div>'
     +   '</div>'
@@ -2903,7 +2943,7 @@ function renderShotMapCard(shots,shotsSemMomento){
     +   '<div style="font-size:11px;color:var(--mute);line-height:1.5;margin-top:8px">'+esc(_txf('st.xg.prevExp','Goals prevented = xG faced − goals conceded. Positive: fewer goals than the quality of the chances predicted.'))+'</div>'
     + '</div></div>'
     + '<div class="drsub" style="margin-top:16px">'+esc(_txf('st.hm.byMoment','Summary by game moment · click a row to filter the map'))+'</div>'
-    + '<div style="overflow-x:auto"><table class="drtab hm-tab"><thead><tr><th>'+esc(_txf('st.hm.thMoment','Moment'))+'</th><th>'+esc(TX('st.shots'))+'</th><th>'+esc(_txf('st.hm.withXg','Shots with xG'))+'</th><th>xG</th><th>'+esc(TX('st.goals'))+'</th><th>'+esc(_txf('st.hm.thAvg','xG / shot'))+'</th><th>'+esc(_txf('st.xg.prev','Goals prevented'))+'</th></tr></thead><tbody>'+linhas+'</tbody></table></div>';
+    + '<div style="overflow-x:auto"><table class="drtab hm-tab"><thead><tr><th>'+esc(_txf('st.hm.thMoment','Moment'))+'</th><th>'+esc(TX('st.shots'))+'</th><th>'+esc(_txf('st.hm.withXg','Shots with xG'))+'</th><th>xG</th><th>PsxG</th><th>'+esc(TX('st.goals'))+'</th><th>'+esc(_txf('st.hm.thAvg','xG / shot'))+'</th><th>'+esc(_txf('st.xg.prev','Goals prevented'))+'</th></tr></thead><tbody>'+linhas+'</tbody></table></div>';
 }
 
 function xgcMount(k){
@@ -3232,22 +3272,22 @@ function renderDashboard(){
       okEl.innerHTML='<div class="kpi"><div class="kpi-n">'+offs.length+'</div><div class="kpi-l">'+TX('st.offActions','offensive actions')+'</div></div>'
         + topo.map(function(k){return '<div class="kpi"><div class="kpi-n">'+porRes[k]+'</div><div class="kpi-l">'+stLbl(k)+'</div></div>';}).join('');
     }
-  } else if(_dashSub==='opp'){
-    renderOppCard(games,fGk);
   } else {
     orderedChart('ch-hdist','bar',countBy(shots,'hDistance'),cfgOrder(ST.hdists,HDIST_ORDER),null,true,'hDistance');
     document.getElementById('dash-goal-hm').innerHTML=goalHeatmapHtml(shots,s.total,52);
     document.getElementById('dash-court-hm').innerHTML=courtHeatmapHtml(shots,s.total,150);
-    /* mapa de calor: o resumo por momento ignora so o recorte de momento */
-    const _semMom=Object.assign({},_drillS); delete _semMom.moment;
-    renderShotMapCard(shots,_drillAplica(_antesDoRecorte,_semMom));
   }
+  /* abertura (sempre visivel): mapa de calor e oportunidades.
+     O resumo por momento do mapa ignora so o recorte de momento. */
+  { const _semMom=Object.assign({},_drillS); delete _semMom.moment;
+    try{ renderShotMapCard(shots,_drillAplica(_antesDoRecorte,_semMom)); }catch(e){ console.warn('[FluxGK] mapa',e); }
+    try{ renderOppCard(games,fGk); }catch(e){ console.warn('[FluxGK] oportunidades',e); } }
 }
 /* sub-abas do dashboard */
 let _dashSub='def';
 function dashSub(t){
   _dashSub=t;
-  ['def','off','map','opp'].forEach(function(n){
+  ['def','off','map'].forEach(function(n){
     const pan=document.getElementById('dpan-'+n); if(pan) pan.style.display=(n===t)?'':'none';
     const bt=document.getElementById('dsub-'+n); if(bt) bt.classList.toggle('active',n===t);
   });
@@ -3261,7 +3301,11 @@ function dashSub(t){
    Nada e somado em media: a comparacao usa so finalizacoes parecidas
    (mesmo momento, xG +-0,10) e sempre mostra "x de y". */
 const OPP_FAIXAS=[0.15,0.35], OPP_JANELA=0.10;
-let _oppGame=null, _oppPick=null, _oppList=[];
+let _oppGame=null, _oppPick=null, _oppList=[], _oppBase='xg';
+/* complexidade pela chance (xG, todas as finalizacoes) ou pelo chute que chegou
+   (PsxG, so chutes no alvo com o ponto no gol: "defendeu x de y parecidos") */
+function oppSetBase(b){ _oppBase=(b==='ps')?'ps':'xg'; _oppPick=null; renderDashboard(); }
+function _oT(kx,fx,kp,fp){ return _oppBase==='ps'?_txf(kp,fp):_txf(kx,fx); }
 function _oppFaixa(x){ return x<OPP_FAIXAS[0]?0:(x<OPP_FAIXAS[1]?1:2); }
 function _oppSemGol(s){ return resKind(s.result)!=='goal'; }
 function oppSetGame(id){ _oppGame=id; _oppPick=null; renderDashboard(); }
@@ -3276,15 +3320,17 @@ function renderOppDetail(){
   if(!s){ box.innerHTML='<span class="sub">'+esc(_txf('st.op.hint','Click a large point to compare that opportunity with similar ones.'))+'</span>'; return; }
   const FN=[_txf('st.op.low','low complexity'),_txf('st.op.mid','medium'),_txf('st.op.high','high')];
   const mom=s.moment?stLbl(s.moment):_txf('st.op.noMom','No moment');
+  const _ox=xgOf(s), _op=psxgOf(s);
   const par=_oppParecidas(s), ok=par.filter(_oppSemGol).length;
   const a=xgFmt(Math.max(0,s._x-OPP_JANELA),2), b=xgFmt(Math.min(1,s._x+OPP_JANELA),2);
   let comp;
   if(!par.length) comp=esc(_txf('st.op.first','No similar shot yet in {m}: this is the first reference.').replace('{m}',mom));
-  else comp=esc(_txf('st.op.similar','In the filtered games, similar shots in {m} (xG {a} to {b}): no goal in {x} of {y}.').replace('{m}',mom).replace('{a}',a).replace('{b}',b).replace('{x}',ok).replace('{y}',par.length))
+  else comp=esc(_oT('st.op.similar','In the filtered games, similar shots in {m} (xG {a} to {b}): no goal in {x} of {y}.','st.op.similarPs','In the filtered games, similar shots on target in {m} (PsxG {a} to {b}): saved {x} of {y}.').replace('{m}',mom).replace('{a}',a).replace('{b}',b).replace('{x}',ok).replace('{y}',par.length))
     + (par.length<5?' <span class="sub">('+esc(_txf('st.op.small','small sample'))+')</span>':'');
-  box.innerHTML='<div style="font-weight:600">'+esc(mom)+' · xG '+esc(xgFmt(s._x,2))+' ('+esc(FN[_oppFaixa(s._x)])+') · '
+  box.innerHTML='<div style="font-weight:600">'+esc(mom)+' · '+(_oppBase==='ps'?'PsxG':'xG')+' '+esc(xgFmt(s._x,2))+' ('+esc(FN[_oppFaixa(s._x)])+') · '
     + '<span style="color:'+(_oppSemGol(s)?'#2563eb':'#b91c1c')+'">'+esc(stLbl(s.result)||'—')+'</span>'
     + (s.minute?' <span class="sub">· '+esc(String(s.minute))+"'</span>":'')+'</div>'
+    + '<div class="sub">xG '+(_ox==null?'—':esc(xgFmt(_ox,2)))+' → PsxG '+(_op==null?'—':esc(xgFmt(_op,2)))+' → '+esc(stLbl(s.result)||'—')+'</div>'
     + '<div>'+comp+'</div>';
 }
 function renderOppCard(games,fGk){
@@ -3296,12 +3342,15 @@ function renderOppCard(games,fGk){
     todas.push(Object.assign({},s,{_gid:String(g.id)}));
   }); });
   todas=_drillAplica(todas,_drillS);
-  const comXg=todas.filter(function(s){ const x=xgOf(s); if(x==null||!isFinite(x)) return false; s._x=Math.max(0,Math.min(1,x)); return true; });
+  const comXg=todas.filter(function(s){ const x=_oppBase==='ps'?psxgOf(s):xgOf(s); if(x==null||!isFinite(x)) return false; s._x=Math.max(0,Math.min(1,x)); return true; });
+  const _chave='<div class="hm-ctl" style="margin:0 0 6px"><span class="lbl">'+esc(_txf('st.op.base','Complexity by'))+'</span>'
+    + '<button type="button" class="mc-btn'+(_oppBase==='xg'?' active':'')+'" onclick="oppSetBase(\'xg\')">'+esc(_txf('st.op.baseXg','xG · the chance'))+'</button>'
+    + '<button type="button" class="mc-btn'+(_oppBase==='ps'?' active':'')+'" onclick="oppSetBase(\'ps\')">'+esc(_txf('st.op.basePs','PsxG · the shot that arrived'))+'</button></div>';
   _oppList=comXg;
   const titulo='<div class="op-top"><div class="card-title" style="margin:0">'+esc(_txf('st.op.title','Opportunities by complexity'))+'</div>'
-    + '<div style="font-size:11px;color:var(--mute)">'+esc(_txf('st.op.cover','{n} of {t} shots have xG').replace('{n}',comXg.length).replace('{t}',todas.length))+'</div></div>';
+    + '<div style="font-size:11px;color:var(--mute)">'+esc(_oT('st.op.cover','{n} of {t} shots have xG','st.op.coverPs','{n} of {t} shots on target have PsxG').replace('{n}',comXg.length).replace('{t}',_oppBase==='ps'?todas.filter(psxNoAlvo).length:todas.length))+'</div></div>'+_chave;
   if(!comXg.length){
-    box.innerHTML=titulo+'<div class="hm-empty">'+esc(_txf('st.op.empty','No shot with xG in this cut yet. Opportunities appear from games registered with the court.'))+'</div>';
+    box.innerHTML=titulo+'<div class="hm-empty">'+esc(_oT('st.op.empty','No shot with xG in this cut yet. Opportunities appear from games registered with the court.','st.op.emptyPs','No shot on target with PsxG in this cut yet. Tap the goal point when registering (or editing) saves and goals.'))+'</div>';
     return;
   }
   /* jogos: mais recentes primeiro; padrao = o mais recente com xG */
@@ -3318,7 +3367,7 @@ function renderOppCard(games,fGk){
   const linhas=ordem.filter(function(m){ return pres.indexOf(m)>=0; })
     .concat(pres.filter(function(m){ return m&&ordem.indexOf(m)<0; }).sort())
     .concat(pres.indexOf('')>=0?['']:[]);
-  const W=900, L=170, X0=L+10, X1=660, RC=X1+22, TOP=40, RH=56, H=TOP+linhas.length*RH+30;
+  const W=960, L=170, X0=L+10, X1=660, RC=X1+22, TOP=40, RH=56, H=TOP+linhas.length*RH+30;
   const px=function(x){ return X0+x*(X1-X0); };
   const FS=[_txf('st.op.lowS','Low'),_txf('st.op.midS','Medium'),_txf('st.op.highS','High')];
   let h='';
@@ -3326,7 +3375,7 @@ function renderOppCard(games,fGk){
     if(i===1) h+='<rect x="'+px(z[0])+'" y="'+(TOP-8)+'" width="'+(px(z[1])-px(z[0]))+'" height="'+(linhas.length*RH+6)+'" fill="#f4f4f1"/>';
     h+='<text x="'+((px(z[0])+px(z[1]))/2)+'" y="20" text-anchor="middle" font-size="12" fill="#737373">'+esc(z[2])+'</text>';
   });
-  h+='<text x="'+RC+'" y="20" font-size="12" fill="#737373">'+esc(_txf('st.op.colHead','Filtered games: no goal / total'))+'</text>';
+  h+='<text x="'+RC+'" y="20" font-size="12" fill="#737373">'+esc(_oT('st.op.colHead','Filtered games: no goal / total','st.op.colHeadPs','Filtered games: saves / shots'))+'</text>';
   const doJogo=[];
   linhas.forEach(function(m,mi){
     const y=TOP+mi*RH+RH/2;
@@ -3345,25 +3394,119 @@ function renderOppCard(games,fGk){
     jg.forEach(function(s,k){
       const i=_oppList.indexOf(s), jy=y+(jg.length>1?(k%2?8:-8):0), gol=!_oppSemGol(s);
       doJogo.push(s);
-      h+='<g class="op-pt'+(i===_oppPick?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc((m?stLbl(m):'')+' xG '+xgFmt(s._x,2)+' '+(stLbl(s.result)||''))+'" onclick="oppPick('+i+')" onkeydown="oppKey(event,'+i+')">'
+      h+='<g class="op-pt'+(i===_oppPick?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc((m?stLbl(m):'')+(_oppBase==='ps'?' PsxG ':' xG ')+xgFmt(s._x,2)+' '+(stLbl(s.result)||''))+'" onclick="oppPick('+i+')" onkeydown="oppKey(event,'+i+')">'
         + '<circle cx="'+px(s._x).toFixed(1)+'" cy="'+jy+'" r="9" fill="'+(gol?'#b91c1c':'#2563eb')+'" stroke="#ffffff" stroke-width="2"/></g>';
     });
   });
   const yb=TOP+linhas.length*RH+16;
   [0,OPP_FAIXAS[0],OPP_FAIXAS[1],1].forEach(function(t){ h+='<text x="'+px(t)+'" y="'+yb+'" text-anchor="middle" font-size="11" fill="#a3a3a3" font-family="JetBrains Mono,monospace">'+xgFmt(t,2)+'</text>'; });
-  h+='<text x="'+X1+'" y="'+(yb+14)+'" text-anchor="end" font-size="11" fill="#a3a3a3">'+esc(_txf('st.op.axis','xG · more complex →'))+'</text>';
+  h+='<text x="'+X1+'" y="'+(yb+14)+'" text-anchor="end" font-size="11" fill="#a3a3a3">'+esc(_oT('st.op.axis','xG · more complex →','st.op.axisPs','PsxG · harder to save →'))+'</text>';
   const sg=doJogo.filter(_oppSemGol).length;
   box.innerHTML=titulo
-    + '<p class="op-why">'+esc(_txf('st.op.why','Each point is a real shot, placed by its complexity (xG). Nothing is averaged: comparisons use only similar opportunities (xG ±0.10) in the same moment.'))+'</p>'
+    + '<p class="op-why">'+esc(_oT('st.op.why','Each point is a real shot, placed by its complexity (xG). Nothing is averaged: comparisons use only similar opportunities (xG ±0.10) in the same moment.','st.op.whyPs','Each point is a real shot on target, placed by how hard it was to save (PsxG). Nothing is averaged: each save or goal is compared only with similar shots (PsxG ±0.10) in the same moment.'))+'</p>'
     + '<div class="op-top"><label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)">'+esc(_txf('st.op.game','Game'))
     +   '<select onchange="oppSetGame(this.value)">'+opts+'</select></label>'
-    +   '<div style="font-size:12px;color:var(--ink)">'+esc(_txf('st.op.inGame','{n} opportunities with xG in this game · no goal in {x}').replace('{n}',doJogo.length).replace('{x}',sg))+'</div></div>'
-    + '<div class="op-leg"><span><i style="width:12px;height:12px;background:#2563eb"></i>'+esc(_txf('st.op.legNo','this game: no goal'))+'</span>'
+    +   '<div style="font-size:12px;color:var(--ink)">'+esc(_oT('st.op.inGame','{n} opportunities with xG in this game · no goal in {x}','st.op.inGamePs','{n} shots on target with PsxG in this game · saved {x}').replace('{n}',doJogo.length).replace('{x}',sg))+'</div></div>'
+    + '<div class="op-leg"><span><i style="width:12px;height:12px;background:#2563eb"></i>'+esc(_oT('st.op.legNo','this game: no goal','st.op.legNoPs','this game: save'))+'</span>'
     +   '<span><i style="width:12px;height:12px;background:#b91c1c"></i>'+esc(_txf('st.op.legGoal','this game: goal'))+'</span>'
     +   '<span><i style="width:8px;height:8px;background:#a3a3a3"></i>'+esc(_txf('st.op.legOther','other games (hollow = goal)'))+'</span></div>'
     + '<div style="overflow-x:auto"><svg class="op-svg" viewBox="0 0 '+W+' '+H+'" style="min-width:620px" role="img" aria-label="'+esc(_txf('st.op.title','Opportunities by complexity'))+'">'+h+'</svg></div>'
     + '<div class="op-det" id="op-det"></div>';
   renderOppDetail();
+}
+
+// ═══ DO LANCE AO GOL (xG -> PsxG -> gol) ═══════════════════════════
+/* Aba propria. Cada ponto e uma finalizacao real: a chance (xG) x o chute que
+   chegou (PsxG). Nada vira media: os resumos sao contagens "x de y".
+   Le todos os jogos; filtros: goleiro e jogo. */
+let _flowGame=null, _flowPick=null, _flowList=[];
+function flowSetGame(id){ _flowGame=id; _flowPick=null; renderFlow(); }
+function flowPick(i){ _flowPick=i; renderFlow(); }
+function renderFlow(){
+  const box=document.getElementById('flow-card'); if(!box) return;
+  const selGk=document.getElementById('flow-gk');
+  if(selGk){ const cur=selGk.value; const gks=[]; (ST.games||[]).forEach(function(g){ _asArr(g.shots).forEach(function(s){ if(s&&s.gk&&gks.indexOf(s.gk)<0) gks.push(s.gk); }); });
+    selGk.innerHTML='<option value="">'+esc(TX('st.allGks'))+'</option>'+gks.sort().map(function(n){ return '<option'+(n===cur?' selected':'')+'>'+esc(n)+'</option>'; }).join(''); }
+  const gk=selGk?selGk.value:'';
+  const f1=function(v){ return xgFmt(v,1); }, f2=function(v){ return xgFmt(v,2); };
+  const sg=function(v){ return (v>=0?'+':'−')+xgFmt(Math.abs(v),1); };
+  /* todas as finalizacoes com xG (ponto na quadra), com o jogo de origem */
+  const todas=[];
+  (ST.games||[]).forEach(function(g){ _asArr(g.shots).forEach(function(s){ if(!s) return; if(gk&&s.gk!==gk) return; if(xgOf(s)==null) return; todas.push(Object.assign({},s,{_g:g})); }); });
+  const jogos=(ST.games||[]).filter(function(g){ return todas.some(function(s){ return s._g===g; }); })
+    .sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+  if(_flowGame!=null&&!jogos.some(function(g){ return String(g.id)===String(_flowGame); })) _flowGame=null;
+  const L=todas.filter(function(s){ return _flowGame==null||String(s._g.id)===String(_flowGame); });
+  _flowList=L;
+  const titulo='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><div class="card-title" style="margin:0">'+esc(_txf('st.fl.title','From chance to goal · xG + PsxG'))+'</div>';
+  if(!todas.length){ box.innerHTML=titulo+'</div><div class="hm-empty" style="margin-top:10px">'+esc(_txf('st.fl.empty','No shot with xG yet. The path appears from games registered with the court and the goal point.'))+'</div>'; return; }
+  const alvo=L.filter(psxNoAlvo), comPs=alvo.filter(function(s){ return psxgOf(s)!=null; }), falta=alvo.length-comPs.length;
+  const xs=xgStats(L), gols=L.filter(function(s){ return resKind(s.result)==='goal'; }).length;
+  const chips='<div class="fl-chips"><button type="button" class="mc-btn'+(_flowGame==null?' active':'')+'" onclick="flowSetGame(null)">'+esc(_txf('st.fl.allGames','All games'))+'</button>'
+    + jogos.map(function(g){ return '<button type="button" class="mc-btn'+(String(g.id)===String(_flowGame)?' active':'')+'" onclick="flowSetGame(\''+esc(String(g.id))+'\')">'+esc((g.date||'—')+' · '+(g.opponent||'—'))+'</button>'; }).join('')+'</div>';
+  const seta='<svg viewBox="0 0 40 14" aria-hidden="true"><path d="M0 7h36M30 2l6 5-6 5" fill="none" stroke="#a3a3a3" stroke-width="1.6"/></svg>';
+  const flow='<div class="fl-flow">'
+    + '<div class="fl-st"><div class="lbl-sm">'+esc(_txf('st.fl.created','Danger created · xG'))+'</div><div class="n">'+f1(xs.xg)+'</div><div class="d">'+esc(_txf('st.fl.nShots','{n} shots').replace('{n}',L.length))+'</div></div>'
+    + '<div class="fl-arr"><b>'+(comPs.length?sg(xs.ps-xs.xg):'—')+'</b>'+seta+'<span>'+esc(_txf('st.fl.d1','danger that did not reach the goal (off target, blocks, shot worse than the chance)'))+'</span></div>'
+    + '<div class="fl-st"><div class="lbl-sm">'+esc(_txf('st.fl.arrived','Reached the goal · PsxG'))+'</div><div class="n">'+(comPs.length?f1(xs.ps):'—')+'</div><div class="d">'+esc(_txf('st.fl.nTarget','{n} on target · {p} with PsxG').replace('{n}',alvo.length).replace('{p}',comPs.length))+'</div></div>'
+    + '<div class="fl-arr"><b style="color:'+(xs.nPs?(xs.prev>=0?'#1d4ed8':'#b91c1c'):'var(--mute)')+'">'+(xs.nPs?sg(xs.prev):'—')+'</b>'+seta+'<span>'+esc(_txf('st.fl.d2','goals prevented by the goalkeeper (PsxG − goals)'))+'</span></div>'
+    + '<div class="fl-st"><div class="lbl-sm">'+esc(_txf('st.fl.goal','Became a goal'))+'</div><div class="n" style="color:var(--red)">'+gols+'</div><div class="d">'+esc(_txf('st.fl.nSaves','{n} saves').replace('{n}',alvo.length-gols))+'</div></div>'
+    + '</div>';
+  const aviso=falta?'<div class="fl-warn">'+esc(_txf('st.fl.missing','{n} shot(s) on target without the goal point: no PsxG. Edit them in History to complete.').replace('{n}',falta))+'</div>':'';
+  /* contagens (nada de media) */
+  const def=comPs.filter(function(s){ return resKind(s.result)!=='goal'; });
+  const dif=comPs.filter(function(s){ return psxgOf(s)>=.5; });
+  const golsPs=comPs.filter(function(s){ return resKind(s.result)==='goal'; });
+  const altas=L.filter(function(s){ return xgOf(s)>=.35; });
+  const neutr=altas.filter(function(s){ const p=psxgOf(s); return !psxNoAlvo(s)||(p!=null&&p<.2); });
+  const baixas=L.filter(function(s){ return xgOf(s)<.15; });
+  const acima=baixas.filter(function(s){ const p=psxgOf(s); return p!=null&&p>=.4; });
+  const row=function(n,t){ return '<div class="fl-row"><b>'+n+'</b><span>'+esc(t)+'</span></div>'; };
+  const lado=row(def.filter(function(s){ return psxgOf(s)>=.5; }).length+' / '+dif.length,_txf('st.fl.c1','Hard saves · saves among shots with PsxG ≥ 0.50'))
+    + row(golsPs.filter(function(s){ return psxgOf(s)<.3; }).length+' / '+golsPs.length,_txf('st.fl.c2','Goals with low PsxG · goals with PsxG < 0.30 (a shot the goalkeeper usually solves)'))
+    + row(neutr.length+' / '+altas.length,_txf('st.fl.c3','High chances neutralised · xG ≥ 0.35 that did not become a dangerous shot (PsxG < 0.20 or off target)'))
+    + row(acima.length+' / '+baixas.length,_txf('st.fl.c4','Shots above the chance · xG < 0.15 that arrived with PsxG ≥ 0.40'));
+  /* dispersao: x = xG; y = PsxG; faixa de baixo = nao chegou ao gol */
+  const X0=56,X1=620,Y0=24,Y1=380,YB=430;
+  const px=function(v){ return X0+v*(X1-X0); }, py=function(v){ return Y1-v*(Y1-Y0); };
+  let g='';
+  g+='<rect x="'+px(0)+'" y="'+py(1)+'" width="'+(px(.35)-px(0))+'" height="'+(py(.4)-py(1))+'" fill="#f4f4f1"/>';
+  g+='<rect x="'+px(.35)+'" y="'+py(.2)+'" width="'+(px(1)-px(.35))+'" height="'+(py(0)-py(.2))+'" fill="#eff4ff"/>';
+  g+='<text x="'+(px(0)+8)+'" y="'+(py(1)+16)+'" font-size="11" fill="#737373">'+esc(_txf('st.fl.q1','shot above the chance'))+'</text>';
+  g+='<text x="'+(px(1)-8)+'" y="'+(py(0)-8)+'" font-size="11" fill="#2563eb" text-anchor="end">'+esc(_txf('st.fl.q2','high chance neutralised in the shot'))+'</text>';
+  for(let t=0;t<=1.001;t+=.25){ g+='<line x1="'+px(t)+'" y1="'+Y0+'" x2="'+px(t)+'" y2="'+Y1+'" stroke="#eeeeee"/><line x1="'+X0+'" y1="'+py(t)+'" x2="'+X1+'" y2="'+py(t)+'" stroke="#eeeeee"/>';
+    g+='<text x="'+px(t)+'" y="'+(YB+28)+'" font-size="10" fill="#a3a3a3" text-anchor="middle" font-family="JetBrains Mono,monospace">'+f2(t)+'</text>';
+    g+='<text x="'+(X0-8)+'" y="'+(py(t)+3)+'" font-size="10" fill="#a3a3a3" text-anchor="end" font-family="JetBrains Mono,monospace">'+f2(t)+'</text>'; }
+  g+='<line x1="'+px(0)+'" y1="'+py(0)+'" x2="'+px(1)+'" y2="'+py(1)+'" stroke="#a3a3a3" stroke-dasharray="5 5"/>';
+  g+='<text x="'+(px(.74)+6)+'" y="'+(py(.74)-6)+'" font-size="10.5" fill="#737373" transform="rotate(-32 '+(px(.74)+6)+' '+(py(.74)-6)+')">'+esc(_txf('st.fl.diag','shot as good as the chance'))+'</text>';
+  g+='<rect x="'+X0+'" y="'+(YB-16)+'" width="'+(X1-X0)+'" height="32" fill="#fafaf7" stroke="#e5e5e5"/>';
+  g+='<text x="'+(X0-8)+'" y="'+(YB+4)+'" font-size="10" fill="#a3a3a3" text-anchor="end">'+esc(_txf('st.fl.notArr','missed'))+'</text>';
+  g+='<text x="'+((X0+X1)/2)+'" y="'+(YB+44)+'" font-size="11" fill="#737373" text-anchor="middle">'+esc(_txf('st.fl.axX','xG · the chance before the shot →'))+'</text>';
+  g+='<text x="16" y="'+((Y0+Y1)/2)+'" font-size="11" fill="#737373" text-anchor="middle" transform="rotate(-90 16 '+((Y0+Y1)/2)+')">'+esc(_txf('st.fl.axY','PsxG · the shot that arrived →'))+'</text>';
+  L.forEach(function(o,i){ const on=_flowPick===i, x=xgOf(o), p=psxgOf(o);
+    if(!psxNoAlvo(o)){ const y=YB+((i*7)%15-7); g+='<circle class="fl-pt" onclick="flowPick('+i+')" cx="'+px(x).toFixed(1)+'" cy="'+y+'" r="'+(on?7:5)+'" fill="#ffffff" stroke="'+(on?'#0a0a0a':'#a3a3a3')+'" stroke-width="'+(on?2.5:1.5)+'"/>'; }
+    else if(p!=null) g+='<circle class="fl-pt" onclick="flowPick('+i+')" cx="'+px(x).toFixed(1)+'" cy="'+py(p).toFixed(1)+'" r="'+(on?9:7)+'" fill="'+(resKind(o.result)==='goal'?'#b91c1c':'#2563eb')+'" stroke="'+(on?'#0a0a0a':'#ffffff')+'" stroke-width="2"/>';
+  });
+  /* detalhe do lance clicado */
+  let det=esc(_txf('st.fl.hint','Click a point to see the shot.'));
+  const o=L[_flowPick];
+  if(o){ const x=xgOf(o), p=psxgOf(o); let leit;
+    if(!psxNoAlvo(o)) leit=_txf('st.fl.r0','The chance did not become a shot on target.');
+    else if(p==null) leit=_txf('st.fl.rMiss','On target without the goal point: no PsxG yet.');
+    else if(p<x-.15) leit=_txf('st.fl.r1','The shot arrived much worse than the chance: something in the encounter (positioning, pressure, execution) took danger away.');
+    else if(p>x+.15) leit=_txf('st.fl.r2','The shot arrived better than the chance: the shooter’s execution was above expectation.');
+    else leit=_txf('st.fl.r3','The shot arrived as good as the chance.');
+    const hf=(o.half===1||o.half===2)?' · '+_txf(o.half===1?'st.xg.hs1':'st.xg.hs2',o.half===1?'1H':'2H'):'';
+    det='<b>'+esc((o._g.date||'—')+' · '+(o._g.opponent||'—')+(o.minute?' · '+o.minute+"'":'')+hf+(o.moment?' · '+stLbl(o.moment):''))+'</b><br>'
+      + 'xG '+f2(x)+' → PsxG '+(p==null?'—':f2(p))+' → <b style="color:'+(resKind(o.result)==='goal'?'#b91c1c':psxNoAlvo(o)?'#2563eb':'#737373')+'">'+esc(stLbl(o.result)||'—')+'</b>'
+      + (o.gk?' <span style="color:var(--mute)">· '+esc(o.gk)+'</span>':'')+'<br><span style="color:var(--mute)">'+esc(leit)+'</span>'; }
+  box.innerHTML=titulo+'<div style="font-size:11.5px;color:var(--mute)">'+esc(_txf('st.fl.cover','{n} shots with xG · {a} on target').replace('{n}',L.length).replace('{a}',alvo.length))+'</div></div>'
+    + chips+aviso+flow
+    + '<div class="fl-grid"><div>'
+    +   '<div class="lbl-sm" style="margin-bottom:2px">'+esc(_txf('st.fl.scTitle','Each shot: the chance (xG) × the shot that arrived (PsxG)'))+'</div>'
+    +   '<div class="fl-leg"><span><i style="background:#2563eb"></i>'+esc(_txf('st.fl.lSave','save'))+'</span><span><i style="background:#b91c1c"></i>'+esc(_txf('st.fl.lGoal','goal'))+'</span><span><i style="background:#fff;border:1.5px solid #a3a3a3"></i>'+esc(_txf('st.fl.lMiss','did not reach the goal (off target / blocked / post)'))+'</span></div>'
+    +   '<svg class="fl-svg" viewBox="0 0 640 480" role="img" aria-label="'+esc(_txf('st.fl.scTitle','Each shot: the chance (xG) × the shot that arrived (PsxG)'))+'">'+g+'</svg>'
+    + '</div><div>'+lado+'<div class="fl-det">'+det+'</div></div></div>';
 }
 
 // ═══ REPORTS ══════════════════════════════════════════════════════
