@@ -1151,7 +1151,10 @@ async function rtPushAll(){
        caminhos filhos abaixo (o Firebase recusa pai e filho no mesmo update) */
     upd[uPath("players/"+p.id+"/name")]=p.name;
     upd[uPath("players/"+p.id+"/id")]=p.id;
-    if(p.photo)upd[uPath("players/"+p.id+"/photo")]=p.photo;
+    /* a foto NAO vai no envio geral: um aparelho com foto antiga em cache
+       sobrescrevia na nuvem a foto atual (ex.: depois de reduzida). A foto
+       sobe so quando e trocada (rtSavePhoto) ou quando falta na nuvem
+       (ver o listener abaixo). */
     if(p.origem)upd[uPath("players/"+p.id+"/origem")]=p.origem;
     if(p.periodos)upd[uPath("players/"+p.id+"/periodos")]=p.periodos;
     if(p.status){
@@ -1219,7 +1222,9 @@ function rtListen(){
           changed=true;
         } else {
           const lc=ST.players[id];
-          if(p.photo&&!lc.photo){lc.photo=p.photo;changed=true;}
+          /* foto: a da nuvem vale; se a nuvem nao tem e este aparelho tem, devolve */
+          if(p.photo&&p.photo!==lc.photo){lc.photo=p.photo;changed=true;}
+          else if(!p.photo&&lc.photo){ try{ rtSavePhoto(id,lc.photo); }catch(e){} }
           if((p.origem||"")!==(lc.origem||"")){ if(p.origem) lc.origem=p.origem; else delete lc.origem; changed=true; }
           if(JSON.stringify(p.periodos||null)!==JSON.stringify(lc.periodos||null)){ if(p.periodos) lc.periodos=p.periodos; else delete lc.periodos; changed=true; }
           /* a situacao vem do servidor: quem afastou num aparelho afasta em todos */

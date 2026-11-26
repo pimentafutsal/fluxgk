@@ -115,6 +115,51 @@
       }catch(e){}
     }, 80);
   }
+  /* O painel so e desenhado quando chegam os jogos E os tipos de resultado
+     ("Defesa" = defesa, "Gol sofrido" = gol). Antes disso mostrava 0 defesas,
+     0 gols e 0% por alguns segundos. Enquanto isso, os numeros ficam em "…". */
+  var _jogosChegaram=false, _cfgChegou=false;
+  function _tentaBoot(){
+    if(window._uiBooted||!_jogosChegaram||!_cfgChegou) return;
+    window._uiBooted=true; bootUI();
+  }
+  function _kpiCarregando(){
+    ['kpi-games','kpi-shots','kpi-saves','kpi-goals','kpi-savepct'].forEach(function(id){ var e=document.getElementById(id); if(e&&!window._uiBooted) e.textContent='…'; });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_kpiCarregando); else _kpiCarregando();
+  /* elenco do Load Control sem baixar as fotos: pega so as chaves (REST shallow)
+     e escuta nome e situacao de cada goleiro. Se falhar, cai no modo antigo. */
+  function _lerElencoLeve(db){
+    var base=_SPATH.lcPlayers, P={}, t=null;
+    function aplica(){
+      clearTimeout(t);
+      t=setTimeout(function(){
+        var v=P;
+        ST.lcGks=_gksDoLoadControl(v);
+        ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});
+        ST.lcStatus={};Object.values(v||{}).forEach(function(p){if(p&&p.name)ST.lcStatus[_normNome(p.name).toLowerCase()]=p.status||'ativo';});
+        try{autoGks();}catch(e){} try{renderUnif();}catch(e){}
+      },60);
+    }
+    function antigo(){
+      db.ref(base).on('value',function(snap){ P=snap.val()||{}; aplica(); });
+    }
+    try{
+      var url=(firebase.app().options.databaseURL||'').replace(/\/$/,'');
+      firebase.auth().currentUser.getIdToken().then(function(tk){
+        return fetch(url+'/'+base+'.json?shallow=true&auth='+encodeURIComponent(tk));
+      }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(chaves){
+        var ids=Object.keys(chaves||{});
+        if(!ids.length){ P={}; aplica(); return; }
+        ids.forEach(function(id){
+          ['name','status'].forEach(function(f){
+            db.ref(base+'/'+id+'/'+f).on('value',function(sn){ (P[id]=P[id]||{})[f]=sn.val(); aplica(); });
+          });
+        });
+      }).catch(function(e){ console.warn('[FluxGK] stats: elenco leve falhou, lendo completo',e); antigo(); });
+    }catch(e){ console.warn('[FluxGK] stats: elenco leve',e); antigo(); }
+  }
   function _statsLoadAll(db){
     db.ref(_SPATH.games).on('value',function(snap){
       var g=snap.val();
@@ -122,12 +167,17 @@
          acoes ofensivas) chega SEM o campo, e isso derrubava o painel inteiro.
          Aqui toda lista vira lista (vazia se faltar) e itens nulos saem. */
       ST.games=g?Object.values(g).filter(Boolean).map(function(x){var o=Object.assign({},x);o.shots=_asArr(o.shots).filter(Boolean);o.offActions=_asArr(o.offActions).filter(Boolean);return o;}):[];
-      if(!window._uiBooted){window._uiBooted=true;bootUI();}
+      _jogosChegaram=true;
+      if(!window._uiBooted){ _tentaBoot(); }
       else{try{populateAllSelects();var a=document.querySelector('.page.active');if(a){var id=a.id.replace('page-','');if(id==='dashboard')renderDashboard();if(id==='history')renderHistory();}}catch(e){}}
     });
+    /* rede de seguranca: se as configuracoes demorarem, desenha com o que tiver */
+    setTimeout(function(){ _cfgChegou=true; _tentaBoot(); },2500);
     db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{autoGks();}catch(e){}try{populateAllSelects();}catch(e){}_repintarPagina();});
     /* goleiros: vem do Load Control */
-    if(_SPATH.lcPlayers) db.ref(_SPATH.lcPlayers).on('value',function(snap){var v=snap.val();ST.lcGks=_gksDoLoadControl(v);ST.lcTodos=Object.values(v||{}).filter(function(p){return p&&p.name;}).map(function(p){return _normNome(p.name);});ST.lcStatus={};Object.values(v||{}).forEach(function(p){if(p&&p.name)ST.lcStatus[_normNome(p.name).toLowerCase()]=p.status||'ativo';});try{autoGks();}catch(e){}try{renderUnif();}catch(e){}});
+    /* goleiros: vem do Load Control. So NOME e SITUACAO: o no inteiro traz as
+       fotos (MBs) e atrasava a abertura do modulo em varios segundos. */
+    if(_SPATH.lcPlayers) _lerElencoLeve(db);
     if(_SPATH.minComps) db.ref(_SPATH.minComps).on('value',function(snap){ST.compsOutros=_asArr(snap.val());try{populateRecordSelects();}catch(e){}});
     db.ref(_SPATH.comps).on('value',function(snap){var v=snap.val();if(v)ST.comps=_asArr(v);try{populateAllSelects();}catch(e){}_repintarPagina();});
     db.ref(_SPATH.skills).on('value',function(snap){var v=snap.val();if(v)ST.skills=_asArr(v);try{renderSkillMomentGroups();renderList('skills');}catch(e){}_repintarPagina();});
@@ -137,6 +187,7 @@
     db.ref(_SPATH.hdists).on('value',function(snap){var v=snap.val();if(v)ST.hdists=_asArr(v);try{renderSkillMomentGroups();renderList('hdists');}catch(e){}_repintarPagina();});
     db.ref(_SPATH.results).on('value',function(snap){
       var v=_asArr(snap.val());
+      _cfgChegou=true; _tentaBoot();
       if(!v.length) return;
       /* gravado como [{v:rotulo,k:tipo}] — nomes livres nao podem virar chave no Firebase */
       ST.results=v.map(function(x){return (x&&x.v!=null)?x.v:x;});
@@ -2406,6 +2457,11 @@ function renderDrillDetail(shots, games){
 }
 
 function renderDashboard(){
+  /* dentro do hub, antes de chegarem jogos e configuracoes: "…" em vez de 0 */
+  if(!window._uiBooted && window.parent!==window){
+    ['kpi-games','kpi-shots','kpi-saves','kpi-goals','kpi-savepct'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent='…'; });
+    return;
+  }
   const _v=id=>{const e=document.getElementById(id);return e?e.value:'';};
   /* filtros com varias opcoes marcadas (caixas de selecao) */
   const games=ST.games.filter(g=>dmsOk('dash-season',g.season)&&dmsOk('dash-opp',g.opponent)&&dmsOk('dash-comp',g.competition)
