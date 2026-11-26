@@ -2428,20 +2428,49 @@ function psxgCompute(s){
   if(!s||!psxNoAlvo(s)||!s.ball||typeof s.ball.u!=='number'||typeof s.ball.v!=='number') return null;
   const p=xgPosOf(s); if(!p) return null;
   const u=s.ball.u, v=s.ball.v;
-  const dx=Math.min(1,Math.abs(u)/1.5);
-  let dy=0; if(v<.45) dy=(.45-v)/.45*.6; else if(v>1.35) dy=(v-1.35)/.65*.8;
+  /* o goleiro nao fica no meio do gol: fica na linha da bola. A colocacao e
+     medida a partir de onde ele estaria (psxGkU), e o lado da bola pesa mais
+     que a altura: uma bola alta "na linha do goleiro" e mais facil que uma
+     bola a meia altura no outro canto. */
+  const ug=psxGkU(p);
+  const dx=Math.min(1,Math.abs(u-ug)/1.6);
+  let dy=0; if(v<.3) dy=(.3-v)/.3*.4; else if(v>1.5) dy=(v-1.5)/.5*.5;
   const longe=Math.min(1,Math.hypot(dx,dy));
   const col=.06+.66*Math.pow(longe,1.6);
+  const dx_=Math.min(1,Math.abs(u)/1.5);   /* rasteira junto a trave (abaixo) */
   const dm=Math.hypot(p.x,Math.max(0,p.d));
   const t=dm/(PSX_VEL[s.vel]||PSX_VEL.media);
   const tempo=Math.min(1.15,Math.max(.6,.55+.27/Math.max(.12,t)));
   let m=1;
-  if(s.traj==='quicada') m*=1.18; else if(s.traj==='rasteira') m*=(dx>.6?1.08:1); else if(s.traj==='meia') m*=.95;
+  if(s.traj==='quicada') m*=1.18; else if(s.traj==='rasteira') m*=(dx_>.6&&dx>.4?1.08:1); else if(s.traj==='meia') m*=.95;
   if(s.defl) m*=1.35;
   if(s.screen) m*=1.22;
-  return Math.round(Math.min(.97,Math.max(.02,col*tempo*m))*1000)/1000;
+  let ps=col*tempo*m;
+  /* goleiro FORA da linha do chute (campo unico com o xG: gkIn=false): a bola
+     no alvo vai para um gol sem goleiro na frente. So o tempo para ele se
+     recuperar (chute longo/fraco) e defensores entre a bola e o gol baixam. */
+  if(s.gkIn===false){
+    const fora=(.95-Math.min(1,Math.max(0,(t-.5)/2))*.35)*[1,.9,.8,.72,.65][Math.min(parseInt(s.defs,10)||0,4)];
+    ps=Math.max(ps,fora);
+  }
+  return Math.round(Math.min(.97,Math.max(.02,ps))*1000)/1000;
 }
 function psxgOf(s){ return psxgCompute(s); }
+/* onde o goleiro estaria, no plano do gol e na visao do finalizador (u, em metros).
+   1) bissetriz do angulo de chute (divide a boca do gol na proporcao das distancias
+      da bola a cada trave);  2) quanto mais aberto o angulo (chute da ala), mais ele
+   fecha o primeiro poste. pos.x e pela visao do goleiro; u e pela do finalizador (u = -x). */
+function psxGkU(p){
+  if(!p) return 0;
+  const x=p.x, d=Math.max(.3,p.d);
+  const dL=Math.hypot(x+1.5,d), dR=Math.hypot(x-1.5,d);
+  const xb=-1.5+3*dL/(dL+dR);
+  const alfa=Math.atan2(Math.abs(x),d)*180/Math.PI;
+  const k=Math.min(1,Math.max(0,(alfa-15)/45))*.75;
+  const perto=x>=0?1.5:-1.5;
+  const xg=xb+(perto-xb)*k;
+  return -Math.max(-1.5,Math.min(1.5,xg));
+}
 /* chute no alvo que ainda nao tem o ponto no gol (para avisar o que falta editar) */
 function psxFalta(s){ return psxNoAlvo(s)&&!!xgPosOf(s)&&!(s.ball&&typeof s.ball.u==='number'); }
 /* zona do "Local da finalizacao no gol" (1..6) pelo ponto tocado: mesma posicao na tela */
@@ -2451,8 +2480,15 @@ function psxSvg(st){
   let s='';
   for(let i=1;i<6;i++) s+='<line x1="'+(PSX_GX+i*50)+'" y1="'+PSX_GY+'" x2="'+(PSX_GX+i*50)+'" y2="'+(PSX_GY+200)+'" stroke="#d4d4d4" stroke-width="1"/>';
   for(let j=1;j<4;j++) s+='<line x1="'+PSX_GX+'" y1="'+(PSX_GY+j*50)+'" x2="'+(PSX_GX+300)+'" y2="'+(PSX_GY+j*50)+'" stroke="#d4d4d4" stroke-width="1"/>';
-  s+='<ellipse cx="'+(PSX_GX+150)+'" cy="'+(PSX_GY+110)+'" rx="62" ry="78" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
-  s+='<text x="'+(PSX_GX+150)+'" y="'+(PSX_GY+114)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".75">'+esc(_txf('st.ps.easy','easy reach'))+'</text>';
+  /* alcance facil: centrado onde o goleiro estaria pela posicao do chute */
+  const _p=xgPosOf(st), _cx=PSX_GX+150+(_p?psxGkU(_p):0)*PSX_PM;
+  if(st.gkIn===false){
+    s+='<text x="'+(PSX_GX+150)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="11" fill="#b91c1c">'+esc(_txf('st.ps.gkOff','goalkeeper off the shot line'))+'</text>';
+  } else {
+  s+='<ellipse cx="'+_cx.toFixed(1)+'" cy="'+(PSX_GY+100)+'" rx="70" ry="92" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
+  s+='<line x1="'+_cx.toFixed(1)+'" y1="'+(PSX_GY+8)+'" x2="'+_cx.toFixed(1)+'" y2="'+(PSX_GY+200)+'" stroke="#2563eb" stroke-opacity=".3" stroke-width="1"/>';
+  s+='<text x="'+_cx.toFixed(1)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".8">'+esc(_p?_txf('st.ps.gkLine','GK line'):_txf('st.ps.easy','easy reach'))+'</text>';
+  }
   s+='<path d="M '+PSX_GX+' '+(PSX_GY+200)+' L '+PSX_GX+' '+PSX_GY+' L '+(PSX_GX+300)+' '+PSX_GY+' L '+(PSX_GX+300)+' '+(PSX_GY+200)+'" fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linejoin="round"/>';
   s+='<line x1="8" y1="'+(PSX_GY+200)+'" x2="352" y2="'+(PSX_GY+200)+'" stroke="#a3a3a3" stroke-width="2"/>';
   s+='<text x="'+PSX_GX+'" y="'+(PSX_GY+218)+'" font-size="10" fill="#737373">'+esc(_txf('st.ps.shL','shooter’s LEFT'))+'</text>';
@@ -2473,7 +2509,8 @@ function psxHtml(){
   else if(!xgPosOf(st)) nota=_txf('st.ps.needCourt','Tap the court (where the shot came from).');
   else if(!st.ball) nota=_txf('st.ps.needGoal','Tap the goal where the ball was going.');
   else { const p=xgPosOf(st), dm=Math.hypot(p.x,Math.max(0,p.d)), t=dm/(PSX_VEL[st.vel]||PSX_VEL.media);
-    nota=_txf('st.ps.note','reaction time ~{t} s').replace('{t}',xgFmt(t,2)); }
+    nota=_txf('st.ps.note','reaction time ~{t} s').replace('{t}',xgFmt(t,2))
+      +(st.gkIn===false?' · '+_txf('st.ps.noteOff','goalkeeper off the shot line (xG context)'):''); }
   return '<div class="label" style="margin-bottom:8px">'+esc(_txf('st.ps.title','PsxG · after the shot (shots on target)'))+'</div>'
     + '<div class="psx-grid"><div>'
     +   '<div class="label" style="margin-bottom:4px">'+esc(_txf('st.ps.where','Where the ball was going · shooter’s view'))+'</div>'
@@ -2610,8 +2647,8 @@ function xgcCtxHtml(k){
     +   b('assist',false,_txf('st.xg.without','Without'),!st.assist)+b('assist',true,_txf('st.xg.with','With'),!!st.assist)+'</div></div>'
     + '<div><div class="label">'+esc(_txf('st.xg.press','Defender pressure'))+'</div><div class="mc-group">'
     +   b('press',false,_txf('st.xg.without','Without'),!st.press)+b('press',true,_txf('st.xg.with','With'),!!st.press)+'</div></div>'
-    + '<div><div class="label">'+esc(_txf('st.xg.gk','Goalkeeper'))+'</div><div class="mc-group">'
-    +   b('gkIn',true,_txf('st.xg.gkIn','In position'),st.gkIn!==false)+b('gkIn',false,_txf('st.xg.gkOut','Off his line'),st.gkIn===false)+'</div></div>'
+    + '<div><div class="label">'+esc(_txf('st.xg.gkLine','Goalkeeper on the shot line?'))+'</div><div class="mc-group">'
+    +   b('gkIn',true,_txf('st.xg.gkOnLine','On the line'),st.gkIn!==false)+b('gkIn',false,_txf('st.xg.gkOffLine','Off the line'),st.gkIn===false)+'</div></div>'
     + '<div style="grid-column:1/-1"><div class="label">'+esc(_txf('st.xg.defs','Defenders between ball and goal'))+'</div><div class="mc-group">'
     +   [0,1,2,3,4].map(function(n){ return b('defs',n,n===4?'4+':String(n),(parseInt(st.defs,10)||0)===n); }).join('')+'</div></div>'
     + '</div>'
