@@ -435,6 +435,7 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .psx-goal{display:block;width:100%;max-width:420px;padding:0;border:none;background:none;cursor:crosshair;}
 .psx-goal svg{display:block;width:100%;height:auto;border-radius:6px;background:var(--surface2);}
 .psx-row{margin-bottom:10px;}
+.psx-mode{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--mute);}
 .psx-out{display:flex;gap:14px;align-items:center;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:6px;}
 .psx-num{font:700 26px var(--mono);}
 .psx-off{color:var(--mute);font-size:12px;}
@@ -2376,7 +2377,7 @@ const XG_HD_CANON=['Before the halfway line','Before 10m','After 10m','Area','10
 /* desenho: quadra deitada, nosso gol a esquerda. 14 px por metro. */
 const XGC_W=648,XGC_H=322,XGC_GL=28,XGC_CY=156,XGC_S=14;
 
-function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null,ball:null,vel:'media',traj:'rasteira',defl:false,screen:false,psxg:null}; }
+function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null,ball:null,vel:'media',traj:'rasteira',defl:false,screen:false,psxg:null,gkU:null}; }
 /* ── tempo da finalizacao e lado do nosso gol no video ──
    O treinador diz de que lado do video fica o nosso gol no 1o tempo (CUR.sideH1);
    no 2o tempo o lado troca sozinho. A quadra da coleta aparece igual ao video e
@@ -2513,7 +2514,8 @@ function psxgCompute(s){
      medida a partir de onde ele estaria (psxGkU), e o lado da bola pesa mais
      que a altura: uma bola alta "na linha do goleiro" e mais facil que uma
      bola a meia altura no outro canto. */
-  const ug=psxGkU(p);
+  /* linha do goleiro: a ajustada a mao (ex.: falta com barreira) ou a automatica */
+  const ug=(typeof s.gkU==='number')?s.gkU:psxGkU(p);
   const dx=Math.min(1,Math.abs(u-ug)/1.6);
   let dy=0; if(v<.3) dy=(.3-v)/.3*.4; else if(v>1.5) dy=(v-1.5)/.5*.5;
   const longe=Math.min(1,Math.hypot(dx,dy));
@@ -2562,13 +2564,14 @@ function psxSvg(st){
   for(let i=1;i<6;i++) s+='<line x1="'+(PSX_GX+i*50)+'" y1="'+PSX_GY+'" x2="'+(PSX_GX+i*50)+'" y2="'+(PSX_GY+200)+'" stroke="#d4d4d4" stroke-width="1"/>';
   for(let j=1;j<4;j++) s+='<line x1="'+PSX_GX+'" y1="'+(PSX_GY+j*50)+'" x2="'+(PSX_GX+300)+'" y2="'+(PSX_GY+j*50)+'" stroke="#d4d4d4" stroke-width="1"/>';
   /* alcance facil: centrado onde o goleiro estaria pela posicao do chute */
-  const _p=xgPosOf(st), _cx=PSX_GX+150+(_p?psxGkU(_p):0)*PSX_PM;
+  const _p=xgPosOf(st), _man=(typeof st.gkU==='number'), _cx=PSX_GX+150+(_man?st.gkU:(_p?psxGkU(_p):0))*PSX_PM;
   if(st.gkIn===false){
     s+='<text x="'+(PSX_GX+150)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="11" fill="#b91c1c">'+esc(_txf('st.ps.gkOff','goalkeeper off the shot line'))+'</text>';
   } else {
   s+='<ellipse cx="'+_cx.toFixed(1)+'" cy="'+(PSX_GY+100)+'" rx="70" ry="92" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
-  s+='<line x1="'+_cx.toFixed(1)+'" y1="'+(PSX_GY+8)+'" x2="'+_cx.toFixed(1)+'" y2="'+(PSX_GY+200)+'" stroke="#2563eb" stroke-opacity=".3" stroke-width="1"/>';
-  s+='<text x="'+_cx.toFixed(1)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".8">'+esc(_p?_txf('st.ps.gkLine','GK line'):_txf('st.ps.easy','easy reach'))+'</text>';
+  s+='<line x1="'+_cx.toFixed(1)+'" y1="'+(PSX_GY+8)+'" x2="'+_cx.toFixed(1)+'" y2="'+(PSX_GY+200)+'" stroke="#2563eb" stroke-opacity="'+(_man?'.9':'.3')+'" stroke-width="'+(_man?2:1)+'"'+(_man?'':' stroke-dasharray="0"')+'/>';
+  if(_man) s+='<path d="M '+(_cx-7).toFixed(1)+' '+(PSX_GY+2)+' L '+(_cx+7).toFixed(1)+' '+(PSX_GY+2)+' L '+_cx.toFixed(1)+' '+(PSX_GY+12)+' z" fill="#2563eb"/>';
+  s+='<text x="'+_cx.toFixed(1)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".85">'+esc(_man?_txf('st.ps.gkLineMan','GK line (set by hand)'):(_p?_txf('st.ps.gkLine','GK line'):_txf('st.ps.easy','easy reach')))+'</text>';
   }
   s+='<path d="M '+PSX_GX+' '+(PSX_GY+200)+' L '+PSX_GX+' '+PSX_GY+' L '+(PSX_GX+300)+' '+PSX_GY+' L '+(PSX_GX+300)+' '+(PSX_GY+200)+'" fill="none" stroke="#0a0a0a" stroke-width="6" stroke-linejoin="round"/>';
   s+='<line x1="8" y1="'+(PSX_GY+200)+'" x2="352" y2="'+(PSX_GY+200)+'" stroke="#a3a3a3" stroke-width="2"/>';
@@ -2596,7 +2599,11 @@ function psxHtml(){
     + '<div class="psx-grid"><div>'
     +   '<div class="label" style="margin-bottom:4px">'+esc(_txf('st.ps.where','Where the ball was going · shooter’s view'))+'</div>'
     +   '<button type="button" class="psx-goal" onclick="psxTap(event)" aria-label="'+esc(_txf('st.ps.where','Where the ball was going · shooter’s view'))+'"><svg viewBox="0 0 360 250" aria-hidden="true">'+psxSvg(st)+'</svg></button>'
-    +   '<div style="font-size:11px;color:var(--mute);margin-top:4px">'+esc(_txf('st.ps.hint','Save: where the ball was going (or where the GK touched it). Goal: where it went in.'))+'</div>'
+    +   (st.gkIn===false?'':'<div class="psx-mode"><span>'+esc(_txf('st.ps.tapMarks','The tap marks:'))+'</span>'
+    +     '<button type="button" class="mc-btn'+(SF._psxMode!=='gk'?' active':'')+'" onclick="psxMode(\'ball\')">'+esc(_txf('st.ps.mBall','Where the ball was going'))+'</button>'
+    +     '<button type="button" class="mc-btn'+(SF._psxMode==='gk'?' active':'')+'" onclick="psxMode(\'gk\')">'+esc(_txf('st.ps.mGk','Goalkeeper line'))+'</button>'
+    +     (typeof st.gkU==='number'?'<button type="button" class="mc-btn" onclick="psxGkAuto()">'+esc(_txf('st.ps.gkAuto','Back to automatic'))+'</button>':'')+'</div>')
+    +   '<div style="font-size:11px;color:var(--mute);margin-top:4px">'+esc(SF._psxMode==='gk'&&st.gkIn!==false?_txf('st.ps.hintGk','Tap where the goalkeeper was, across the goal (e.g. free kick with a wall: he stands off the direct line of the ball).'):_txf('st.ps.hint','Save: where the ball was going (or where the GK touched it). Goal: where it went in.'))+'</div>'
     + '</div><div>'
     +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.vel','Speed'))+'</div><div class="mc-group">'+b('vel','fraca',_txf('st.ps.v1','Weak'))+b('vel','media',_txf('st.ps.v2','Medium'))+b('vel','forte',_txf('st.ps.v3','Strong'))+'</div></div>'
     +   '<div class="psx-row"><div class="label">'+esc(_txf('st.ps.traj','Trajectory'))+'</div><div class="mc-group">'+b('traj','rasteira',_txf('st.ps.t1','Along the ground'))+b('traj','meia',_txf('st.ps.t2','Mid height'))+b('traj','alta',_txf('st.ps.t3','High'))+b('traj','quicada',_txf('st.ps.t4','Bouncing'))+'</div></div>'
@@ -2607,12 +2614,15 @@ function psxHtml(){
 }
 function psxRefresh(){ const el=document.getElementById('psx-sf'); if(el) el.innerHTML=psxHtml(); }
 function psxSet(field,val){ SF[field]=val; psxRefresh(); }
+function psxMode(m){ SF._psxMode=(m==='gk')?'gk':'ball'; psxRefresh(); }
+function psxGkAuto(){ SF.gkU=null; SF._psxMode='ball'; psxRefresh(); }
 function psxTap(ev){
   if(!ev||(!ev.clientX&&!ev.clientY)) return;
   const svg=ev.currentTarget&&ev.currentTarget.querySelector('svg'); if(!svg) return;
   const r=svg.getBoundingClientRect(); if(!r.width||!r.height) return;
   const vx=(ev.clientX-r.left)/r.width*360, vy=(ev.clientY-r.top)/r.height*250;
   const u=Math.min(1.5,Math.max(-1.5,(vx-PSX_GX)/PSX_PM-1.5)), v=Math.min(2,Math.max(0,2-(vy-PSX_GY)/PSX_PM));
+  if(SF._psxMode==='gk'&&SF.gkIn!==false){ SF.gkU=Math.round(u*100)/100; psxRefresh(); return; }
   SF.ball={u:Math.round(u*100)/100,v:Math.round(v*100)/100};
   /* preenche o "Local da finalizacao no gol" (mesma posicao na tela), se nao foi escolhido a mao */
   if(!SF._gzM){ SF.goalZone=psxZona(SF.ball); document.querySelectorAll('.goal-zone').forEach(function(bt,i){ bt.classList.toggle('active',i+1===SF.goalZone); }); }
