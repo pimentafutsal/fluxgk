@@ -34,6 +34,8 @@
     _SPATH.results=d.dataPath+'/stats/results';
     _SPATH.hdists=d.dataPath+'/stats/hdists';
     _SPATH.opponents='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/opponents';
+    _SPATH.model='users/'+d.uid+'/clubs/'+(d.club&&d.club.id)+'/xgModel';     /* pesos calibrados: por clube, todas as temporadas */
+    _SPATH.clubData='users/'+d.uid+'/data/'+(d.club&&d.club.id);
     _SPATH.lcPlayers=d.dataPath+'/load/players';      /* elenco do Load Control */
     _SPATH.minComps=d.dataPath+'/minutes/comps';      /* competicoes ja usadas nos Minutos */
     console.log('[FluxGK] stats: jogos em',_SPATH.games);
@@ -174,6 +176,7 @@
     });
     /* rede de seguranca: se as configuracoes demorarem, desenha com o que tiver */
     setTimeout(function(){ _cfgChegou=true; _tentaBoot(); },2500);
+    if(_SPATH.model) db.ref(_SPATH.model).on('value',function(snap){ try{ xgmAplicar(snap.val()); }catch(e){} try{ renderCal(); }catch(e){} _repintarPagina(); });
     db.ref(_SPATH.gks).on('value',function(snap){var v=snap.val();if(v)ST.gks=_asArr(v);try{autoGks();}catch(e){}try{populateAllSelects();}catch(e){}_repintarPagina();});
     /* goleiros: vem do Load Control */
     /* goleiros: vem do Load Control. So NOME e SITUACAO: o no inteiro traz as
@@ -435,6 +438,9 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
 .psx-goal{display:block;width:100%;max-width:420px;padding:0;border:none;background:none;cursor:crosshair;}
 .psx-goal svg{display:block;width:100%;height:auto;border-radius:6px;background:var(--surface2);}
 .psx-row{margin-bottom:10px;}
+.xgc-gkrow{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-top:8px;}
+.xgc-ang{font-size:12px;color:var(--ink);margin-left:6px;}
+.g4cal{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:10px;}
 .psx-mode{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--mute);}
 .psx-out{display:flex;gap:14px;align-items:center;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:6px;}
 .psx-num{font:700 26px var(--mono);}
@@ -833,6 +839,8 @@ input[type=color]{padding:3px;height:38px;cursor:pointer;width:50px;border-radiu
     <select id="flow-gk" style="width:auto;font-size:12px;" onchange="_flowPick=null;renderFlow()"><option data-i18n="st.allGks" value="">All GKs</option></select>
   </div>
   <div class="card" id="flow-card"></div>
+  <!-- calibracao do modelo (pesos por clube, todas as temporadas) -->
+  <div class="card" id="cal-card" style="margin-top:14px"></div>
 </div>
 
 <!-- REPORTS -->
@@ -1799,6 +1807,7 @@ function clearShotForm(){
   const preservedGk = lastShotGk;
   SF=Object.assign({minute:'',moment:null,skill:null,result:null,hDistance:null,goalZone:null,courtZone:null,gk:preservedGk},xgDefaults());
   SF.half=lastShotHalf||1;   /* segue no mesmo tempo da finalizacao anterior */
+  SF._courtMode='sh';
   editShotIdx=null; updateShotNum();
   populateShotGkSelect(preservedGk);
   try{ xgcRefresh('sf'); }catch(e){}
@@ -1849,7 +1858,7 @@ function editShot(idx){
   /* o que ja estava gravado conta como escolhido: so um novo toque recalcula */
   SF._hdM=!!s.hDistance; SF._corrM=!!s.courtZone; SF._gzM=!!s.goalZone&&!(s.ball&&typeof s.ball.u==='number');
   /* tempo: o gravado; jogos antigos sem tempo usam o minuto */
-  SF.half=(s.half===1||s.half===2)?s.half:(xgHalfDoMinuto(s.minute)||1); SF._halfM=(s.half===1||s.half===2); SF._inv=false;
+  SF.half=(s.half===1||s.half===2)?s.half:(xgHalfDoMinuto(s.minute)||1); SF._halfM=(s.half===1||s.half===2); SF._inv=false; SF._courtMode='sh';
   const fieldMap={'moment':'sf-moment-group','skill':'sf-skill-group','result':'sf-result-group','hDistance':'sf-hdist-group'};
   Object.entries(fieldMap).forEach(([key,gid])=>{
     if(!s[key]) return;
@@ -2043,6 +2052,7 @@ function saveGame(){
     const idx=ST.games.findIndex(g=>g.id==editingGameId);
     if(idx>=0) ST.games[idx]=gameToSave; else ST.games.push(gameToSave);
     persistGame(gameToSave);
+    xgmContaJogo(gameToSave);
     const shotCount=CUR.shots.length;
     CUR=newGame(); editingGameId=null; lastShotGk=null; lastShotHalf=1; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
@@ -2051,6 +2061,7 @@ function saveGame(){
     const gameToSave={...CUR,id:Date.now()};
     ST.games.push(gameToSave);
     persistGame(gameToSave);
+    xgmContaJogo(gameToSave);
     const shotCount=gameToSave.shots.length;
     CUR=newGame(); lastShotGk=null; lastShotHalf=1; clearShotForm(); clearOffForm(); recTab('meta');
     populateRecordSelects(); populateAllSelects();
@@ -2377,7 +2388,7 @@ const XG_HD_CANON=['Before the halfway line','Before 10m','After 10m','Area','10
 /* desenho: quadra deitada, nosso gol a esquerda. 14 px por metro. */
 const XGC_W=648,XGC_H=322,XGC_GL=28,XGC_CY=156,XGC_S=14;
 
-function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null,ball:null,vel:'media',traj:'rasteira',defl:false,screen:false,psxg:null,gkU:null}; }
+function xgDefaults(){ return {pos:null,setPiece:null,xgSub:null,body:'dom',assist:false,press:false,gkIn:true,defs:0,xg:null,half:null,ball:null,vel:'media',traj:'rasteira',defl:false,screen:false,psxg:null,gkU:null,gkPos:null,reb:false,rebT:'imediato',rebGk:'deseq'}; }
 /* ── tempo da finalizacao e lado do nosso gol no video ──
    O treinador diz de que lado do video fica o nosso gol no 1o tempo (CUR.sideH1);
    no 2o tempo o lado troca sozinho. A quadra da coleta aparece igual ao video e
@@ -2479,6 +2490,211 @@ function xgCorr(x){ return x< -20/6 ? 125 : (x> 20/6 ? 124 : 152); }
    Futsal), mas distancia e angulo calculados na quadra real: no mod_xg o
    comprimento (40 m) e a largura (20 m) iam para a mesma escala 0..1 e 1 m
    para o lado pesava como 2 m de profundidade. */
+/* ── MODELO: pesos calibraveis (forma) e nivel fixo ──
+   Cada fator do xG e do PsxG tem um peso (expoente) que comeca em 1 (modelo de
+   referencia). A calibracao (a cada 5 jogos novos ou editados, com todas as
+   temporadas do clube) ajusta so esses pesos; o nivel geral fica ancorado no
+   modelo de referencia (kxg/kps), para que "gols evitados" continue comparando
+   os nossos goleiros com algo externo, e nao com eles mesmos. */
+const XGM_REF={v:0,xg:{dist:1,ang:1,livre:1,reb:1},ps:{col:1,tempo:1,traj:1,defl:1,screen:1,reb:1},kxg:1,kps:1};
+let XGM=JSON.parse(JSON.stringify(XGM_REF)), XGM_DOC=null;
+function xgmAplicar(doc){
+  XGM_DOC=doc||null;
+  const m=JSON.parse(JSON.stringify(XGM_REF));
+  if(doc){
+    ['xg','ps'].forEach(function(g){ Object.keys(m[g]).forEach(function(k){ const v=doc[g]&&doc[g][k]; if(typeof v==='number'&&isFinite(v)) m[g][k]=Math.min(2,Math.max(.5,v)); }); });
+    ['kxg','kps'].forEach(function(k){ if(typeof doc[k]==='number'&&isFinite(doc[k])) m[k]=Math.min(2,Math.max(.5,doc[k])); });
+    m.v=doc.versao||0;
+  }
+  XGM=m;
+}
+/* ── POSICAO DO GOLEIRO e REBOTE ──
+   gkPos = {d,x} na quadra (mesmo padrao do ponto do chute: nosso gol a esquerda).
+   Sem marcacao, o goleiro e estimado na linha da bola (bissetriz + 1o poste).
+   Rebote: tempo desde a finalizacao anterior e estado do goleiro reduzem o alcance. */
+const GK_R=1.0, GK_ALC={nochao:.45,deseq:.7,repos:1}, GK_POSTE=1.5;
+function xgGkMarcado(s){ return !!(s&&s.gkPos&&typeof s.gkPos.d==='number'&&typeof s.gkPos.x==='number'); }
+function xgGkAuto(p){
+  const x=p.x, d=Math.max(.3,p.d);
+  const dL=Math.hypot(x+1.5,d), dR=Math.hypot(x-1.5,d), xb=-1.5+3*dL/(dL+dR);
+  const al=Math.atan2(Math.abs(x),d)*180/Math.PI, k=Math.min(1,Math.max(0,(al-15)/45))*.75;
+  const xl=xb+((x>=0?1.5:-1.5)-xb)*k;
+  const dg=Math.min(1.2,d*.5), t=dg/d;
+  return {d:dg, x:xl+(x-xl)*t};
+}
+function xgGkPos(s){
+  const p=xgPosOf(s); if(!p) return null;
+  if(xgGkMarcado(s)) return {d:Math.max(0,Math.min(s.gkPos.d,p.d-.3)), x:s.gkPos.x};
+  return xgGkAuto(p);
+}
+function xgGkReach(s){ return GK_R*((s&&s.reb)?(GK_ALC[s.rebGk]||1):1); }
+/* angulo do gol visto pelo finalizador, parte coberta pelo goleiro e parte livre (graus) */
+function xgAngulos(s){
+  const sh=xgPosOf(s); if(!sh) return null;
+  const gk=xgGkPos(s);
+  const ang=function(to){ return Math.atan2(to.x-sh.x,-(to.d-sh.d))*180/Math.PI; };
+  const a1=ang({d:0,x:-GK_POSTE}), a2=ang({d:0,x:GK_POSTE}), lo=Math.min(a1,a2), hi=Math.max(a1,a2);
+  const dg=Math.hypot(gk.x-sh.x,gk.d-sh.d), ag=ang(gk), half=Math.atan2(xgGkReach(s),Math.max(.3,dg))*180/Math.PI;
+  const c1=Math.max(lo,ag-half), c2=Math.min(hi,ag+half), cob=Math.max(0,c2-c1);
+  return {gol:hi-lo, cob:cob, livre:Math.max(0,(hi-lo)-cob), lo:lo, hi:hi, c1:c1, c2:c2, dg:dg, gk:gk, sh:sh};
+}
+/* usa a geometria real (posicao marcada ou rebote) */
+function xgGeo(s){ return xgGkMarcado(s)||!!(s&&s.reb); }
+/* linha do goleiro no plano do gol (visao do finalizador, u) e alcance projetado */
+function psxLinha(s){
+  const p=xgPosOf(s); if(!p) return {ug:0,alc:null,manual:false,geo:false};
+  if(typeof s.gkU==='number') return {ug:s.gkU,alc:null,manual:true,geo:false};
+  /* goleiro marcado ou estimado: linha e alcance tirados da posicao dele */
+  const gk=xgGkPos(s), dd=Math.max(.05,p.d-gk.d), xl=p.x+(gk.x-p.x)*(p.d/dd);
+  return {ug:-Math.max(-1.6,Math.min(1.6,xl)), alc:Math.min(3,xgGkReach(s)*(p.d/Math.max(.3,dd))), manual:false, geo:true, gk:gk};
+}
+const XG_REB={imediato:1.35,curto:1.15,tempo:1}, PS_REB={imediato:1.3,curto:1.12,tempo:1};
+const PS_PISO={nochao:.6,deseq:.35,repos:0}, PS_PISO_T={imediato:1,curto:.85,tempo:.6};
+
+/* ── CALIBRACAO ── */
+async function _xgmJogosDoClube(){
+  const out=[]; let temporadas=1;
+  try{
+    const db=firebase.database();
+    const tk=await firebase.auth().currentUser.getIdToken();
+    const url=(firebase.app().options.databaseURL||'').replace(/\/$/,'');
+    const r=await fetch(url+'/'+_SPATH.clubData+'.json?shallow=true&auth='+encodeURIComponent(tk));
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const temps=Object.keys((await r.json())||{});
+    temporadas=temps.length;
+    for(const t of temps){
+      const v=(await db.ref(_SPATH.clubData+'/'+t+'/stats/games').get()).val();
+      Object.values(v||{}).forEach(function(g){ if(g) out.push({shots:_asArr(g.shots).filter(Boolean)}); });
+    }
+  }catch(e){
+    console.warn('[FluxGK] calibracao: lendo so a temporada aberta',e);
+    (ST.games||[]).forEach(function(g){ out.push({shots:_asArr(g.shots).filter(Boolean)}); });
+    temporadas=1;
+  }
+  return {jogos:out,temporadas:temporadas};
+}
+function _xgmBrier(lista,pred,alvo){ if(!lista.length) return null; let s=0; lista.forEach(function(x){ const p=pred(x); s+=(p-alvo(x))*(p-alvo(x)); }); return s/lista.length; }
+function _xgmAjusta(lista,grupo,pred,alvo){
+  const GRADE=[.5,.6,.7,.8,.9,1,1.1,1.25,1.4,1.6,1.8,2], LAMBDA=4;
+  const obj=function(){
+    let L=0;
+    lista.forEach(function(x){ const p=Math.min(.99,Math.max(.01,pred(x))); L-=alvo(x)?Math.log(p):Math.log(1-p); });
+    Object.keys(XGM[grupo]).forEach(function(k){ L+=LAMBDA*Math.pow(Math.log(XGM[grupo][k]),2); });
+    return L;
+  };
+  for(let passo=0;passo<2;passo++){
+    Object.keys(XGM[grupo]).forEach(function(k){
+      let melhor=XGM[grupo][k], mv=Infinity;
+      GRADE.forEach(function(g){ XGM[grupo][k]=g; const v=obj(); if(v<mv){ mv=v; melhor=g; } });
+      XGM[grupo][k]=melhor;
+    });
+  }
+}
+let _xgmMsg='', _xgmRodando=false;
+async function xgmCalibrar(manual){
+  if(_xgmRodando) return; _xgmRodando=true; _xgmMsg=_txf('st.cal.running','Calibrating…'); try{ renderCal(); }catch(e){}
+  const guardado=JSON.parse(JSON.stringify(XGM));
+  try{
+    const base=await _xgmJogosDoClube();
+    const todas=[]; base.jogos.forEach(function(g){ g.shots.forEach(function(s){ todas.push(s); }); });
+    const comXg=todas.filter(function(s){ return xgCompute(s)!=null&&!s.setPiece; });
+    const comPs=todas.filter(function(s){ return psxNoAlvo(s)&&s.ball&&typeof s.ball.u==='number'&&xgPosOf(s); });
+    const gol=function(s){ return resKind(s.result)==='goal'?1:0; };
+    const prevDoc=XGM_DOC||{};
+    if(comXg.length<60&&comPs.length<30){
+      _xgmMsg=_txf('st.cal.few','Not enough data yet: at least 60 shots with xG or 30 shots on target with PsxG ({a} / {b}).').replace('{a}',comXg.length).replace('{b}',comPs.length);
+      if(window.fbSet&&_SPATH.model) window.fbSet(_SPATH.model+'/pendentes',0).catch(function(){});
+      XGM=guardado; _xgmRodando=false; try{ renderCal(); }catch(e){} return;
+    }
+    const predXg=function(s){ return xgCompute(s)||0; }, predPs=function(s){ return psxgCompute(s)||0; };
+    const antes={xg:_xgmBrier(comXg,predXg,gol), ps:_xgmBrier(comPs,predPs,gol)};
+    /* referencia (todos os pesos 1, nivel 1): ancora do nivel geral */
+    XGM=JSON.parse(JSON.stringify(XGM_REF));
+    const refXg=comXg.reduce(function(a,s){ return a+predXg(s); },0), refPs=comPs.reduce(function(a,s){ return a+predPs(s); },0);
+    /* forma: ajusta os pesos de cada grupo com os dados suficientes */
+    if(comXg.length>=60) _xgmAjusta(comXg,'xg',predXg,gol); else XGM.xg=JSON.parse(JSON.stringify(guardado.xg));
+    if(comPs.length>=30) _xgmAjusta(comPs,'ps',predPs,gol); else XGM.ps=JSON.parse(JSON.stringify(guardado.ps));
+    /* nivel fixo: a soma prevista volta a ser a do modelo de referencia */
+    XGM.kxg=1; XGM.kps=1;
+    const sXg=comXg.reduce(function(a,s){ return a+predXg(s); },0), sPs=comPs.reduce(function(a,s){ return a+predPs(s); },0);
+    XGM.kxg=sXg>0?Math.min(2,Math.max(.5,refXg/sXg)):1; XGM.kps=sPs>0?Math.min(2,Math.max(.5,refPs/sPs)):1;
+    const depois={xg:_xgmBrier(comXg,predXg,gol), ps:_xgmBrier(comPs,predPs,gol)};
+    /* confere: esperado x real por faixa de PsxG (contagens, nao medias) */
+    const FX=[[0,.1],[.1,.25],[.25,.5],[.5,.75],[.75,1.01]];
+    const tabela=FX.map(function(f){ const l=comPs.filter(function(s){ const p=predPs(s); return p>=f[0]&&p<f[1]; });
+      return {de:f[0],ate:Math.min(1,f[1]),n:l.length,esperado:Math.round(l.reduce(function(a,s){ return a+predPs(s); },0)*100)/100,gols:l.filter(function(s){ return gol(s); }).length}; });
+    const hoje=new Date().toISOString().slice(0,10);
+    const versao=(prevDoc.versao||0)+1;
+    const r3=function(o){ const c={}; Object.keys(o).forEach(function(k){ c[k]=Math.round(o[k]*1000)/1000; }); return c; };
+    const doc={versao:versao,data:hoje,jogos:base.jogos.length,temporadas:base.temporadas,nXg:comXg.length,nPs:comPs.length,
+      xg:r3(XGM.xg),ps:r3(XGM.ps),kxg:Math.round(XGM.kxg*1000)/1000,kps:Math.round(XGM.kps*1000)/1000,
+      brier:{xgAntes:antes.xg,xgDepois:depois.xg,psAntes:antes.ps,psDepois:depois.ps},tabela:tabela,pendentes:0,
+      hist:_asArr(prevDoc.hist).concat([{versao:versao,data:hoje,jogos:base.jogos.length,nXg:comXg.length,nPs:comPs.length,xg:r3(XGM.xg),ps:r3(XGM.ps),brierPs:depois.ps,brierXg:depois.xg}]).slice(-20)};
+    JSON.parse(JSON.stringify(doc),function(k,v){ return v; });
+    const limpo=JSON.parse(JSON.stringify(doc,function(k,v){ return (v===undefined||(typeof v==='number'&&!isFinite(v)))?null:v; }));
+    if(window.fbSet&&_SPATH.model) await window.fbSet(_SPATH.model,limpo);
+    xgmAplicar(limpo);
+    _xgmMsg=_txf('st.cal.done','Calibrated (version {v}). Every game now uses the new weights.').replace('{v}',versao);
+  }catch(e){
+    console.error('[FluxGK] calibracao',e); XGM=guardado; _xgmMsg=_txf('st.cal.err','Calibration failed. The previous model is still in use.');
+  }
+  _xgmRodando=false;
+  try{ renderCal(); }catch(e){}
+  try{ _repintaTudo(); }catch(e){}
+}
+function _repintaTudo(){
+  const a=document.querySelector('.page.active'); if(!a) return;
+  const id=a.id.replace('page-','');
+  if(id==='dashboard') renderDashboard(); else if(id==='flow') renderFlow(); else if(id==='history') renderHistory();
+}
+/* jogo novo ou editado (com finalizacoes na quadra) conta para a proxima calibracao */
+function xgmContaJogo(g){
+  try{
+    if(!window._SPATH||!_SPATH.model||!window.fbSet) return;
+    if(!_asArr(g&&g.shots).some(function(s){ return s&&xgPosOf(s); })) return;
+    const n=((XGM_DOC&&XGM_DOC.pendentes)||0)+1;
+    window.fbSet(_SPATH.model+'/pendentes',n).catch(function(){});
+    if(XGM_DOC) XGM_DOC.pendentes=n; else XGM_DOC={pendentes:n};
+    if(n>=5) xgmCalibrar(false);
+  }catch(e){ console.warn('[FluxGK] contador da calibracao',e); }
+}
+const XGM_NOMES={'xg.dist':['st.cal.wDist','Distance (xG)'],'xg.ang':['st.cal.wAng','Shooting angle (xG)'],'xg.livre':['st.cal.wLivre','Free angle · goalkeeper position (xG)'],'xg.reb':['st.cal.wRebX','Rebound (xG)'],
+  'ps.col':['st.cal.wCol','Placement in the goal (PsxG)'],'ps.tempo':['st.cal.wTempo','Reaction time (PsxG)'],'ps.traj':['st.cal.wTraj','Trajectory (PsxG)'],'ps.defl':['st.cal.wDefl','Deflection (PsxG)'],'ps.screen':['st.cal.wScreen','Blocked view (PsxG)'],'ps.reb':['st.cal.wRebP','Rebound (PsxG)']};
+function renderCal(){
+  const box=document.getElementById('cal-card'); if(!box) return;
+  const d=XGM_DOC||{}, pend=d.pendentes||0, hist=_asArr(d.hist);
+  const n2=function(v){ return xgFmt(v,2); };
+  let h='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><div class="card-title" style="margin:0">'+esc(_txf('st.cal.title','Model calibration · xG and PsxG'))+'</div>'
+    + '<button type="button" class="btn btn-ghost btn-sm" onclick="xgmCalibrar(true)"'+(_xgmRodando?' disabled':'')+'>'+esc(_txf('st.cal.now','Calibrate now'))+'</button></div>'
+    + '<p class="op-why" style="margin-top:6px">'+esc(_txf('st.cal.why','Recalibrates by itself every 5 new or edited games, with all the club’s seasons. It adjusts the weight of each factor (shape); the overall level stays fixed to the reference, so goals prevented keep comparing our goalkeepers with something external.'))+'</p>';
+  h+='<div class="g4cal">'
+    + '<div class="kpi"><div class="kpi-n" style="font-size:20px">'+(d.versao?('v'+d.versao):'—')+'</div><div class="kpi-l">'+esc(d.versao?_txf('st.cal.ver','version · {d}').replace('{d}',d.data||'—'):_txf('st.cal.never','not calibrated yet'))+'</div></div>'
+    + '<div class="kpi"><div class="kpi-n" style="font-size:20px">'+(d.jogos||0)+'</div><div class="kpi-l">'+esc(_txf('st.cal.games','games · {t} season(s)').replace('{t}',d.temporadas||0))+'</div></div>'
+    + '<div class="kpi"><div class="kpi-n" style="font-size:20px">'+(d.nXg||0)+' · '+(d.nPs||0)+'</div><div class="kpi-l">'+esc(_txf('st.cal.shots','shots with xG · on target with PsxG'))+'</div></div>'
+    + '<div class="kpi"><div class="kpi-n" style="font-size:20px">'+Math.min(5,pend)+' / 5</div><div class="kpi-l">'+esc(_txf('st.cal.next','new or edited games until the next one'))+'</div></div>'
+    + '</div>';
+  if(_xgmMsg) h+='<div class="fl-warn" style="border-left-color:#2563eb;background:#eff4ff;margin-top:10px">'+esc(_xgmMsg)+'</div>';
+  if(d.versao){
+    const ant=hist.length>1?hist[hist.length-2]:{xg:XGM_REF.xg,ps:XGM_REF.ps};
+    let lin='';
+    Object.keys(XGM_NOMES).forEach(function(k){ const g=k.split('.')[0], f=k.split('.')[1];
+      const a=(ant[g]&&ant[g][f]!=null)?ant[g][f]:1, b=(d[g]&&d[g][f]!=null)?d[g][f]:1;
+      lin+='<tr><td>'+esc(_txf(XGM_NOMES[k][0],XGM_NOMES[k][1]))+'</td><td style="text-align:right;font-family:var(--mono)">'+n2(a)+'</td><td style="text-align:right;font-family:var(--mono);font-weight:700">'+n2(b)+'</td></tr>'; });
+    const tab=_asArr(d.tabela).map(function(t){ return '<tr><td style="font-family:var(--mono)">'+n2(t.de)+'–'+n2(t.ate)+'</td><td style="text-align:right;font-family:var(--mono)">'+xgFmt(t.esperado,1)+'</td><td style="text-align:right;font-family:var(--mono)">'+t.gols+' / '+t.n+(t.n<10?' <span style="color:#b45309">('+esc(_txf('st.cal.fewN','few'))+')</span>':'')+'</td></tr>'; }).join('');
+    const his=hist.slice().reverse().map(function(x){ return '<tr><td>v'+x.versao+'</td><td>'+esc(x.data||'')+'</td><td style="text-align:right">'+(x.jogos||0)+'</td><td style="text-align:right">'+(x.nXg||0)+' · '+(x.nPs||0)+'</td><td style="text-align:right;font-family:var(--mono)">'+(x.brierPs==null?'—':xgFmt(x.brierPs,3))+'</td></tr>'; }).join('');
+    h+='<div class="fl-grid" style="margin-top:14px"><div>'
+      + '<div class="lbl-sm" style="margin-bottom:4px">'+esc(_txf('st.cal.weights','Weight of each factor (shape) · before → after'))+'</div>'
+      + '<table class="drtab"><thead><tr><th>'+esc(_txf('st.cal.factor','Factor'))+'</th><th style="text-align:right">'+esc(_txf('st.cal.before','Before'))+'</th><th style="text-align:right">'+esc(_txf('st.cal.after','After'))+'</th></tr></thead><tbody>'+lin+'</tbody></table>'
+      + '</div><div>'
+      + '<div class="lbl-sm" style="margin-bottom:4px">'+esc(_txf('st.cal.check','Does it match? Expected × real goals by PsxG band'))+'</div>'
+      + '<table class="drtab"><thead><tr><th>PsxG</th><th style="text-align:right">'+esc(_txf('st.cal.exp','Expected goals'))+'</th><th style="text-align:right">'+esc(_txf('st.cal.real','Goals / shots'))+'</th></tr></thead><tbody>'+tab+'</tbody></table>'
+      + '<div class="lbl-sm" style="margin:12px 0 4px">'+esc(_txf('st.cal.hist','Versions'))+'</div>'
+      + '<table class="drtab"><thead><tr><th>'+esc(_txf('st.cal.version','Version'))+'</th><th>'+esc(_txf('st.cal.date','Date'))+'</th><th style="text-align:right">'+esc(_txf('st.cal.gamesH','Games'))+'</th><th style="text-align:right">xG · PsxG</th><th style="text-align:right">'+esc(_txf('st.cal.brier','Error (Brier) · lower is better'))+'</th></tr></thead><tbody>'+his+'</tbody></table>'
+      + '</div></div>';
+  }
+  box.innerHTML=h;
+}
+
 function xgCompute(s){
   if(!s) return null;
   const gkIn=s.gkIn!==false;
@@ -2486,15 +2702,25 @@ function xgCompute(s){
   if(s.setPiece==='10m') return gkIn?.65:.88;
   const p=xgPosOf(s); if(!p) return null;
   const d=Math.max(0,p.d), x=p.x, dm=Math.hypot(x,d);
-  const distF=Math.max(0,1-Math.pow(dm/XG_DMAX,XG_CFG.dist));
-  const aF=Math.max(0,1-Math.atan2(Math.abs(x),d)/(Math.PI/2)*XG_CFG.ang);
+  const distF=Math.max(0,1-Math.pow(dm/XG_DMAX,XG_CFG.dist*XGM.xg.dist));
+  const aF=Math.max(0,1-Math.atan2(Math.abs(x),d)/(Math.PI/2)*XG_CFG.ang*XGM.xg.ang);
   let b=XG_CFG.base*distF*aF;
   b*=XG_BODY[s.body]||1;
   b*=xgMomMult(s.moment,s.xgSub);
   if(s.assist) b*=1.10;
   b*=s.press?.82:1.08;
   if(gkIn) b*=.62; else b=Math.max(b*1.30,.88-Math.min(dm/32,1)*.38);
+  if(gkIn&&xgGeo(s)){
+    /* posicao do goleiro marcada (ou rebote): compara o angulo LIVRE real com o do goleiro
+       estimado. Marcar o goleiro onde o sistema ja o estimava nao muda nada; mal
+       posicionado (mais gol livre) aumenta; bem fechado diminui. */
+    const fl=function(A){ return .35+.9*((A&&A.gol)?A.livre/A.gol:0); };
+    const fM=fl(xgAngulos(s)), fA=fl(xgAngulos(Object.assign({},s,{gkPos:null,reb:false})));
+    b*=Math.pow(fM/Math.max(.05,fA),XGM.xg.livre);
+  }
+  if(s.reb) b*=Math.pow(XG_REB[s.rebT]||1,XGM.xg.reb);
   b*=[1,.9,.8,.72,.65][Math.min(parseInt(s.defs,10)||0,4)];
+  b*=XGM.kxg;
   return Math.round(Math.min(Math.max(b,.01),.97)*1000)/1000;
 }
 /* ── PsxG: gols esperados DEPOIS do chute (so chutes no alvo) ──
@@ -2506,34 +2732,45 @@ function xgCompute(s){
    u de -1,5 (esquerda dele) a +1,5 (direita dele); v de 0 (chao) a 2 (travessao). */
 const PSX_VEL={fraca:11,media:16,forte:22};
 function psxNoAlvo(s){ const k=resKind(s&&s.result); return k==='save'||k==='goal'; }
+/* nucleo do PsxG para uma "linha do goleiro" (LN): colocacao, tempo de reacao,
+   trajetoria, desvio e visao. Sem rebote, pisos ou nivel (aplicados fora). */
+function _psCore(s,p,LN){
+  const u=s.ball.u, v=s.ball.v, ug=LN.ug;
+  const dx=LN.alc!=null?Math.min(1,Math.max(0,Math.abs(u-ug)-.2)/Math.max(.6,LN.alc+.6)):Math.min(1,Math.abs(u-ug)/1.6);
+  let dy=0; if(v<.3) dy=(.3-v)/.3*.4; else if(v>1.5) dy=(v-1.5)/.5*.5;
+  const longe=Math.min(1,Math.hypot(dx,dy));
+  const col=Math.pow(.06+.66*Math.pow(longe,1.6),XGM.ps.col);
+  const dx_=Math.min(1,Math.abs(u)/1.5);
+  const dm=LN.geo?Math.hypot(LN.gk.x-p.x,LN.gk.d-p.d):Math.hypot(p.x,Math.max(0,p.d));
+  const t=dm/(PSX_VEL[s.vel]||PSX_VEL.media);
+  const tempo=Math.pow(Math.min(LN.geo?1.25:1.15,Math.max(.6,.55+.27/Math.max(.12,t))),XGM.ps.tempo);
+  let m=1;
+  if(s.traj==='quicada') m*=Math.pow(1.18,XGM.ps.traj); else if(s.traj==='rasteira') m*=(dx_>.6&&dx>.4?Math.pow(1.08,XGM.ps.traj):1); else if(s.traj==='meia') m*=Math.pow(.95,XGM.ps.traj);
+  if(s.defl) m*=Math.pow(1.35,XGM.ps.defl);
+  if(s.screen) m*=Math.pow(1.22,XGM.ps.screen);
+  return {v:col*tempo*m, t:t};
+}
 function psxgCompute(s){
   if(!s||!psxNoAlvo(s)||!s.ball||typeof s.ball.u!=='number'||typeof s.ball.v!=='number') return null;
   const p=xgPosOf(s); if(!p) return null;
-  const u=s.ball.u, v=s.ball.v;
-  /* o goleiro nao fica no meio do gol: fica na linha da bola. A colocacao e
-     medida a partir de onde ele estaria (psxGkU), e o lado da bola pesa mais
-     que a altura: uma bola alta "na linha do goleiro" e mais facil que uma
-     bola a meia altura no outro canto. */
-  /* linha do goleiro: a ajustada a mao (ex.: falta com barreira) ou a automatica */
-  const ug=(typeof s.gkU==='number')?s.gkU:psxGkU(p);
-  const dx=Math.min(1,Math.abs(u-ug)/1.6);
-  let dy=0; if(v<.3) dy=(.3-v)/.3*.4; else if(v>1.5) dy=(v-1.5)/.5*.5;
-  const longe=Math.min(1,Math.hypot(dx,dy));
-  const col=.06+.66*Math.pow(longe,1.6);
-  const dx_=Math.min(1,Math.abs(u)/1.5);   /* rasteira junto a trave (abaixo) */
-  const dm=Math.hypot(p.x,Math.max(0,p.d));
-  const t=dm/(PSX_VEL[s.vel]||PSX_VEL.media);
-  const tempo=Math.min(1.15,Math.max(.6,.55+.27/Math.max(.12,t)));
-  let m=1;
-  if(s.traj==='quicada') m*=1.18; else if(s.traj==='rasteira') m*=(dx_>.6&&dx>.4?1.08:1); else if(s.traj==='meia') m*=.95;
-  if(s.defl) m*=1.35;
-  if(s.screen) m*=1.22;
-  let ps=col*tempo*m;
-  /* goleiro FORA da linha do chute (campo unico com o xG: gkIn=false): a bola
-     no alvo vai para um gol sem goleiro na frente. So o tempo para ele se
-     recuperar (chute longo/fraco) e defensores entre a bola e o gol baixam. */
+  /* 1) linha do goleiro: ajustada a mao, senao a estimada (bissetriz + 1o poste) */
+  const manual=(typeof s.gkU==='number');
+  const base=_psCore(s,p,{ug:manual?s.gkU:psxGkU(p),alc:null,geo:false});
+  let ps=base.v;
+  /* 2) posicao real do goleiro (ou rebote): razao entre a geometria real e a do goleiro
+     estimado. Marcar o goleiro onde o sistema ja o estimava nao muda o valor. */
+  if(!manual&&xgGeo(s)){
+    const real=_psCore(s,p,psxLinha(s)).v, est=_psCore(s,p,psxLinha(Object.assign({},s,{gkPos:null,reb:false})));
+    ps*=real/Math.max(.02,est.v);
+  }
+  if(s.reb) ps*=Math.pow(PS_REB[s.rebT]||1,XGM.ps.reb);
+  ps*=XGM.kps;
+  /* rebote: goleiro no chao ou desequilibrado nao reage nem a bola "na linha dele" */
+  if(s.reb) ps=Math.max(ps,(PS_PISO[s.rebGk]||0)*(PS_PISO_T[s.rebT]||1));
+  /* goleiro FORA da linha do chute (gkIn=false): bola no alvo para um gol sem goleiro na
+     frente. So o tempo para ele se recuperar e defensores entre a bola e o gol baixam. */
   if(s.gkIn===false){
-    const fora=(.95-Math.min(1,Math.max(0,(t-.5)/2))*.35)*[1,.9,.8,.72,.65][Math.min(parseInt(s.defs,10)||0,4)];
+    const fora=(.95-Math.min(1,Math.max(0,(base.t-.5)/2))*.35)*[1,.9,.8,.72,.65][Math.min(parseInt(s.defs,10)||0,4)];
     ps=Math.max(ps,fora);
   }
   return Math.round(Math.min(.97,Math.max(.02,ps))*1000)/1000;
@@ -2564,11 +2801,12 @@ function psxSvg(st){
   for(let i=1;i<6;i++) s+='<line x1="'+(PSX_GX+i*50)+'" y1="'+PSX_GY+'" x2="'+(PSX_GX+i*50)+'" y2="'+(PSX_GY+200)+'" stroke="#d4d4d4" stroke-width="1"/>';
   for(let j=1;j<4;j++) s+='<line x1="'+PSX_GX+'" y1="'+(PSX_GY+j*50)+'" x2="'+(PSX_GX+300)+'" y2="'+(PSX_GY+j*50)+'" stroke="#d4d4d4" stroke-width="1"/>';
   /* alcance facil: centrado onde o goleiro estaria pela posicao do chute */
-  const _p=xgPosOf(st), _man=(typeof st.gkU==='number'), _cx=PSX_GX+150+(_man?st.gkU:(_p?psxGkU(_p):0))*PSX_PM;
+  const _p=xgPosOf(st), _LN=psxLinha(st), _man=_LN.manual, _cx=PSX_GX+150+(_p?_LN.ug:0)*PSX_PM;
   if(st.gkIn===false){
     s+='<text x="'+(PSX_GX+150)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="11" fill="#b91c1c">'+esc(_txf('st.ps.gkOff','goalkeeper off the shot line'))+'</text>';
   } else {
-  s+='<ellipse cx="'+_cx.toFixed(1)+'" cy="'+(PSX_GY+100)+'" rx="70" ry="92" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
+  if(_LN.alc!=null){ const _w=Math.min(300,_LN.alc*2*PSX_PM); s+='<rect x="'+Math.max(PSX_GX,_cx-_w/2).toFixed(1)+'" y="'+PSX_GY+'" width="'+(Math.min(PSX_GX+300,_cx+_w/2)-Math.max(PSX_GX,_cx-_w/2)).toFixed(1)+'" height="200" fill="#c2410c" fill-opacity=".1"/>'; }
+  else s+='<ellipse cx="'+_cx.toFixed(1)+'" cy="'+(PSX_GY+100)+'" rx="70" ry="92" fill="#2563eb" fill-opacity=".07" stroke="#2563eb" stroke-opacity=".35" stroke-dasharray="4 4"/>';
   s+='<line x1="'+_cx.toFixed(1)+'" y1="'+(PSX_GY+8)+'" x2="'+_cx.toFixed(1)+'" y2="'+(PSX_GY+200)+'" stroke="#2563eb" stroke-opacity="'+(_man?'.9':'.3')+'" stroke-width="'+(_man?2:1)+'"'+(_man?'':' stroke-dasharray="0"')+'/>';
   if(_man) s+='<path d="M '+(_cx-7).toFixed(1)+' '+(PSX_GY+2)+' L '+(_cx+7).toFixed(1)+' '+(PSX_GY+2)+' L '+_cx.toFixed(1)+' '+(PSX_GY+12)+' z" fill="#2563eb"/>';
   s+='<text x="'+_cx.toFixed(1)+'" y="'+(PSX_GY+104)+'" text-anchor="middle" font-size="10" fill="#2563eb" fill-opacity=".85">'+esc(_man?_txf('st.ps.gkLineMan','GK line (set by hand)'):(_p?_txf('st.ps.gkLine','GK line'):_txf('st.ps.easy','easy reach')))+'</text>';
@@ -2698,9 +2936,11 @@ function xgcCourtHtml(k){
     + '<svg viewBox="0 0 '+XGC_W+' '+XGC_H+'" aria-hidden="true"><rect x="0" y="0" width="'+XGC_W+'" height="'+XGC_H+'" fill="#2563eb"/>'
     + '<g id="xgc-rot-'+k+'">'+xgcLines(false)
     + '<g id="xgc-dots-'+k+'"></g>'
+    + '<g id="xgc-gk-'+k+'"></g>'
     + '<g id="xgc-mk-'+k+'" opacity="0"><circle r="13" cx="-40" cy="-40" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 3"/><circle r="5" cx="-40" cy="-40" fill="#ffffff"/></g>'
     + '</g><g id="xgc-lab-'+k+'">'+xgcLabels('L')+'</g>'
     + '</svg></button>'
+    + (k==='sf'?'<div class="xgc-gkrow" id="xgc-gkrow-sf"></div>':'')
     + '<div class="xgc-row"><span style="font-size:11px;color:var(--mute);margin-right:2px">'+esc(_txf('st.xg.setPiece','Set piece:'))+'</span>'
     + '<button type="button" class="mc-btn" id="xgc-sp-pen-'+k+'" onclick="xgcSetPiece('+q+',\'pen\')">'+esc(_txf('st.xg.pen','Penalty'))+'</button>'
     + '<button type="button" class="mc-btn" id="xgc-sp-10m-'+k+'" onclick="xgcSetPiece('+q+',\'10m\')">'+esc(_txf('st.xg.tenm','10 m free kick'))+'</button>'
@@ -2742,6 +2982,12 @@ function xgcCtxHtml(k){
     +   b('gkIn',true,_txf('st.xg.gkOnLine','On the line'),st.gkIn!==false)+b('gkIn',false,_txf('st.xg.gkOffLine','Off the line'),st.gkIn===false)+'</div></div>'
     + '<div style="grid-column:1/-1"><div class="label">'+esc(_txf('st.xg.defs','Defenders between ball and goal'))+'</div><div class="mc-group">'
     +   [0,1,2,3,4].map(function(n){ return b('defs',n,n===4?'4+':String(n),(parseInt(st.defs,10)||0)===n); }).join('')+'</div></div>'
+    + '<div style="grid-column:1/-1"><div class="label">'+esc(_txf('st.rb.is','Is it a rebound?'))+'</div><div class="mc-group">'
+    +   b('reb',false,_txf('st.rb.no','No'),!st.reb)+b('reb',true,_txf('st.rb.yes','Yes'),!!st.reb)+'</div></div>'
+    + (st.reb?('<div><div class="label">'+esc(_txf('st.rb.time','Time since the previous shot'))+'</div><div class="mc-group">'
+    +   b('rebT','imediato',_txf('st.rb.t1','Immediate (<1 s)'),st.rebT==='imediato')+b('rebT','curto',_txf('st.rb.t2','Short (1–2 s)'),st.rebT==='curto')+b('rebT','tempo',_txf('st.rb.t3','With time (>2 s)'),st.rebT==='tempo')+'</div></div>'
+    + '<div><div class="label">'+esc(_txf('st.rb.gk','Goalkeeper state'))+'</div><div class="mc-group">'
+    +   b('rebGk','nochao',_txf('st.rb.g1','On the ground'),st.rebGk==='nochao')+b('rebGk','deseq',_txf('st.rb.g2','Standing, off balance'),st.rebGk==='deseq')+b('rebGk','repos',_txf('st.rb.g3','Repositioned'),st.rebGk==='repos')+'</div></div>'):'')
     + '</div>'
     + '<div class="xgc-out"><div><div class="label" style="margin:0">'+esc(_txf('st.xg.est','Estimated xG'))+'</div><div class="xgc-num">'+xgFmt(xg,2)+'</div></div>'
     + '<div style="flex:1;min-width:0"><div class="xgc-bar"><div style="width:'+(xg==null?0:Math.round(xg*100))+'%"></div></div><div class="xgc-note">'+esc(nota)+'</div></div></div>';
@@ -2771,6 +3017,34 @@ function xgcApplyAuto(k){
   }
   if(!st._corrM&&p){ st.courtZone=xgCorr(p.x); _xgcSelectCorr(c.corr,st.courtZone); _xgcMarkAuto(c.corr,true); }
 }
+/* o toque na quadra marca o finalizador (padrao) ou o goleiro */
+function xgcCourtMode(m){ SF._courtMode=(m==='gk')?'gk':'sh'; xgcRefresh('sf'); }
+function xgcGkAuto(){ SF.gkPos=null; SF._courtMode='sh'; xgcRefresh('sf'); }
+function xgcGkSvg(st){
+  const A=xgAngulos(st); if(!A) return '';
+  const P=function(q){ return xgSvgPt(q); };
+  const sh=P(A.sh), pL=P({d:0,x:-GK_POSTE}), pR=P({d:0,x:GK_POSTE});
+  const raio=function(a){ const r=Math.PI*a/180; return P({d:0,x:A.sh.x+Math.tan(r)*A.sh.d}); };
+  let s='<path d="M '+sh[0].toFixed(1)+' '+sh[1].toFixed(1)+' L '+pL[0].toFixed(1)+' '+pL[1].toFixed(1)+' L '+pR[0].toFixed(1)+' '+pR[1].toFixed(1)+' z" fill="#22c55e" fill-opacity=".4"/>';
+  if(A.cob>0){ const r1=raio(A.c1), r2=raio(A.c2); s+='<path d="M '+sh[0].toFixed(1)+' '+sh[1].toFixed(1)+' L '+r1[0].toFixed(1)+' '+r1[1].toFixed(1)+' L '+r2[0].toFixed(1)+' '+r2[1].toFixed(1)+' z" fill="#0a0a0a" fill-opacity=".38"/>'; }
+  const g=P(A.gk), marc=xgGkMarcado(st);
+  s+='<circle cx="'+g[0].toFixed(1)+'" cy="'+g[1].toFixed(1)+'" r="'+(xgGkReach(st)*XGC_S).toFixed(1)+'" fill="#c2410c" fill-opacity=".18" stroke="#c2410c" stroke-dasharray="3 3"/>';
+  s+='<circle cx="'+g[0].toFixed(1)+'" cy="'+g[1].toFixed(1)+'" r="6" fill="#c2410c" fill-opacity="'+(marc?1:.55)+'" stroke="#ffffff" stroke-width="2"/>';
+  return s;
+}
+function xgcGkRow(st){
+  const b=function(on,js,txt){ return '<button type="button" class="mc-btn'+(on?' active':'')+'" onclick="'+js+'">'+esc(txt)+'</button>'; };
+  let h='<span class="xgc-hl">'+esc(_txf('st.gk.tapMarks','The tap on the court marks:'))+'</span>'
+    + b(SF._courtMode!=='gk',"xgcCourtMode('sh')",_txf('st.gk.mSh','Shooter'))
+    + b(SF._courtMode==='gk',"xgcCourtMode('gk')",_txf('st.gk.mGk','Goalkeeper'))
+    + (xgGkMarcado(st)?b(false,'xgcGkAuto()',_txf('st.gk.auto','Automatic goalkeeper')):'');
+  const A=xgAngulos(st);
+  if(A){ const fr=A.gol?A.livre/A.gol:0;
+    h+='<span class="xgc-ang">'+esc(_txf('st.gk.angles','Goal angle {g}° · covered {c}° · free {l}° ({p}%)').replace('{g}',Math.round(A.gol)).replace('{c}',Math.round(A.cob)).replace('{l}',Math.round(A.livre)).replace('{p}',Math.round(fr*100)))
+      + (xgGkMarcado(st)?'':' · '+esc(_txf('st.gk.est','goalkeeper estimated')))+'</span>'; }
+  else if(SF._courtMode==='gk') h+='<span class="xgc-ang">'+esc(_txf('st.gk.needSh','Tap the shooter first.'))+'</span>';
+  return h;
+}
 function xgcTap(ev,k){
   const st=_xgcCfg(k).st(); if(!st) return;
   if(!ev||(!ev.clientX&&!ev.clientY)) return;      /* teclado: sem coordenada */
@@ -2780,6 +3054,13 @@ function xgcTap(ev,k){
   /* nosso gol a direita no video: a quadra esta girada 180 graus em torno do centro */
   if(xgcSide(k)==='R'){ vx=616-vx; vy=312-vy; }
   const d=Math.min(40,Math.max(0,(vx-XGC_GL)/XGC_S)), x=Math.min(10,Math.max(-10,(vy-XGC_CY)/XGC_S));
+  /* modo goleiro: marca so a posicao dele (nao mexe no corredor nem na distancia) */
+  if(k==='sf'&&SF._courtMode==='gk'){
+    const pp=xgPosOf(st); if(!pp){ xgcRefresh(k); return; }
+    st.gkPos={d:Math.round(Math.max(0,Math.min(d,pp.d-.3))*100)/100,x:Math.round(x*100)/100};
+    xgcRefresh(k); return;
+  }
+  if(st.gkPos&&typeof st.gkPos.d==='number'&&st.gkPos.d>=d-.3) st.gkPos=null;
   st.pos={d:Math.round(d*100)/100,x:Math.round(x*100)/100};
   st.setPiece=null; st._hdM=false; st._corrM=false;
   xgcApplyAuto(k); xgcRefresh(k);
@@ -2813,7 +3094,9 @@ function xgcRefresh(k){
   const lado=xgcSide(k);
   const rot=document.getElementById('xgc-rot-'+k); if(rot){ if(lado==='R') rot.setAttribute('transform','rotate(180 308 156)'); else rot.removeAttribute('transform'); }
   const lab=document.getElementById('xgc-lab-'+k); if(lab) lab.innerHTML=xgcLabels(lado);
-  if(k==='sf'){ const hb=document.getElementById('xgc-halfbox-sf'); if(hb) hb.innerHTML=xgcHalfHtml(); }
+  if(k==='sf'){ const hb=document.getElementById('xgc-halfbox-sf'); if(hb) hb.innerHTML=xgcHalfHtml();
+    const go=document.getElementById('xgc-gk-sf'); if(go) go.innerHTML=xgPosOf(st)?xgcGkSvg(st):'';
+    const gr=document.getElementById('xgc-gkrow-sf'); if(gr) gr.innerHTML=xgcGkRow(st); }
   const p=xgPosOf(st);
   const mk=document.getElementById('xgc-mk-'+k);
   if(mk){
@@ -3433,6 +3716,7 @@ let _flowGame=null, _flowPick=null, _flowList=[];
 function flowSetGame(id){ _flowGame=id; _flowPick=null; renderFlow(); }
 function flowPick(i){ _flowPick=i; renderFlow(); }
 function renderFlow(){
+  try{ renderCal(); }catch(e){ console.warn('[FluxGK] calibracao',e); }
   const box=document.getElementById('flow-card'); if(!box) return;
   const selGk=document.getElementById('flow-gk');
   if(selGk){ const cur=selGk.value; const gks=[]; (ST.games||[]).forEach(function(g){ _asArr(g.shots).forEach(function(s){ if(s&&s.gk&&gks.indexOf(s.gk)<0) gks.push(s.gk); }); });
